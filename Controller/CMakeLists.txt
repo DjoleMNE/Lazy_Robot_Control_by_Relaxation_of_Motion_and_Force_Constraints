@@ -37,7 +37,7 @@ link_directories(
 
 add_executable(main
   src/main.cpp
-  #src/dynamics_controller.cpp
+  src/dynamics_controller.cpp
   src/solver_vereshchagin.cpp
 )
 
