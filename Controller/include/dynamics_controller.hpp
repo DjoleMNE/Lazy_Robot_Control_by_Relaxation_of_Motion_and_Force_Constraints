@@ -28,50 +28,40 @@ SOFTWARE.
 #include <solver_vereshchagin.hpp>
 #include <state_specification.hpp>
 #include <command_specification.hpp>
-#include <iostream>
-#include <sstream>
-#include <fstream>
-#include <time.h>
-#include <cmath>
-#include <boost/assign/list_of.hpp>
-#include <stdlib.h> /* abs */
+#include <youbot_driver/youbot/YouBotManipulator.hpp>
 
 class dynamics_controller
 {
-
   public:
       dynamics_controller(
           const KDL::Chain &chain,
-          const KDL::Twist &acc_root,
+          const KDL::Twist &root_acc,
           std::vector<double> &joint_position_limits,
           std::vector<double> &joint_velocity_limits,
           std::vector<double> &joint_acceleration_limits,
           std::vector<double> &joint_torque_limits,
           double rate_hz);
       ~dynamics_controller();
+
+      int control(youbot::YouBotManipulator &robot);
       void reset_desired_state();
       void set_ee_constraints(std::vector<bool> &constraint_direction, 
                               std::vector<double> &cartesian_acceleration,
                               state_specification &state);
       void set_external_forces();
       void set_feadforward_torque();
-
+    
       double rate_hz_ = 0.0;
       double dt_;
 
   private:
-    void integrate_robot_motion(
-        const KDL::JntArray &current_q,
-        const KDL::JntArray &current_qd,
-        const KDL::JntArray &current_qdd,
-        KDL::JntArray &integrated_q,
-        KDL::JntArray &integrated_qd,
-        std::vector<KDL::Frame> &integratedframe_pose,
-        std::vector<KDL::FrameVel> &integrated_frame_velocity,
-        int number_of_steps);
+    void integrate_robot_motion(state_specification current_state,
+                                state_specification predicted_state,
+                                int number_of_steps);
     
     void reset_state(state_specification state);
-    
+    void check_limits(state_specification state);
+
     const int NUMBER_OF_CONSTRAINTS = 6;
     const KDL::Chain &chain_;
     int number_of_frames_;

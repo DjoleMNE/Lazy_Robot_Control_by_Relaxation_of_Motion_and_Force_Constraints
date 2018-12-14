@@ -30,7 +30,6 @@ SOFTWARE.
 
 class command_specification
 {
-
 	public:
 		command_specification(){};
 
