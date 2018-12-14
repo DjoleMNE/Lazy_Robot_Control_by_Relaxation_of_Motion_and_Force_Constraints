@@ -49,37 +49,37 @@ void define_ee_task(state_specification &motion_)
         KDL::Vector(0.0, 0.0, 0.0),  // linear
         KDL::Vector(0.0, 0.0, 0.0)); // angular
     motion_.ee_unit_constraint_forces.setColumn(0, unit_constraint_force_xl);
-    motion_.ee_effector_acceleration_energy(0) = 0.0001;
+    motion_.ee_acceleration_energy(0) = 0.0001;
 
     KDL::Twist unit_constraint_force_yl(
         KDL::Vector(0.0, 0.0, 0.0),  // linear
         KDL::Vector(0.0, 0.0, 0.0)); // angular
     motion_.ee_unit_constraint_forces.setColumn(1, unit_constraint_force_yl);
-    motion_.ee_effector_acceleration_energy(1) = 0.0;
+    motion_.ee_acceleration_energy(1) = 0.0;
 
     KDL::Twist unit_constraint_force_zl(
         KDL::Vector(0.0, 0.0, 1.0),  // linear
         KDL::Vector(0.0, 0.0, 0.0)); // angular
     motion_.ee_unit_constraint_forces.setColumn(2, unit_constraint_force_zl);
-    motion_.ee_effector_acceleration_energy(2) = 0.00001;
+    motion_.ee_acceleration_energy(2) = 0.00001;
     //
     KDL::Twist unit_constraint_force_xa(
         KDL::Vector(0.0, 0.0, 0.0),  // linear
         KDL::Vector(0.0, 0.0, 0.0)); // angular
     motion_.ee_unit_constraint_forces.setColumn(3, unit_constraint_force_xa);
-    motion_.ee_effector_acceleration_energy(3) = 0.0;
+    motion_.ee_acceleration_energy(3) = 0.0;
 
     KDL::Twist unit_constraint_force_ya(
         KDL::Vector(0.0, 0.0, 0.0),  // linear
         KDL::Vector(0.0, 0.0, 0.0)); // angular
     motion_.ee_unit_constraint_forces.setColumn(4, unit_constraint_force_ya);
-    motion_.ee_effector_acceleration_energy(4) = 0.0;
+    motion_.ee_acceleration_energy(4) = 0.0;
 
     KDL::Twist unit_constraint_force_za(
         KDL::Vector(0.0, 0.0, 0.0),  // linear
         KDL::Vector(0.0, 0.0, 0.0)); // angular
     motion_.ee_unit_constraint_forces.setColumn(5, unit_constraint_force_za);
-    motion_.ee_effector_acceleration_energy(5) = 0.0;
+    motion_.ee_acceleration_energy(5) = 0.0;
 
     // KDL::Wrench externalForceEE(KDL::Vector(0.0,
     //                                         0.0,
@@ -253,7 +253,7 @@ int main(int argc, char **argv)
                                           motion_.qd,
                                           motion_.qdd,                                       //qdd_ is overwritten by resulting acceleration
                                           motion_.ee_unit_constraint_forces,       // alpha
-                                          motion_.ee_effector_acceleration_energy, // beta
+                                          motion_.ee_acceleration_energy, // beta
                                           motion_.external_force,
                                           motion_.feedforward_torque);
 

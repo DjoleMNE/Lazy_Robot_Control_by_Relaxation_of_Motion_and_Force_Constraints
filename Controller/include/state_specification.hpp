@@ -44,7 +44,7 @@ class state_specification
 		KDL::JntArray feedforward_torque;
 		KDL::JntArray control_torque;
 		KDL::Jacobian ee_unit_constraint_forces;
-		KDL::JntArray ee_effector_acceleration_energy;
+		KDL::JntArray ee_acceleration_energy;
 		KDL::Wrenches external_force;
 		std::vector<KDL::Frame> frame_pose;
 		std::vector<KDL::FrameVel> frame_velocity;
@@ -60,7 +60,7 @@ class state_specification
 			qdd.resize(number_of_joints);
 			feedforward_torque.resize(number_of_joints);
 			ee_unit_constraint_forces.resize(NUMBER_OF_CONSTRAINTS);				 //alpha
-			ee_effector_acceleration_energy.resize(NUMBER_OF_CONSTRAINTS);			 //beta
+			ee_acceleration_energy.resize(NUMBER_OF_CONSTRAINTS);			 //beta
 			external_force.resize(number_of_segments);
 			frame_pose.resize(number_of_frames);
 			frame_velocity.resize(number_of_frames);

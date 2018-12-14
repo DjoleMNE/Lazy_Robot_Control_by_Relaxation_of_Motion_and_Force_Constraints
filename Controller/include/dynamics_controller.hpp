@@ -1,5 +1,7 @@
 /*
 Author(s): Djordje Vukcevic, Sven Schneider
+Institute: Hochschule Bonn-Rhein-Sieg
+
 Copyright (c) [2018]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -41,13 +43,18 @@ class dynamics_controller
       dynamics_controller(
           const KDL::Chain &chain,
           const KDL::Twist &acc_root,
-          std::vector<double> joint_position_limits,
-          std::vector<double> joint_velocity_limits,
-          std::vector<double> joint_acceleration_limits,
-          std::vector<double> joint_torque_limits,
+          std::vector<double> &joint_position_limits,
+          std::vector<double> &joint_velocity_limits,
+          std::vector<double> &joint_acceleration_limits,
+          std::vector<double> &joint_torque_limits,
           double rate_hz);
       ~dynamics_controller();
-      void reset_robot_state();
+      void reset_desired_state();
+      void set_ee_constraints(std::vector<bool> &constraint_direction, 
+                              std::vector<double> &cartesian_acceleration,
+                              state_specification &state);
+      void set_external_forces();
+      void set_feadforward_torque();
 
       double rate_hz_ = 0.0;
       double dt_;
@@ -63,17 +70,22 @@ class dynamics_controller
         std::vector<KDL::FrameVel> &integrated_frame_velocity,
         int number_of_steps);
     
+    void reset_state(state_specification state);
+    
     const int NUMBER_OF_CONSTRAINTS = 6;
     const KDL::Chain &chain_;
     int number_of_frames_;
     int number_of_joints_;
     int number_of_segments_;
+
     KDL::Solver_Vereshchagin hd_solver_;
-    state_specification state_;
+    state_specification desired_state_;
+    state_specification current_state_;
+    state_specification predicted_state_;
+
     std::vector<double> joint_position_limits_;
     std::vector<double> joint_velocity_limits_;
     std::vector<double> joint_acceleration_limits_;
     std::vector<double> joint_torque_limits_;
 };
-
 #endif /* DYNAMICS_CONTROLLER_HPP_*/
