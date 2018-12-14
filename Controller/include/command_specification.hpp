@@ -23,21 +23,17 @@ SOFTWARE.
 
 #ifndef COMMAND_SPECIFICATION_HPP
 #define COMMAND_SPECIFICATION_HPP
-#include <kdl/kdl.hpp>
-#include <kdl/frames_io.hpp>
-#include <kdl/kinfam_io.hpp>
-#include <Eigen/StdVector>
+#include <state_specification.hpp>
 
 class command_specification
 {
 	public:
-		command_specification(){};
+		command_specification() {}
+		~command_specification() {}
 
-		~command_specification(){};
-
-		std::vector<double> q_setpoint;
-		std::vector<double> qd_setpoint;
-		std::vector<double> tau_setpoint;
+		KDL::JntArray q_setpoint;
+		KDL::JntArray qd_setpoint;
+		KDL::JntArray tau_setpoint;
 
 		void init_commands(int number_of_joints)
 		{

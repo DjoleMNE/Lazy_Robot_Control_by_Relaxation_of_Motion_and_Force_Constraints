@@ -1,8 +1,4 @@
-#include <kdl_parser/kdl_parser.hpp>
-#include <youbot_driver/youbot/YouBotManipulator.hpp>
-#include <urdf/model.h>
-#include <solver_vereshchagin.hpp>
-#include <state_specification.hpp>
+#include <youbot_mediator.hpp>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -61,7 +57,7 @@ void define_ee_task(state_specification &motion_)
         KDL::Vector(0.0, 0.0, 1.0),  // linear
         KDL::Vector(0.0, 0.0, 0.0)); // angular
     motion_.ee_unit_constraint_forces.setColumn(2, unit_constraint_force_zl);
-    motion_.ee_acceleration_energy(2) = 0.00001;
+    motion_.ee_acceleration_energy(2) = 0.000001;
     //
     KDL::Twist unit_constraint_force_xa(
         KDL::Vector(0.0, 0.0, 0.0),  // linear
@@ -91,52 +87,27 @@ void define_ee_task(state_specification &motion_)
     // motion_.external_force[motion_.external_force.size() - 1] = externalForceEE;
 }
 
-int extract_robot_model(KDL::Chain &arm_chain_, std::string root_name, std::string tooltip_name)
-{
-    //Extract KDL tree from URDF file
-    KDL::Tree yb_tree;
-    urdf::Model yb_model;
-
-    if (!yb_model.initFile("/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf"))
-    {
-        std::cout << "ERROR: Failed to parse urdf robot model" << '\n';
-        return -1;
-    }
-
-    if (!kdl_parser::treeFromUrdfModel(yb_model, yb_tree))
-    {
-        std::cout << "ERROR: Failed to construct kdl tree" << '\n';
-        return -1;
-    }
-
-    //Extract KDL chain from KDL tree
-    yb_tree.getChain(root_name, tooltip_name, arm_chain_);
-
-    return 0;
-}
-
-void integrate_joints(KDL::JntArray &joint_command,
-                      std::vector<youbot::JointSensedVelocity> &joint_state,
-                      std::vector<youbot::JointVelocitySetpoint> &integrated_data,
-                      double joint_limit[],
-                      double dt)
+void integrate_joints(const state_specification &current_state,
+                    command_specification &commanded_state,
+                    double joint_limit[],
+                    double dt)
 {
     double integrated_value;
-    for (int i = 0; i < integrated_data.size(); i++)
-
+    for (int i = 0; i < 5; i++)
     {
         // std::cout << joint_state[i].angularVelocity.value() << " " << abs(joint_command.data[i]) <<std::endl;
 
-        integrated_value = joint_state[i].angularVelocity.value() + joint_command.data[i] * dt;
+        integrated_value = current_state.qd(i) + current_state.qdd(i) * dt;
 
         //If joint limit reached, stop the program
         if (abs(integrated_value) > joint_limit[i])
         {
-            std::cout << abs(integrated_value) << " " << i << std::endl;
+            std::cout <<"Limit reached on: " << abs(integrated_value) 
+                        << " " << i << std::endl;
         }
 
         assert(abs(integrated_value) <= joint_limit[i]);
-        integrated_data[i].angularVelocity = integrated_value * radian_per_second;
+        commanded_state.qd_setpoint(i) = integrated_value;
     }
 }
 
@@ -145,32 +116,26 @@ int main(int argc, char **argv)
     const int JOINTS = 5;
     const int NUMBER_OF_CONSTRAINTS = 6;
     const int MILLISECOND = 1000;
-
+    double joint_limit[JOINTS] = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
+    
     KDL::Chain arm_chain_;
     state_specification motion_;
-    assert(extract_robot_model(arm_chain_, "arm_link_0", "arm_link_5") != -1);
-    double joint_limit[JOINTS] = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
-
-    std::vector<youbot::JointSensedAngle> q(JOINTS);
-    std::vector<youbot::JointSensedVelocity> qd(JOINTS);
-    std::vector<youbot::JointSensedTorque> tau(JOINTS);
-    std::vector<youbot::JointSensedCurrent> current(JOINTS);
-    std::vector<youbot::JointVelocitySetpoint> qd_setpoint(JOINTS);
-    std::vector<youbot::JointTorqueSetpoint> tau_setpoint(JOINTS);
-
-    //Set initial values for setpoints to 0 value
-    for (int i = 0; i < JOINTS; i++)
-    {
-        qd_setpoint[i].angularVelocity = 0 * radian_per_second;
-        tau_setpoint[i].torque = 0 * newton_meter;
-    }
+    command_specification commands_;
+    youbot_mediator arm("/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config");
+    
+    arm.initialize(arm_chain_, "arm_link_0", "arm_link_5",
+        "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf");
+    initialize_state(arm_chain_, motion_, NUMBER_OF_CONSTRAINTS);
 
     int number_of_segments = arm_chain_.getNrOfSegments();
     int number_of_joints = arm_chain_.getNrOfJoints();
-
     assert(JOINTS == number_of_segments);
+    commands_.init_commands(number_of_joints);
 
-    initialize_state(arm_chain_, motion_, NUMBER_OF_CONSTRAINTS);
+    //Set initial values for setpoints to 0 value
+    arm.set_joint_velocities(motion_.qd);
+    
+    //Create End_effector Cartesian Acceleration task 
     define_ee_task(motion_);
 
     //arm root acceleration
@@ -181,33 +146,11 @@ int main(int argc, char **argv)
     KDL::Solver_Vereshchagin hd_solver_(arm_chain_, root_acc,
                                         NUMBER_OF_CONSTRAINTS);
 
-    youbot::YouBotManipulator arm("youbot-manipulator", "/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config");
-    arm.doJointCommutation();
-    arm.calibrateManipulator();
-
-    arm.getJointData(q);
-    arm.getJointData(qd);
-
-    // std::cout << "\n"
-    //           << "Joint Positions"
-    //           << std::endl;
-
-    // for (int i = 0; i < JOINTS; i++){
-    //     std::cout << q[i].angle.value() << ",";
-    // }
-
-    // std::cout << "\n" <<"Joint Velocities"<< std::endl;
-
-    // for (int i = 0; i < JOINTS; i++)
-    // {
-    //     std::cout << qd[i].angularVelocity.value() << ",";
-    // }
-
+    // Go to Candle configuration  
+    // KDL::JntArray candle_pose(JOINTS);
     // double candle[] = {2.1642, 1.13446, -2.54818, 1.78896, 0.12};
-    // std::vector<youbot::JointAngleSetpoint> candle_set_point(JOINTS);
-    // for (int i = 0; i < JOINTS; i++)
-    //     candle_set_point[i].angle = candle[i] * radian;
-    // arm.setJointData(candle_set_point);
+    // for (int i = 0; i < JOINTS; i++) candle_pose(i) = candle[i];  
+    // arm.set_joint_positions(candle_pose);
 
     // double navigation[] = {2.9496, 1.0, -1.53240, 2.85214, 2.93816};
     // double navigation[] = {2.9496, 0.075952, -1.53240, 3.35214, 2.93816};
@@ -216,11 +159,20 @@ int main(int argc, char **argv)
     //     navigation_set_point[i].angle = navigation[i] * radian;
     // arm.setJointData(navigation_set_point);
 
-    double folded[] = {0.02, 0.02, -0.02, 0.023, 0.12};
-    std::vector<youbot::JointAngleSetpoint> folded_set_point(JOINTS);
-    for (int i = 0; i < JOINTS; i++)
-        folded_set_point[i].angle = folded[i] * radian;
-    arm.setJointData(folded_set_point);
+    // double folded[] = {0.02, 0.02, -0.02, 0.023, 0.12};
+    // std::vector<youbot::JointAngleSetpoint> folded_set_point(JOINTS);
+    // for (int i = 0; i < JOINTS; i++)
+    //     folded_set_point[i].angle = folded[i] * radian;
+    // arm.setJointData(folded_set_point);
+
+    arm.get_joint_positions(motion_.q);
+    arm.get_joint_velocities(motion_.qd);
+
+    std::cout << "\n"
+              << "Joint Positions" << motion_.q
+              << std::endl;
+
+    std::cout << "\n" <<"Joint Velocities"<< motion_.qd << std::endl;
 
     std::vector<KDL::Twist> frame_acceleration_;
     frame_acceleration_.resize(arm_chain_.getNrOfSegments() + 1);
@@ -231,20 +183,14 @@ int main(int argc, char **argv)
     //Time sampling interval
     double dt = 1.0 / rate;
     // std::cout << "dt: " << dt << "\n";
+
     usleep(5000 * MILLISECOND);
-    return 0;
+    // return 0;
 
     while (1)
     {
-        arm.getJointData(q);
-        arm.getJointData(qd);
-
-        for (int i = 0; i < JOINTS; i++)
-        {
-            motion_.q(i) = q[i].angle.value();
-            motion_.qd(i) = qd[i].angularVelocity.value();
-            motion_.qdd(i) = 0.0;
-        }
+        arm.get_joint_positions(motion_.q);
+        arm.get_joint_velocities(motion_.qd);
 
         // std::cout << "Joints  Pos: " << motion_.q << '\n';
         // std::cout << "Joints  Vel: " << motion_.qd << '\n';
@@ -261,7 +207,7 @@ int main(int argc, char **argv)
         // std::cout << "Joints  Acc: " << motion_.qdd << '\n' << "\n";
         assert(result == 0);
 
-        integrate_joints(motion_.qdd, qd, qd_setpoint, joint_limit, dt);
+        integrate_joints(motion_, commands_, joint_limit, dt);
 
         // std::cout << "\n Joint Vel::Commanded: ";
         // for (int i = 0; i < JOINTS; i++)
@@ -270,7 +216,7 @@ int main(int argc, char **argv)
         // }
         // std::cout << "\n";
 
-        // hd_solver_.get_transformed_link_acceleration(frame_acceleration_);
+        hd_solver_.get_transformed_link_acceleration(frame_acceleration_);
 
         // std::cout << "\n \n Frame ACC" << '\n';
         // for (size_t i = 0; i < arm_chain_.getNrOfSegments() + 1; i++)
@@ -285,22 +231,8 @@ int main(int argc, char **argv)
 
         // std::cout << "\n";
 
-        arm.setJointData(qd_setpoint);
-
-        // stopMotion();
-
+        arm.set_joint_velocities(commands_.qd_setpoint);
         usleep(MILLISECOND);
     }
-
-    //Linux sleep
-    // usleep(5000 * MILLISECOND);
-
-    // for (int i = 0; i < JOINTS; i++)
-    // {
-    //     qd_setpoint[i].angularVelocity = 0.0 * radian_per_second;
-    // }
-
-    // arm.setJointData(qd_setpoint);
-
     return 0;
 }

@@ -148,7 +148,7 @@ void youbot_mediator::initialize(KDL::Chain &arm_chain,
         std::cout << "youBot model created successfully! " << std::endl;
 
     // Setting the path for the manipulator configuration file
-    youbot::YouBotManipulator arm("youbot-manipulator", config_path_);
+    this->youbot_arm = std::make_shared<youbot::YouBotManipulator>("youbot-manipulator", config_path_);
 
     // Commutate with the joints
     youbot_arm->doJointCommutation();

@@ -27,17 +27,17 @@ SOFTWARE.
 
 #ifndef YOUBOT_MEDIATOR_HPP
 #define YOUBOT_MEDIATOR_HPP
+#include <youbot_driver/youbot/YouBotManipulator.hpp>
 #include <kdl_parser/kdl_parser.hpp>
 #include <urdf/model.h>
-#include <state_specification.hpp>
 #include <command_specification.hpp>
-#include <youbot_driver/youbot/YouBotManipulator.hpp>
+#include <memory>
 
 class youbot_mediator
 {
 	public:
 		youbot_mediator(std::string config_path);
-        ~youbot_mediator();
+        ~youbot_mediator(){}
 
 		// Initializes variables and calibrates the manipulator
 		void initialize(KDL::Chain &arm_chain, 
@@ -67,7 +67,7 @@ class youbot_mediator
         std::string config_path_;
 
 		// Handle for the youbot manipulator
-	    youbot::YouBotManipulator *youbot_arm;
+	    std::shared_ptr<youbot::YouBotManipulator> youbot_arm;
         
         // Joint Current State Variables
         std::vector<youbot::JointSensedAngle> q_measured;

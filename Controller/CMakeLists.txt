@@ -37,9 +37,9 @@ link_directories(
 
 add_executable(main
   src/main.cpp
-  src/youbot_mediator.cpp
-  src/dynamics_controller.cpp
   src/solver_vereshchagin.cpp
+  src/youbot_mediator.cpp
+  #src/dynamics_controller.cpp
 )
 
 target_link_libraries(main
@@ -52,8 +52,6 @@ target_link_libraries(main
 )
 
 ## run sudo command to enable direct network access
-## disabled here by default because it is set by Debian postinst command
-
 option(${PROJECT_NAME}_USE_SETCAP "Set permissions to access ethernet interface without sudo" ON)
 
 set(SUDO_COMMAND sudo)
