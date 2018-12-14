@@ -51,7 +51,7 @@ class dynamics_controller
       void set_external_forces();
       void set_feadforward_torque();
     
-      double rate_hz_ = 0.0;
+      double rate_hz_;
       double dt_;
 
   private:

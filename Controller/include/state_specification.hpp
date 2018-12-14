@@ -28,6 +28,7 @@ SOFTWARE.
 #include "kdl/frames.hpp"
 #include <kdl/frames_io.hpp>
 #include <kdl/chainfksolvervel_recursive.hpp>
+#include <solver_vereshchagin.hpp>
 #include <kdl/framevel_io.hpp>
 #include <Eigen/StdVector>
 
@@ -35,7 +36,6 @@ class state_specification
 {
 	public:
 		state_specification(){};
-
 		~state_specification(){};
 
 		KDL::JntArray q;
