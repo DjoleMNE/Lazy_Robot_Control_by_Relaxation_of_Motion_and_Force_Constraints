@@ -41,7 +41,7 @@ class youbot_mediator
         ~youbot_mediator(){}
 
 		// Initializes variables and calibrates the manipulator
-		void initialize(KDL::Chain &arm_chain, 
+		int initialize(KDL::Chain &arm_chain, 
                         std::string root_name, 
                         std::string tooltip_name,
                         std::string urdf_path);
@@ -68,18 +68,18 @@ class youbot_mediator
         std::string config_path_;
 
 		// Handle for the youbot manipulator
-	    youbot::YouBotManipulator youbot_arm;
+	    youbot::YouBotManipulator youbot_arm_;
         
         // Joint Current State Variables
-        std::vector<youbot::JointSensedAngle> q_measured;
-        std::vector<youbot::JointSensedVelocity> qd_measured;
-        std::vector<youbot::JointSensedTorque> tau_measured;
+        std::vector<youbot::JointSensedAngle> q_measured_;
+        std::vector<youbot::JointSensedVelocity> qd_measured_;
+        std::vector<youbot::JointSensedTorque> tau_measured_;
         // std::vector<youbot::JointSensedCurrent> current_measured;
         
         // Joint Setpoint Variables
-        std::vector<youbot::JointAngleSetpoint> q_setpoint;
-        std::vector<youbot::JointVelocitySetpoint> qd_setpoint;
-        std::vector<youbot::JointTorqueSetpoint> tau_setpoint;
+        std::vector<youbot::JointAngleSetpoint> q_setpoint_;
+        std::vector<youbot::JointVelocitySetpoint> qd_setpoint_;
+        std::vector<youbot::JointTorqueSetpoint> tau_setpoint_;
 
         //Extract youBot model from urdf file
         int get_robot_model(KDL::Chain &arm_chain, 

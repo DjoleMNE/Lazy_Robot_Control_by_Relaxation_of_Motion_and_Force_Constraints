@@ -29,28 +29,28 @@ SOFTWARE.
 youbot_mediator::youbot_mediator(std::string config_path):
     // Setting the path for the manipulator configuration file
     config_path_(config_path),
-    youbot_arm("youbot-manipulator", config_path)
+    youbot_arm_("youbot-manipulator", config_path)
 {   
     //Resize measurement variables
-    q_measured.resize(NUMBER_OF_JOINTS_);
-    qd_measured.resize(NUMBER_OF_JOINTS_);
-    tau_measured.resize(NUMBER_OF_JOINTS_); 
+    q_measured_.resize(NUMBER_OF_JOINTS_);
+    qd_measured_.resize(NUMBER_OF_JOINTS_);
+    tau_measured_.resize(NUMBER_OF_JOINTS_); 
     // current_measured.resize(NUMBER_OF_JOINTS_);
 
     //Resize setpoint variables
-    q_setpoint.resize(NUMBER_OF_JOINTS_);
-    qd_setpoint.resize(NUMBER_OF_JOINTS_);
-    tau_setpoint.resize(NUMBER_OF_JOINTS_);    
+    q_setpoint_.resize(NUMBER_OF_JOINTS_);
+    qd_setpoint_.resize(NUMBER_OF_JOINTS_);
+    tau_setpoint_.resize(NUMBER_OF_JOINTS_);    
 }
 
 //Get Joint Positions
 void youbot_mediator::get_joint_positions(KDL::JntArray &joint_positions) 
 {
-	youbot_arm.getJointData(q_measured);
+	youbot_arm_.getJointData(q_measured_);
 
     // Converting the youBot driver joint angles to KDL angles
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++) {
-        joint_positions(i) = q_measured[i].angle.value();
+        joint_positions(i) = q_measured_[i].angle.value();
     }
 }
 
@@ -60,20 +60,20 @@ void youbot_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
 
     // Converting KDL angles to youBot driver joint angles 
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++) {
-        q_setpoint[i].angle = joint_positions(i) * radian;
+        q_setpoint_[i].angle = joint_positions(i) * radian;
     }    
-	youbot_arm.setJointData(q_setpoint);
+	youbot_arm_.setJointData(q_setpoint_);
 }
 
 
 //Get Joint Velocities
 void youbot_mediator::get_joint_velocities(KDL::JntArray &joint_velocities)
 {
-	youbot_arm.getJointData(qd_measured);
+	youbot_arm_.getJointData(qd_measured_);
     
     // Converting the youBot driver joint velocities to KDL velocities
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++) {
-        joint_velocities(i) = qd_measured[i].angularVelocity.value();
+        joint_velocities(i) = qd_measured_[i].angularVelocity.value();
     }
 }
 
@@ -83,21 +83,21 @@ void youbot_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities
 
     // Converting KDL velocities to youBot driver joint velocities 
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++) {
-        qd_setpoint[i].angularVelocity = \
+        qd_setpoint_[i].angularVelocity = \
                                     joint_velocities(i) * radian_per_second;
     }    
-	youbot_arm.setJointData(qd_setpoint);
+	youbot_arm_.setJointData(qd_setpoint_);
 }
 
 
 //Get Joint Torques
 void youbot_mediator::get_joint_torques(KDL::JntArray &joint_torques)
 {
-	youbot_arm.getJointData(tau_measured);
+	youbot_arm_.getJointData(tau_measured_);
     
     // Converting the youBot driver joint torques to KDL torques
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++) {
-        joint_torques(i) = tau_measured[i].torque.value();
+        joint_torques(i) = tau_measured_[i].torque.value();
     }
 }
 
@@ -107,9 +107,9 @@ void youbot_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
 
     // Converting KDL torques to youBot driver joint torques 
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++) {
-        tau_setpoint[i].torque = joint_torques(i) * newton_meter;
+        tau_setpoint_[i].torque = joint_torques(i) * newton_meter;
     }    
-	youbot_arm.setJointData(tau_setpoint);
+	youbot_arm_.setJointData(tau_setpoint_);
 }
 
 //Extract youBot model from URDF file
@@ -140,7 +140,7 @@ int youbot_mediator::get_robot_model(KDL::Chain &arm_chain,
 }
 
 // Initialize varibles and calibrate the manipulator: 
-void youbot_mediator::initialize(KDL::Chain &arm_chain, 
+int youbot_mediator::initialize(KDL::Chain &arm_chain, 
                                 std::string root_name, 
                                 std::string tooltip_name,
                                 std::string urdf_path)
@@ -148,10 +148,13 @@ void youbot_mediator::initialize(KDL::Chain &arm_chain,
     //Extract youBot model from URDF file
     if(get_robot_model(arm_chain, root_name, tooltip_name, urdf_path) == 0)
         std::cout << "youBot model created successfully! " << std::endl;
+    else return -1;
 
     // Commutate with the joints
-    youbot_arm.doJointCommutation();
+    youbot_arm_.doJointCommutation();
     // Calibrate youBot arm
-    youbot_arm.calibrateManipulator();
+    youbot_arm_.calibrateManipulator();
 	std::cout << "youBot initialized successfully! " << std::endl;
+
+    return 0;
 }

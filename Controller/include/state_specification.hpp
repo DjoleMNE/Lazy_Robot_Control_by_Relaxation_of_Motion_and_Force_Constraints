@@ -29,6 +29,7 @@ SOFTWARE.
 #include <kdl/kinfam_io.hpp>
 #include "kdl/frames.hpp"
 #include <kdl/frames_io.hpp>
+#include <kdl/chainfksolverpos_recursive.hpp>
 #include <kdl/chainfksolvervel_recursive.hpp>
 #include <solver_vereshchagin.hpp>
 #include <Eigen/StdVector>
@@ -60,8 +61,8 @@ class state_specification
 			qd.resize(number_of_joints);
 			qdd.resize(number_of_joints);
 			feedforward_torque.resize(number_of_joints);
-			ee_unit_constraint_forces.resize(NUMBER_OF_CONSTRAINTS);				 //alpha
-			ee_acceleration_energy.resize(NUMBER_OF_CONSTRAINTS);			 //beta
+			ee_unit_constraint_forces.resize(NUMBER_OF_CONSTRAINTS); //alpha
+			ee_acceleration_energy.resize(NUMBER_OF_CONSTRAINTS); //beta
 			external_force.resize(number_of_segments);
 			frame_pose.resize(number_of_frames);
 			frame_velocity.resize(number_of_frames);
