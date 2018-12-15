@@ -1,5 +1,6 @@
 /*
 Author(s): Djordje Vukcevic, Sven Schneider
+Institute: Hochschule Bonn-Rhein-Sieg
 Description: Mediator component for enabling conversion of data types.
 Acknowledgment: This sofware component is based on Jeyaprakash Rajagopal's 
 master thesis code.
@@ -67,7 +68,7 @@ class youbot_mediator
         std::string config_path_;
 
 		// Handle for the youbot manipulator
-	    std::shared_ptr<youbot::YouBotManipulator> youbot_arm;
+	    youbot::YouBotManipulator youbot_arm;
         
         // Joint Current State Variables
         std::vector<youbot::JointSensedAngle> q_measured;
