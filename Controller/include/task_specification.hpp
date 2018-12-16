@@ -34,7 +34,7 @@ class task_specification
 
 		KDL::JntArray feedforward_torque;
 		KDL::Wrenches external_force;
-		KDL::Jacobian ee_unit_constraint_forces;
+		KDL::Jacobian ee_unit_constraint_force;
 		KDL::JntArray ee_acceleration_energy;
 		
 		void init_state(int number_of_joints,
@@ -43,7 +43,7 @@ class task_specification
 		{
 			feedforward_torque.resize(number_of_joints);
 			external_force.resize(number_of_segments);
-			ee_unit_constraint_forces.resize(NUMBER_OF_CONSTRAINTS); //alpha
+			ee_unit_constraint_force.resize(NUMBER_OF_CONSTRAINTS); //alpha
 			ee_acceleration_energy.resize(NUMBER_OF_CONSTRAINTS); //beta
 		}
 };

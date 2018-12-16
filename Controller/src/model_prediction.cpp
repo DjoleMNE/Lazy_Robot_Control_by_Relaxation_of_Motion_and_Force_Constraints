@@ -25,7 +25,9 @@ SOFTWARE.
 #include <model_prediction.hpp>
 
 model_prediction::model_prediction(KDL::Chain &arm_chain): 
-    arm_chain_(arm_chain), 
+    arm_chain_(arm_chain),
+    NUMBER_OF_SEGMENTS_(arm_chain.getNrOfSegments()),
+    NUMBER_OF_JOINTS_(arm_chain.getNrOfJoints()),
     fk_position_solver_(arm_chain), 
     fk_velocity_solver_(arm_chain)
 {
@@ -34,39 +36,39 @@ model_prediction::model_prediction(KDL::Chain &arm_chain):
 
 //Make predictions via integration method
 void model_prediction::integrate(state_specification &current_state,
-                                command_specification &predicted_state,
-                                const double &step_size_dt,
-                                const int &number_of_steps)
+                                 state_specification &predicted_state,
+                                 const double step_size_dt,
+                                 const int number_of_steps)
 {
     // How long the future is: delta time * number of steps in future
     time_horizon_ = step_size_dt * number_of_steps; 
     double joint_velocity_limits[5] = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
 
     //Euler method
-    for (int i = 0; i < current_state.qd.rows(); i++)
+    for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
     {   
         //Integrate from joint accelerations to joint velocities
-        predicted_state.qd_setpoint(i) = current_state.qd(i)\
+        predicted_state.qd(i) = current_state.qd(i)\
                                         + current_state.qdd(i) * time_horizon_;
 
         //If joint limit reached, stop the program
-        if (abs(predicted_state.qd_setpoint(i)) > joint_velocity_limits[i])
+        if (abs(predicted_state.qd(i)) > joint_velocity_limits[i])
         {
             std::cout << "Limit reached on: " 
-                        << abs(predicted_state.qd_setpoint(i)) 
+                        << predicted_state.qd(i)
                         << " " << i << std::endl;
         }
-        assert(abs(predicted_state.qd_setpoint(i)) <= joint_velocity_limits[i]);
+        assert(abs(predicted_state.qd(i)) <= joint_velocity_limits[i]);
 
         //Integrate from joint velocities to joint positions
-        predicted_state.q_setpoint(i) = current_state.q(i)\
-                            + (predicted_state.qd_setpoint(i)\
-                                    - current_state.qdd(i) * time_horizon_ / 2.0)\
+        predicted_state.q(i) = current_state.q(i)\
+                            + (predicted_state.qd(i)\
+                                - current_state.qdd(i) * time_horizon_ / 2.0)\
                             * time_horizon_;
     }
 
-    KDL::JntArrayVel joint_vel(predicted_state.q_setpoint, 
-                               predicted_state.qd_setpoint);
+    KDL::JntArrayVel joint_vel(predicted_state.q, 
+                               predicted_state.qd);
     KDL::FrameVel ee_velocity;
 
     //Compute angular and linear velocity of the end-effector
@@ -74,14 +76,15 @@ void model_prediction::integrate(state_specification &current_state,
 
     //Compute postion and orientation of the end-effector
     fk_position_solver_.JntToCart(
-                    predicted_state.q_setpoint, 
-                    current_state.frame_pose[arm_chain_.getNrOfSegments() - 1]);
+                            predicted_state.q, 
+                            predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
 
+    current_state = predicted_state;
     // Print Cartesian predictions
     // std::cout << "End-effector Velocity: " 
     //         << ee_velocity.GetTwist()
     //         << std::endl;
     // std::cout << "End-effector Pose: " 
-    //           << current_state.frame_pose[arm_chain_.getNrOfSegments() - 1].p
+    //           << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
     //           << std::endl;
 }

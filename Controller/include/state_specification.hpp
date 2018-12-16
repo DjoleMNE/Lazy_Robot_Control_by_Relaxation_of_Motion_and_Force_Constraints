@@ -37,36 +37,95 @@ SOFTWARE.
 class state_specification
 {
 	public:
-		state_specification(){}
-		~state_specification(){}
-
 		KDL::JntArray q;
 		KDL::JntArray qd;
 		KDL::JntArray qdd; 
 		KDL::JntArray feedforward_torque;
 		KDL::JntArray control_torque;
-		KDL::Jacobian ee_unit_constraint_forces;
+		KDL::Jacobian ee_unit_constraint_force;
 		KDL::JntArray ee_acceleration_energy;
 		KDL::Wrenches external_force;
 		std::vector<KDL::Frame> frame_pose;
 		std::vector<KDL::FrameVel> frame_velocity;
 		std::vector<KDL::Twist> frame_acceleration;
 
-		void init_state(int number_of_joints,
-						int number_of_segments,
-						int number_of_frames,
-						const int NUMBER_OF_CONSTRAINTS)
+		state_specification(const int number_of_joints, 
+							const int number_of_segments,
+							const int number_of_frames,
+							const int number_of_constraints):
+			NUMBER_OF_JOINTS_(number_of_joints),
+			NUMBER_OF_SEGMENTS_(number_of_segments),
+			NUMBER_OF_FRAMES_(number_of_frames),
+			NUMBER_OF_CONSTRAINTS_(number_of_constraints)
 		{
-			q.resize(number_of_joints);
-			qd.resize(number_of_joints);
-			qdd.resize(number_of_joints);
-			feedforward_torque.resize(number_of_joints);
-			ee_unit_constraint_forces.resize(NUMBER_OF_CONSTRAINTS); //alpha
-			ee_acceleration_energy.resize(NUMBER_OF_CONSTRAINTS); //beta
-			external_force.resize(number_of_segments);
-			frame_pose.resize(number_of_frames);
-			frame_velocity.resize(number_of_frames);
-			frame_acceleration.resize(number_of_frames);
+			q.resize(NUMBER_OF_JOINTS_);
+			qd.resize(NUMBER_OF_JOINTS_);
+			qdd.resize(NUMBER_OF_JOINTS_);
+			feedforward_torque.resize(NUMBER_OF_JOINTS_);
+			ee_unit_constraint_force.resize(NUMBER_OF_CONSTRAINTS_); //alpha
+			ee_acceleration_energy.resize(NUMBER_OF_CONSTRAINTS_); //beta
+			external_force.resize(NUMBER_OF_SEGMENTS_);
+			frame_pose.resize(NUMBER_OF_SEGMENTS_);
+			frame_velocity.resize(NUMBER_OF_SEGMENTS_);
+			frame_acceleration.resize(NUMBER_OF_FRAMES_);
+		};
+
+		state_specification& operator=(const state_specification &rhs)
+		{
+			if(this != &rhs){
+				this->q = rhs.q;
+				this->qd = rhs.qd;
+				this->qdd = rhs.qdd;
+				this->feedforward_torque = rhs.feedforward_torque;
+				this->control_torque = rhs.control_torque;
+				this->ee_unit_constraint_force = rhs.ee_unit_constraint_force;
+				this->ee_acceleration_energy = rhs.ee_acceleration_energy;
+				this->external_force = rhs.external_force;
+				this->frame_pose = rhs.frame_pose;
+				this->frame_velocity = rhs.frame_velocity;
+				this->frame_acceleration = rhs.frame_acceleration;
+			}
 		}
+
+		~state_specification(){}
+
+		void reset_values()
+		{
+			//External forces on the arm
+			for (int i = 0; i < NUMBER_OF_SEGMENTS_; i++)
+				KDL::SetToZero(this->external_force[i]);
+			
+			// Joint space varibles
+			for (int i = 0; i < NUMBER_OF_JOINTS_; i++){
+				this->q(i) = 0.0;
+				this->qd(i) = 0.0;
+				this->qdd(i) = 0.0;
+				this->feedforward_torque(i) = 0.0;
+			}
+
+			//Acceleration Constraints on the End-Effector
+			KDL::Twist unit_constraint_force(
+				KDL::Vector(0.0, 0.0, 0.0),  // linear
+				KDL::Vector(0.0, 0.0, 0.0)); // angular
+
+			for(int i = 0; i < NUMBER_OF_CONSTRAINTS_; i++)
+			{
+				this->ee_unit_constraint_force.setColumn(i, 
+														 unit_constraint_force);
+				this->ee_acceleration_energy(i) = 0.0;
+			}
+
+			// Accelerations, velocities and poses of segments
+			for (int i = 0; i < NUMBER_OF_FRAMES_; i++)
+				// this->frame_acceleration[i].Zero();
+				KDL::SetToZero(this->frame_acceleration[i]);
+
+		}
+
+		private:
+			const int NUMBER_OF_JOINTS_;
+			const int NUMBER_OF_SEGMENTS_;
+			const int NUMBER_OF_FRAMES_;
+			const int NUMBER_OF_CONSTRAINTS_;
 };
 #endif /* STATE_SPECIFICATION_HPP */

@@ -44,20 +44,16 @@ class model_prediction
 		~model_prediction(){}
 		
 		// Write integrated values in state variables
-		void integrate(const state_specification &current_state,
-						state_specification &predicted_state,
-						const double step_size,
-						const int number_of_steps = 1);
-
-		// Write integrated values in command variables
 		void integrate(state_specification &current_state,
-						command_specification &predicted_state,
-						const double &step_size,
-						const int &number_of_steps = 1);
+					   state_specification &predicted_state,
+					   const double step_size,
+					   const int number_of_steps);
                         
     private:
         double time_horizon_;
 		KDL::Chain arm_chain_;
+		const int NUMBER_OF_SEGMENTS_;
+		const int NUMBER_OF_JOINTS_;
 		KDL::ChainFkSolverPos_recursive fk_position_solver_;
 		KDL::ChainFkSolverVel_recursive fk_velocity_solver_;
 };
