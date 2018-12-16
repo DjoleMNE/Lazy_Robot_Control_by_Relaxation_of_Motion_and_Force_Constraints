@@ -23,6 +23,10 @@ SOFTWARE.
 */
 
 #include <youbot_mediator.hpp>
+#include <model_prediction.hpp>
+#include <state_specification.hpp>
+#include <command_specification.hpp>
+#include <task_specification.hpp>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -36,8 +40,9 @@ const int JOINTS = 5;
 const int NUMBER_OF_CONSTRAINTS = 6;
 const int MILLISECOND = 1000;
 
-void initialize_state(const KDL::Chain &arm_chain_,
+void initialize_variables(const KDL::Chain &arm_chain_,
                  state_specification &motion_,
+                 command_specification &commands,
                  const int NUMBER_OF_CONSTRAINTS)
 {
 
@@ -48,72 +53,36 @@ void initialize_state(const KDL::Chain &arm_chain_,
                        number_of_segments,
                        number_of_segments + 1,
                        NUMBER_OF_CONSTRAINTS);
+    commands.init_commands(number_of_joints);
 
     // external forces on the arm
+    KDL::Wrench externalForce(
+        KDL::Vector(0.0, 0.0, 0.0),  //Linear Force
+        KDL::Vector(0.0, 0.0, 0.0)); //Torque
     for (int i = 0; i < number_of_segments; i++)
-    {
-        KDL::Wrench externalForce(
-            KDL::Vector(0.0, 0.0, 0.0),  //Linear Force
-            KDL::Vector(0.0, 0.0, 0.0)); //Torque
         motion_.external_force[i] = externalForce;
-    }
 
     for (int i = 0; i < number_of_joints; i++){
         motion_.q(i) = 0.0;
         motion_.qd(i) = 0.0;
         motion_.qdd(i) = 0.0;
         motion_.feedforward_torque(i) = 0.0;
+        
+        commands.q_setpoint(i) = 0.0;
+        commands.qd_setpoint(i) = 0.0;
+        commands.tau_setpoint(i) = 0.0;
     }
 
-}
-
-void set_ee_constraints(state_specification &motion_)
-{
-    KDL::Twist unit_constraint_force_xl(
+    //Acceleration Constraints on the End-Effector
+    KDL::Twist unit_constraint_force(
         KDL::Vector(0.0, 0.0, 0.0),  // linear
         KDL::Vector(0.0, 0.0, 0.0)); // angular
-    motion_.ee_unit_constraint_forces.setColumn(0, unit_constraint_force_xl);
-    motion_.ee_acceleration_energy(0) = 0.000001;
 
-    KDL::Twist unit_constraint_force_yl(
-        KDL::Vector(0.0, 0.0, 0.0),  // linear
-        KDL::Vector(0.0, 0.0, 0.0)); // angular
-    motion_.ee_unit_constraint_forces.setColumn(1, unit_constraint_force_yl);
-    motion_.ee_acceleration_energy(1) = 0.0;
-
-    KDL::Twist unit_constraint_force_zl(
-        KDL::Vector(0.0, 0.0, 0.0),  // linear
-        KDL::Vector(0.0, 0.0, 0.0)); // angular
-    motion_.ee_unit_constraint_forces.setColumn(2, unit_constraint_force_zl);
-    motion_.ee_acceleration_energy(2) = -0.000001;
-    //
-    KDL::Twist unit_constraint_force_xa(
-        KDL::Vector(0.0, 0.0, 0.0),  // linear
-        KDL::Vector(0.0, 0.0, 0.0)); // angular
-    motion_.ee_unit_constraint_forces.setColumn(3, unit_constraint_force_xa);
-    motion_.ee_acceleration_energy(3) = 0.0;
-
-    KDL::Twist unit_constraint_force_ya(
-        KDL::Vector(0.0, 0.0, 0.0),  // linear
-        KDL::Vector(0.0, 0.0, 0.0)); // angular
-    motion_.ee_unit_constraint_forces.setColumn(4, unit_constraint_force_ya);
-    motion_.ee_acceleration_energy(4) = 0.0;
-
-    KDL::Twist unit_constraint_force_za(
-        KDL::Vector(0.0, 0.0, 0.0),  // linear
-        KDL::Vector(0.0, 0.0, 0.0)); // angular
-    motion_.ee_unit_constraint_forces.setColumn(5, unit_constraint_force_za);
-    motion_.ee_acceleration_energy(5) = 0.0;
-}
-
-void set_ext_forces(state_specification &motion_){
-    motion_.external_force[motion_.external_force.size() - 1] = \
-                                    KDL::Wrench (KDL::Vector(-0.1,
-                                                            0.0,
-                                                            0.0), //Linear Force
-                                                KDL::Vector(0.0,
-                                                            0.0,
-                                                            0.0)); //Torque
+    for(int i = 0; i < NUMBER_OF_CONSTRAINTS; i++)
+    {
+        motion_.ee_unit_constraint_forces.setColumn(i, unit_constraint_force);
+        motion_.ee_acceleration_energy(i) = 0.0;
+    }
 }
 
 // Go to Candle 1 configuration  
@@ -163,35 +132,59 @@ void go_navigation_2(youbot_mediator &arm){
 }
 
 //Set velocities of arm's joints to 0 value
-void stop_motion(youbot_mediator &arm, state_specification motion_){ 
-    for (int i = 0; i < JOINTS; i++) motion_.qd(i) = 0;  
-    arm.set_joint_velocities(motion_.qd);
+void stop_motion(youbot_mediator &arm, state_specification &motion){ 
+    for (int i = 0; i < JOINTS; i++) motion.qd(i) = 0;  
+    arm.set_joint_velocities(motion.qd);
     usleep(5000 * MILLISECOND);
 }
 
-void integrate_joints(const state_specification &current_state,
-                    command_specification &commanded_state,
-                    double joint_velocity_limits[],
-                    double dt)
+void set_ee_constraints(state_specification &motion)
 {
-    double integrated_value;
-    for (int i = 0; i < 5; i++)
-    {
-        // std::cout << joint_state[i].angularVelocity.value() << " " << abs(joint_command.data[i]) <<std::endl;
+    KDL::Twist unit_constraint_force_xl(
+        KDL::Vector(0.0, 0.0, 0.0),  // linear
+        KDL::Vector(0.0, 0.0, 0.0)); // angular
+    motion.ee_unit_constraint_forces.setColumn(0, unit_constraint_force_xl);
+    motion.ee_acceleration_energy(0) = 0.000001;
 
-        // std::cout <<"VEL: " << current_state.qdd(i) 
-        //                 << " " << i << std::endl;
-        integrated_value = current_state.qd(i) + current_state.qdd(i) * dt;
+    KDL::Twist unit_constraint_force_yl(
+        KDL::Vector(0.0, 0.0, 0.0),  // linear
+        KDL::Vector(0.0, 0.0, 0.0)); // angular
+    motion.ee_unit_constraint_forces.setColumn(1, unit_constraint_force_yl);
+    motion.ee_acceleration_energy(1) = 0.0;
 
-        //If joint limit reached, stop the program
-        if (abs(integrated_value) > joint_velocity_limits[i])
-        {
-            std::cout <<"Limit reached on: " << abs(integrated_value) 
-                        << " " << i << std::endl;
-        }
-        assert(abs(integrated_value) <= joint_velocity_limits[i]);
-        commanded_state.qd_setpoint(i) = integrated_value;
-    }
+    KDL::Twist unit_constraint_force_zl(
+        KDL::Vector(0.0, 0.0, 1.0),  // linear
+        KDL::Vector(0.0, 0.0, 0.0)); // angular
+    motion.ee_unit_constraint_forces.setColumn(2, unit_constraint_force_zl);
+    motion.ee_acceleration_energy(2) = 0.000001;
+
+    KDL::Twist unit_constraint_force_xa(
+        KDL::Vector(0.0, 0.0, 0.0),  // linear
+        KDL::Vector(0.0, 0.0, 0.0)); // angular
+    motion.ee_unit_constraint_forces.setColumn(3, unit_constraint_force_xa);
+    motion.ee_acceleration_energy(3) = 0.0;
+
+    KDL::Twist unit_constraint_force_ya(
+        KDL::Vector(0.0, 0.0, 0.0),  // linear
+        KDL::Vector(0.0, 0.0, 0.0)); // angular
+    motion.ee_unit_constraint_forces.setColumn(4, unit_constraint_force_ya);
+    motion.ee_acceleration_energy(4) = 0.0;
+
+    KDL::Twist unit_constraint_force_za(
+        KDL::Vector(0.0, 0.0, 0.0),  // linear
+        KDL::Vector(0.0, 0.0, 0.0)); // angular
+    motion.ee_unit_constraint_forces.setColumn(5, unit_constraint_force_za);
+    motion.ee_acceleration_energy(5) = 0.0;
+}
+
+void set_ext_forces(state_specification &forces){
+    forces.external_force[forces.external_force.size() - 1] = \
+                                    KDL::Wrench (KDL::Vector(0.0,
+                                                            0.0,
+                                                            0.0), //Linear Force
+                                                KDL::Vector(0.0,
+                                                            0.0,
+                                                            0.0)); //Torque
 }
 
 int main(int argc, char **argv)
@@ -203,28 +196,33 @@ int main(int argc, char **argv)
     command_specification commands_;
     youbot_mediator arm("/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config");
     
-    arm.initialize(arm_chain_, "arm_link_0", "arm_link_5",
-        "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf");
-    initialize_state(arm_chain_, motion_, NUMBER_OF_CONSTRAINTS);
+    if (arm.initialize(arm_chain_, "arm_link_0", "arm_link_5",
+        "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf")\
+        != 0) {
+            std::cout << "Robot not initialized!" << std::endl;
+            return 0;
+        }
 
+    model_prediction predictor(arm_chain_);
     int number_of_segments = arm_chain_.getNrOfSegments();
     int number_of_joints = arm_chain_.getNrOfJoints();
     assert(JOINTS == number_of_segments);
+
     std::vector<KDL::Twist> frame_acceleration_;
     frame_acceleration_.resize(number_of_segments + 1);
-    commands_.init_commands(number_of_joints);
-
+    initialize_variables(arm_chain_, motion_, commands_, NUMBER_OF_CONSTRAINTS);
     stop_motion(arm, motion_);
-    go_candle_2(arm);
-    arm.get_joint_positions(motion_.q);
-    arm.get_joint_velocities(motion_.qd);
 
-    std::cout << "\n" << "Joint Positions" << motion_.q << std::endl;
-    std::cout << "\n" <<"Joint Velocities"<< motion_.qd << std::endl;
+    // go_candle_1(arm);
+    // arm.get_joint_positions(motion_.q);
+    // arm.get_joint_velocities(motion_.qd);
+
+    // std::cout << "\n" << "Joint Positions" << motion_.q << std::endl;
+    // std::cout << "\n" <<"Joint Velocities"<< motion_.qd << std::endl;
     // return 0;
     
     //Create End_effector Cartesian Acceleration task 
-    set_ee_constraints(motion_);
+    // set_ee_constraints(motion_);
     
     //Create External Forces task 
     // set_ext_forces(motion_);
@@ -245,7 +243,7 @@ int main(int argc, char **argv)
     // std::cout << "dt: " << dt << "\n";
 
     // usleep(5000 * MILLISECOND);
-    
+    std::cout << "Contro Loop Starts"<< std::endl;
     while (1)
     {
         arm.get_joint_positions(motion_.q);
@@ -258,16 +256,16 @@ int main(int argc, char **argv)
 
         int result = hd_solver_.CartToJnt(motion_.q,
                                           motion_.qd,
-                                          motion_.qdd,                                       //qdd_ is overwritten by resulting acceleration
-                                          motion_.ee_unit_constraint_forces,       // alpha
-                                          motion_.ee_acceleration_energy, // beta
+                                          motion_.qdd,
+                                          motion_.ee_unit_constraint_forces,
+                                          motion_.ee_acceleration_energy,
                                           motion_.external_force,
                                           motion_.feedforward_torque);
 
         // std::cout << "Solver return: " << result << '\n';
         // std::cout << "Joints  Acc: " << motion_.qdd << '\n' << "\n";
         assert(result == 0);
-        integrate_joints(motion_, commands_, joint_velocity_limits, dt);
+        predictor.integrate(motion_, commands_, dt);
 
         // std::cout << "\n Joint Vel::Commanded: ";
         // for (int i = 0; i < JOINTS; i++)
@@ -277,7 +275,8 @@ int main(int argc, char **argv)
         // hd_solver_.get_transformed_link_acceleration(frame_acceleration_);
         // std::cout << "\n \n Frame ACC" << '\n';
         // for (size_t i = 0; i < arm_chain_.getNrOfSegments() + 1; i++)
-            // std::cout << frame_acceleration_[i] << '\n';
+        //     std::cout << frame_acceleration_[i] << '\n';
+        // std::cout << std::endl;
 
         // KDL::JntArray control_torque_Ver(number_of_joints);
         // hd_solver_.get_control_torque(control_torque_Ver);
