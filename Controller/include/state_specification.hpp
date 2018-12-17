@@ -117,9 +117,7 @@ class state_specification
 
 			// Accelerations, velocities and poses of segments
 			for (int i = 0; i < NUMBER_OF_FRAMES_; i++)
-				// this->frame_acceleration[i].Zero();
 				KDL::SetToZero(this->frame_acceleration[i]);
-
 		}
 
 		private:

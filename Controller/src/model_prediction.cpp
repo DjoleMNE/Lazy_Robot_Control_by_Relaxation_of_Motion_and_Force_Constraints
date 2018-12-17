@@ -35,7 +35,7 @@ model_prediction::model_prediction(KDL::Chain &arm_chain):
 }
 
 //Make predictions via integration method
-void model_prediction::integrate(state_specification &current_state,
+void model_prediction::integrate(const state_specification &current_state,
                                  state_specification &predicted_state,
                                  const double step_size_dt,
                                  const int number_of_steps)
@@ -67,24 +67,23 @@ void model_prediction::integrate(state_specification &current_state,
                             * time_horizon_;
     }
 
-    KDL::JntArrayVel joint_vel(predicted_state.q, 
-                               predicted_state.qd);
-    KDL::FrameVel ee_velocity;
-
     //Compute angular and linear velocity of the end-effector
-    fk_velocity_solver_.JntToCart(joint_vel, ee_velocity);
+    fk_velocity_solver_.JntToCart(
+            KDL::JntArrayVel(predicted_state.q, 
+                             predicted_state.qd), 
+            predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]);
 
     //Compute postion and orientation of the end-effector
     fk_position_solver_.JntToCart(
-                            predicted_state.q, 
-                            predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
+            predicted_state.q, 
+            predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
 
-    current_state = predicted_state;
+    // current_state = predicted_state;
     // Print Cartesian predictions
-    // std::cout << "End-effector Velocity: " 
-    //         << ee_velocity.GetTwist()
-    //         << std::endl;
-    // std::cout << "End-effector Pose: " 
-    //           << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
-    //           << std::endl;
+    std::cout << "End-effector Velocity: " 
+        << predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1].GetTwist()
+        << std::endl;
+    std::cout << "End-effector Pose: " 
+              << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
+              << std::endl;
 }

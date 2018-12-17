@@ -44,7 +44,7 @@ class model_prediction
 		~model_prediction(){}
 		
 		// Write integrated values in state variables
-		void integrate(state_specification &current_state,
+		void integrate(const state_specification &current_state,
 					   state_specification &predicted_state,
 					   const double step_size,
 					   const int number_of_steps);
