@@ -56,5 +56,12 @@ class model_prediction
 		const int NUMBER_OF_JOINTS_;
 		KDL::ChainFkSolverPos_recursive fk_position_solver_;
 		KDL::ChainFkSolverVel_recursive fk_velocity_solver_;
+
+		/*Workaround KDL's stupid requirement for specifying FK VEl solver first
+		input/argument as JntArrayVel. Due to this, 
+		in each iteration of integration loop new JntArrayVel instance, 
+		which is not real time operations. Its better to create one
+		in the begging and just update its values in the loop*/
+		KDL::JntArrayVel temp_jntarrayvel; 
 };
 #endif /* MODEL_PREDICTION_HPP */

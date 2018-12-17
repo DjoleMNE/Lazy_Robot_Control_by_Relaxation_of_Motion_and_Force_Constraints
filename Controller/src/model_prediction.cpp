@@ -66,12 +66,15 @@ void model_prediction::integrate(const state_specification &current_state,
                                 - current_state.qdd(i) * time_horizon_ / 2.0)\
                             * time_horizon_;
     }
+    //Workaround for avoiding run-time creation of JntArrayVel instance
+    //See this hpp for explanation
+    temp_jntarrayvel.q = predicted_state.q;
+    temp_jntarrayvel.qdot = predicted_state.qd;
 
     //Compute angular and linear velocity of the end-effector
     fk_velocity_solver_.JntToCart(
-            KDL::JntArrayVel(predicted_state.q, 
-                             predicted_state.qd), 
-            predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]);
+                    temp_jntarrayvel, 
+                    predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]);
 
     //Compute postion and orientation of the end-effector
     fk_position_solver_.JntToCart(
@@ -79,11 +82,12 @@ void model_prediction::integrate(const state_specification &current_state,
             predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
 
     // current_state = predicted_state;
+    
     // Print Cartesian predictions
-    std::cout << "End-effector Velocity: " 
-        << predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1].GetTwist()
-        << std::endl;
-    std::cout << "End-effector Pose: " 
-              << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
-              << std::endl;
+    // std::cout << "End-effector Velocity: " 
+    //     << predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1].GetTwist()
+    //     << std::endl;
+    // std::cout << "End-effector Pose: " 
+    //           << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
+    //           << std::endl;
 }

@@ -229,7 +229,7 @@ int main(int argc, char **argv)
     // std::cout << "dt: " << dt << "\n";
 
     // usleep(5000 * MILLISECOND);
-    std::cout << "Control Loop Starts Now"<< std::endl;
+    std::cout << "Control Loop Started"<< std::endl;
     while (1)
     {
         // arm.get_joint_positions(motion_.q);
