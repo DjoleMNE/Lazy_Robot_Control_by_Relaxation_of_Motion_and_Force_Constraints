@@ -40,7 +40,9 @@ SOFTWARE.
 class model_prediction
 {
 	public:
-		model_prediction(KDL::Chain &arm_chain);
+ 		double time_horizon_;
+
+		model_prediction(const KDL::Chain &arm_chain);
 		~model_prediction(){}
 		
 		// Write integrated values in state variables
@@ -48,20 +50,18 @@ class model_prediction
 					   state_specification &predicted_state,
 					   const double step_size,
 					   const int number_of_steps);
-                        
     private:
-        double time_horizon_;
-		KDL::Chain arm_chain_;
+		const KDL::Chain arm_chain_;
 		const int NUMBER_OF_SEGMENTS_;
 		const int NUMBER_OF_JOINTS_;
 		KDL::ChainFkSolverPos_recursive fk_position_solver_;
 		KDL::ChainFkSolverVel_recursive fk_velocity_solver_;
 
-		/*Workaround KDL's stupid requirement for specifying FK VEl solver first
+		/* Workaround KDL's requirement for specifying FK VEl solver first
 		input/argument as JntArrayVel. Due to this, 
 		in each iteration of integration loop new JntArrayVel instance, 
 		which is not real time operations. Its better to create one
-		in the begging and just update its values in the loop*/
+		in the begging and just update its values in the loop */
 		KDL::JntArrayVel temp_jntarrayvel; 
 };
 #endif /* MODEL_PREDICTION_HPP */

@@ -24,7 +24,7 @@ SOFTWARE.
 */
 #include <model_prediction.hpp>
 
-model_prediction::model_prediction(KDL::Chain &arm_chain): 
+model_prediction::model_prediction(const KDL::Chain &arm_chain): 
     arm_chain_(arm_chain),
     NUMBER_OF_SEGMENTS_(arm_chain.getNrOfSegments()),
     NUMBER_OF_JOINTS_(arm_chain.getNrOfJoints()),
@@ -34,20 +34,19 @@ model_prediction::model_prediction(KDL::Chain &arm_chain):
     time_horizon_ = 0;
 }
 
-//Make predictions via integration method
+//Make predictions via integration methods
 void model_prediction::integrate(const state_specification &current_state,
                                  state_specification &predicted_state,
                                  const double step_size_dt,
                                  const int number_of_steps)
 {
     // How long the future is: delta time * number of steps in future
-    time_horizon_ = step_size_dt * number_of_steps; 
+    time_horizon_ = step_size_dt * number_of_steps;
     double joint_velocity_limits[5] = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
 
-    //Euler method
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
     {   
-        //Integrate from joint accelerations to joint velocities
+        //Integrate from joint accelerations to joint velocities - Euler method
         predicted_state.qd(i) = current_state.qd(i)\
                                         + current_state.qdd(i) * time_horizon_;
 
@@ -60,14 +59,15 @@ void model_prediction::integrate(const state_specification &current_state,
         }
         assert(abs(predicted_state.qd(i)) <= joint_velocity_limits[i]);
 
-        //Integrate from joint velocities to joint positions
+        //Integrate joint velocities to joint positions - Trapezoidal method
         predicted_state.q(i) = current_state.q(i)\
                             + (predicted_state.qd(i)\
                                 - current_state.qdd(i) * time_horizon_ / 2.0)\
                             * time_horizon_;
     }
-    //Workaround for avoiding run-time creation of JntArrayVel instance
-    //See this hpp for explanation
+
+    //Workaround for avoiding dynamic creation of JntArrayVel instance
+    //See this class' hpp for explanation
     temp_jntarrayvel.q = predicted_state.q;
     temp_jntarrayvel.qdot = predicted_state.qd;
 
