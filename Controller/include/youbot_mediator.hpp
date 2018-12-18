@@ -32,8 +32,7 @@ SOFTWARE.
 #include <kdl_parser/kdl_parser.hpp>
 #include <urdf/model.h>
 #include <youbot_custom_model.hpp>
-#include <command_specification.hpp>
-#include <memory>
+// #include <memory>
 
 class youbot_mediator
 {
