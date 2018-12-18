@@ -38,7 +38,7 @@ class youbot_mediator
 {
 	public:
 		youbot_mediator(std::string config_path);
-        ~youbot_mediator(){}
+		~youbot_mediator(){}
 
 		// Initializes variables and calibrates the manipulator
 		int initialize(KDL::Chain &arm_chain, 
@@ -64,13 +64,15 @@ class youbot_mediator
 		// Number of joints in the manipulator
 		const int NUMBER_OF_JOINTS_ = 5;
 
-        //Absolute path to config and urdf files 
+        //Absolute path to config files 
         std::string config_path_;
 
-		// Handle for the youbot manipulator
+		// Handles for the youbot manipulator and kdl urdf parsel
 	    youbot::YouBotManipulator youbot_arm_;
+		KDL::Tree yb_tree;
+    	urdf::Model yb_model;
         
-        // Joint Current State Variables
+        // Joint Measured State Variables
         std::vector<youbot::JointSensedAngle> q_measured_;
         std::vector<youbot::JointSensedVelocity> qd_measured_;
         std::vector<youbot::JointSensedTorque> tau_measured_;

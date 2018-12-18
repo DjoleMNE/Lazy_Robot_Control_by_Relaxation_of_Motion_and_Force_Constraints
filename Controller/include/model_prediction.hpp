@@ -51,7 +51,7 @@ class model_prediction
 					   const double step_size,
 					   const int number_of_steps);
     private:
-		const KDL::Chain arm_chain_;
+		KDL::Chain arm_chain_;
 		const int NUMBER_OF_SEGMENTS_;
 		const int NUMBER_OF_JOINTS_;
 		KDL::ChainFkSolverPos_recursive fk_position_solver_;

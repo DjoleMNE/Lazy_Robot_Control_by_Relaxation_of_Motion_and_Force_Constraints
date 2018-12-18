@@ -48,7 +48,7 @@ void youbot_mediator::get_joint_positions(KDL::JntArray &joint_positions)
 {
 	youbot_arm_.getJointData(q_measured_);
 
-    // Converting the youBot driver joint angles to KDL angles
+    // Converting youBot driver joint angles to KDL angles
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++) {
         joint_positions(i) = q_measured_[i].angle.value();
     }
@@ -57,7 +57,6 @@ void youbot_mediator::get_joint_positions(KDL::JntArray &joint_positions)
 //Set Joint Positions
 void youbot_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
 {
-
     // Converting KDL angles to youBot driver joint angles 
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++) {
         q_setpoint_[i].angle = joint_positions(i) * radian;
@@ -71,7 +70,7 @@ void youbot_mediator::get_joint_velocities(KDL::JntArray &joint_velocities)
 {
 	youbot_arm_.getJointData(qd_measured_);
     
-    // Converting the youBot driver joint velocities to KDL velocities
+    // Converting youBot driver joint velocities to KDL joint velocities
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++) {
         joint_velocities(i) = qd_measured_[i].angularVelocity.value();
     }
@@ -80,8 +79,7 @@ void youbot_mediator::get_joint_velocities(KDL::JntArray &joint_velocities)
 //Set Joint Velocities
 void youbot_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities)
 {
-
-    // Converting KDL velocities to youBot driver joint velocities 
+    // Converting KDL join velocities to youBot driver joint velocities 
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++) {
         qd_setpoint_[i].angularVelocity = \
                                     joint_velocities(i) * radian_per_second;
@@ -95,7 +93,7 @@ void youbot_mediator::get_joint_torques(KDL::JntArray &joint_torques)
 {
 	youbot_arm_.getJointData(tau_measured_);
     
-    // Converting the youBot driver joint torques to KDL torques
+    // Converting the youBot driver joint torques to KDL joint torques
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++) {
         joint_torques(i) = tau_measured_[i].torque.value();
     }
@@ -105,7 +103,7 @@ void youbot_mediator::get_joint_torques(KDL::JntArray &joint_torques)
 void youbot_mediator::set_joint_torques(const KDL::JntArray &joint_torques) 
 {
 
-    // Converting KDL torques to youBot driver joint torques 
+    // Converting KDL joint torques to youBot driver joint torques 
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++) {
         tau_setpoint_[i].torque = joint_torques(i) * newton_meter;
     }    
@@ -118,10 +116,7 @@ int youbot_mediator::get_robot_model(KDL::Chain &arm_chain,
                                     std::string tooltip_name, 
                                     std::string urdf_path)
 {
-    //Extract KDL tree from URDF file
-    KDL::Tree yb_tree;
-    urdf::Model yb_model;
-
+    //Extract KDL tree from the URDF file
     if (!yb_model.initFile(urdf_path))
     {
         std::cout << "ERROR: Failed to parse urdf robot model" << '\n';
