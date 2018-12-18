@@ -31,6 +31,7 @@ SOFTWARE.
 #include <youbot_driver/youbot/YouBotManipulator.hpp>
 #include <kdl_parser/kdl_parser.hpp>
 #include <urdf/model.h>
+#include <youbot_custom_model.hpp>
 #include <command_specification.hpp>
 #include <memory>
 
@@ -44,7 +45,8 @@ class youbot_mediator
 		int initialize(KDL::Chain &arm_chain, 
                         std::string root_name, 
                         std::string tooltip_name,
-                        std::string urdf_path);
+                        std::string urdf_path,
+						bool use_custom_model);
 
 		// Get current joint positions
 		void get_joint_positions(KDL::JntArray &joint_positions);
@@ -84,7 +86,7 @@ class youbot_mediator
         std::vector<youbot::JointTorqueSetpoint> tau_setpoint_;
 
         //Extract youBot model from urdf file
-        int get_robot_model(KDL::Chain &arm_chain, 
+        int get_robot_model_from_urdf(KDL::Chain &arm_chain, 
                                 std::string root_name, 
                                 std::string tooltip_name,
                                 std::string urdf_path);

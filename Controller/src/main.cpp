@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #include <kdl_parser/kdl_parser.hpp>
+#include <youbot_custom_model.hpp>
 #include <urdf/model.h>
 #include <youbot_mediator.hpp>
 #include <model_prediction.hpp>
@@ -41,7 +42,9 @@ const int JOINTS = 5;
 const int NUMBER_OF_CONSTRAINTS = 6;
 const int MILLISECOND = 1000;
 
-int extract_robot_model(KDL::Chain &arm_chain_, std::string root_name, std::string tooltip_name)
+int extract_robot_model_from_urdf(KDL::Chain &arm_chain_, 
+                        std::string root_name, 
+                        std::string tooltip_name)
 {
     //Extract KDL tree from URDF file
     KDL::Tree yb_tree;
@@ -94,7 +97,6 @@ void go_folded(youbot_mediator &arm){
 
 // Go to Navigation 1 configuration  
 void go_navigation_1(youbot_mediator &arm){
-    // double navigation[] = {2.9496, 1.0, -1.53240, 2.85214, 2.93816};
     KDL::JntArray desired_pose(JOINTS);
     double navigation[] = {2.9496, 0.075952, -1.53240, 3.35214, 2.93816};
     for (int i = 0; i < JOINTS; i++) desired_pose(i) = navigation[i];  
@@ -115,16 +117,16 @@ void go_navigation_2(youbot_mediator &arm){
 void stop_motion(youbot_mediator &arm, state_specification &motion){ 
     for (int i = 0; i < JOINTS; i++) motion.qd(i) = 0;  
     arm.set_joint_velocities(motion.qd);
-    usleep(5000 * MILLISECOND);
+    // usleep(5000 * MILLISECOND);
 }
 
 void set_ee_constraints(state_specification &motion)
 {
     KDL::Twist unit_constraint_force_xl(
-        KDL::Vector(0.0, 0.0, 0.0),  // linear
+        KDL::Vector(1.0, 0.0, 0.0),  // linear
         KDL::Vector(0.0, 0.0, 0.0)); // angular
     motion.ee_unit_constraint_force.setColumn(0, unit_constraint_force_xl);
-    motion.ee_acceleration_energy(0) = 0.0;
+    motion.ee_acceleration_energy(0) = -0.00001;
 
     KDL::Twist unit_constraint_force_yl(
         KDL::Vector(0.0, 0.0, 0.0),  // linear
@@ -133,10 +135,10 @@ void set_ee_constraints(state_specification &motion)
     motion.ee_acceleration_energy(1) = 0.0;
 
     KDL::Twist unit_constraint_force_zl(
-        KDL::Vector(0.0, 0.0, 1.0),  // linear
+        KDL::Vector(0.0, 0.0, 0.0),  // linear
         KDL::Vector(0.0, 0.0, 0.0)); // angular
     motion.ee_unit_constraint_force.setColumn(2, unit_constraint_force_zl);
-    motion.ee_acceleration_energy(2) = 0.000001;
+    motion.ee_acceleration_energy(2) = 0.00001;
 
     KDL::Twist unit_constraint_force_xa(
         KDL::Vector(0.0, 0.0, 0.0),  // linear
@@ -170,20 +172,41 @@ void set_ext_forces(state_specification &forces){
 int main(int argc, char **argv)
 {
     double joint_velocity_limits[JOINTS] = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
-    
+    double hw_to_dyn_offset[] = { -2.9496, -1.1344, 2.6354, -1.7890, -2.9234 };
+
+    bool simulation = false;
+    bool use_custom_model = true;
     KDL::Chain arm_chain_;
-    assert(extract_robot_model(arm_chain_, "arm_link_0", "arm_link_5") != -1);
-    // youbot_mediator arm("/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config");
-    
-    // if (arm.initialize(arm_chain_, "arm_link_0", "arm_link_5",
-    //     "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf")\
-    //     != 0) {
-    //         std::cout << "Robot NOT initialized!" << std::endl;
-    //         return 0;
-    //     }
+
+    if (simulation){
+        if(use_custom_model){
+            //Extract KDL tree from URDF file
+            youbot_custom_model yb_model(arm_chain_);
+            std::cout << "Custom youBot model selected" << std::endl;
+        }
+        else{
+            assert(extract_robot_model_from_urdf(arm_chain_, 
+                                                "arm_link_0", 
+                                                "arm_link_5") != -1);
+            std::cout << "URDF youBot model selected" << std::endl;
+        }
+    }
+    else{
+        //TODO
+    }
+
+    youbot_mediator arm("/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config");
+    if (arm.initialize(arm_chain_, "arm_link_0", "arm_link_5",
+        "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf",
+                    use_custom_model)!= 0)
+    {
+            std::cout << "Robot NOT initialized!" << std::endl;
+            return 0;
+    }
 
     int number_of_segments = arm_chain_.getNrOfSegments();
     int number_of_joints = arm_chain_.getNrOfJoints();
+    // std::cout << number_of_joints << " " << number_of_segments << std::endl;
     assert(JOINTS == number_of_segments);
 
     model_prediction predictor(arm_chain_);
@@ -197,9 +220,11 @@ int main(int argc, char **argv)
     std::vector<KDL::Twist> frame_acceleration_;
     frame_acceleration_.resize(number_of_segments + 1);
 
-    // stop_motion(arm, motion_);
+    stop_motion(arm, motion_);
 
-    // go_candle_1(arm);
+    // go_navigation_2(arm);
+    // go_candle_2(arm);
+
     // arm.get_joint_positions(motion_.q);
     // arm.get_joint_velocities(motion_.qd);
 
@@ -208,13 +233,13 @@ int main(int argc, char **argv)
     // return 0;
     
     //Create End_effector Cartesian Acceleration task 
-    // set_ee_constraints(motion_);
+    set_ee_constraints(motion_);
 
     //Create External Forces task 
     // set_ext_forces(motion_);
 
     //arm root acceleration
-    KDL::Vector linearAcc(0.0, 0.0, -9.81); //gravitational acceleration along Z
+    KDL::Vector linearAcc(0.0, 0.0, 9.81); //gravitational acceleration along Z
     KDL::Vector angularAcc(0.0, 0.0, 0.0);
     KDL::Twist root_acc(linearAcc, angularAcc);
 
@@ -232,8 +257,13 @@ int main(int argc, char **argv)
     std::cout << "Control Loop Started"<< std::endl;
     while (1)
     {
-        // arm.get_joint_positions(motion_.q);
-        // arm.get_joint_velocities(motion_.qd);
+        arm.get_joint_positions(motion_.q);
+        arm.get_joint_velocities(motion_.qd);
+        if (use_custom_model){
+            for (int i = 0; i < number_of_joints; i++)
+                motion_.q(i) = motion_.q(i) + hw_to_dyn_offset[i];
+            motion_.qd(4) = -1 * motion_.qd(4);
+        }
         // std::cout << "Joints  Pos: " << motion_.q << '\n';
         // std::cout << "Joints  Vel: " << motion_.qd << '\n';
         // std::cout << "Joints  Acc: " << motion_.qdd << '\n' << "\n";
@@ -273,8 +303,12 @@ int main(int argc, char **argv)
         // hd_solver_.get_control_torque(control_torque_Ver);
         // std::cout << "\n" << "Joint torques: " << control_torque_Ver << '\n';
         // std::cout << "\n";
-
-        // arm.set_joint_velocities(commands_.qd);
+        if (use_custom_model){
+            for (int i = 0; i < number_of_joints; i++)
+                motion_.q(i) = motion_.q(i) - hw_to_dyn_offset[i];
+            motion_.qd(4) = -1 * motion_.qd(4);
+        }
+        arm.set_joint_velocities(commands_.qd);
         usleep(MILLISECOND);
     }
     return 0;

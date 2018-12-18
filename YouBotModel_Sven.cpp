@@ -1,5 +1,8 @@
-#include <youbot_custom_model.hpp>
+#include <YouBotModel.hpp>
 #include <iostream>
+#include <kdl/kinfam_io.hpp>
+#include <kdl/frames_io.hpp>
+
 
 #define KILOGRAM(x) (x)
 #define KILOGRAM_SQUARE_METRE(x) (x)
@@ -14,23 +17,63 @@
 #define PI 3.14159265358979323846
 #define DEG_TO_RAD(x) (x) * PI / 180.0
 
-youbot_custom_model::youbot_custom_model(KDL::Chain &arm_chain): 
-                    NUMBER_OF_BODIES_(7), 
-                    NUMBER_OF_JOINTS_(5),
-                    ID_BODY_BASE(0),
-                    ID_BODY_LINK_1(1),
-                    ID_BODY_LINK_2(2),
-                    ID_BODY_LINK_3(3),
-                    ID_BODY_LINK_4(4),
-                    ID_BODY_LINK_5(5),
-                    ID_BODY_GRIPPER_BASE(6)
+
+/*
+#include <Eigen/Core>
+
+using namespace Eigen;
+KDL::RigidBodyInertia transform_inertia(
+        const KDL::Frame &T, const KDL::RigidBodyInertia &I)
 {
-    createModel(arm_chain);
+    // From (Featherstone2008):
+    // mb = ma
+    // hb = R*(h-m*r)
+    // Ib = R(Ia+r x h x + (h-m*r) x r x)R'
+    //
+    // But consider for two coordinate systems call A and B the conventions used
+    // in
+    // 1. Featherstone (for the above formula and its implementation below):
+    //    a) The translation vector "goes" from A's origin to B's origin and is
+    //       expressed in A's coordinates
+    //    b) The orientation expresses how 3D vectors are transformed from A to
+    //       B
+    // vs.
+    // 2. Craig (KDL's frame representation):
+    //    a) The translation vector "goes" from A's origin to B's origin and is
+    //       expressed in A's coordinates
+    //    b) The orientation expresses how 3D vectors are transformed from B to
+    //       A
+
+    KDL::Frame X = T.Inverse();
+    KDL::Vector hmr = (I.h - I.m * X.p);
+    Vector3d r_eig = Map<Vector3d>(X.p.data);
+    Vector3d h_eig = Map<const Vector3d>(I.h.data);
+    Vector3d hmr_eig = Map<Vector3d>(hmr.data);
+    Matrix3d rcrosshcross = h_eig * r_eig.transpose() - r_eig.dot(h_eig) * Matrix3d::Identity();
+    Matrix3d hmrcrossrcross = r_eig * hmr_eig.transpose() - hmr_eig.dot(r_eig) * Matrix3d::Identity();
+    Matrix3d R = Map<Matrix3d>(T.M.Inverse().data);
+    KDL::RotationalInertia Ib;
+    Map<Matrix3d>(Ib.data) = R*((Map<const Matrix3d>(I.I.data) + rcrosshcross + hmrcrossrcross) * R.transpose());
+    
+    return KDL::RigidBodyInertia(I.m, T.M * hmr, Ib, mhi);
+}
+*/
+
+
+YouBotModel::YouBotModel() : NUMBER_OF_BODIES(7), NUMBER_OF_JOINTS(5)
+{
+    createModel();
 }
 
-KDL::Frame youbot_custom_model::createTransform(
-                    double origin_x, double origin_y, double origin_z,
-                    double gamma, double beta, double alpha)
+
+YouBotModel::~YouBotModel()
+{
+}
+
+
+KDL::Frame YouBotModel::createTransform(
+        double origin_x, double origin_y, double origin_z,
+        double gamma, double beta, double alpha)
 {
     // The youBot specification uses extrinsic Tait-Bryan angles with the ZYX
     // sequence
@@ -49,12 +92,13 @@ KDL::Frame youbot_custom_model::createTransform(
             KDL::Vector(origin_x, origin_y, origin_z));
 }
 
-void youbot_custom_model::createModel(KDL::Chain &arm_chain)
+
+void YouBotModel::createModel()
 {
     //
     // Body parameters
     //
-    std::vector<KDL::Frame> joint_to_tip(NUMBER_OF_BODIES_);
+    std::vector<KDL::Frame> joint_to_tip(NUMBER_OF_BODIES);
     joint_to_tip[ID_BODY_BASE        ] = createTransform(METRE(0.024), METRE(0.0),    METRE(0.115),   DEG_TO_RAD(DEGREE(   0.0)), DEG_TO_RAD(DEGREE(0.0)), DEG_TO_RAD(DEGREE( 180.0)));
     joint_to_tip[ID_BODY_LINK_1      ] = createTransform(METRE(0.033), METRE(0.0),    METRE(0.0),     DEG_TO_RAD(DEGREE(- 90.0)), DEG_TO_RAD(DEGREE(0.0)), DEG_TO_RAD(DEGREE(  90.0)));
     joint_to_tip[ID_BODY_LINK_2      ] = createTransform(METRE(0.155), METRE(0.0),    METRE(0.0),     DEG_TO_RAD(DEGREE(- 90.0)), DEG_TO_RAD(DEGREE(0.0)), DEG_TO_RAD(DEGREE(   0.0)));
@@ -68,7 +112,7 @@ void youbot_custom_model::createModel(KDL::Chain &arm_chain)
     // For the youBot store specification it holds that:
     // - The frame's origin is the centre of mass (i.e. the coordinates describe the "central inertia")
     // - The frame's axes are the principal axes (i.e. the coordinates describe the "principal moments of inertia")
-    std::vector<KDL::Frame> joint_to_inertia(NUMBER_OF_BODIES_);
+    std::vector<KDL::Frame> joint_to_inertia(NUMBER_OF_BODIES);
     joint_to_inertia[ID_BODY_BASE        ] = createTransform(METRE(0.0),     METRE(0.0),     METRE( 0.0),     DEG_TO_RAD(DEGREE(   0.0)), DEG_TO_RAD(DEGREE(  0.0)), DEG_TO_RAD(DEGREE(  0.0)));
     joint_to_inertia[ID_BODY_LINK_1      ] = createTransform(METRE(0.01516), METRE(0.00359), METRE( 0.03105), DEG_TO_RAD(DEGREE( 180.0)), DEG_TO_RAD(DEGREE( 20.0)), DEG_TO_RAD(DEGREE(  0.0)));
     joint_to_inertia[ID_BODY_LINK_2      ] = createTransform(METRE(0.11397), METRE(0.015),   METRE(-0.01903), DEG_TO_RAD(DEGREE(- 90.0)), DEG_TO_RAD(DEGREE(  0.0)), DEG_TO_RAD(DEGREE(-90.0)));
@@ -80,7 +124,7 @@ void youbot_custom_model::createModel(KDL::Chain &arm_chain)
     // The rotational inertia's coordinate representation:
     // - Central: the point about which the inertia is measured is the centre of mass
     // - Principal moments of inertia: the inertia is expressed about the principal axes (i.e. it is represented by a diagonal matrix)
-    std::vector<KDL::RotationalInertia> central_principal_moments_of_inertia(NUMBER_OF_BODIES_);
+    std::vector<KDL::RotationalInertia> central_principal_moments_of_inertia(NUMBER_OF_BODIES);
     central_principal_moments_of_inertia[ID_BODY_BASE        ] = KDL::RotationalInertia(KILOGRAM_SQUARE_METRE(0.00001),    KILOGRAM_SQUARE_METRE(0.00001),    KILOGRAM_SQUARE_METRE(0.00001));
     central_principal_moments_of_inertia[ID_BODY_LINK_1      ] = KDL::RotationalInertia(KILOGRAM_SQUARE_METRE(0.0029525),  KILOGRAM_SQUARE_METRE(0.0060091),  KILOGRAM_SQUARE_METRE(0.0058821));
     central_principal_moments_of_inertia[ID_BODY_LINK_2      ] = KDL::RotationalInertia(KILOGRAM_SQUARE_METRE(0.0031145),  KILOGRAM_SQUARE_METRE(0.0005843),  KILOGRAM_SQUARE_METRE(0.0031631));
@@ -89,7 +133,7 @@ void youbot_custom_model::createModel(KDL::Chain &arm_chain)
     central_principal_moments_of_inertia[ID_BODY_LINK_5      ] = KDL::RotationalInertia(KILOGRAM_SQUARE_METRE(0.0001934),  KILOGRAM_SQUARE_METRE(0.0001602),  KILOGRAM_SQUARE_METRE(0.0000689));
     central_principal_moments_of_inertia[ID_BODY_GRIPPER_BASE] = KDL::RotationalInertia(KILOGRAM_SQUARE_METRE(0.00001),    KILOGRAM_SQUARE_METRE(0.00001),    KILOGRAM_SQUARE_METRE(0.00001));
 
-    std::vector<double> mass(NUMBER_OF_BODIES_); // [kg]
+    std::vector<double> mass(NUMBER_OF_BODIES); // [kg]
     mass[ID_BODY_BASE        ] = KILOGRAM(0.961);
     mass[ID_BODY_LINK_1      ] = KILOGRAM(1.390);
     mass[ID_BODY_LINK_2      ] = KILOGRAM(1.318);
@@ -98,8 +142,9 @@ void youbot_custom_model::createModel(KDL::Chain &arm_chain)
     mass[ID_BODY_LINK_5      ] = KILOGRAM(0.687);
     mass[ID_BODY_GRIPPER_BASE] = KILOGRAM(0.199);
 
+
     // Create segments
-    for (int i = 1; i < NUMBER_OF_BODIES_ - 1; i++) {
+    for (int i = 0; i < NUMBER_OF_BODIES - 1; i++) {
         // KDL vs. youBot inertia specification
         // ------------------------------------
         // In KDL the inertia is provided w.r.t. the segment's reference
@@ -125,9 +170,7 @@ void youbot_custom_model::createModel(KDL::Chain &arm_chain)
         KDL::RigidBodyInertia inertia;
 
         // Only mass and centre of mass
-        inertia = KDL::RigidBodyInertia(
-                    mass[i], 
-                    joint_to_tip[i].Inverse() * joint_to_inertia[i].p);
+        inertia = KDL::RigidBodyInertia(mass[i], joint_to_tip[i].Inverse() * joint_to_inertia[i].p);
 
 /*
         // Rotational inertia (i) measured in centre of mass point; and (ii) expressed in inertial frame
@@ -144,8 +187,9 @@ void youbot_custom_model::createModel(KDL::Chain &arm_chain)
         inertia = joint_to_tip[i].Inverse() * i_joint_in_joint; // transform to joint frame
 */
         
-        // std::cout << joint_to_inertia[i].p << std::endl;
-        // std::cout << inertia.getCOG() << std::endl;
+
+        std::cout << joint_to_inertia[i].p << std::endl;
+        std::cout << inertia.getCOG() << std::endl;
         //for (int x = 0; x < 9; x++) std::cout << inertia.getRotationalInertia().data[x] << ", ";
         //std::cout << std::endl;
 
@@ -186,12 +230,12 @@ void youbot_custom_model::createModel(KDL::Chain &arm_chain)
         KDL::RigidBodyInertia inertia = joint_to_tip[i].Inverse() * inertia_pa;
         */
 
+
         KDL::Joint::JointType type;
-        if ((i == 0) || (i == NUMBER_OF_BODIES_ - 1)) type = KDL::Joint::None;
+        if ((i == 0) || (i == NUMBER_OF_BODIES - 1)) type = KDL::Joint::None;
         else type = KDL::Joint::RotZ;
 
-        arm_chain.addSegment(KDL::Segment(KDL::Joint(type), 
-                                          joint_to_tip[i], 
-                                          inertia));
+        chain.addSegment(KDL::Segment(KDL::Joint(type), joint_to_tip[i], inertia));
     }
 }
+

@@ -111,10 +111,10 @@ void youbot_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
 }
 
 //Extract youBot model from URDF file
-int youbot_mediator::get_robot_model(KDL::Chain &arm_chain, 
-                                    std::string root_name, 
-                                    std::string tooltip_name, 
-                                    std::string urdf_path)
+int youbot_mediator::get_robot_model_from_urdf(KDL::Chain &arm_chain, 
+                                               std::string root_name, 
+                                               std::string tooltip_name, 
+                                               std::string urdf_path)
 {
     //Extract KDL tree from the URDF file
     if (!yb_model.initFile(urdf_path))
@@ -138,12 +138,19 @@ int youbot_mediator::get_robot_model(KDL::Chain &arm_chain,
 int youbot_mediator::initialize(KDL::Chain &arm_chain, 
                                 std::string root_name, 
                                 std::string tooltip_name,
-                                std::string urdf_path)
+                                std::string urdf_path,
+                                bool use_custom_model)
 {
-    //Extract youBot model from URDF file
-    if(get_robot_model(arm_chain, root_name, tooltip_name, urdf_path) == 0)
-        std::cout << "youBot model created successfully! " << std::endl;
-    else return -1;
+    if(use_custom_model){
+        //Extract KDL tree from custom cpp file
+        youbot_custom_model yb_model(arm_chain);
+    } 
+    else{
+        //Extract youBot model from URDF file
+        if(get_robot_model_from_urdf(arm_chain, root_name, tooltip_name, urdf_path) == 0)
+            std::cout << "youBot model created successfully! " << std::endl;
+        else return -1;
+    }
 
     // Commutate with the joints
     youbot_arm_.doJointCommutation();

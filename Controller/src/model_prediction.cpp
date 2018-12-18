@@ -55,7 +55,7 @@ void model_prediction::integrate(const state_specification &current_state,
         {
             std::cout << "Limit reached on: " 
                         << predicted_state.qd(i)
-                        << " " << i << std::endl;
+                        << " " << i+1 << std::endl;
         }
         assert(abs(predicted_state.qd(i)) <= joint_velocity_limits[i]);
 

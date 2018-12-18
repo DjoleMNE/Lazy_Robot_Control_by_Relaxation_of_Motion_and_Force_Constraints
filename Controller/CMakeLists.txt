@@ -40,6 +40,7 @@ add_executable(main
   src/model_prediction.cpp
   src/solver_vereshchagin.cpp
   src/youbot_mediator.cpp
+  src/youbot_custom_model.cpp
   #src/dynamics_controller.cpp
 )
 
