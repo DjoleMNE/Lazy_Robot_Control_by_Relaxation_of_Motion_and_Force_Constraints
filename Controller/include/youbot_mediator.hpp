@@ -32,20 +32,21 @@ SOFTWARE.
 #include <kdl_parser/kdl_parser.hpp>
 #include <urdf/model.h>
 #include <youbot_custom_model.hpp>
-// #include <memory>
+#include <memory>
 
 class youbot_mediator
 {
 	public:
-		youbot_mediator(std::string config_path);
+		youbot_mediator();
 		~youbot_mediator(){}
 
 		// Initializes variables and calibrates the manipulator
-		int initialize(KDL::Chain &arm_chain, 
-                        std::string root_name, 
-                        std::string tooltip_name,
-                        std::string urdf_path,
-						bool use_custom_model);
+		void initialize(const std::string config_path,
+					    const std::string root_name, 
+					    const std::string tooltip_name,
+					    const std::string urdf_path,
+					    const bool use_custom_model,
+					    KDL::Chain &arm_chain);
 
 		// Get current joint positions
 		void get_joint_positions(KDL::JntArray &joint_positions);
@@ -69,7 +70,7 @@ class youbot_mediator
         std::string config_path_;
 
 		// Handles for the youbot manipulator and kdl urdf parsel
-	    youbot::YouBotManipulator youbot_arm_;
+	    std::shared_ptr<youbot::YouBotManipulator> youbot_arm_;
 		KDL::Tree yb_tree;
     	urdf::Model yb_model;
         

@@ -26,8 +26,6 @@ SOFTWARE.
 #ifndef MODEL_PREDICTION_HPP
 #define MODEL_PREDICTION_HPP
 #include <state_specification.hpp>
-#include <command_specification.hpp>
-#include <task_specification.hpp>
 #include <iostream>
 #include <sstream>
 #include <time.h>
