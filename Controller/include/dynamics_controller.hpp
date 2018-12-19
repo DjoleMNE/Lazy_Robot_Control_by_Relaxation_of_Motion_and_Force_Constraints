@@ -27,55 +27,72 @@ SOFTWARE.
 #define DYNAMICS_CONTROLLER_HPP_
 #include <solver_vereshchagin.hpp>
 #include <state_specification.hpp>
-#include <command_specification.hpp>
 #include <youbot_driver/youbot/YouBotManipulator.hpp>
+#include <iostream>
+#include <sstream>
+#include <time.h>
+#include <boost/assign/list_of.hpp>
+#include <fstream>
+#include <unistd.h>
+#include <cmath>
+#include <stdlib.h>     /* abs */
 
 class dynamics_controller
 {
   public:
-      dynamics_controller(
-          const KDL::Chain &chain,
-          const KDL::Twist &root_acc,
-          std::vector<double> &joint_position_limits,
-          std::vector<double> &joint_velocity_limits,
-          std::vector<double> &joint_acceleration_limits,
-          std::vector<double> &joint_torque_limits,
-          double rate_hz);
-      ~dynamics_controller();
+    dynamics_controller(const KDL::Chain &chain,
+                        const KDL::Twist &root_acc,
+                        std::vector<double> joint_position_limits,
+                        std::vector<double> joint_velocity_limits,
+                        std::vector<double> joint_acceleration_limits,
+                        std::vector<double> joint_torque_limits,
+                        double rate_hz);
+    ~dynamics_controller();
 
-      int control(youbot::YouBotManipulator &robot);
-      void reset_desired_state();
-      void set_ee_constraints(std::vector<bool> &constraint_direction, 
-                              std::vector<double> &cartesian_acceleration,
-                              state_specification &state);
-      void set_external_forces();
-      void set_feadforward_torque();
-    
-      double rate_hz_;
-      double dt_;
+    int control(youbot::YouBotManipulator &robot, bool simulation_environment);
+
+    void reset_desired_state();
+
+    //Methods for defining robot task via 3 interfaces
+    void define_ee_constraint_task(const std::vector<bool> constraint_direction,
+                              const std::vector<double> cartesian_acceleration);
+    void define_ee_external_force_task(const std::vector<double> external_force);
+    void define_feadforward_torque_task(const std::vector<double> ff_torque);
 
   private:
-    void integrate_robot_motion(state_specification current_state,
-                                state_specification predicted_state,
-                                int number_of_steps);
-    
-    void reset_state(state_specification state);
-    void check_limits(state_specification state);
+    double rate_hz_;
+    double dt_;
 
-    const int NUMBER_OF_CONSTRAINTS = 6;
-    const KDL::Chain &chain_;
-    int number_of_frames_;
-    int number_of_joints_;
-    int number_of_segments_;
+    const int NUMBER_OF_JOINTS_;
+	const int NUMBER_OF_SEGMENTS_;
+	const int NUMBER_OF_FRAMES_;
+	const int NUMBER_OF_CONSTRAINTS_;
+
+    const std::vector<double> joint_position_limits_;
+    const std::vector<double> joint_velocity_limits_;
+    const std::vector<double> joint_acceleration_limits_;
+    const std::vector<double> joint_torque_limits_;
 
     KDL::Solver_Vereshchagin hd_solver_;
+    KDL::Chain robot_chain_;
+	
+    state_specification robot_state_;
+    state_specification commands_;
     state_specification desired_state_;
-    state_specification current_state_;
     state_specification predicted_state_;
 
-    std::vector<double> joint_position_limits_;
-    std::vector<double> joint_velocity_limits_;
-    std::vector<double> joint_acceleration_limits_;
-    std::vector<double> joint_torque_limits_;
+    void reset_state(state_specification &state);
+    void check_limits(state_specification &state);
+    void update_task();
+    void update_current_state();
+    void evaluate_dynamics();
+
+    void set_ee_constraints(state_specification &state,
+                            const std::vector<bool> constraint_direction,
+                            const std::vector<double> cartesian_acceleration);
+    void set_external_forces(state_specification &state, 
+                             const std::vector<double> external_force);
+    void set_feadforward_torque(state_specification &state,
+                                const std::vector<double> ff_torque);    
 };
 #endif /* DYNAMICS_CONTROLLER_HPP_*/

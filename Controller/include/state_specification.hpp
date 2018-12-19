@@ -68,6 +68,7 @@ class state_specification
 			frame_pose.resize(NUMBER_OF_SEGMENTS_);
 			frame_velocity.resize(NUMBER_OF_SEGMENTS_);
 			frame_acceleration.resize(NUMBER_OF_FRAMES_);
+			reset_values();
 		};
 
 		state_specification& operator=(const state_specification &rhs)
