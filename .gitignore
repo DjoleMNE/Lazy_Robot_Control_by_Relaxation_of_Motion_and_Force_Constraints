@@ -1,3 +1,4 @@
 youbot_driver/
 KDL/
 Controller/build/*
+Controller/release_build/*

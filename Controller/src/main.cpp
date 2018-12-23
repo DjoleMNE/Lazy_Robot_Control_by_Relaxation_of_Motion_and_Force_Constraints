@@ -27,6 +27,7 @@ SOFTWARE.
 #include <youbot_mediator.hpp>
 #include <model_prediction.hpp>
 #include <state_specification.hpp>
+#include <dynamics_controller.hpp>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -171,8 +172,12 @@ void set_ext_forces(state_specification &forces){
 
 int main(int argc, char **argv)
 {
-    double joint_velocity_limits[JOINTS] = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
-    double hw_to_dyn_offset[] = { -2.9496, -1.1344, 2.6354, -1.7890, -2.9234 };
+    std::vector<double> joint_position_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
+    std::vector<double> joint_velocity_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
+    std::vector<double> joint_acceleration_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
+    std::vector<double> joint_torque_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
+
+    std::vector<double> hw_to_dyn_offset = { -2.9496, -1.1344, 2.6354, -1.7890, -2.9234 };
     auto start_time = std::chrono::steady_clock::now();
     auto end_time = std::chrono::steady_clock::now();
     auto time_period = std::chrono::duration <double, std::micro> (end_time - start_time);
@@ -205,7 +210,7 @@ int main(int argc, char **argv)
 
     int number_of_segments = arm_chain_.getNrOfSegments();
     int number_of_joints = arm_chain_.getNrOfJoints();
-    // std::cout << number_of_joints << " " << number_of_segments << std::endl;
+
     assert(JOINTS == number_of_segments);
 
     model_prediction predictor(arm_chain_);
@@ -242,95 +247,16 @@ int main(int argc, char **argv)
     KDL::Vector angularAcc(0.0, 0.0, 0.0);
     KDL::Twist root_acc(linearAcc, angularAcc);
 
-    KDL::Solver_Vereshchagin hd_solver_(arm_chain_, root_acc,
-                                        NUMBER_OF_CONSTRAINTS);
-
     //loop rate in Hz
-    double rate = 1000;
+    int rate_hz = 1000;
 
-    //Time sampling interval in seconds
-    double dt_sec = 1.0 / rate;
-    long dt_micro = SECOND * dt_sec;
-    // std::cout << "dt_micro: " << dt_micro << "\n";
-    long diff = 0;
-    double sum  = 0;
+    dynamics_controller controller(arm, arm_chain_, root_acc, joint_position_limits,
+                        joint_velocity_limits, joint_acceleration_limits,
+                        joint_torque_limits, hw_to_dyn_offset, rate_hz);
+    
+    controller.control(true, true);
+    
+    // predictor.integrate(motion_, commands_, dt_sec, 1);
 
-    std::cout << "Control Loop Started"<< std::endl;
-    for(int i = 0; i < 10000; i++){
-    // while (1){
-        start_time = std::chrono::steady_clock::now();
-        if (!simulation){
-            arm.get_joint_positions(motion_.q);
-            arm.get_joint_velocities(motion_.qd);
-        }
-
-        if (use_custom_model){
-            for (int i = 0; i < number_of_joints; i++)
-                motion_.q(i) = motion_.q(i) + hw_to_dyn_offset[i];
-            motion_.qd(4) = -1 * motion_.qd(4);
-        }
-        // std::cout << "Joints  Pos: " << motion_.q << '\n';
-        // std::cout << "Joints  Vel: " << motion_.qd << '\n';
-        // std::cout << "Joints  Acc: " << motion_.qdd << '\n' << "\n";
-        // for (int i=0; i< number_of_segments; i++)
-        //     std::cout<<"FORCES \n"<<motion_.external_force[i]<<std::endl;
-
-        int result = hd_solver_.CartToJnt(motion_.q,
-                                          motion_.qd,
-                                          motion_.qdd,
-                                          motion_.ee_unit_constraint_force,
-                                          motion_.ee_acceleration_energy,
-                                          motion_.external_force,
-                                          motion_.feedforward_torque);
-        // std::cout << "Solver return: " << result << '\n';
-        // std::cout << "Joints  Acc: " << motion_.qdd << '\n' << "\n";
-        assert(result == 0);
-        predictor.integrate(motion_, commands_, dt_sec, 1);
-        commands_.qd(4) = 0;
-
-        // std::cout << "\n Joint Vel::Commanded: ";
-        // for (int i = 0; i < JOINTS; i++)
-            // std::cout << commands_.qd(i) << " , ";
-        // std::cout << "\n";
-
-        // hd_solver_.get_transformed_link_acceleration(motion_.frame_acceleration);
-        // std::cout << "\n \n Frame ACC" << '\n';
-        // for (size_t i = 0; i < number_of_segments + 1; i++)
-        //     std::cout << motion_.frame_acceleration[i] << '\n';
-        // std::cout << std::endl;
-
-        // motion_.reset_values();
-        // std::cout<<"HERE"<<std::endl;
-        // for(int i=0;i<number_of_segments+1; i++)
-        //     std::cout << motion_.frame_acceleration[i]<<std::endl;
-
-        // KDL::JntArray control_torque_Ver(number_of_joints);
-        // hd_solver_.get_control_torque(control_torque_Ver);
-        // std::cout << "\n" << "Joint torques: " << control_torque_Ver << '\n';
-        // std::cout << "\n";
-        if (use_custom_model){
-            for (int i = 0; i < number_of_joints; i++)
-                motion_.q(i) = motion_.q(i) - hw_to_dyn_offset[i];
-            motion_.qd(4) = -1 * motion_.qd(4);
-        }
-
-        if(!simulation) arm.set_joint_velocities(commands_.qd);
-        
-        end_time = std::chrono::steady_clock::now();
-        time_period = std::chrono::duration<double, std::micro>(end_time - start_time);
-        // std::cout << std::chrono::duration<double, std::micro>(end_time - start_time).count() 
-        //           << ":   \n";
-        sum += time_period.count();
-
-        if(time_period < std::chrono::microseconds(dt_micro))
-        {
-            // std::cout<<"Sleeping"<<std::endl;
-            std::this_thread::sleep_for(std::chrono::microseconds(dt_micro) - time_period);
-            // diff = (std::chrono::microseconds(dt_micro) - time_period).count();
-            // usleep(diff);
-        }
-        // else std::cout<<"Too slow"<<std::endl;
-    }
-    std::cout<< sum / 10000<< std::endl;
     return 0;
 }
