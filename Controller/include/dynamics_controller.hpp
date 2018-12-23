@@ -27,29 +27,37 @@ SOFTWARE.
 #define DYNAMICS_CONTROLLER_HPP_
 #include <solver_vereshchagin.hpp>
 #include <state_specification.hpp>
-#include <youbot_driver/youbot/YouBotManipulator.hpp>
+#include <youbot_custom_model.hpp>
+#include <youbot_mediator.hpp>
+#include <model_prediction.hpp>
 #include <iostream>
 #include <sstream>
+#include <chrono>
+#include <thread> 
+#include <unistd.h>
 #include <time.h>
 #include <boost/assign/list_of.hpp>
 #include <fstream>
-#include <unistd.h>
+#include <unistd.h> /*usleep function*/
 #include <cmath>
 #include <stdlib.h>     /* abs */
 
 class dynamics_controller
 {
   public:
-    dynamics_controller(const KDL::Chain &chain,
+    dynamics_controller(youbot_mediator &robot_driver,
+                        const KDL::Chain &chain,
                         const KDL::Twist &root_acc,
-                        std::vector<double> joint_position_limits,
-                        std::vector<double> joint_velocity_limits,
-                        std::vector<double> joint_acceleration_limits,
-                        std::vector<double> joint_torque_limits,
-                        double rate_hz);
-    ~dynamics_controller();
+                        const std::vector<double> joint_position_limits,
+                        const std::vector<double> joint_velocity_limits,
+                        const std::vector<double> joint_acceleration_limits,
+                        const std::vector<double> joint_torque_limits,
+                        const std::vector<double> youbot_joint_offsets,
+                        const int rate_hz);
+    ~dynamics_controller(){};
 
-    int control(youbot::YouBotManipulator &robot, bool simulation_environment);
+    int control(const bool is_simulation_environment, 
+                const bool custom_model_used);
 
     void reset_desired_state();
 
@@ -60,22 +68,32 @@ class dynamics_controller
     void define_feadforward_torque_task(const std::vector<double> ff_torque);
 
   private:
-    double rate_hz_;
-    double dt_;
+    int rate_hz_;
+    long dt_micro_;
+
+    std::chrono::steady_clock::time_point loop_start_time_;
+    std::chrono::steady_clock::time_point loop_end_time_;
+    std::chrono::duration <double, std::micro> loop_interval_;
 
     const int NUMBER_OF_JOINTS_;
-	const int NUMBER_OF_SEGMENTS_;
-	const int NUMBER_OF_FRAMES_;
-	const int NUMBER_OF_CONSTRAINTS_;
+    const int NUMBER_OF_SEGMENTS_;
+    const int NUMBER_OF_FRAMES_;
+    const int NUMBER_OF_CONSTRAINTS_;
+
+    const KDL::Twist root_acc_;
+    const KDL::Chain robot_chain_;
 
     const std::vector<double> joint_position_limits_;
     const std::vector<double> joint_velocity_limits_;
     const std::vector<double> joint_acceleration_limits_;
     const std::vector<double> joint_torque_limits_;
+    const std::vector<double> youbot_joint_offsets_;
 
+    youbot_mediator robot_driver_;
     KDL::Solver_Vereshchagin hd_solver_;
-    KDL::Chain robot_chain_;
-	
+	  model_prediction predictor_;
+    // safety_controller safety_;
+
     state_specification robot_state_;
     state_specification commands_;
     state_specification desired_state_;
@@ -83,9 +101,13 @@ class dynamics_controller
 
     void reset_state(state_specification &state);
     void check_limits(state_specification &state);
+    void stop_motion(const bool is_simulation_environment);
     void update_task();
-    void update_current_state();
-    void evaluate_dynamics();
+    void update_current_state(const bool custom_model_used);
+    void make_predictions(){};
+    void apply_commands(const bool custom_model_used);
+    int evaluate_dynamics();
+    int enforce_loop_frequency();
 
     void set_ee_constraints(state_specification &state,
                             const std::vector<bool> constraint_direction,
