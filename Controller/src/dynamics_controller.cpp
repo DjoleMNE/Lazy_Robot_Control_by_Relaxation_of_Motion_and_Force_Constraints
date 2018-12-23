@@ -34,7 +34,6 @@ dynamics_controller::dynamics_controller(
                             const std::vector<double> joint_velocity_limits,
                             const std::vector<double> joint_acceleration_limits,
                             const std::vector<double> joint_torque_limits,
-                            const std::vector<double> youbot_joint_offsets,
                             const int rate_hz):
         robot_chain_(chain),
         root_acc_(root_acc),
@@ -54,7 +53,6 @@ dynamics_controller::dynamics_controller(
         joint_velocity_limits_(joint_velocity_limits),
         joint_acceleration_limits_(joint_acceleration_limits),
         joint_torque_limits_(joint_torque_limits),
-        youbot_joint_offsets_(youbot_joint_offsets),
         rate_hz_(rate_hz),
         // Time period defined in microseconds: 1s = 1 000 000us
         dt_micro_(SECOND / rate_hz)
@@ -155,7 +153,7 @@ void dynamics_controller::set_external_forces(state_specification &state,
 
 // Define FeedForward joint torques task - Public Method
 void dynamics_controller::define_feadforward_torque_task(
-    const std::vector<double> ff_torque)
+                                            const std::vector<double> ff_torque)
 {
     //Call private method for this state
     set_external_forces(desired_state_, ff_torque);
@@ -163,8 +161,8 @@ void dynamics_controller::define_feadforward_torque_task(
 
 // Define FeedForward joint torques task - Private Method
 void dynamics_controller::set_feadforward_torque(
-    state_specification &state, 
-    const std::vector<double> ff_torque)
+                                            state_specification &state, 
+                                            const std::vector<double> ff_torque)
 {
     assert(ff_torque.size() == NUMBER_OF_JOINTS_);
 
@@ -188,57 +186,11 @@ int dynamics_controller::evaluate_dynamics()
     // for (size_t i = 0; i < number_of_segments + 1; i++)
     //     std::cout << motion_.frame_acceleration[i] << '\n';
     // std::cout << std::endl;
-    // KDL::JntArray control_torque_Ver(number_of_joints);
-    // hd_solver_.get_control_torque(control_torque_Ver);
-    // std::cout << "\n" << "Joint torques: " << control_torque_Ver << '\n';
 }
 
-//Set velocities of arm's joints to 0 value
-void dynamics_controller::stop_motion()
-{ 
-    for (int i = 0; i < NUMBER_OF_JOINTS_; i++) commands_.qd(i) = 0;  
-    robot_driver_.set_joint_velocities(commands_.qd);
-}
-
-void dynamics_controller::make_predictions()
+//Make sure that the control loop runs exactly with specified frequency
+int dynamics_controller::enforce_loop_frequency()
 {
-//   predictor.integrate(motion_, commands_, dt_sec, 1);
-}
-
-void dynamics_controller::update_task()
-{ 
-    //TODO
-}
-
-void dynamics_controller::apply_commands(const bool custom_model_used)
-{ 
-    // std::cout << "\n Joint Vel::Commanded: ";
-    // for (int i = 0; i < JOINTS; i++)
-        // std::cout << commands_.qd(i) << " , ";
-    // std::cout << "\n";
-    if(custom_model_used) commands_.qd(4) = 0;
-    // if(custom_model_used) commands_.qd(4) = -1 * commands_.qd(4);
-    robot_driver_.set_joint_velocities(commands_.qd);
-}
-
-//Get current robot state from the joint sensors
-void dynamics_controller::update_current_state(const bool custom_model_used)
-{
-    robot_driver_.get_joint_positions(robot_state_.q);
-    robot_driver_.get_joint_velocities(robot_state_.qd);
-
-    // std::cout << "\n" << "Joint Positions" << robot_state_.q << std::endl;
-    // std::cout << "\n" <<"Joint Velocities"<< robot_state_.qd << std::endl;
-
-    // Custom model's home state is not folded - it is candle
-    if (custom_model_used){
-        for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
-            robot_state_.q(i) = robot_state_.q(i) + youbot_joint_offsets_[i];
-        robot_state_.qd(4) = -1 * robot_state_.qd(4);
-    }
-}
-
-int dynamics_controller::enforce_loop_frequency(){
     loop_interval_= std::chrono::duration<double, std::micro>\
                     (std::chrono::steady_clock::now() - loop_start_time_);
 
@@ -247,40 +199,88 @@ int dynamics_controller::enforce_loop_frequency(){
         while(loop_interval_.count() < dt_micro_)
             loop_interval_= std::chrono::duration<double, std::micro>\
                     (std::chrono::steady_clock::now() - loop_start_time_);
-    } else return -1;
-
-    // loop_interval_= std::chrono::duration<double, std::micro>\
-    //                 (std::chrono::steady_clock::now() - loop_start_time_);
-    // std::cout << loop_interval_.count() << std::endl;   
+    } else return -1; 
     return 0;    
 }
 
-int dynamics_controller::control(const bool simulation_environment,
-                                 const bool custom_model_used)
+//Set velocities of arm's joints to 0 value
+void dynamics_controller::stop_motion()
+{   
+    // First reset all values to 0 
+    for (int i = 0; i < NUMBER_OF_JOINTS_; i++) commands_.qd(i) = 0;  
+    
+    // Send commands to the robot driver
+    robot_driver_.set_joint_velocities(commands_.qd);
+}
+
+// Predict future robot states (motion) based given the current state
+void dynamics_controller::make_predictions()
 {
-    if(!simulation_environment){
-        assert(robot_driver_.is_initialized);
+    predictor_.integrate(robot_state_, predicted_state_, 
+                         static_cast<double> (dt_micro_) / SECOND, 
+                         1, joint_velocity_limits_);
+}
+
+// Update the desired robot state 
+void dynamics_controller::update_task()
+{ 
+    /* 
+        TODO: This component should update desired state in case of a user 
+        changing task specification in parallel (while control loop in this 
+        component is running). Maybe something like a callback function.
+    */
+}
+
+//Send joint commands to the robot driver
+void dynamics_controller::apply_control_commands()
+{ 
+    robot_driver_.set_joint_velocities(commands_.qd);
+}
+
+//Get current robot state from the joint sensors
+void dynamics_controller::update_current_state()
+{
+    robot_driver_.get_joint_positions(robot_state_.q);
+    robot_driver_.get_joint_velocities(robot_state_.qd);
+}
+
+//Main control loop
+int dynamics_controller::control(const bool simulation_environment)
+{
+    if(!simulation_environment)
+    {   
+        // Check if the robot is initialied and connection established
+        assert(("Robot is not initialized", robot_driver_.is_initialized));
+        
+        // Make sure that robot is not moving at the start 
         stop_motion();
     }
 
     std::cout << "Control Loop Started"<< std::endl;
     while(1)
-    {
+    {   
+        // Save current time point
         loop_start_time_ = std::chrono::steady_clock::now();
 
+        // Check if the task specification is changed
         update_task();
 
-        if (!simulation_environment) update_current_state(custom_model_used);
+        // Get sensor data from the robot driver
+        if (!simulation_environment) update_current_state();
 
+        // Calculate robot dynamics using Vereshchagin HD solver
         assert(evaluate_dynamics() == 0);
 
+        // Predict future robot states (motion) based given the current state
         make_predictions();
 
+        // Make sure that the loop is always running with the same frequency
         if(!enforce_loop_frequency() == 0) 
-            std::cout << "WARNING: Loop too slow" << std::endl;
-
-        if (!simulation_environment) apply_commands(custom_model_used);
+            std::cout << "WARNING: Loop runs too slow" << std::endl;
+        
+        // All calculations done - send commands to the robot driver
+        if (!simulation_environment) apply_control_commands();
     }
-    
+
     return 0;
 }

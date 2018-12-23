@@ -52,12 +52,10 @@ class dynamics_controller
                         const std::vector<double> joint_velocity_limits,
                         const std::vector<double> joint_acceleration_limits,
                         const std::vector<double> joint_torque_limits,
-                        const std::vector<double> youbot_joint_offsets,
                         const int rate_hz);
     ~dynamics_controller(){};
 
-    int control(const bool is_simulation_environment, 
-                const bool custom_model_used);
+    int control(const bool is_simulation_environment);
 
     void reset_desired_state();
 
@@ -87,7 +85,6 @@ class dynamics_controller
     const std::vector<double> joint_velocity_limits_;
     const std::vector<double> joint_acceleration_limits_;
     const std::vector<double> joint_torque_limits_;
-    const std::vector<double> youbot_joint_offsets_;
 
     youbot_mediator robot_driver_;
     KDL::Solver_Vereshchagin hd_solver_;
@@ -103,9 +100,9 @@ class dynamics_controller
     void check_limits(state_specification &state);
     void stop_motion();
     void update_task();
-    void update_current_state(const bool custom_model_used);
+    void update_current_state();
     void make_predictions();
-    void apply_commands(const bool custom_model_used);
+    void apply_control_commands();
     int evaluate_dynamics();
     int enforce_loop_frequency();
 

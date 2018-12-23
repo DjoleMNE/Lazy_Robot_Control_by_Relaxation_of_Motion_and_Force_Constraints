@@ -47,7 +47,8 @@ class youbot_mediator
 					    const std::string root_name, 
 					    const std::string tooltip_name,
 					    const std::string urdf_path,
-					    const bool use_custom_model,
+					    const bool custom_model_used,
+						const std::vector<double> youbot_joint_offsets,
 					    KDL::Chain &arm_chain);
 
 		// Get current joint positions
@@ -67,6 +68,7 @@ class youbot_mediator
 	private:
 		// Number of joints in the manipulator
 		const int NUMBER_OF_JOINTS_;
+		bool custom_model_used_;
 
         //Absolute path to config files 
         std::string config_path_;
@@ -75,6 +77,7 @@ class youbot_mediator
 	    std::shared_ptr<youbot::YouBotManipulator> youbot_arm_;
 		KDL::Tree yb_tree;
     	urdf::Model yb_model;
+	    std::vector<double> youbot_joint_offsets_;
         
         // Joint Measured State Variables
         std::vector<youbot::JointSensedAngle> q_measured_;

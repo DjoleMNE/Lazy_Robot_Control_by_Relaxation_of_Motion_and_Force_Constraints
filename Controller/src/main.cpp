@@ -178,17 +178,18 @@ int main(int argc, char **argv)
     std::vector<double> joint_torque_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
     std::vector<double> youbot_joint_offsets = { -2.9496, -1.1344, 2.6354, -1.7890, -2.9234 };
 
-    //arm root acceleration
+    //Arm's root acceleration
     KDL::Vector linearAcc(0.0, 0.0, -9.81); //gravitational acceleration along Z
     KDL::Vector angularAcc(0.0, 0.0, 0.0);
     KDL::Twist root_acc(linearAcc, angularAcc);
 
     KDL::Chain arm_chain_;
-    youbot_mediator arm;
+    youbot_mediator robot_driver;
 
-    bool simulation = true;
+    bool simulation_environment = true;
     bool use_custom_model = true;
-    if (simulation){
+
+    if (simulation_environment){
         if(use_custom_model){
             //Extract KDL tree from URDF file
             youbot_custom_model yb_model(arm_chain_);
@@ -200,10 +201,10 @@ int main(int argc, char **argv)
             std::cout << "URDF youBot model selected" << std::endl;
         }
     } else{
-        arm.initialize("/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config", 
+        robot_driver.initialize("/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config", 
                     "arm_link_0", "arm_link_5",
                     "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf",
-                    use_custom_model, arm_chain_);
+                    use_custom_model, youbot_joint_offsets, arm_chain_);
         std::cout << "Robot initialized!" << std::endl;
     }
 
@@ -218,13 +219,14 @@ int main(int argc, char **argv)
                                 NUMBER_OF_CONSTRAINTS);
     state_specification commands_(motion_);
 
-    if(!simulation){
-        stop_motion(arm, motion_);
-        // go_navigation_1(arm);
-        // go_folded(arm);
-        // go_candle_2(arm);
-        // arm.get_joint_positions(motion_.q);
-        // arm.get_joint_velocities(motion_.qd);
+    if(!simulation_environment){
+        assert(("Robot is not initialized", robot_driver.is_initialized));
+        stop_motion(robot_driver, motion_);
+        // go_navigation_1(robot_driver);
+        // go_folded(robot_driver);
+        // go_candle_2(robot_driver);
+        // robot_driver.get_joint_positions(motion_.q);
+        // robot_driver.get_joint_velocities(motion_.qd);
         // return 0;
     }
 
@@ -234,15 +236,16 @@ int main(int argc, char **argv)
     //Create External Forces task 
     // set_ext_forces(motion_);
 
-
     //loop rate in Hz
-    int rate_hz = 10000;
+    int rate_hz = 1000;
 
-    dynamics_controller controller(arm, arm_chain_, root_acc, joint_position_limits,
-                        joint_velocity_limits, joint_acceleration_limits,
-                        joint_torque_limits, youbot_joint_offsets, rate_hz);
+    dynamics_controller controller(robot_driver, arm_chain_, root_acc, 
+                                   joint_position_limits,
+                                   joint_velocity_limits, 
+                                   joint_acceleration_limits,
+                                   joint_torque_limits, rate_hz);
     
-    controller.control(true, true);
+    controller.control(simulation_environment);
     
     return 0;
 }
