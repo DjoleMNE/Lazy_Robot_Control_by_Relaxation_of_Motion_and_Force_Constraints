@@ -37,6 +37,8 @@ SOFTWARE.
 class youbot_mediator
 {
 	public:
+		bool is_initialized;
+
 		youbot_mediator();
 		~youbot_mediator(){}
 
@@ -64,7 +66,7 @@ class youbot_mediator
 
 	private:
 		// Number of joints in the manipulator
-		const int NUMBER_OF_JOINTS_ = 5;
+		const int NUMBER_OF_JOINTS_;
 
         //Absolute path to config files 
         std::string config_path_;
