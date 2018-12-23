@@ -176,17 +176,18 @@ int main(int argc, char **argv)
     std::vector<double> joint_velocity_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
     std::vector<double> joint_acceleration_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
     std::vector<double> joint_torque_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
+    std::vector<double> youbot_joint_offsets = { -2.9496, -1.1344, 2.6354, -1.7890, -2.9234 };
 
-    std::vector<double> hw_to_dyn_offset = { -2.9496, -1.1344, 2.6354, -1.7890, -2.9234 };
-    auto start_time = std::chrono::steady_clock::now();
-    auto end_time = std::chrono::steady_clock::now();
-    auto time_period = std::chrono::duration <double, std::micro> (end_time - start_time);
+    //arm root acceleration
+    KDL::Vector linearAcc(0.0, 0.0, -9.81); //gravitational acceleration along Z
+    KDL::Vector angularAcc(0.0, 0.0, 0.0);
+    KDL::Twist root_acc(linearAcc, angularAcc);
 
-    bool simulation = true;
-    bool use_custom_model = true;
     KDL::Chain arm_chain_;
     youbot_mediator arm;
 
+    bool simulation = true;
+    bool use_custom_model = true;
     if (simulation){
         if(use_custom_model){
             //Extract KDL tree from URDF file
@@ -206,22 +207,16 @@ int main(int argc, char **argv)
         std::cout << "Robot initialized!" << std::endl;
     }
 
- 
-
     int number_of_segments = arm_chain_.getNrOfSegments();
     int number_of_joints = arm_chain_.getNrOfJoints();
 
     assert(JOINTS == number_of_segments);
 
-    model_prediction predictor(arm_chain_);
     state_specification motion_(number_of_joints,
                                 number_of_segments,
                                 number_of_segments + 1,
                                 NUMBER_OF_CONSTRAINTS);
     state_specification commands_(motion_);
-
-    std::vector<KDL::Twist> frame_acceleration_;
-    frame_acceleration_.resize(number_of_segments + 1);
 
     if(!simulation){
         stop_motion(arm, motion_);
@@ -230,9 +225,6 @@ int main(int argc, char **argv)
         // go_candle_2(arm);
         // arm.get_joint_positions(motion_.q);
         // arm.get_joint_velocities(motion_.qd);
-
-        // std::cout << "\n" << "Joint Positions" << motion_.q << std::endl;
-        // std::cout << "\n" <<"Joint Velocities"<< motion_.qd << std::endl;
         // return 0;
     }
 
@@ -242,21 +234,15 @@ int main(int argc, char **argv)
     //Create External Forces task 
     // set_ext_forces(motion_);
 
-    //arm root acceleration
-    KDL::Vector linearAcc(0.0, 0.0, -9.81); //gravitational acceleration along Z
-    KDL::Vector angularAcc(0.0, 0.0, 0.0);
-    KDL::Twist root_acc(linearAcc, angularAcc);
 
     //loop rate in Hz
-    int rate_hz = 1000;
+    int rate_hz = 10000;
 
     dynamics_controller controller(arm, arm_chain_, root_acc, joint_position_limits,
                         joint_velocity_limits, joint_acceleration_limits,
-                        joint_torque_limits, hw_to_dyn_offset, rate_hz);
+                        joint_torque_limits, youbot_joint_offsets, rate_hz);
     
     controller.control(true, true);
     
-    // predictor.integrate(motion_, commands_, dt_sec, 1);
-
     return 0;
 }

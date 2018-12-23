@@ -101,10 +101,10 @@ class dynamics_controller
 
     void reset_state(state_specification &state);
     void check_limits(state_specification &state);
-    void stop_motion(const bool is_simulation_environment);
+    void stop_motion();
     void update_task();
     void update_current_state(const bool custom_model_used);
-    void make_predictions(){};
+    void make_predictions();
     void apply_commands(const bool custom_model_used);
     int evaluate_dynamics();
     int enforce_loop_frequency();

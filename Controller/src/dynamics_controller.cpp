@@ -60,8 +60,8 @@ dynamics_controller::dynamics_controller(
         dt_micro_(SECOND / rate_hz)
 {
     assert(NUMBER_OF_JOINTS_ == NUMBER_OF_SEGMENTS_);
-    assert(("Frequency is too low", 1.0 <= rate_hz_));
-    assert(("Frequency is too high", rate_hz_<= 2000.0));
+    assert(("Frequency is too low", 1 <= rate_hz_));
+    assert(("Frequency is too high", rate_hz_<= 10000));
 }
 
 // Set all values of desired state to 0 - public method
@@ -194,10 +194,15 @@ int dynamics_controller::evaluate_dynamics()
 }
 
 //Set velocities of arm's joints to 0 value
-void dynamics_controller::stop_motion(const bool is_simulation_environment)
+void dynamics_controller::stop_motion()
 { 
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++) commands_.qd(i) = 0;  
-    if (!is_simulation_environment) robot_driver_.set_joint_velocities(commands_.qd);
+    robot_driver_.set_joint_velocities(commands_.qd);
+}
+
+void dynamics_controller::make_predictions()
+{
+//   predictor.integrate(motion_, commands_, dt_sec, 1);
 }
 
 void dynamics_controller::update_task()
@@ -250,30 +255,32 @@ int dynamics_controller::enforce_loop_frequency(){
     return 0;    
 }
 
-int dynamics_controller::control(const bool is_simulation_environment,
+int dynamics_controller::control(const bool simulation_environment,
                                  const bool custom_model_used)
 {
-    stop_motion(is_simulation_environment);
+    if(!simulation_environment){
+        assert(robot_driver_.is_initialized);
+        stop_motion();
+    }
 
-    int solver_result;
     std::cout << "Control Loop Started"<< std::endl;
-
     while(1)
     {
         loop_start_time_ = std::chrono::steady_clock::now();
 
         update_task();
 
-        if (!is_simulation_environment) update_current_state(custom_model_used);
+        if (!simulation_environment) update_current_state(custom_model_used);
 
-        solver_result = evaluate_dynamics();
-        assert(solver_result == 0);
+        assert(evaluate_dynamics() == 0);
 
         make_predictions();
 
-        assert(("Loop too slow", enforce_loop_frequency() == 0));
+        if(!enforce_loop_frequency() == 0) 
+            std::cout << "WARNING: Loop too slow" << std::endl;
 
-        if (!is_simulation_environment) apply_commands(custom_model_used);
+        if (!simulation_environment) apply_commands(custom_model_used);
     }
+    
     return 0;
 }

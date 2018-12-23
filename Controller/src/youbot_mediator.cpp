@@ -26,7 +26,7 @@ SOFTWARE.
 */
 #include "youbot_mediator.hpp"
 
-youbot_mediator::youbot_mediator()
+youbot_mediator::youbot_mediator(): is_initialized(false), NUMBER_OF_JOINTS_(5)
 {   
     //Resize measurement variables
     q_measured_.resize(NUMBER_OF_JOINTS_);
@@ -159,5 +159,7 @@ void youbot_mediator::initialize(const std::string config_path,
     youbot_arm_->doJointCommutation();
     // Calibrate youBot arm
     youbot_arm_->calibrateManipulator();
+    is_initialized = true;
+
 	std::cout << "youBot initialized successfully! " << std::endl;
 }
