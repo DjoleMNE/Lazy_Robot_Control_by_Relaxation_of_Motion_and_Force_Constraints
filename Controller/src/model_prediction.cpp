@@ -24,40 +24,32 @@ SOFTWARE.
 */
 #include <model_prediction.hpp>
 
-model_prediction::model_prediction(const KDL::Chain &arm_chain): 
-    arm_chain_(arm_chain),
-    NUMBER_OF_SEGMENTS_(arm_chain.getNrOfSegments()),
-    NUMBER_OF_JOINTS_(arm_chain.getNrOfJoints()),
-    fk_position_solver_(arm_chain), 
-    fk_velocity_solver_(arm_chain)
+model_prediction::model_prediction(const KDL::Chain &robot_chain): 
+    robot_chain_(robot_chain),
+    NUMBER_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
+    NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
+    NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
+    fk_position_solver_(robot_chain_), 
+    fk_velocity_solver_(robot_chain_)
 {
     time_horizon_ = 0;
 }
 
-//Make predictions via integration methods
-void model_prediction::integrate(const state_specification &current_state,
-                                 state_specification &predicted_state,
-                                 const double step_size_dt,
-                                 const int number_of_steps)
+// Used for checking joint limits
+void model_prediction::integrate_joint_space(
+                                    const state_specification &current_state,
+                                    state_specification &predicted_state,
+                                    const double step_size_dt,
+                                    const int number_of_steps)
 {
-    // How long the future is: delta time * number of steps in future
+    // How long is the future: delta time * number of steps in future
     time_horizon_ = step_size_dt * number_of_steps;
-    double joint_velocity_limits[5] = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
 
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
     {   
         //Integrate from joint accelerations to joint velocities - Euler method
         predicted_state.qd(i) = current_state.qd(i)\
                                         + current_state.qdd(i) * time_horizon_;
-
-        //If joint limit reached, stop the program
-        if (abs(predicted_state.qd(i)) > joint_velocity_limits[i])
-        {
-            std::cout << "Limit reached on: " 
-                        << predicted_state.qd(i)
-                        << " " << i+1 << std::endl;
-        }
-        assert(abs(predicted_state.qd(i)) <= joint_velocity_limits[i]);
 
         //Integrate joint velocities to joint positions - Trapezoidal method
         predicted_state.q(i) = current_state.q(i)\
@@ -68,18 +60,18 @@ void model_prediction::integrate(const state_specification &current_state,
 
     //Workaround for avoiding dynamic creation of JntArrayVel instance
     //See this class' hpp for explanation
-    temp_jntarrayvel.q = predicted_state.q;
-    temp_jntarrayvel.qdot = predicted_state.qd;
+    // temp_jntarrayvel.q = predicted_state.q;
+    // temp_jntarrayvel.qdot = predicted_state.qd;
 
     //Compute angular and linear velocity of the end-effector
-    fk_velocity_solver_.JntToCart(
-                    temp_jntarrayvel, 
-                    predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]);
+    // fk_velocity_solver_.JntToCart(
+    //                 temp_jntarrayvel, 
+    //                 predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]);
 
     //Compute postion and orientation of the end-effector
-    fk_position_solver_.JntToCart(
-            predicted_state.q, 
-            predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
+    // fk_position_solver_.JntToCart(
+    //         predicted_state.q, 
+    //         predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
 
     // current_state = predicted_state;
     
@@ -90,4 +82,15 @@ void model_prediction::integrate(const state_specification &current_state,
     // std::cout << "End-effector Pose: " 
     //           << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
     //           << std::endl;
+}
+
+
+// Used for predicting future deviation from the goal state
+void model_prediction::integrate_cartesian_space(
+    const state_specification &current_state,
+    state_specification &predicted_state,
+    const double step_size,
+    const int number_of_steps)
+{
+    //TODO
 }

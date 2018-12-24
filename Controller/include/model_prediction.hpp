@@ -29,7 +29,6 @@ SOFTWARE.
 #include <iostream>
 #include <sstream>
 #include <time.h>
-#include <boost/assign/list_of.hpp>
 #include <fstream>
 #include <unistd.h>
 #include <cmath>
@@ -40,18 +39,27 @@ class model_prediction
 	public:
  		double time_horizon_;
 
-		model_prediction(const KDL::Chain &arm_chain);
+		model_prediction(const KDL::Chain &robot_chain);
 		~model_prediction(){}
 		
-		// Write integrated values in state variables
-		void integrate(const state_specification &current_state,
-					   state_specification &predicted_state,
-					   const double step_size,
-					   const int number_of_steps);
+		// Used for checking joint limits
+		void integrate_joint_space(const state_specification &current_state,
+								   state_specification &predicted_state,
+								   const double step_size,
+								   const int number_of_steps);
+
+		// Used for predicting future deviation from the goal state
+		void integrate_cartesian_space(const state_specification &current_state,
+									   state_specification &predicted_state,
+									   const double step_size,
+									   const int number_of_steps);
     private:
-		KDL::Chain arm_chain_;
+		KDL::Chain robot_chain_;
+
 		const int NUMBER_OF_SEGMENTS_;
 		const int NUMBER_OF_JOINTS_;
+	    const int NUMBER_OF_FRAMES_;
+
 		KDL::ChainFkSolverPos_recursive fk_position_solver_;
 		KDL::ChainFkSolverVel_recursive fk_velocity_solver_;
 

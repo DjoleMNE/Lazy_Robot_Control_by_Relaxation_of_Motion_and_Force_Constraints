@@ -41,6 +41,7 @@ add_executable(main
   src/solver_vereshchagin.cpp
   src/youbot_mediator.cpp
   src/youbot_custom_model.cpp
+  src/safety_controller.cpp
   src/dynamics_controller.cpp
 )
 

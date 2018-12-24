@@ -30,13 +30,13 @@ SOFTWARE.
 #include <youbot_custom_model.hpp>
 #include <youbot_mediator.hpp>
 #include <model_prediction.hpp>
+#include <safety_controller.hpp>
 #include <iostream>
 #include <sstream>
 #include <chrono>
 #include <thread> 
 #include <unistd.h>
 #include <time.h>
-#include <boost/assign/list_of.hpp>
 #include <fstream>
 #include <unistd.h> /*usleep function*/
 #include <cmath>
@@ -68,6 +68,7 @@ class dynamics_controller
   private:
     int rate_hz_;
     long dt_micro_;
+    double dt_sec_;
 
     std::chrono::steady_clock::time_point loop_start_time_;
     std::chrono::steady_clock::time_point loop_end_time_;
@@ -81,15 +82,10 @@ class dynamics_controller
     const KDL::Twist root_acc_;
     const KDL::Chain robot_chain_;
 
-    const std::vector<double> joint_position_limits_;
-    const std::vector<double> joint_velocity_limits_;
-    const std::vector<double> joint_acceleration_limits_;
-    const std::vector<double> joint_torque_limits_;
-
     youbot_mediator robot_driver_;
     KDL::Solver_Vereshchagin hd_solver_;
 	  model_prediction predictor_;
-    // safety_controller safety_;
+    safety_controller safety_control_;
 
     state_specification robot_state_;
     state_specification commands_;
@@ -97,7 +93,6 @@ class dynamics_controller
     state_specification predicted_state_;
 
     void reset_state(state_specification &state);
-    void check_limits(state_specification &state);
     void stop_motion();
     void update_task();
     void update_current_state();

@@ -37,8 +37,6 @@ dynamics_controller::dynamics_controller(
                             const int rate_hz):
         robot_chain_(chain),
         root_acc_(root_acc),
-        predictor_(robot_chain_),
-        robot_driver_(robot_driver),
         NUMBER_OF_CONSTRAINTS_(6),
         NUMBER_OF_JOINTS_(chain.getNrOfJoints()),
         NUMBER_OF_SEGMENTS_(chain.getNrOfSegments()),
@@ -49,13 +47,15 @@ dynamics_controller::dynamics_controller(
         commands_(robot_state_), 
         desired_state_(robot_state_), 
         predicted_state_(robot_state_), 
-        joint_position_limits_(joint_position_limits),
-        joint_velocity_limits_(joint_velocity_limits),
-        joint_acceleration_limits_(joint_acceleration_limits),
-        joint_torque_limits_(joint_torque_limits),
+        predictor_(robot_chain_),
+        robot_driver_(robot_driver),
+        safety_control_(robot_chain_, joint_position_limits, 
+                        joint_velocity_limits, joint_acceleration_limits, 
+                        joint_torque_limits),
         rate_hz_(rate_hz),
         // Time period defined in microseconds: 1s = 1 000 000us
-        dt_micro_(SECOND / rate_hz)
+        dt_micro_(SECOND / rate_hz),
+        dt_sec_(1.0 / static_cast<double>(rate_hz))
 {
     assert(NUMBER_OF_JOINTS_ == NUMBER_OF_SEGMENTS_);
     assert(("Frequency is too low", 1 <= rate_hz_));
@@ -216,9 +216,8 @@ void dynamics_controller::stop_motion()
 // Predict future robot states (motion) based given the current state
 void dynamics_controller::make_predictions()
 {
-    predictor_.integrate(robot_state_, predicted_state_, 
-                         static_cast<double> (dt_micro_) / SECOND, 
-                         1, joint_velocity_limits_);
+    predictor_.integrate_cartesian_space(robot_state_, predicted_state_, 
+                                         dt_sec_, 1);
 }
 
 // Update the desired robot state 
@@ -234,7 +233,7 @@ void dynamics_controller::update_task()
 //Send joint commands to the robot driver
 void dynamics_controller::apply_control_commands()
 { 
-    robot_driver_.set_joint_velocities(commands_.qd);
+    
 }
 
 //Get current robot state from the joint sensors
@@ -250,8 +249,7 @@ int dynamics_controller::control(const bool simulation_environment)
     if(!simulation_environment)
     {   
         // Check if the robot is initialied and connection established
-        assert(("Robot is not initialized", robot_driver_.is_initialized));
-        
+        assert(("Robot is not initialized", robot_driver_.is_initialized));        
         // Make sure that robot is not moving at the start 
         stop_motion();
     }
@@ -272,14 +270,40 @@ int dynamics_controller::control(const bool simulation_environment)
         assert(evaluate_dynamics() == 0);
 
         // Predict future robot states (motion) based given the current state
-        make_predictions();
+        // make_predictions();
+
+        switch(safety_control_.check_limits(robot_state_, commands_, dt_sec_)) 
+        {
+            case -1:
+                cout << "WARNING: Current commands are not safe. " 
+                     << "Stopping the robot!" << endl;
+                if (!simulation_environment) stop_motion();
+                return -1;
+
+            case -2:
+                cout << "WARNING: Control switched to velocity mode" << endl;
+                if (!simulation_environment) 
+                    robot_driver_.set_joint_velocities(commands_.qd);
+                break;
+
+            case -3:
+                cout << "WARNING: Control switched to position mode" << endl;
+                if (!simulation_environment) 
+                    robot_driver_.set_joint_positions(commands_.q);
+                break;
+
+            case 0:
+                if (!simulation_environment)
+                    robot_driver_.set_joint_velocities(commands_.qd);
+                    // robot_driver_.set_joint_torques(commands_.control_torque);
+                break;
+        }
 
         // Make sure that the loop is always running with the same frequency
         if(!enforce_loop_frequency() == 0) 
-            std::cout << "WARNING: Loop runs too slow" << std::endl;
+            std::cout << "WARNING: Control loop runs too slow" << std::endl;
         
         // All calculations done - send commands to the robot driver
-        if (!simulation_environment) apply_control_commands();
     }
 
     return 0;
