@@ -62,6 +62,7 @@ class state_specification
 			qd.resize(NUMBER_OF_JOINTS_);
 			qdd.resize(NUMBER_OF_JOINTS_);
 			feedforward_torque.resize(NUMBER_OF_JOINTS_);
+			control_torque.resize(NUMBER_OF_JOINTS_);
 			ee_unit_constraint_force.resize(NUMBER_OF_CONSTRAINTS_); //alpha
 			ee_acceleration_energy.resize(NUMBER_OF_CONSTRAINTS_); //beta
 			external_force.resize(NUMBER_OF_SEGMENTS_);
