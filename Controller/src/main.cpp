@@ -25,7 +25,6 @@ SOFTWARE.
 #include <youbot_custom_model.hpp>
 #include <urdf/model.h>
 #include <youbot_mediator.hpp>
-#include <model_prediction.hpp>
 #include <state_specification.hpp>
 #include <dynamics_controller.hpp>
 #include <iostream>
@@ -116,7 +115,7 @@ void go_navigation_2(youbot_mediator &arm){
 }
 
 //Set velocities of arm's joints to 0 value
-void stop_motion(youbot_mediator &arm, state_specification &motion){ 
+void stop_robot_motion(youbot_mediator &arm, state_specification &motion){ 
     for (int i = 0; i < JOINTS; i++) motion.qd(i) = 0;  
     arm.set_joint_velocities(motion.qd);
 }
@@ -200,12 +199,14 @@ int main(int argc, char **argv)
                                                 "arm_link_5") != -1);
             std::cout << "URDF youBot model selected" << std::endl;
         }
+        std::cout << "\n";
     } else{
         robot_driver.initialize("/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config", 
                     "arm_link_0", "arm_link_5",
                     "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf",
                     use_custom_model, youbot_joint_offsets, arm_chain_);
         std::cout << "Robot initialized!" << std::endl;
+        std::cout << "\n";
     }
 
     int number_of_segments = arm_chain_.getNrOfSegments();
@@ -221,7 +222,7 @@ int main(int argc, char **argv)
 
     if(!simulation_environment){
         assert(("Robot is not initialized", robot_driver.is_initialized));
-        stop_motion(robot_driver, motion_);
+        stop_robot_motion(robot_driver, motion_);
         // go_navigation_1(robot_driver);
         // go_folded(robot_driver);
         // go_candle_2(robot_driver);
@@ -240,12 +241,12 @@ int main(int argc, char **argv)
     int rate_hz = 1000;
 
     dynamics_controller controller(robot_driver, arm_chain_, root_acc, 
-                                   joint_position_limits,
-                                   joint_velocity_limits, 
+                                   joint_position_limits, joint_velocity_limits, 
                                    joint_acceleration_limits,
                                    joint_torque_limits, rate_hz);
     
-    controller.control(simulation_environment);
+    controller.control(simulation_environment, 
+                       control_mode::velocity_control);
     
     return 0;
 }

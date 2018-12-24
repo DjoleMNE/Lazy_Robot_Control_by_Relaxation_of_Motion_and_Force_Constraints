@@ -43,7 +43,8 @@ safety_controller::safety_controller(
 
 int safety_controller::check_limits(const state_specification &current_state,
                                     state_specification &commands,
-                                    const double dt_sec)
+                                    const double dt_sec,
+                                    const int desired_control_mode)
 {   
     predictor_.integrate_joint_space(current_state, commands, dt_sec, 1);
 
@@ -55,10 +56,8 @@ int safety_controller::check_limits(const state_specification &current_state,
             std::cout << "Joint "<< i + 1 << "rate: " 
                       <<commands.qd(i) << " rad/s over limit" 
                       << std::endl;
-
-            return -1;
+            return control_mode::stop_motion;
         }
     }
-
-    return -0;
+    return desired_control_mode;
 }

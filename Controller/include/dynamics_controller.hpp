@@ -55,7 +55,8 @@ class dynamics_controller
                         const int rate_hz);
     ~dynamics_controller(){};
 
-    int control(const bool is_simulation_environment);
+    int control(const bool is_simulation_environment,
+                const int desired_control_mode);
 
     void reset_desired_state();
 
@@ -69,6 +70,12 @@ class dynamics_controller
     int rate_hz_;
     long dt_micro_;
     double dt_sec_;
+
+    struct desired_control_mode
+    {
+      int interface;
+      bool is_safe;
+    } desired_control_mode_;
 
     std::chrono::steady_clock::time_point loop_start_time_;
     std::chrono::steady_clock::time_point loop_end_time_;
@@ -87,13 +94,15 @@ class dynamics_controller
 	  model_prediction predictor_;
     safety_controller safety_control_;
 
+
     state_specification robot_state_;
     state_specification commands_;
     state_specification desired_state_;
     state_specification predicted_state_;
 
+    void print_settings_info();
     void reset_state(state_specification &state);
-    void stop_motion();
+    void stop_robot_motion();
     void update_task();
     void update_current_state();
     void make_predictions();

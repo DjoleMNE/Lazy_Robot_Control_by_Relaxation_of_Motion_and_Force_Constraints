@@ -163,15 +163,12 @@ void youbot_mediator::initialize(const std::string config_path,
                                                         "youbot-manipulator", 
                                                         config_path_);
 
-    //Extract KDL tree from custom cpp file
-    if(custom_model_used_) youbot_custom_model yb_model(arm_chain);
-    else
-    {
-        //Extract youBot model from URDF file
+    if(custom_model_used_) //Extract KDL tree from custom cpp file 
+        youbot_custom_model yb_model(arm_chain);
+    else //Extract youBot model from URDF file
         assert(get_robot_model_from_urdf(arm_chain, root_name, 
                                          tooltip_name, urdf_path) == 0);
-        std::cout << "youBot model created successfully! " << std::endl;
-    }
+    std::cout << "youBot model created successfully! " << std::endl;
 
     // Commutate with the joints
     youbot_arm_->doJointCommutation();

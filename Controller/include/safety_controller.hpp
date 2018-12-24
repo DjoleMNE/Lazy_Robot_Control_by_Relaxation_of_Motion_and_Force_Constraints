@@ -35,6 +35,14 @@ SOFTWARE.
 #include <cmath>
 #include <stdlib.h>     /* abs */
 
+enum control_mode 
+{
+    torque_control = 0,
+    velocity_control = 1,
+    position_control = 2, 
+    stop_motion = -1   
+};
+
 class safety_controller
 {
   public:
@@ -47,14 +55,15 @@ class safety_controller
 
     int check_limits(const state_specification &current_state,
                      state_specification &commands,
-                     const double dt_sec);
+                     const double dt_sec,
+                     const int desired_control_mode);
 
   private:
 
     const int NUMBER_OF_JOINTS_;
     const int NUMBER_OF_SEGMENTS_;
     const int NUMBER_OF_FRAMES_;
-
+        
     const KDL::Chain robot_chain_;
 
     const std::vector<double> joint_position_limits_;
