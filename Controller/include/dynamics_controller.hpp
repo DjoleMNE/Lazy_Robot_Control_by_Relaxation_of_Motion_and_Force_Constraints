@@ -70,6 +70,7 @@ class dynamics_controller
     int rate_hz_;
     long dt_micro_;
     double dt_sec_;
+    int solver_result_;
 
     struct desired_control_mode
     {
@@ -93,7 +94,6 @@ class dynamics_controller
     KDL::Solver_Vereshchagin hd_solver_;
 	  model_prediction predictor_;
     safety_controller safety_control_;
-
 
     state_specification robot_state_;
     state_specification commands_;

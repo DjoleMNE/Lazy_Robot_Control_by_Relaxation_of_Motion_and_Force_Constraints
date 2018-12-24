@@ -52,13 +52,14 @@ dynamics_controller::dynamics_controller(
         safety_control_(robot_chain_, joint_position_limits, 
                         joint_velocity_limits, joint_acceleration_limits, 
                         joint_torque_limits),
+        solver_result_(0),
         rate_hz_(rate_hz),
         // Time period defined in microseconds: 1s = 1 000 000us
         dt_micro_(SECOND / rate_hz),
         dt_sec_(1.0 / static_cast<double>(rate_hz)) 
 {
     assert(NUMBER_OF_JOINTS_ == NUMBER_OF_SEGMENTS_);
-    
+
     // Control loop frequency must be higher than or equal to 1 Hz
     assert(("Frequency is too low", 1 <= rate_hz_));
     // Control loop frequency must be lower than or equal to 1000 Hz
@@ -163,7 +164,7 @@ void dynamics_controller::define_feadforward_torque_task(
                                             const std::vector<double> ff_torque)
 {
     //Call private method for this state
-    set_external_forces(desired_state_, ff_torque);
+    set_feadforward_torque(desired_state_, ff_torque);
 }
 
 // Define FeedForward joint torques task - Private Method
@@ -174,25 +175,29 @@ void dynamics_controller::set_feadforward_torque(
     assert(ff_torque.size() == NUMBER_OF_JOINTS_);
 
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
-        state.feedforward_torque(i) = ff_torque[0];
+        state.feedforward_torque(i) = ff_torque[i];
 }
 
 //Calculate robot dynamics - Resolve its motion using Vereshchagin HD solver
 int dynamics_controller::evaluate_dynamics()
 {
-    return hd_solver_.CartToJnt(robot_state_.q,
-                                robot_state_.qd,
-                                robot_state_.qdd,
-                                robot_state_.ee_unit_constraint_force,
-                                robot_state_.ee_acceleration_energy,
-                                robot_state_.external_force,
-                                robot_state_.feedforward_torque);
+    solver_result_= hd_solver_.CartToJnt(robot_state_.q,
+                                         robot_state_.qd,
+                                         robot_state_.qdd,
+                                         robot_state_.ee_unit_constraint_force,
+                                         robot_state_.ee_acceleration_energy,
+                                         robot_state_.external_force,
+                                         robot_state_.feedforward_torque);
 
-    // hd_solver_.get_transformed_link_acceleration(motion_.frame_acceleration);
+    hd_solver_.get_transformed_link_acceleration(robot_state_.frame_acceleration);
     // std::cout << "\n \n Frame ACC" << '\n';
     // for (size_t i = 0; i < number_of_segments + 1; i++)
     //     std::cout << motion_.frame_acceleration[i] << '\n';
     // std::cout << std::endl;
+
+    hd_solver_.get_control_torque(robot_state_.control_torque);
+
+    return solver_result_;
 }
 
 //Make sure that the control loop runs exactly with specified frequency
@@ -250,7 +255,8 @@ void dynamics_controller::stop_robot_motion()
 // Predict future robot states (motion) based given the current state
 void dynamics_controller::make_predictions()
 {
-    predictor_.integrate_cartesian_space(robot_state_, predicted_state_, 
+    predictor_.integrate_cartesian_space(robot_state_, 
+                                         predicted_state_, 
                                          dt_sec_, 1);
 }
 
@@ -312,11 +318,11 @@ int dynamics_controller::control(const bool simulation_environment,
         if (!simulation_environment) update_current_state();
 
         // Calculate robot dynamics using Vereshchagin HD solver
-        if(evaluate_dynamics() != 0 & !simulation_environment){
+        if(evaluate_dynamics() != 0){
             std::cout << "WARNING: Dynamics Solver returned error. "
                       << "Current commands are not safe. " 
                       << "Stopping the robot!" << std::endl;
-            stop_robot_motion();
+            if(!simulation_environment) stop_robot_motion();
             return -1;
         } 
 
@@ -328,36 +334,37 @@ int dynamics_controller::control(const bool simulation_environment,
             If yes: use desired control mode
             Else: use the control mode selected by the safety controller 
         */
-        safe_control_mode = safety_control_.check_limits(robot_state_, commands_, dt_sec_, 
-                                            desired_control_mode_.interface);
+        safe_control_mode = safety_control_.check_limits(robot_state_, 
+                                                commands_, dt_sec_, 
+                                                desired_control_mode_.interface);
+
+        desired_control_mode_.is_safe =\
+            (safe_control_mode == desired_control_mode_.interface)? true : false; 
+
         switch(safe_control_mode) 
         {
             case control_mode::stop_motion:
-                desired_control_mode_.is_safe = false;
                 cout << "WARNING: Current commands are not safe. " 
                      << "Stopping the robot!" << endl;
                 if (!simulation_environment) stop_robot_motion();
                 return -1;
 
             case control_mode::velocity_control:
-                if (safe_control_mode != desired_control_mode_.interface){
+                if(!desired_control_mode_.is_safe) 
                     cout << "WARNING: Control switched to velocity mode" << endl;
-                    desired_control_mode_.is_safe = false;
-                }
                 if (!simulation_environment) 
                     robot_driver_.set_joint_velocities(commands_.qd);
                 break;
 
             case control_mode::position_control:
-                if (safe_control_mode != desired_control_mode_.interface){
+                if(!desired_control_mode_.is_safe) 
                     cout << "WARNING: Control switched to position mode" << endl;
-                    desired_control_mode_.is_safe = false;
-                }
                 if (!simulation_environment) 
                     robot_driver_.set_joint_positions(commands_.q);
                 break;
 
             case control_mode::torque_control:
+                assert(desired_control_mode_.is_safe);
                 if (!simulation_environment)
                     robot_driver_.set_joint_torques(commands_.control_torque);
                 break;
@@ -366,6 +373,5 @@ int dynamics_controller::control(const bool simulation_environment,
         if(!enforce_loop_frequency() == 0) 
             std::cout << "WARNING: Control loop runs too slow" << std::endl;
     }
-
     return 0;
 }

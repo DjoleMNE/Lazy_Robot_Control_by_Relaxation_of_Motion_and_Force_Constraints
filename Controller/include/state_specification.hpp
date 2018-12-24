@@ -102,6 +102,7 @@ class state_specification
 				this->q(i) = 0.0;
 				this->qd(i) = 0.0;
 				this->qdd(i) = 0.0;
+				this->control_torque(i) = 0.0;
 				this->feedforward_torque(i) = 0.0;
 			}
 
@@ -118,6 +119,7 @@ class state_specification
 			}
 
 			// Accelerations, velocities and poses of segments
+			// add code for setting velocities and poses to zero
 			for (int i = 0; i < NUMBER_OF_FRAMES_; i++)
 				KDL::SetToZero(this->frame_acceleration[i]);
 		}

@@ -120,55 +120,6 @@ void stop_robot_motion(youbot_mediator &arm, state_specification &motion){
     arm.set_joint_velocities(motion.qd);
 }
 
-void set_ee_constraints(state_specification &motion)
-{
-    KDL::Twist unit_constraint_force_xl(
-        KDL::Vector(0.0, 0.0, 0.0),  // linear
-        KDL::Vector(0.0, 0.0, 0.0)); // angular
-    motion.ee_unit_constraint_force.setColumn(0, unit_constraint_force_xl);
-    motion.ee_acceleration_energy(0) = -0.001;
-
-    KDL::Twist unit_constraint_force_yl(
-        KDL::Vector(0.0, 0.0, 0.0),  // linear
-        KDL::Vector(0.0, 0.0, 0.0)); // angular
-    motion.ee_unit_constraint_force.setColumn(1, unit_constraint_force_yl);
-    motion.ee_acceleration_energy(1) = 0.0;
-
-    KDL::Twist unit_constraint_force_zl(
-        KDL::Vector(0.0, 0.0, 1.0),  // linear
-        KDL::Vector(0.0, 0.0, 0.0)); // angular
-    motion.ee_unit_constraint_force.setColumn(2, unit_constraint_force_zl);
-    motion.ee_acceleration_energy(2) = -0.0001;
-
-    KDL::Twist unit_constraint_force_xa(
-        KDL::Vector(0.0, 0.0, 0.0),  // linear
-        KDL::Vector(0.0, 0.0, 0.0)); // angular
-    motion.ee_unit_constraint_force.setColumn(3, unit_constraint_force_xa);
-    motion.ee_acceleration_energy(3) = 0.0;
-
-    KDL::Twist unit_constraint_force_ya(
-        KDL::Vector(0.0, 0.0, 0.0),  // linear
-        KDL::Vector(0.0, 0.0, 0.0)); // angular
-    motion.ee_unit_constraint_force.setColumn(4, unit_constraint_force_ya);
-    motion.ee_acceleration_energy(4) = 0.0;
-
-    KDL::Twist unit_constraint_force_za(
-        KDL::Vector(0.0, 0.0, 0.0),  // linear
-        KDL::Vector(0.0, 0.0, 0.0)); // angular
-    motion.ee_unit_constraint_force.setColumn(5, unit_constraint_force_za);
-    motion.ee_acceleration_energy(5) = 0.0;
-}
-
-void set_ext_forces(state_specification &forces){
-    forces.external_force[forces.external_force.size() - 1] = \
-                                    KDL::Wrench (KDL::Vector(-0.1,
-                                                             0.0,
-                                                             0.0), //Linear Force
-                                                 KDL::Vector(0.0,
-                                                             0.0,
-                                                             0.0)); //Torque
-}
-
 int main(int argc, char **argv)
 {
     std::vector<double> joint_position_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
@@ -231,11 +182,6 @@ int main(int argc, char **argv)
         // return 0;
     }
 
-    //Create End_effector Cartesian Acceleration task 
-    // set_ee_constraints(motion_);
-
-    //Create External Forces task 
-    // set_ext_forces(motion_);
 
     //loop rate in Hz
     int rate_hz = 1000;
@@ -244,6 +190,21 @@ int main(int argc, char **argv)
                                    joint_position_limits, joint_velocity_limits, 
                                    joint_acceleration_limits,
                                    joint_torque_limits, rate_hz);
+    
+    //Create End_effector Cartesian Acceleration task 
+    controller.define_ee_constraint_task(std::vector<bool>{true, false, false, 
+                                                           false, true, false},
+                                         std::vector<double>{100.01, 0.0, 
+                                                             0.0, 0.0, 
+                                                             0.0, 0.0});
+    //Create External Forces task 
+    controller.define_ee_external_force_task(std::vector<double>{10.01, 0.0, 
+                                                                 0.0, 10.0, 
+                                                                 0.0, 0.0});
+    //Create Feedforward torques task 
+    controller.define_feadforward_torque_task(std::vector<double>{10.01, 0.0, 
+                                                                  -50.0, 10.0, 
+                                                                  0.0});
     
     controller.control(simulation_environment, 
                        control_mode::velocity_control);
