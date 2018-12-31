@@ -194,16 +194,16 @@ int main(int argc, char **argv)
     //Create End_effector Cartesian Acceleration task 
     controller.define_ee_constraint_task(std::vector<bool>{true, false, false, 
                                                            false, true, false},
-                                         std::vector<double>{100.01, 0.0, 
+                                         std::vector<double>{1.01, 0.0, 
                                                              0.0, 0.0, 
                                                              0.0, 0.0});
     //Create External Forces task 
-    controller.define_ee_external_force_task(std::vector<double>{10.01, 0.0, 
-                                                                 0.0, 10.0, 
+    controller.define_ee_external_force_task(std::vector<double>{0.0, 0.0, 
+                                                                 0.0, 0.0, 
                                                                  0.0, 0.0});
     //Create Feedforward torques task 
-    controller.define_feadforward_torque_task(std::vector<double>{10.01, 0.0, 
-                                                                  -50.0, 10.0, 
+    controller.define_feadforward_torque_task(std::vector<double>{0.0, 0.0, 
+                                                                  0.0, 0.0, 
                                                                   0.0});
     
     controller.control(simulation_environment, 

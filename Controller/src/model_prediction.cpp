@@ -47,16 +47,24 @@ void model_prediction::integrate_joint_space(
 
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
     {   
-        //Integrate from joint accelerations to joint velocities - Euler method
+        //Integrate joint accelerations to velocities - Classical Euler method
         predicted_state.qd(i) = current_state.qd(i)\
-                                        + current_state.qdd(i) * time_horizon_;
+                                        + current_state.qdd(i) * step_size_dt;
 
-        //Integrate joint velocities to joint positions - Trapezoidal method
+        //Integrate joint velocities to positions - Symplectic Euler method
         predicted_state.q(i) = current_state.q(i)\
-                            + (predicted_state.qd(i)\
-                                - current_state.qdd(i) * time_horizon_ / 2.0)\
-                            * time_horizon_;
+                                         + predicted_state.qd(i) * step_size_dt;
+        
+        //Integrate joint velocities to joint positions - Trapezoidal method
+        // predicted_state.q(i) = current_state.q(i)\
+        //                     + (predicted_state.qd(i)\
+        //                         - current_state.qdd(i) * step_size_dt / 2.0)\
+        //                     * time_horizon_;
     }
+    std::cout << current_state.qdd << std::endl;
+    std::cout << predicted_state.qd << std::endl;
+    std::cout << predicted_state.q << std::endl;
+    std::cout << "\n" << std::endl;
 
     //Workaround for avoiding dynamic creation of JntArrayVel instance
     //See this class' hpp for explanation

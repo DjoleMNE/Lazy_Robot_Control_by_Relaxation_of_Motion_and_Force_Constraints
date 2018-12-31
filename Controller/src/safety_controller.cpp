@@ -53,8 +53,8 @@ int safety_controller::check_limits(const state_specification &current_state,
     {
         if (abs(commands.qd(i)) > joint_velocity_limits_[i])
         {
-            std::cout << "Joint "<< i + 1 << "rate: " 
-                      <<commands.qd(i) << " rad/s over limit" 
+            std::cout << "Joint "<< i + 1 << " : " 
+                      <<commands.qd(i) << " rad/s is over the limit" 
                       << std::endl;
             return control_mode::stop_motion;
         }

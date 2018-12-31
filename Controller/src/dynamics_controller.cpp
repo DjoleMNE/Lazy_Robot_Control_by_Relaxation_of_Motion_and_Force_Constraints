@@ -239,6 +239,10 @@ void dynamics_controller::print_settings_info()
             std::cout << "Torque Control" << std::endl;
             break;
     }
+    
+    std::cout<<"\nInitial joint state:"<< std::endl;
+    std::cout<< "Joint velocities:"<< robot_state_.qd << std::endl;
+    std::cout<< "Joint positions: "<< robot_state_.q << std::endl;
     std::cout<<"\n";
 }
 
@@ -319,7 +323,7 @@ int dynamics_controller::control(const bool simulation_environment,
 
         // Calculate robot dynamics using Vereshchagin HD solver
         if(evaluate_dynamics() != 0){
-            std::cout << "WARNING: Dynamics Solver returned error. "
+            std::cerr << "WARNING: Dynamics Solver returned error. "
                       << "Current commands are not safe. " 
                       << "Stopping the robot!" << std::endl;
             if(!simulation_environment) stop_robot_motion();
@@ -327,6 +331,7 @@ int dynamics_controller::control(const bool simulation_environment,
         } 
 
         // Predict future robot states (motion) based given the current state
+        // Integrate Cartesian variables
         // make_predictions();
 
         /* 
@@ -334,9 +339,17 @@ int dynamics_controller::control(const bool simulation_environment,
             If yes: use desired control mode
             Else: use the control mode selected by the safety controller 
         */
+
         safe_control_mode = safety_control_.check_limits(robot_state_, 
-                                                commands_, dt_sec_, 
+                                                predicted_state_, dt_sec_, 
                                                 desired_control_mode_.interface);
+
+        //if simulation on, replace current state with 
+        // integrated joint velocities and positions
+        if(simulation_environment){
+            robot_state_.qd = predicted_state_.qd;
+            robot_state_.q = predicted_state_.q;
+        }
 
         desired_control_mode_.is_safe =\
             (safe_control_mode == desired_control_mode_.interface)? true : false; 
@@ -350,6 +363,7 @@ int dynamics_controller::control(const bool simulation_environment,
                 return -1;
 
             case control_mode::velocity_control:
+                commands_ = predicted_state_;
                 if(!desired_control_mode_.is_safe) 
                     cout << "WARNING: Control switched to velocity mode" << endl;
                 if (!simulation_environment) 
@@ -357,21 +371,23 @@ int dynamics_controller::control(const bool simulation_environment,
                 break;
 
             case control_mode::position_control:
+                commands_ = predicted_state_; 
                 if(!desired_control_mode_.is_safe) 
                     cout << "WARNING: Control switched to position mode" << endl;
-                if (!simulation_environment) 
+                if (!simulation_environment)
                     robot_driver_.set_joint_positions(commands_.q);
                 break;
 
             case control_mode::torque_control:
                 assert(desired_control_mode_.is_safe);
+                commands_ = robot_state_;
                 if (!simulation_environment)
                     robot_driver_.set_joint_torques(commands_.control_torque);
                 break;
         }
         // Make sure that the loop is always running with the same frequency
-        if(!enforce_loop_frequency() == 0) 
-            std::cout << "WARNING: Control loop runs too slow" << std::endl;
+        // if(!enforce_loop_frequency() == 0) 
+            // std::cerr << "WARNING: Control loop runs too slow" << std::endl;
     }
     return 0;
 }
