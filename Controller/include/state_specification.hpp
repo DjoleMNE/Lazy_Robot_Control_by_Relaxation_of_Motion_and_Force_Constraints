@@ -56,7 +56,9 @@ class state_specification
 			NUMBER_OF_JOINTS_(number_of_joints),
 			NUMBER_OF_SEGMENTS_(number_of_segments),
 			NUMBER_OF_FRAMES_(number_of_frames),
-			NUMBER_OF_CONSTRAINTS_(number_of_constraints)
+			NUMBER_OF_CONSTRAINTS_(number_of_constraints),
+			zero_value_vector_(0.0, 0.0, 0.0),
+			zero_value_twist_(zero_value_vector_, zero_value_vector_)
 		{
 			q.resize(NUMBER_OF_JOINTS_);
 			qd.resize(NUMBER_OF_JOINTS_);
@@ -93,35 +95,28 @@ class state_specification
 
 		void reset_values()
 		{
+			// Joint space varibles
+			KDL::SetToZero(q);
+			KDL::SetToZero(qd);
+			KDL::SetToZero(qdd);
+			KDL::SetToZero(control_torque);
+			KDL::SetToZero(feedforward_torque);
+
 			//External forces on the arm
 			for (int i = 0; i < NUMBER_OF_SEGMENTS_; i++)
-				KDL::SetToZero(this->external_force[i]);
+				KDL::SetToZero(external_force[i]);
 			
-			// Joint space varibles
-			for (int i = 0; i < NUMBER_OF_JOINTS_; i++){
-				this->q(i) = 0.0;
-				this->qd(i) = 0.0;
-				this->qdd(i) = 0.0;
-				this->control_torque(i) = 0.0;
-				this->feedforward_torque(i) = 0.0;
-			}
-
 			//Acceleration Constraints on the End-Effector
-			KDL::Twist unit_constraint_force(
-				KDL::Vector(0.0, 0.0, 0.0),  // linear
-				KDL::Vector(0.0, 0.0, 0.0)); // angular
-
 			for(int i = 0; i < NUMBER_OF_CONSTRAINTS_; i++)
 			{
-				this->ee_unit_constraint_force.setColumn(i, 
-														 unit_constraint_force);
-				this->ee_acceleration_energy(i) = 0.0;
+				ee_unit_constraint_force.setColumn(i, zero_value_twist_);
+				ee_acceleration_energy(i) = 0.0;
 			}
 
 			// Accelerations, velocities and poses of segments
 			// add code for setting velocities and poses to zero
 			for (int i = 0; i < NUMBER_OF_FRAMES_; i++)
-				KDL::SetToZero(this->frame_acceleration[i]);
+				KDL::SetToZero(frame_acceleration[i]);
 		}
 
 		private:
@@ -129,5 +124,8 @@ class state_specification
 			const int NUMBER_OF_SEGMENTS_;
 			const int NUMBER_OF_FRAMES_;
 			const int NUMBER_OF_CONSTRAINTS_;
+
+			const KDL::Twist zero_value_twist_;
+			const KDL::Vector zero_value_vector_;
 };
 #endif /* STATE_SPECIFICATION_HPP */
