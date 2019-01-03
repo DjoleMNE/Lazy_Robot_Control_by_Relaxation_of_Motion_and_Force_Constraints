@@ -47,7 +47,8 @@ class youbot_mediator
 					    const std::string root_name, 
 					    const std::string tooltip_name,
 					    const std::string urdf_path,
-					    const bool custom_model_used,
+					    const bool custom_model_used, 
+						const bool solver_used,
 						const std::vector<double> youbot_joint_offsets,
 					    KDL::Chain &arm_chain);
 
@@ -69,6 +70,7 @@ class youbot_mediator
 		// Number of joints in the manipulator
 		const int NUMBER_OF_JOINTS_;
 		bool custom_model_used_;
+		bool add_offsets_;
 
         //Absolute path to config files 
         std::string config_path_;

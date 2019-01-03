@@ -50,9 +50,9 @@ void youbot_mediator::get_joint_positions(KDL::JntArray &joint_positions)
         joint_positions(i) = q_measured_[i].angle.value();
 
         // Custom model's home state is not folded - it is candle
-        // Check with Sven if last joint value should be inverted here
+        // Check with Sven if the last joint value should be inverted here
         // similary like in the case of getting joint velocities
-        if (custom_model_used_) 
+        if (add_offsets_) 
             joint_positions(i) = joint_positions(i) + youbot_joint_offsets_[i];
     }
 }
@@ -61,11 +61,13 @@ void youbot_mediator::get_joint_positions(KDL::JntArray &joint_positions)
 void youbot_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
 {
     // Converting KDL angles to youBot driver joint angles 
-    for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
-        q_setpoint_[i].angle = joint_positions(i) * radian;
+    for (int i = 0; i < NUMBER_OF_JOINTS_; i++){
+        if (add_offsets_){
+            q_setpoint_[i].angle = \
+                (joint_positions(i) - youbot_joint_offsets_[i]) * radian;            
+        } else q_setpoint_[i].angle = joint_positions(i) * radian;
+    }
 
-    // Maybe there should be a flag when this interface is used with
-    // Vereshchagin on the custom model and with not hard coded values
 	youbot_arm_->setJointData(q_setpoint_);
 }
 
@@ -78,7 +80,7 @@ void youbot_mediator::get_joint_velocities(KDL::JntArray &joint_velocities)
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
         joint_velocities(i) = qd_measured_[i].angularVelocity.value();
 
-    if (custom_model_used_) joint_velocities(4) = -1 * joint_velocities(4);
+    if (add_offsets_) joint_velocities(4) = -1 * joint_velocities(4);
 }
 
 //Set Joint Velocities
@@ -89,9 +91,9 @@ void youbot_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities
         qd_setpoint_[i].angularVelocity = \
                                     joint_velocities(i) * radian_per_second;
 
-    if(custom_model_used_) 
+    if(add_offsets_) 
         qd_setpoint_[4].angularVelocity = 0.0 * radian_per_second;
-    // if(custom_model_used_) 
+    // if(add_offsets_) 
     //     qd_setpoint_[4].angularVelocity = \
     //         -1 * joint_velocities(4) * radian_per_second;
 
@@ -106,6 +108,8 @@ void youbot_mediator::get_joint_torques(KDL::JntArray &joint_torques)
     // Converting the youBot driver joint torques to KDL joint torques
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
         joint_torques(i) = tau_measured_[i].torque.value();
+    
+    if (add_offsets_) joint_torques(4) = -1 * joint_torques(4);
 }
 
 //Set Joint Torques
@@ -116,7 +120,10 @@ void youbot_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
         tau_setpoint_[i].torque = joint_torques(i) * newton_meter;
     
-    if(custom_model_used_) tau_setpoint_[4].torque = 0.0 * newton_meter;
+    if(add_offsets_) tau_setpoint_[4].torque = 0.0 * newton_meter;
+    // if(add_offsets_) 
+    //     qd_setpoint_[4].angularVelocity = \
+    //         -1 * joint_velocities(4) * radian_per_second;
 
 	youbot_arm_->setJointData(tau_setpoint_);
 }
@@ -151,19 +158,25 @@ void youbot_mediator::initialize(const std::string config_path,
                                  const std::string tooltip_name,
                                  const std::string urdf_path,
                                  const bool custom_model_used,
+                                 const bool solver_used,
                                  const std::vector<double> youbot_joint_offsets,
                                  KDL::Chain &arm_chain)
 {
     // Setting the path for the manipulator configuration file
     config_path_ = config_path;
     youbot_joint_offsets_ = youbot_joint_offsets;
-    custom_model_used_ = custom_model_used;
+
+    /*
+        If interface is used with the solver and the custom model: add offsets
+        Else: set the original values
+    */ // Custom model's home state is not folded - it is candle
+    add_offsets_ = (custom_model_used && solver_used)? true : false;
 
     this->youbot_arm_ = std::make_shared<youbot::YouBotManipulator>(
                                                         "youbot-manipulator", 
                                                         config_path_);
 
-    if(custom_model_used_) //Extract KDL tree from custom cpp file 
+    if(custom_model_used) //Extract KDL tree from custom cpp file 
         youbot_custom_model yb_model(arm_chain);
     else //Extract youBot model from URDF file
         assert(get_robot_model_from_urdf(arm_chain, root_name, 
