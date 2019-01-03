@@ -57,22 +57,24 @@ class state_specification
 			NUMBER_OF_SEGMENTS_(number_of_segments),
 			NUMBER_OF_FRAMES_(number_of_frames),
 			NUMBER_OF_CONSTRAINTS_(number_of_constraints),
+			q(number_of_joints),
+			qd(number_of_joints),
+			qdd(number_of_joints),
+			feedforward_torque(number_of_joints),
+			control_torque(number_of_joints),
+			ee_unit_constraint_force(number_of_constraints), //alpha
+			ee_acceleration_energy(number_of_constraints), //beta
+			external_force(number_of_segments),
+			frame_pose(number_of_segments),
+			frame_velocity(number_of_segments),
+			frame_acceleration(number_of_frames),
 			zero_value_vector_(0.0, 0.0, 0.0),
 			zero_value_twist_(zero_value_vector_, zero_value_vector_)
 		{
-			q.resize(NUMBER_OF_JOINTS_);
-			qd.resize(NUMBER_OF_JOINTS_);
-			qdd.resize(NUMBER_OF_JOINTS_);
-			feedforward_torque.resize(NUMBER_OF_JOINTS_);
-			control_torque.resize(NUMBER_OF_JOINTS_);
-			ee_unit_constraint_force.resize(NUMBER_OF_CONSTRAINTS_); //alpha
-			ee_acceleration_energy.resize(NUMBER_OF_CONSTRAINTS_); //beta
-			external_force.resize(NUMBER_OF_SEGMENTS_);
-			frame_pose.resize(NUMBER_OF_SEGMENTS_);
-			frame_velocity.resize(NUMBER_OF_SEGMENTS_);
-			frame_acceleration.resize(NUMBER_OF_FRAMES_);
 			reset_values();
-		};
+		}
+
+		~state_specification(){}
 
 		state_specification& operator=(const state_specification &rhs)
 		{
@@ -91,8 +93,6 @@ class state_specification
 			}
 		}
 
-		~state_specification(){}
-
 		void reset_values()
 		{
 			// Joint space varibles
@@ -102,10 +102,13 @@ class state_specification
 			KDL::SetToZero(control_torque);
 			KDL::SetToZero(feedforward_torque);
 
-			//External forces on the arm
-			for (int i = 0; i < NUMBER_OF_SEGMENTS_; i++)
+			//External forces on, plus velocities and poses of segments
+			for (int i = 0; i < NUMBER_OF_SEGMENTS_; i++){
 				KDL::SetToZero(external_force[i]);
-			
+				frame_pose[i] = identity_pose_frame_;
+				frame_velocity[i] = identity_vel_frame_;
+			}
+
 			//Acceleration Constraints on the End-Effector
 			for(int i = 0; i < NUMBER_OF_CONSTRAINTS_; i++)
 			{
@@ -113,8 +116,7 @@ class state_specification
 				ee_acceleration_energy(i) = 0.0;
 			}
 
-			// Accelerations, velocities and poses of segments
-			// TODO: add code for setting velocities and poses to zero
+			// Cartesian Accelerations of robot segments
 			for (int i = 0; i < NUMBER_OF_FRAMES_; i++)
 				KDL::SetToZero(frame_acceleration[i]);
 		}
@@ -125,7 +127,10 @@ class state_specification
 			const int NUMBER_OF_FRAMES_;
 			const int NUMBER_OF_CONSTRAINTS_;
 
-			const KDL::Twist zero_value_twist_;
+			// Temporary and help variables for faster reset of state vectors 
 			const KDL::Vector zero_value_vector_;
+			const KDL::Twist zero_value_twist_;
+			const KDL::Frame identity_pose_frame_ = KDL::Frame::Identity();
+			const KDL::FrameVel identity_vel_frame_ = KDL::FrameVel::Identity();
 };
 #endif /* STATE_SPECIFICATION_HPP */
