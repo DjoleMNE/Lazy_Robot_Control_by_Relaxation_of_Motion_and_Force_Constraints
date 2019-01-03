@@ -34,6 +34,12 @@ SOFTWARE.
 #include <cmath>
 #include <stdlib.h>     /* abs */
 
+enum integration_method 
+{
+    predictor_corrector = 0,
+    symplectic_euler = 1
+};
+
 class model_prediction
 {
 	public:
@@ -46,13 +52,15 @@ class model_prediction
 		void integrate_joint_space(const state_specification &current_state,
 								   state_specification &predicted_state,
 								   const double step_size,
-								   const int number_of_steps);
+								   const int number_of_steps,
+								   const int method);
 
 		// Used for predicting future deviation from the goal state
 		void integrate_cartesian_space(const state_specification &current_state,
 									   state_specification &predicted_state,
 									   const double step_size,
-									   const int number_of_steps);
+									   const int number_of_steps,
+									   const int method);
     private:
 		KDL::Chain robot_chain_;
 
@@ -69,5 +77,7 @@ class model_prediction
 		which is not real time operations. Its better to create one
 		in the begging and just update its values in the loop */
 		KDL::JntArrayVel temp_jntarrayvel; 
+
+		void compute_FK(state_specification &predicted_state);
 };
 #endif /* MODEL_PREDICTION_HPP */

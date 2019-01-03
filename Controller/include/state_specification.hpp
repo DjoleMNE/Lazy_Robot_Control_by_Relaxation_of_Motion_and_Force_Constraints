@@ -114,7 +114,7 @@ class state_specification
 			}
 
 			// Accelerations, velocities and poses of segments
-			// add code for setting velocities and poses to zero
+			// TODO: add code for setting velocities and poses to zero
 			for (int i = 0; i < NUMBER_OF_FRAMES_; i++)
 				KDL::SetToZero(frame_acceleration[i]);
 		}

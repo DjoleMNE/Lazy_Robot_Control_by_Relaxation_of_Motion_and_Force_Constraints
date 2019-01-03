@@ -48,7 +48,8 @@ class dynamics_controller
     dynamics_controller(youbot_mediator &robot_driver,
                         const KDL::Chain &chain,
                         const KDL::Twist &root_acc,
-                        const std::vector<double> joint_position_limits,
+                        const std::vector<double> joint_position_limits_l,
+                        const std::vector<double> joint_position_limits_r,
                         const std::vector<double> joint_velocity_limits,
                         const std::vector<double> joint_acceleration_limits,
                         const std::vector<double> joint_torque_limits,
@@ -71,6 +72,7 @@ class dynamics_controller
     long dt_micro_;
     double dt_sec_;
     int solver_result_;
+    int safe_control_mode_;
 
     struct desired_control_mode
     {
@@ -88,6 +90,7 @@ class dynamics_controller
     const int NUMBER_OF_CONSTRAINTS_;
 
     const KDL::Twist root_acc_;
+    const KDL::JntArray set_zero_velocities_;
     const KDL::Chain robot_chain_;
 
     youbot_mediator robot_driver_;
@@ -104,8 +107,8 @@ class dynamics_controller
     void reset_state(state_specification &state);
     void stop_robot_motion();
     void update_task();
-    void update_current_state();
-    void make_predictions();
+    void update_current_state(const bool simulation_environment);
+    void make_predictions(const int prediction_method);
     void apply_control_commands();
     int evaluate_dynamics();
     int enforce_loop_frequency();

@@ -30,7 +30,8 @@ dynamics_controller::dynamics_controller(
                             youbot_mediator &robot_driver,
                             const KDL::Chain &chain,
                             const KDL::Twist &root_acc,
-                            const std::vector<double> joint_position_limits,
+                            const std::vector<double> joint_position_limits_l,
+                            const std::vector<double> joint_position_limits_r,
                             const std::vector<double> joint_velocity_limits,
                             const std::vector<double> joint_acceleration_limits,
                             const std::vector<double> joint_torque_limits,
@@ -49,10 +50,13 @@ dynamics_controller::dynamics_controller(
         predicted_state_(robot_state_), 
         predictor_(robot_chain_),
         robot_driver_(robot_driver),
-        safety_control_(robot_chain_, joint_position_limits, 
-                        joint_velocity_limits, joint_acceleration_limits, 
-                        joint_torque_limits),
+        safety_control_(robot_chain_, joint_position_limits_l,
+                        joint_position_limits_r, joint_velocity_limits, 
+                        joint_acceleration_limits, joint_torque_limits),
+        //Resize and set vector's elements to zero 
+        set_zero_velocities_(NUMBER_OF_JOINTS_),
         solver_result_(0),
+        safe_control_mode_(-1),
         rate_hz_(rate_hz),
         // Time period defined in microseconds: 1s = 1 000 000us
         dt_micro_(SECOND / rate_hz),
@@ -61,13 +65,13 @@ dynamics_controller::dynamics_controller(
     assert(NUMBER_OF_JOINTS_ == NUMBER_OF_SEGMENTS_);
 
     // Control loop frequency must be higher than or equal to 1 Hz
-    assert(("Frequency is too low", 1 <= rate_hz_));
+    assert(("Desired frequency is too low", 1 <= rate_hz_));
     // Control loop frequency must be lower than or equal to 1000 Hz
-    assert(("Frequency is too high", rate_hz_<= 10000));
+    assert(("Desired frequency is too high", rate_hz_<= 10000));
 
     // Set default command interface to velocity mode and initialize it as safe
     desired_control_mode_.interface = control_mode::velocity_control;
-    desired_control_mode_.is_safe = true;
+    desired_control_mode_.is_safe = false;
 }
 
 // Set all values of desired state to 0 - public method
@@ -249,19 +253,18 @@ void dynamics_controller::print_settings_info()
 //Set velocities of arm's joints to 0 value
 void dynamics_controller::stop_robot_motion()
 {   
-    // First reset all values to 0 
-    for (int i = 0; i < NUMBER_OF_JOINTS_; i++) commands_.qd(i) = 0;  
-    
+    std::cout << set_zero_velocities_ <<std::endl;
     // Send commands to the robot driver
-    robot_driver_.set_joint_velocities(commands_.qd);
+    robot_driver_.set_joint_velocities(set_zero_velocities_);
 }
 
 // Predict future robot states (motion) based given the current state
-void dynamics_controller::make_predictions()
+void dynamics_controller::make_predictions(const int prediction_method)
 {
     predictor_.integrate_cartesian_space(robot_state_, 
                                          predicted_state_, 
-                                         dt_sec_, 1);
+                                         dt_sec_, 1, 
+                                         prediction_method);
 }
 
 // Update the desired robot state 
@@ -281,10 +284,15 @@ void dynamics_controller::apply_control_commands()
 }
 
 //Get current robot state from the joint sensors
-void dynamics_controller::update_current_state()
+void dynamics_controller::update_current_state(const bool simulation_environment)
 {
-    robot_driver_.get_joint_positions(robot_state_.q);
-    robot_driver_.get_joint_velocities(robot_state_.qd);
+    if(!simulation_environment){
+        robot_driver_.get_joint_positions(robot_state_.q);
+        robot_driver_.get_joint_velocities(robot_state_.qd);
+    } else{
+        robot_state_.qd = commands_.qd;
+        robot_state_.q = commands_.q;
+    }
 }
 
 //Main control loop
@@ -300,15 +308,17 @@ int dynamics_controller::control(const bool simulation_environment,
     if(!simulation_environment)
     {   
         // Check if the robot is initialied and connection established
-        assert(("Robot is not initialized", robot_driver_.is_initialized));        
+        assert(("Robot is not initialized", robot_driver_.is_initialized));   
+
         // Make sure that robot is not moving at the start 
+        // Command zero velocities to the robot driver
         stop_robot_motion();
     }
 
-    //Exit the program if stop motion mode selected
+    //Exit the program if the "Stop Motion" mode is selected
     if(desired_control_mode_.interface == control_mode::stop_motion) return -1;
 
-    int safe_control_mode = desired_control_mode_.interface;
+    safe_control_mode_ = desired_control_mode_.interface;
     std::cout << "Control Loop Started"<< std::endl;
     while(1)
     {   
@@ -318,76 +328,73 @@ int dynamics_controller::control(const bool simulation_environment,
         // Check if the task specification is changed
         update_task();
 
-        // Get sensor data from the robot driver
-        if (!simulation_environment) update_current_state();
+        /* 
+            Get sensor data from the robot driver or
+            if simulation is on, replace current state with 
+            the integrated joint velocities and positions
+        */
+        update_current_state(simulation_environment);
+
 
         // Calculate robot dynamics using Vereshchagin HD solver
         if(evaluate_dynamics() != 0){
+            if(!simulation_environment) stop_robot_motion();
             std::cerr << "WARNING: Dynamics Solver returned error. "
                       << "Current commands are not safe. " 
                       << "Stopping the robot!" << std::endl;
-            if(!simulation_environment) stop_robot_motion();
             return -1;
         } 
 
         // Predict future robot states (motion) based given the current state
-        // Integrate Cartesian variables
-        // make_predictions();
+        // I.e. Integrate Cartesian variables
+        // make_predictions(integration_method::symplectic_euler);
 
         /* 
             All calculations done - check if the commands are over the limits
             If yes: use desired control mode
             Else: use the control mode selected by the safety controller 
         */
-
-        safe_control_mode = safety_control_.check_limits(robot_state_, 
-                                                predicted_state_, dt_sec_, 
-                                                desired_control_mode_.interface);
-
-        //if simulation on, replace current state with 
-        // integrated joint velocities and positions
-        if(simulation_environment){
-            robot_state_.qd = predicted_state_.qd;
-            robot_state_.q = predicted_state_.q;
-        }
+        safe_control_mode_ = safety_control_.check_limits(
+                                        robot_state_, 
+                                        commands_, dt_sec_, 
+                                        desired_control_mode_.interface,
+                                        integration_method::symplectic_euler);
 
         desired_control_mode_.is_safe =\
-            (safe_control_mode == desired_control_mode_.interface)? true : false; 
+            (desired_control_mode_.interface == safe_control_mode_)? true : false; 
 
-        switch(safe_control_mode) 
-        {
-            case control_mode::stop_motion:
-                cout << "WARNING: Current commands are not safe. " 
-                     << "Stopping the robot!" << endl;
-                if (!simulation_environment) stop_robot_motion();
-                return -1;
-
-            case control_mode::velocity_control:
-                commands_ = predicted_state_;
-                if(!desired_control_mode_.is_safe) 
-                    cout << "WARNING: Control switched to velocity mode" << endl;
-                if (!simulation_environment) 
-                    robot_driver_.set_joint_velocities(commands_.qd);
-                break;
-
-            case control_mode::position_control:
-                commands_ = predicted_state_; 
-                if(!desired_control_mode_.is_safe) 
-                    cout << "WARNING: Control switched to position mode" << endl;
-                if (!simulation_environment)
-                    robot_driver_.set_joint_positions(commands_.q);
-                break;
-
+        switch(safe_control_mode_) {
             case control_mode::torque_control:
                 assert(desired_control_mode_.is_safe);
-                commands_ = robot_state_;
                 if (!simulation_environment)
                     robot_driver_.set_joint_torques(commands_.control_torque);
                 break;
+
+            case control_mode::velocity_control:
+                if (!simulation_environment) 
+                    robot_driver_.set_joint_velocities(commands_.qd);
+                if(!desired_control_mode_.is_safe) 
+                    cout << "WARNING: Control switched to velocity mode" << endl;
+                break;
+
+            case control_mode::position_control:
+                if (!simulation_environment)
+                    robot_driver_.set_joint_positions(commands_.q);
+                if(!desired_control_mode_.is_safe) 
+                    cout << "WARNING: Control switched to position mode" << endl;
+                break;
+
+            default:
+                if (!simulation_environment) stop_robot_motion();
+                cout << "WARNING: Current commands are not safe. " 
+                     << "Stopping the robot!" << endl;
+                return -1;             
         }
+
+
         // Make sure that the loop is always running with the same frequency
-        // if(!enforce_loop_frequency() == 0) 
-            // std::cerr << "WARNING: Control loop runs too slow" << std::endl;
+        if(!enforce_loop_frequency() == 0) 
+            std::cerr << "WARNING: Control loop runs too slow" << std::endl;
     }
     return 0;
 }

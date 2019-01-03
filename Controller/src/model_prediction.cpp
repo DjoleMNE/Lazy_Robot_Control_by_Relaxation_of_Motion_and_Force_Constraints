@@ -40,65 +40,80 @@ void model_prediction::integrate_joint_space(
                                     const state_specification &current_state,
                                     state_specification &predicted_state,
                                     const double step_size_dt,
-                                    const int number_of_steps)
+                                    const int number_of_steps, const int method)
 {
-    // How long is the future: delta time * number of steps in future
-    time_horizon_ = step_size_dt * number_of_steps;
-
-    for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
-    {   
-        //Integrate joint accelerations to velocities - Classical Euler method
-        predicted_state.qd(i) = current_state.qd(i)\
+    switch(method) {
+        case integration_method::symplectic_euler:
+            for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
+            {   
+                //Integrate joint accelerations to velocities - Classical Euler method
+                predicted_state.qd(i) = current_state.qd(i)\
                                         + current_state.qdd(i) * step_size_dt;
 
-        //Integrate joint velocities to positions - Symplectic Euler method
-        predicted_state.q(i) = current_state.q(i)\
-                                         + predicted_state.qd(i) * step_size_dt;
-        
-        //Integrate joint velocities to joint positions - Trapezoidal method
-        // predicted_state.q(i) = current_state.q(i)\
-        //                     + (predicted_state.qd(i)\
-        //                         - current_state.qdd(i) * step_size_dt / 2.0)\
-        //                     * time_horizon_;
+                //Integrate joint velocities to positions - Symplectic Euler method
+                predicted_state.q(i) = current_state.q(i)\
+                                        + predicted_state.qd(i) * step_size_dt;
+            }
+            break;
+
+        case integration_method::predictor_corrector:
+            for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
+            {   
+                //Integrate joint accelerations to velocities - Classical Euler method
+                predicted_state.qd(i) = current_state.qd(i)\
+                                        + current_state.qdd(i) * step_size_dt;
+
+                //Integrate joint velocities to joint positions - Trapezoidal method
+                predicted_state.q(i) = current_state.q(i)\
+                            + (predicted_state.qd(i)\
+                                - current_state.qdd(i) * step_size_dt / 2.0)\
+                            * step_size_dt;
+            }
+            break;
     }
-    std::cout << current_state.qdd << std::endl;
-    std::cout << predicted_state.qd << std::endl;
-    std::cout << predicted_state.q << std::endl;
-    std::cout << "\n" << std::endl;
 
-    //Workaround for avoiding dynamic creation of JntArrayVel instance
-    //See this class' hpp for explanation
-    // temp_jntarrayvel.q = predicted_state.q;
-    // temp_jntarrayvel.qdot = predicted_state.qd;
+    std::cout << "Joint Acc: " << current_state.qdd << std::endl;
+    std::cout << "Joint Vel: " << predicted_state.qd << std::endl;
+    std::cout << "Joint Pos: " << predicted_state.q << std::endl;
 
-    //Compute angular and linear velocity of the end-effector
-    // fk_velocity_solver_.JntToCart(
-    //                 temp_jntarrayvel, 
-    //                 predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]);
-
-    //Compute postion and orientation of the end-effector
-    // fk_position_solver_.JntToCart(
-    //         predicted_state.q, 
-    //         predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
-
-    // current_state = predicted_state;
-    
-    // Print Cartesian predictions
-    // std::cout << "End-effector Velocity: " 
-    //     << predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1].GetTwist()
-    //     << std::endl;
-    // std::cout << "End-effector Pose: " 
-    //           << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
-    //           << std::endl;
+    compute_FK(predicted_state);
 }
-
 
 // Used for predicting future deviation from the goal state
 void model_prediction::integrate_cartesian_space(
     const state_specification &current_state,
     state_specification &predicted_state,
     const double step_size,
-    const int number_of_steps)
+    const int number_of_steps,
+    const int method)
 {
     //TODO
+}
+
+void model_prediction::compute_FK(state_specification &predicted_state)
+{
+    //Workaround for avoiding dynamic creation of JntArrayVel instance
+    //See this class' hpp for explanation
+    temp_jntarrayvel.q = predicted_state.q;
+    temp_jntarrayvel.qdot = predicted_state.qd;
+
+    //Compute angular and linear velocity of the end-effector
+    fk_velocity_solver_.JntToCart(
+                    temp_jntarrayvel, 
+                    predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]);
+
+    //Compute postion and orientation of the end-effector
+    fk_position_solver_.JntToCart(
+            predicted_state.q, 
+            predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
+    
+    // Print Cartesian predictions
+    std::cout << "End-effector Velocity: " 
+        << predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1].GetTwist()
+        << std::endl;
+    std::cout << "End-effector Pose: " 
+              << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
+              << std::endl;
+
+    std::cout << "\n" << std::endl;
 }
