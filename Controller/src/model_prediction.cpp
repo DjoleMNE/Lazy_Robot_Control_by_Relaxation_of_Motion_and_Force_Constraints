@@ -114,6 +114,5 @@ void model_prediction::compute_FK(state_specification &predicted_state)
     std::cout << "End-effector Pose: " 
               << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
               << std::endl;
-
     std::cout << "\n" << std::endl;
 }

@@ -41,10 +41,10 @@ dynamics_controller::dynamics_controller(
         NUMBER_OF_CONSTRAINTS_(6),
         NUMBER_OF_JOINTS_(chain.getNrOfJoints()),
         NUMBER_OF_SEGMENTS_(chain.getNrOfSegments()),
-        NUMBER_OF_FRAMES_(NUMBER_OF_SEGMENTS_ + 1),
+        NUMBER_OF_FRAMES_(chain.getNrOfSegments() + 1),
         hd_solver_(robot_chain_, root_acc_, NUMBER_OF_CONSTRAINTS_),
-        robot_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
-                     NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_), 
+        robot_state_(chain.getNrOfJoints(), chain.getNrOfSegments(), 
+                     chain.getNrOfSegments() + 1, NUMBER_OF_CONSTRAINTS_), 
         commands_(robot_state_), 
         desired_state_(robot_state_), 
         predicted_state_(robot_state_), 
@@ -54,7 +54,7 @@ dynamics_controller::dynamics_controller(
                         joint_position_limits_r, joint_velocity_limits, 
                         joint_acceleration_limits, joint_torque_limits),
         //Resize and set vector's elements to zero 
-        set_zero_velocities_(NUMBER_OF_JOINTS_),
+        zero_joint_velocities_(chain.getNrOfJoints()),
         solver_result_(0),
         safe_control_mode_(-1),
         rate_hz_(rate_hz),
@@ -253,9 +253,8 @@ void dynamics_controller::print_settings_info()
 //Set velocities of arm's joints to 0 value
 void dynamics_controller::stop_robot_motion()
 {   
-    std::cout << set_zero_velocities_ <<std::endl;
     // Send commands to the robot driver
-    robot_driver_.set_joint_velocities(set_zero_velocities_);
+    robot_driver_.set_joint_velocities(zero_joint_velocities_);
 }
 
 // Predict future robot states (motion) based given the current state

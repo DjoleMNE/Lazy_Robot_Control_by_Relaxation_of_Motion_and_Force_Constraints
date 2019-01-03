@@ -90,7 +90,7 @@ class dynamics_controller
     const int NUMBER_OF_CONSTRAINTS_;
 
     const KDL::Twist root_acc_;
-    const KDL::JntArray set_zero_velocities_;
+    const KDL::JntArray zero_joint_velocities_;
     const KDL::Chain robot_chain_;
 
     youbot_mediator robot_driver_;

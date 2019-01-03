@@ -35,7 +35,7 @@ safety_controller::safety_controller(
         robot_chain_(chain),
         NUMBER_OF_JOINTS_(chain.getNrOfJoints()),
         NUMBER_OF_SEGMENTS_(chain.getNrOfSegments()),
-        NUMBER_OF_FRAMES_(NUMBER_OF_SEGMENTS_ + 1),
+        NUMBER_OF_FRAMES_(chain.getNrOfSegments() + 1),
         predictor_(robot_chain_),
         joint_position_limits_l_(joint_position_limits_l),
         joint_position_limits_r_(joint_position_limits_r),
