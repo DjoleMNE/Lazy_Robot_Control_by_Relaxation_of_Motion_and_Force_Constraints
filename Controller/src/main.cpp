@@ -122,7 +122,9 @@ void stop_robot_motion(youbot_mediator &arm, state_specification &motion){
 
 int main(int argc, char **argv)
 {
-    std::vector<double> joint_position_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
+    std::vector<double> joint_position_limits_l = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
+    std::vector<double> joint_position_limits_r = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
+
     std::vector<double> joint_velocity_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
     std::vector<double> joint_acceleration_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
     std::vector<double> joint_torque_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
@@ -152,10 +154,11 @@ int main(int argc, char **argv)
         }
         std::cout << "\n";
     } else{
-        robot_driver.initialize("/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config", 
-                    "arm_link_0", "arm_link_5",
-                    "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf",
-                    use_custom_model, youbot_joint_offsets, arm_chain_);
+        robot_driver.initialize(
+                "/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config", 
+                "arm_link_0", "arm_link_5",
+                "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf",
+                use_custom_model, false, youbot_joint_offsets, arm_chain_);
         std::cout << "Robot initialized!" << std::endl;
         std::cout << "\n";
     }
@@ -182,19 +185,31 @@ int main(int argc, char **argv)
         // return 0;
     }
 
+    // REinitialize robot model and EtherCAT communication 
+    if(!simulation_environment){
+        robot_driver.initialize(
+                    "/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config", 
+                    "arm_link_0", "arm_link_5",
+                    "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf",
+                    use_custom_model, true, youbot_joint_offsets, arm_chain_);
+        std::cout << "Robot initialized!" << std::endl;
+        std::cout << "\n";
+    }
 
     //loop rate in Hz
     int rate_hz = 1000;
 
     dynamics_controller controller(robot_driver, arm_chain_, root_acc, 
-                                   joint_position_limits, joint_velocity_limits, 
+                                   joint_position_limits_l, 
+                                   joint_position_limits_r, 
+                                   joint_velocity_limits, 
                                    joint_acceleration_limits,
                                    joint_torque_limits, rate_hz);
     
     //Create End_effector Cartesian Acceleration task 
     controller.define_ee_constraint_task(std::vector<bool>{true, false, false, 
-                                                           false, true, false},
-                                         std::vector<double>{1.01, 0.0, 
+                                                           false, false, false},
+                                         std::vector<double>{10.01, 0.0, 
                                                              0.0, 0.0, 
                                                              0.0, 0.0});
     //Create External Forces task 

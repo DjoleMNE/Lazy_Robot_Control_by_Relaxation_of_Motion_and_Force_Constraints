@@ -27,7 +27,8 @@ SOFTWARE.
 
 safety_controller::safety_controller(
                             const KDL::Chain &chain,
-                            const std::vector<double> joint_position_limits,
+                            const std::vector<double> joint_position_limits_l,
+                            const std::vector<double> joint_position_limits_r,
                             const std::vector<double> joint_velocity_limits,
                             const std::vector<double> joint_acceleration_limits,
                             const std::vector<double> joint_torque_limits):
@@ -36,26 +37,100 @@ safety_controller::safety_controller(
         NUMBER_OF_SEGMENTS_(chain.getNrOfSegments()),
         NUMBER_OF_FRAMES_(NUMBER_OF_SEGMENTS_ + 1),
         predictor_(robot_chain_),
-        joint_position_limits_(joint_position_limits),
+        joint_position_limits_l_(joint_position_limits_l),
+        joint_position_limits_r_(joint_position_limits_r),
         joint_velocity_limits_(joint_velocity_limits),
         joint_acceleration_limits_(joint_acceleration_limits),
-        joint_torque_limits_(joint_torque_limits){}
+        joint_torque_limits_(joint_torque_limits)
+        {
 
+        }
+        
 int safety_controller::check_limits(const state_specification &current_state,
                                     state_specification &commands,
                                     const double dt_sec,
-                                    const int desired_control_mode)
+                                    const int desired_control_mode,
+                                    const int prediction_method)
 {   
-    predictor_.integrate_joint_space(current_state, commands, dt_sec, 1);
+    predictor_.integrate_joint_space(current_state, commands, 
+                                     dt_sec, 1, prediction_method);
+    
+    switch (desired_control_mode)
+    {   
+        case control_mode::torque_control:
+            return check_torques(current_state, commands, desired_control_mode);
 
-    //If joint limit reached, stop the program
+        case control_mode::velocity_control:
+            return check_velocities(current_state, commands, desired_control_mode);
+
+        case control_mode::position_control:
+            return check_positions(current_state, commands, desired_control_mode);
+    
+        default: return control_mode::stop_motion;
+    }
+}
+
+int safety_controller::check_torques(const state_specification &current_state,
+                  state_specification &commands,
+                  const int desired_control_mode)
+{
+    commands.control_torque = current_state.control_torque;
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
     {
+        //Stop the motion if some of the values are NaN or infine
+        if(!std::isfinite(commands.control_torque(i))) 
+            return control_mode::stop_motion;
+
+        else if(abs(commands.control_torque(i)) > joint_torque_limits_[i])
+        {
+            std::cout << "Joint "<< i + 1 << " : " 
+                    <<commands.control_torque(i) << " Nm is over the limit" 
+                    << std::endl;
+            return control_mode::stop_motion;
+        }
+    }
+    return desired_control_mode;
+}
+
+int safety_controller::check_velocities(const state_specification &current_state,
+                     state_specification &commands,
+                     const int desired_control_mode)
+{
+    //If a velocity limit reached, rescale commands or stop the program
+    for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
+    {
+        //Stop the motion if some of the values are NaN or infine
+        if(!std::isfinite(commands.qd(i))) 
+            return control_mode::stop_motion;
+
         if (abs(commands.qd(i)) > joint_velocity_limits_[i])
         {
             std::cout << "Joint "<< i + 1 << " : " 
-                      <<commands.qd(i) << " rad/s is over the limit" 
-                      << std::endl;
+                    <<commands.qd(i) << " rad/s is over the limit" 
+                    << std::endl;
+            return control_mode::stop_motion;
+        }
+    }
+    return desired_control_mode;
+}
+
+int safety_controller::check_positions(const state_specification &current_state,
+                    state_specification &commands,
+                    const int desired_control_mode)
+{
+    //If a position limit reached, stop the program
+    for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
+    {
+        //Stop the motion if some of the values are NaN or infine
+        if(!std::isfinite(commands.q(i))) 
+            return control_mode::stop_motion;
+        
+        if ((commands.q(i) > joint_position_limits_l_[i]) \
+            || commands.q(i) < joint_position_limits_r_[i])
+        {
+            std::cout << "Joint "<< i + 1 << " : " 
+                    <<commands.q(i) << " rad is over the limit" 
+                    << std::endl;
             return control_mode::stop_motion;
         }
     }

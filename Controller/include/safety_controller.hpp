@@ -47,16 +47,18 @@ class safety_controller
 {
   public:
     safety_controller(const KDL::Chain &chain,
-                      const std::vector<double> joint_position_limits,
+                      const std::vector<double> joint_position_limits_l,
+                      const std::vector<double> joint_position_limits_r,
                       const std::vector<double> joint_velocity_limits,
                       const std::vector<double> joint_acceleration_limits,
                       const std::vector<double> joint_torque_limits);
     ~safety_controller(){};
 
     int check_limits(const state_specification &current_state,
-                     state_specification &commands,
+                     state_specification &predicted_state,
                      const double dt_sec,
-                     const int desired_control_mode);
+                     const int desired_control_mode,
+                     const int prediction_method);
 
   private:
 
@@ -66,16 +68,24 @@ class safety_controller
         
     const KDL::Chain robot_chain_;
 
-    const std::vector<double> joint_position_limits_;
+    const std::vector<double> joint_position_limits_l_;
+    const std::vector<double> joint_position_limits_r_;
     const std::vector<double> joint_velocity_limits_;
     const std::vector<double> joint_acceleration_limits_;
     const std::vector<double> joint_torque_limits_;
 
 	model_prediction predictor_;
 
-    // state_specification robot_state_;
-    // state_specification commands_;
-    // state_specification predicted_state_;
+
+    int check_torques(const state_specification &current_state,
+                      state_specification &commands,
+                      const int desired_control_mode);
+    int check_velocities(const state_specification &current_state,
+                         state_specification &commands,
+                         const int desired_control_mode);
+    int check_positions(const state_specification &current_state,
+                        state_specification &commands,
+                        const int desired_control_mode);
 
     void reset_state(state_specification &state);
     void reduce_velocities(){};
