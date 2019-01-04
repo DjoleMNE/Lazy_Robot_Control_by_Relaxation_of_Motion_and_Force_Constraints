@@ -46,7 +46,7 @@ class state_specification
 		KDL::JntArray ee_acceleration_energy;
 		KDL::Wrenches external_force;
 		std::vector<KDL::Frame> frame_pose;
-		std::vector<KDL::FrameVel> frame_velocity;
+		std::vector<KDL::Twist> frame_velocity;
 		std::vector<KDL::Twist> frame_acceleration;
 
 		state_specification(const int number_of_joints, 
@@ -104,7 +104,7 @@ class state_specification
 			for (int i = 0; i < NUMBER_OF_SEGMENTS_; i++){
 				KDL::SetToZero(external_force[i]);
 				frame_pose[i] = identity_pose_frame_;
-				frame_velocity[i] = identity_vel_frame_;
+				frame_velocity[i] = zero_value_twist_;
 			}
 
 			//Acceleration Constraints on the End-Effector
@@ -127,7 +127,6 @@ class state_specification
 
 			// Temporary and help variables for faster reset of state vectors 
 			const KDL::Frame identity_pose_frame_ = KDL::Frame::Identity();
-			const KDL::FrameVel identity_vel_frame_ = KDL::FrameVel::Identity();
 			const KDL::Twist zero_value_twist_ = KDL::Twist::Zero();
 };
 #endif /* STATE_SPECIFICATION_HPP */
