@@ -33,6 +33,7 @@ SOFTWARE.
 #include <time.h>
 #include <fstream>
 #include <cmath>
+#include <math.h>       /* fabs */
 #include <stdlib.h>     /* abs */
 
 enum control_mode 
@@ -47,35 +48,35 @@ class safety_controller
 {
   public:
     safety_controller(const KDL::Chain &chain,
-                      const std::vector<double> joint_position_limits_l,
-                      const std::vector<double> joint_position_limits_r,
+                      const std::vector<double> joint_position_limits_p,
+                      const std::vector<double> joint_position_limits_n,
                       const std::vector<double> joint_velocity_limits,
                       const std::vector<double> joint_acceleration_limits,
                       const std::vector<double> joint_torque_limits);
     ~safety_controller(){};
 
-    int check_limits(const state_specification &current_state,
-                     state_specification &predicted_state,
-                     const double dt_sec,
-                     const int desired_control_mode,
-                     const int prediction_method);
+    int generate_commands(const state_specification &current_state,
+                          state_specification &predicted_state,
+                          const double dt_sec,
+                          const int desired_control_mode,
+                          const int prediction_method);
 
   private:
-
+    const bool print_logs_;
     const int NUMBER_OF_JOINTS_;
     const int NUMBER_OF_SEGMENTS_;
     const int NUMBER_OF_FRAMES_;
         
     const KDL::Chain robot_chain_;
 
-    const std::vector<double> joint_position_limits_l_;
-    const std::vector<double> joint_position_limits_r_;
+    const std::vector<double> joint_position_limits_p_;
+    const std::vector<double> joint_position_limits_n_;
     const std::vector<double> joint_velocity_limits_;
     const std::vector<double> joint_acceleration_limits_;
     const std::vector<double> joint_torque_limits_;
+    const std::vector<bool> pos_limit_reached_;
 
 	model_prediction predictor_;
-
 
     int check_torques(const state_specification &current_state,
                       state_specification &commands,
@@ -86,6 +87,10 @@ class safety_controller
     int check_positions(const state_specification &current_state,
                         state_specification &commands,
                         const int desired_control_mode);
+    bool reaching_position_limits(const state_specification &state,
+                                   const int joint);
+    bool limits_reached(const state_specification &state,
+                        const int joint);
 
     void reset_state(state_specification &state);
     void reduce_velocities(){};

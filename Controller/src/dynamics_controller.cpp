@@ -70,7 +70,7 @@ dynamics_controller::dynamics_controller(
     assert(("Desired frequency is too high", rate_hz_<= 10000));
 
     // Set default command interface to velocity mode and initialize it as safe
-    desired_control_mode_.interface = control_mode::velocity_control;
+    desired_control_mode_.interface = control_mode::stop_motion;
     desired_control_mode_.is_safe = false;
 }
 
@@ -353,7 +353,7 @@ int dynamics_controller::control(const bool simulation_environment,
             If yes: use desired control mode
             Else: use the control mode selected by the safety controller 
         */
-        safe_control_mode_ = safety_control_.check_limits(
+        safe_control_mode_ = safety_control_.generate_commands(
                                         robot_state_, 
                                         commands_, dt_sec_, 
                                         desired_control_mode_.interface,

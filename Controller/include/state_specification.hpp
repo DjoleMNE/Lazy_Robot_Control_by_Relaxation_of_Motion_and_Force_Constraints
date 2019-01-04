@@ -67,9 +67,7 @@ class state_specification
 			external_force(number_of_segments),
 			frame_pose(number_of_segments),
 			frame_velocity(number_of_segments),
-			frame_acceleration(number_of_frames),
-			zero_value_vector_(0.0, 0.0, 0.0),
-			zero_value_twist_(zero_value_vector_, zero_value_vector_)
+			frame_acceleration(number_of_frames)
 		{
 			reset_values();
 		}
@@ -128,9 +126,8 @@ class state_specification
 			const int NUMBER_OF_CONSTRAINTS_;
 
 			// Temporary and help variables for faster reset of state vectors 
-			const KDL::Vector zero_value_vector_;
-			const KDL::Twist zero_value_twist_;
 			const KDL::Frame identity_pose_frame_ = KDL::Frame::Identity();
 			const KDL::FrameVel identity_vel_frame_ = KDL::FrameVel::Identity();
+			const KDL::Twist zero_value_twist_ = KDL::Twist::Zero();
 };
 #endif /* STATE_SPECIFICATION_HPP */

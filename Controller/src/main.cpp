@@ -87,6 +87,15 @@ void go_candle_2(youbot_mediator &arm){
     usleep(5000 * MILLISECOND);
 }
 
+// Go to Candle 3 configuration  
+void go_candle_3(youbot_mediator &arm){
+    KDL::JntArray candle_pose(JOINTS);
+    double candle[] = {2.9496, 1.1344, -2.54818, 1.78896, 2.9234};
+    for (int i = 0; i < JOINTS; i++) candle_pose(i) = candle[i];  
+    arm.set_joint_positions(candle_pose);
+    usleep(5000 * MILLISECOND);
+}
+
 // Go to Folded configuration  
 void go_folded(youbot_mediator &arm){
     KDL::JntArray folded_pose(JOINTS);
@@ -122,13 +131,28 @@ void stop_robot_motion(youbot_mediator &arm, state_specification &motion){
 
 int main(int argc, char **argv)
 {
-    std::vector<double> joint_position_limits_l = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
-    std::vector<double> joint_position_limits_r = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
-
+    //Kuka youBot store values: positive and negative
+    std::vector<double> joint_position_limits_p = {2.9496, 1.5707, 2.5481, 1.7889, 2.9234};
+    std::vector<double> joint_position_limits_n = {-2.9496, -1.1344, -2.6354, -1.7889, -2.9234};
+    
+    // Robocup Urdf file parameters
     std::vector<double> joint_velocity_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
     std::vector<double> joint_acceleration_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
-    std::vector<double> joint_torque_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
-    std::vector<double> youbot_joint_offsets = { -2.9496, -1.1344, 2.6354, -1.7890, -2.9234 };
+    
+    //JP's max torques
+    // std::vector<double> joint_torque_limits = {12.9012, 12.9012, 8.2700, 4.1748, 1.7550};
+    //Benjamin Keiser' max torques (slow version)
+    std::vector<double> joint_torque_limits = {9.5, 9.5, 6.0, 2.0, 1.0};
+    //Benjamin Keiser' max torques (fast version)
+    // std::vector<double> joint_torque_limits = {17.0, 17.0, 8.0, 2.7, 1.0}};
+
+    // Offsets required for the custom model: Negative Candle config values -Mine
+    // std::vector<double> youbot_joint_offsets = {-2.9496, -1.13446, 2.54818, -1.78896, -2.9234};
+    // Offsets required for the custom model: Negative Candle config values -Sven's
+    std::vector<double> youbot_joint_offsets = {-2.9496, -1.1344, 2.6354, -1.7890, -2.9234};
+    // Offsets required for the custom model: Negative Candle config values: keiser's
+    // std::vector<double> youbot_joint_offsets = {-2.9496, -1.1344, 2.5481, -1.7889, -2.9234};
+
 
     //Arm's root acceleration
     KDL::Vector linearAcc(0.0, 0.0, -9.81); //gravitational acceleration along Z
@@ -179,7 +203,7 @@ int main(int argc, char **argv)
         stop_robot_motion(robot_driver, motion_);
         // go_navigation_1(robot_driver);
         // go_folded(robot_driver);
-        // go_candle_2(robot_driver);
+        // go_candle_3(robot_driver);
         // robot_driver.get_joint_positions(motion_.q);
         // robot_driver.get_joint_velocities(motion_.qd);
         // return 0;
@@ -200,8 +224,8 @@ int main(int argc, char **argv)
     int rate_hz = 1000;
 
     dynamics_controller controller(robot_driver, arm_chain_, root_acc, 
-                                   joint_position_limits_l, 
-                                   joint_position_limits_r, 
+                                   joint_position_limits_p, 
+                                   joint_position_limits_n, 
                                    joint_velocity_limits, 
                                    joint_acceleration_limits,
                                    joint_torque_limits, rate_hz);
@@ -209,7 +233,7 @@ int main(int argc, char **argv)
     //Create End_effector Cartesian Acceleration task 
     controller.define_ee_constraint_task(std::vector<bool>{true, false, false, 
                                                            false, false, false},
-                                         std::vector<double>{10.01, 0.0, 
+                                         std::vector<double>{100.01, 0.0, 
                                                              0.0, 0.0, 
                                                              0.0, 0.0});
     //Create External Forces task 
