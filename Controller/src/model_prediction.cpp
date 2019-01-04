@@ -98,21 +98,24 @@ void model_prediction::compute_FK(state_specification &predicted_state)
     temp_jntarrayvel.qdot = predicted_state.qd;
 
     //Compute angular and linear velocity of the end-effector
-    fk_velocity_solver_.JntToCart(
-                    temp_jntarrayvel, 
-                    predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]);
+    fk_velocity_solver_.JntToCart(temp_jntarrayvel, temp_framevel);
+    predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1] = \
+                                                    temp_framevel.GetTwist();
 
     //Compute postion and orientation of the end-effector
     fk_position_solver_.JntToCart(
-            predicted_state.q, 
-            predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
+                        predicted_state.q, 
+                        predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
     
     // Print Cartesian predictions
     std::cout << "End-effector Velocity: " 
-        << predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1].GetTwist()
+        << predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]
         << std::endl;
-    std::cout << "End-effector Pose: " 
+    std::cout << "End-effector Position: " 
               << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
               << std::endl;
+    // std::cout << "End-effector Orientation: " 
+    //           << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].getRPY()
+    //           << std::endl;
     std::cout << "\n" << std::endl;
 }

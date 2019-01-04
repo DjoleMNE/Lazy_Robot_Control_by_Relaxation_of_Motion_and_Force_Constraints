@@ -77,7 +77,7 @@ class model_prediction
 		which is not real time operations. Its better to create one
 		in the begging and just update its values in the loop */
 		KDL::JntArrayVel temp_jntarrayvel; 
-
+		KDL::FrameVel temp_framevel;
 		void compute_FK(state_specification &predicted_state);
 };
 #endif /* MODEL_PREDICTION_HPP */
