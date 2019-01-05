@@ -233,7 +233,7 @@ int main(int argc, char **argv)
     //Create End_effector Cartesian Acceleration task 
     controller.define_ee_constraint_task(std::vector<bool>{true, false, false, 
                                                            false, false, false},
-                                         std::vector<double>{100.01, 0.0, 
+                                         std::vector<double>{0.01, 0.0, 
                                                              0.0, 0.0, 
                                                              0.0, 0.0});
     //Create External Forces task 
@@ -246,7 +246,7 @@ int main(int argc, char **argv)
                                                                   0.0});
     
     controller.control(simulation_environment, 
-                       control_mode::velocity_control);
+                       control_mode::torque_control);
     
     return 0;
 }

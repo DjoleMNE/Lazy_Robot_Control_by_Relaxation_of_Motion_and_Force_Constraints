@@ -76,8 +76,8 @@ class model_prediction
 		in each iteration of integration loop new JntArrayVel instance, 
 		which is not real time operations. Its better to create one
 		in the begging and just update its values in the loop */
-		KDL::JntArrayVel temp_jntarrayvel; 
-		KDL::FrameVel temp_framevel;
+		KDL::JntArrayVel temp_jntarrayvel_; 
+		KDL::FrameVel temp_framevel_ = KDL::FrameVel::Identity();
 		void compute_FK(state_specification &predicted_state);
 };
 #endif /* MODEL_PREDICTION_HPP */

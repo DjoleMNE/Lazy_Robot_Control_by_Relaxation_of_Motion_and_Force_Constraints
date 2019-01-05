@@ -30,7 +30,8 @@ model_prediction::model_prediction(const KDL::Chain &robot_chain):
     NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
     NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
     fk_position_solver_(robot_chain_), 
-    fk_velocity_solver_(robot_chain_)
+    fk_velocity_solver_(robot_chain_),
+    temp_jntarrayvel_(robot_chain_.getNrOfJoints())
 {
     time_horizon_ = 0;
 }
@@ -94,13 +95,13 @@ void model_prediction::compute_FK(state_specification &predicted_state)
 {
     //Workaround for avoiding dynamic creation of JntArrayVel instance
     //See this class' hpp for explanation
-    temp_jntarrayvel.q = predicted_state.q;
-    temp_jntarrayvel.qdot = predicted_state.qd;
+    temp_jntarrayvel_.q = predicted_state.q;
+    temp_jntarrayvel_.qdot = predicted_state.qd;
 
     //Compute angular and linear velocity of the end-effector
-    fk_velocity_solver_.JntToCart(temp_jntarrayvel, temp_framevel);
+    fk_velocity_solver_.JntToCart(temp_jntarrayvel_, temp_framevel_);
     predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1] = \
-                                                    temp_framevel.GetTwist();
+                                                    temp_framevel_.GetTwist();
 
     //Compute postion and orientation of the end-effector
     fk_position_solver_.JntToCart(

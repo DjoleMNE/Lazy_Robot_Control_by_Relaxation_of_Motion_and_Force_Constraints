@@ -30,8 +30,8 @@ dynamics_controller::dynamics_controller(
                             youbot_mediator &robot_driver,
                             const KDL::Chain &chain,
                             const KDL::Twist &root_acc,
-                            const std::vector<double> joint_position_limits_l,
-                            const std::vector<double> joint_position_limits_r,
+                            const std::vector<double> joint_position_limits_p,
+                            const std::vector<double> joint_position_limits_n,
                             const std::vector<double> joint_velocity_limits,
                             const std::vector<double> joint_acceleration_limits,
                             const std::vector<double> joint_torque_limits,
@@ -50,9 +50,9 @@ dynamics_controller::dynamics_controller(
         predicted_state_(robot_state_), 
         predictor_(robot_chain_),
         robot_driver_(robot_driver),
-        safety_control_(robot_chain_, joint_position_limits_l,
-                        joint_position_limits_r, joint_velocity_limits, 
-                        joint_acceleration_limits, joint_torque_limits),
+        safety_control_(robot_chain_, joint_position_limits_p,
+                        joint_position_limits_n, joint_velocity_limits, 
+                        joint_acceleration_limits, joint_torque_limits, true),
         //Resize and set vector's elements to zero 
         zero_joint_velocities_(chain.getNrOfJoints()),
         solver_result_(0),
@@ -373,14 +373,14 @@ int dynamics_controller::control(const bool simulation_environment,
                 if (!simulation_environment) 
                     robot_driver_.set_joint_velocities(commands_.qd);
                 if(!desired_control_mode_.is_safe) 
-                    cout << "WARNING: Control switched to velocity mode" << endl;
+                    cout << "WARNING: Control switched to velocity mode \n" << endl;
                 break;
 
             case control_mode::position_control:
                 if (!simulation_environment)
                     robot_driver_.set_joint_positions(commands_.q);
                 if(!desired_control_mode_.is_safe) 
-                    cout << "WARNING: Control switched to position mode" << endl;
+                    cout << "WARNING: Control switched to position mode \n" << endl;
                 break;
 
             default:
@@ -390,10 +390,9 @@ int dynamics_controller::control(const bool simulation_environment,
                 return -1;             
         }
 
-
         // Make sure that the loop is always running with the same frequency
         if(!enforce_loop_frequency() == 0) 
-            std::cerr << "WARNING: Control loop runs too slow" << std::endl;
+            std::cerr << "WARNING: Control loop runs too slow \n" << std::endl;
     }
     return 0;
 }
