@@ -61,16 +61,26 @@ class model_prediction
 									   const double step_size,
 									   const int number_of_steps,
 									   const int method);
+
+		void integrate_to_velocity(const double &acceleration, 
+								   const double &current_velocity,
+								   double &predicted_velocity,
+								   const int method,
+							       const double dt);
+
+		void integrate_to_position(const double &acceleration,
+								   const double &predicted_velocity, 
+								   const double &current_position,
+								   double &predicted_position,
+								   const int method,
+								   const double dt);
     private:
 		KDL::Chain robot_chain_;
 
 		const int NUMBER_OF_SEGMENTS_;
 		const int NUMBER_OF_JOINTS_;
 	    const int NUMBER_OF_FRAMES_;
-
-		KDL::ChainFkSolverPos_recursive fk_position_solver_;
-		KDL::ChainFkSolverVel_recursive fk_velocity_solver_;
-
+		
 		/* Workaround KDL's requirement for specifying FK VEl solver first
 		input/argument as JntArrayVel. Due to this, 
 		in each iteration of integration loop new JntArrayVel instance, 
@@ -78,6 +88,11 @@ class model_prediction
 		in the begging and just update its values in the loop */
 		KDL::JntArrayVel temp_jntarrayvel_; 
 		KDL::FrameVel temp_framevel_ = KDL::FrameVel::Identity();
+
+		KDL::ChainFkSolverPos_recursive fk_position_solver_;
+		KDL::ChainFkSolverVel_recursive fk_velocity_solver_;
+		
+		// Forward position and velocity kinematics, from itegrated values
 		void compute_FK(state_specification &predicted_state);
 };
 #endif /* MODEL_PREDICTION_HPP */

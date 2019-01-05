@@ -40,37 +40,18 @@ model_prediction::model_prediction(const KDL::Chain &robot_chain):
 void model_prediction::integrate_joint_space(
                                     const state_specification &current_state,
                                     state_specification &predicted_state,
-                                    const double step_size_dt,
+                                    const double step_size,
                                     const int number_of_steps, const int method)
 {
-    switch(method) {
-        case integration_method::symplectic_euler:
-            for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
-            {   
-                //Integrate joint accelerations to velocities - Classical Euler method
-                predicted_state.qd(i) = current_state.qd(i)\
-                                        + current_state.qdd(i) * step_size_dt;
+    
+    for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
+    {             
+        integrate_to_velocity(current_state.qdd(i), current_state.qd(i),
+                                predicted_state.qd(i), method, step_size);
 
-                //Integrate joint velocities to positions - Symplectic Euler method
-                predicted_state.q(i) = current_state.q(i)\
-                                        + predicted_state.qd(i) * step_size_dt;
-            }
-            break;
-
-        case integration_method::predictor_corrector:
-            for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
-            {   
-                //Integrate joint accelerations to velocities - Classical Euler method
-                predicted_state.qd(i) = current_state.qd(i)\
-                                        + current_state.qdd(i) * step_size_dt;
-
-                //Integrate joint velocities to joint positions - Trapezoidal method
-                predicted_state.q(i) = current_state.q(i)\
-                            + (predicted_state.qd(i)\
-                                - current_state.qdd(i) * step_size_dt / 2.0)\
-                            * step_size_dt;
-            }
-            break;
+        integrate_to_position(current_state.qdd(i), predicted_state.qd(i),
+                                current_state.q(i), predicted_state.q(i), 
+                                method, step_size);
     }
 
     std::cout << "Joint Acc: " << current_state.qdd << std::endl;
@@ -91,6 +72,49 @@ void model_prediction::integrate_cartesian_space(
     //TODO
 }
 
+// Simple integration from one acceleration to one velocity
+void model_prediction::integrate_to_velocity(const double &acceleration, 
+                                             const double &current_velocity,
+                                             double &predicted_velocity,
+                                             const int method,
+                                             const double dt)
+{
+    switch(method) {
+        case integration_method::symplectic_euler:
+            //Integrate accelerations to velocities - Classical Euler method
+            predicted_velocity = current_velocity + acceleration * dt;
+            break;
+        
+        case integration_method::predictor_corrector:
+            //Integrate accelerations to velocities - Classical Euler method
+            predicted_velocity = current_velocity + acceleration * dt;
+            break;
+    }
+}
+
+// Simple integration from one velocity to one position/angle
+void model_prediction::integrate_to_position(const double &acceleration,
+                                             const double &predicted_velocity, 
+                                             const double &current_position,
+                                             double &predicted_position,
+                                             const int method,
+                                             const double dt)
+{
+    switch(method) {
+        case integration_method::symplectic_euler:
+            //Integrate velocities to positions - Symplectic Euler method
+            predicted_position = current_position + predicted_velocity * dt;
+            break;
+        
+        case integration_method::predictor_corrector:
+            //Integrate velocities to joint positions - Trapezoidal method
+            predicted_position = current_position + dt * \
+                                 (predicted_velocity - acceleration * dt / 2.0);
+            break;
+    }
+}
+
+// Forward position and velocity kinematics, from itegrated values
 void model_prediction::compute_FK(state_specification &predicted_state)
 {
     //Workaround for avoiding dynamic creation of JntArrayVel instance
