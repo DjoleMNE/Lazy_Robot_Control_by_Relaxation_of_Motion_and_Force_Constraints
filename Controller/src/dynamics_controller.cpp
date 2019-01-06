@@ -197,13 +197,24 @@ int dynamics_controller::evaluate_dynamics()
                                          robot_state_.external_force,
                                          robot_state_.feedforward_torque);
 
+    hd_solver_.get_transformed_link_pose(robot_state_.frame_pose);
+    hd_solver_.get_transformed_link_velocity(robot_state_.frame_velocity);
     hd_solver_.get_transformed_link_acceleration(robot_state_.frame_acceleration);
-    // std::cout << "\n \n Frame ACC" << '\n';
-    // for (size_t i = 0; i < number_of_segments + 1; i++)
-    //     std::cout << motion_.frame_acceleration[i] << '\n';
-    // std::cout << std::endl;
-
     hd_solver_.get_control_torque(robot_state_.control_torque);
+    
+    // Print Cartesian state in Debug mode
+    #if DEBUG == 0
+        std::cout << "End-effector Position: " 
+                << robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
+                << std::endl;
+        std::cout << "End-effector Velocity: " 
+            << robot_state_.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]
+            << std::endl;    
+        std::cout << "Frame ACC" << '\n';
+        for (size_t i = 0; i < NUMBER_OF_SEGMENTS_ + 1; i++)
+            std::cout << robot_state_.frame_acceleration[i] << '\n';
+        std::cout << std::endl;
+    #endif
 
     return solver_result_;
 }

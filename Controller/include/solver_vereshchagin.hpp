@@ -79,6 +79,8 @@ public:
     virtual void updateInternalDataStructures();
 
     void set_rotor_inertia(const std::vector<double> &rotor_inertia);
+    void get_transformed_link_pose(Frames& x);
+    void get_transformed_link_velocity(Twists& xDot);
     void get_link_acceleration(Twists& xDotdot);
     void get_transformed_link_acceleration(Twists& xDotdot);
     void get_link_inertias(Inertias &h);

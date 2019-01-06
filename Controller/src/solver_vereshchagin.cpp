@@ -435,7 +435,27 @@ void Solver_Vereshchagin::set_rotor_inertia(const std::vector<double> &rotor_ine
     d = Eigen::VectorXd::Map(rotor_inertia.data(), rotor_inertia.size());
 }
 
-//Returns cartesian acceleration of links in link tip coordinates
+//Returns cartesian pose of links in robot base coordinates
+void Solver_Vereshchagin::get_transformed_link_pose(Frames& x)
+{
+    assert(x.size() == ns);
+
+    for (int i = 0; i < ns; i++) {
+        x[i] = results[i + 1].F_base;
+    }
+}
+
+//Returns cartesian velocity of links in robot base coordinates
+void Solver_Vereshchagin::get_transformed_link_velocity(Twists& xDot)
+{
+    assert(xDot.size() == ns);
+
+    for (int i = 0; i < ns; i++) {
+        xDot[i] = results[i + 1].F_base.M * results[i + 1].v;
+    }
+}
+
+//Returns cartesian acceleration of links in link's tip coordinates
 void Solver_Vereshchagin::get_link_acceleration(Twists& xDotdot)
 {
     assert(xDotdot.size() == ns + 1);
