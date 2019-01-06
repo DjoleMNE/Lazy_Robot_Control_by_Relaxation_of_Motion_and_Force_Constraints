@@ -59,6 +59,7 @@ Solver_Vereshchagin::Solver_Vereshchagin(const Chain& chain_, Twist root_acc, un
     Vm = MatrixXd::Identity(nc, nc);
     Sm = VectorXd::Ones(nc);
     tmpm = VectorXd::Ones(nc);
+    d = VectorXd::Zero(nj);
 }
 
 void Solver_Vereshchagin::updateInternalDataStructures()
@@ -275,7 +276,11 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
 
             //needed for next recursion
             s.PZ = s.P * s.Z;
-            s.D = dot(s.Z, s.PZ);
+
+            // Additionally adding joint rotor inertia: equation a) (see Vereshchagin89)
+            s.D = d(j) + dot(s.Z, s.PZ);
+            // s.D = dot(s.Z, s.PZ);
+
             s.PC = s.P * s.C;
 
             //u=(Q-Z(R+PC)=sum of external forces along the joint axes,
@@ -330,7 +335,7 @@ void Solver_Vereshchagin::constraint_calculation(const JntArray& beta)
 
     //truncated svd, what would sdls, dls physically mean?
     for (unsigned int i = 0; i < nc; i++)
-        if (Sm(i) < 1e-5){
+        if (Sm(i) < 1e-10){
             Sm(i) = 0.0;
             // std::cout<<"DOF lost"<<std::endl;
         }
@@ -421,6 +426,13 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
         if (chain.getSegment(i - 1).getJoint().getType() != Joint::None)
             j++;
     }
+}
+
+// Set vector of joint rotor inertia: "d" in the algorithm
+void Solver_Vereshchagin::set_rotor_inertia(const std::vector<double> &rotor_inertia)
+{
+    assert(rotor_inertia.size() == nj);
+    d = Eigen::VectorXd::Map(rotor_inertia.data(), rotor_inertia.size());
 }
 
 //Returns cartesian acceleration of links in link tip coordinates

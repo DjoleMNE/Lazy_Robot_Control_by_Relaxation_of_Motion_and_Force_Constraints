@@ -95,7 +95,7 @@ void youbot_custom_model::createModel(KDL::Chain &arm_chain)
     mass[ID_BODY_LINK_2      ] = KILOGRAM(1.318);
     mass[ID_BODY_LINK_3      ] = KILOGRAM(0.821);
     mass[ID_BODY_LINK_4      ] = KILOGRAM(0.769);
-    mass[ID_BODY_LINK_5      ] = KILOGRAM(0.687);
+    mass[ID_BODY_LINK_5      ] = KILOGRAM(0.687 + 0.199);
     mass[ID_BODY_GRIPPER_BASE] = KILOGRAM(0.199);
 
     // Create segments

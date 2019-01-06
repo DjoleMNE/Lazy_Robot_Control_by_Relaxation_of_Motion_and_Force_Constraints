@@ -35,6 +35,7 @@ dynamics_controller::dynamics_controller(
                             const std::vector<double> joint_velocity_limits,
                             const std::vector<double> joint_acceleration_limits,
                             const std::vector<double> joint_torque_limits,
+                            const std::vector<double> rotor_inertia,
                             const int rate_hz):
         robot_chain_(chain),
         root_acc_(root_acc),
@@ -69,6 +70,9 @@ dynamics_controller::dynamics_controller(
     // Control loop frequency must be lower than or equal to 1000 Hz
     assert(("Desired frequency is too high", rate_hz_<= 10000));
 
+    // Set vector of joint rotor inertia: term "d" in the algorithm
+    hd_solver_.set_rotor_inertia(rotor_inertia);
+    
     // Set default command interface to velocity mode and initialize it as safe
     desired_control_mode_.interface = control_mode::stop_motion;
     desired_control_mode_.is_safe = false;

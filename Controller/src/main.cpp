@@ -141,7 +141,7 @@ int main(int argc, char **argv)
     
     //JP's max torques
     // std::vector<double> joint_torque_limits = {12.9012, 12.9012, 8.2700, 4.1748, 1.7550};
-    //Benjamin Keiser' max torques (slow version)
+    //youBot store's max torques 
     std::vector<double> joint_torque_limits = {9.5, 9.5, 6.0, 2.0, 1.0};
     //Benjamin Keiser' max torques (fast version)
     // std::vector<double> joint_torque_limits = {17.0, 17.0, 8.0, 2.7, 1.0}};
@@ -153,9 +153,16 @@ int main(int argc, char **argv)
     // Offsets required for the custom model: Negative Candle config values: keiser's
     // std::vector<double> youbot_joint_offsets = {-2.9496, -1.1344, 2.5481, -1.7889, -2.9234};
 
+    // Rotor inertia - "d" in the algorithm: Computed from youBot store values
+    std::vector<double> youbot_rotor_inertia = {0.32853, 0.32853, 0.13500, 0.04662, 0.01764};
+    
+    // Eigen::VectorXd d;
+    // d = Eigen::VectorXd::Map(youbot_rotor_inertia.data(), youbot_rotor_inertia.size());
+    // d = Eigen::Map<Eigen::VectorXd>(youbot_rotor_inertia.data(),youbot_rotor_inertia.size());
+    // std::cout << d << endl;
 
     //Arm's root acceleration
-    KDL::Vector linearAcc(0.0, 0.0, -9.81); //gravitational acceleration along Z
+    KDL::Vector linearAcc(0.0, 0.0, 9.81); //gravitational acceleration along Z
     KDL::Vector angularAcc(0.0, 0.0, 0.0);
     KDL::Twist root_acc(linearAcc, angularAcc);
 
@@ -209,7 +216,7 @@ int main(int argc, char **argv)
         // return 0;
     }
 
-    // REinitialize robot model and EtherCAT communication 
+    // Re-initialize robot model and EtherCAT communication 
     if(!simulation_environment){
         robot_driver.initialize(
                     "/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config", 
@@ -227,8 +234,8 @@ int main(int argc, char **argv)
                                    joint_position_limits_p, 
                                    joint_position_limits_n, 
                                    joint_velocity_limits, 
-                                   joint_acceleration_limits,
-                                   joint_torque_limits, rate_hz);
+                                   joint_acceleration_limits, joint_torque_limits, 
+                                   youbot_rotor_inertia, rate_hz);
     
     //Create End_effector Cartesian Acceleration task 
     controller.define_ee_constraint_task(std::vector<bool>{true, false, false, 

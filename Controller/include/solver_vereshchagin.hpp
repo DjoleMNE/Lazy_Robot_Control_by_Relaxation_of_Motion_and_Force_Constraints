@@ -78,6 +78,7 @@ public:
     /// @copydoc KDL::SolverI::updateInternalDataStructures
     virtual void updateInternalDataStructures();
 
+    void set_rotor_inertia(const std::vector<double> &rotor_inertia);
     void get_link_acceleration(Twists& xDotdot);
     void get_transformed_link_acceleration(Twists& xDotdot);
     void get_link_inertias(Inertias &h);
@@ -126,6 +127,7 @@ private:
     Eigen::VectorXd nu_sum;
     Eigen::VectorXd Sm;
     Eigen::VectorXd tmpm;
+    Eigen::VectorXd d; // Joint rotor inertia: equation a) (see Vereshchagin89)
     Wrench qdotdot_sum;
     Frame F_total;
 
