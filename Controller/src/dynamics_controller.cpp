@@ -203,7 +203,7 @@ int dynamics_controller::evaluate_dynamics()
     hd_solver_.get_control_torque(robot_state_.control_torque);
     
     // Print Cartesian state in Debug mode
-    #if DEBUG == 0
+    #ifndef NDEBUG
         std::cout << "End-effector Position: " 
                 << robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
                 << std::endl;
@@ -214,7 +214,7 @@ int dynamics_controller::evaluate_dynamics()
         for (size_t i = 0; i < NUMBER_OF_SEGMENTS_ + 1; i++)
             std::cout << robot_state_.frame_acceleration[i] << '\n';
         std::cout << std::endl;
-    #endif
+    #endif 
 
     return solver_result_;
 }
