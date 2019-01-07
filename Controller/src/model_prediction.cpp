@@ -54,9 +54,13 @@ void model_prediction::integrate_joint_space(
                                 method, step_size);
     }
 
-    std::cout << "Joint Acc: " << current_state.qdd << std::endl;
-    std::cout << "Joint Vel: " << predicted_state.qd << std::endl;
-    std::cout << "Joint Pos: " << predicted_state.q << std::endl;
+    #ifndef NDEBUG // Print joint state in Debug mode only
+        std::cout << "Joint state result of integration" << std::endl;
+        std::cout << "Joint Acc: " << current_state.qdd << std::endl;
+        std::cout << "Joint Vel: " << predicted_state.qd << std::endl;
+        std::cout << "Joint Pos: " << predicted_state.q << std::endl;
+        std::cout << std::endl;
+    #endif
 
     compute_FK(predicted_state);
 }
@@ -133,14 +137,14 @@ void model_prediction::compute_FK(state_specification &predicted_state)
                         predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
     
     // Print Cartesian predictions
-    std::cout << "End-effector Velocity: " 
-        << predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]
-        << std::endl;
-    std::cout << "End-effector Position: " 
-              << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
-              << std::endl;
+    // std::cout << "End-effector Velocity: " 
+    //     << predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]
+    //     << std::endl;
+    // std::cout << "End-effector Position: " 
+    //           << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
+    //           << std::endl;
     // std::cout << "End-effector Orientation: " 
     //           << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].getRPY()
     //           << std::endl;
-    std::cout << "\n" << std::endl;
+    // std::cout << "\n" << std::endl;
 }

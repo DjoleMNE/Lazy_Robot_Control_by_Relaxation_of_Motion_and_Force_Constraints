@@ -277,7 +277,7 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
             //needed for next recursion
             s.PZ = s.P * s.Z;
 
-            // Additionally adding joint rotor inertia: equation a) (see Vereshchagin89)
+            // Additionally adding joint (rotor + gear) inertia: equation a) (see Vereshchagin89)
             s.D = d(j) + dot(s.Z, s.PZ);
             // s.D = dot(s.Z, s.PZ);
 
@@ -428,11 +428,11 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
     }
 }
 
-// Set vector of joint rotor inertia: "d" in the algorithm
-void Solver_Vereshchagin::set_rotor_inertia(const std::vector<double> &rotor_inertia)
+// Set vector of joint (rotor + gear) inertia: "d" in the algorithm
+void Solver_Vereshchagin::set_joint_inertia(const std::vector<double> &joint_inertia)
 {
-    assert(rotor_inertia.size() == nj);
-    d = Eigen::VectorXd::Map(rotor_inertia.data(), rotor_inertia.size());
+    assert(joint_inertia.size() == nj);
+    d = Eigen::VectorXd::Map(joint_inertia.data(), joint_inertia.size());
 }
 
 //Returns cartesian pose of links in robot base coordinates

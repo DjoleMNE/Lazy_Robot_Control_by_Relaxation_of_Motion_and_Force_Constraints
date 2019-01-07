@@ -154,11 +154,11 @@ int main(int argc, char **argv)
     // std::vector<double> youbot_joint_offsets = {-2.9496, -1.1344, 2.5481, -1.7889, -2.9234};
 
     // Rotor inertia - "d" in the algorithm: Computed from youBot store values
-    std::vector<double> youbot_rotor_inertia = {0.32853, 0.32853, 0.13500, 0.04662, 0.01764};
+    std::vector<double> youbot_joint_inertia = {0.33848, 0.33848, 0.13571, 0.04698, 0.01799};
     
     // Eigen::VectorXd d;
-    // d = Eigen::VectorXd::Map(youbot_rotor_inertia.data(), youbot_rotor_inertia.size());
-    // d = Eigen::Map<Eigen::VectorXd>(youbot_rotor_inertia.data(),youbot_rotor_inertia.size());
+    // d = Eigen::VectorXd::Map(youbot_joint_inertia.data(), youbot_joint_inertia.size());
+    // d = Eigen::Map<Eigen::VectorXd>(youbot_joint_inertia.data(),youbot_joint_inertia.size());
     // std::cout << d << endl;
 
     //Arm's root acceleration
@@ -235,12 +235,12 @@ int main(int argc, char **argv)
                                    joint_position_limits_n, 
                                    joint_velocity_limits, 
                                    joint_acceleration_limits, joint_torque_limits, 
-                                   youbot_rotor_inertia, rate_hz);
+                                   youbot_joint_inertia, rate_hz);
     
     //Create End_effector Cartesian Acceleration task 
-    controller.define_ee_constraint_task(std::vector<bool>{true, false, false, 
+    controller.define_ee_constraint_task(std::vector<bool>{false, false, false, 
                                                            false, false, false},
-                                         std::vector<double>{0.01, 0.0, 
+                                         std::vector<double>{0.0, 0.0, 
                                                              0.0, 0.0, 
                                                              0.0, 0.0});
     //Create External Forces task 

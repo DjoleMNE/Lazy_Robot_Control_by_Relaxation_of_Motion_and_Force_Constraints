@@ -35,7 +35,7 @@ dynamics_controller::dynamics_controller(
                             const std::vector<double> joint_velocity_limits,
                             const std::vector<double> joint_acceleration_limits,
                             const std::vector<double> joint_torque_limits,
-                            const std::vector<double> rotor_inertia,
+                            const std::vector<double> joint_inertia,
                             const int rate_hz):
         robot_chain_(chain),
         root_acc_(root_acc),
@@ -70,8 +70,8 @@ dynamics_controller::dynamics_controller(
     // Control loop frequency must be lower than or equal to 1000 Hz
     assert(("Desired frequency is too high", rate_hz_<= 10000));
 
-    // Set vector of joint rotor inertia: term "d" in the algorithm
-    hd_solver_.set_rotor_inertia(rotor_inertia);
+    // Set vector of joint (rotor + gear) inertia: term "d" in the algorithm
+    hd_solver_.set_joint_inertia(joint_inertia);
     
     // Set default command interface to velocity mode and initialize it as safe
     desired_control_mode_.interface = control_mode::stop_motion;
@@ -263,7 +263,7 @@ void dynamics_controller::print_settings_info()
             break;
     }
     
-    std::cout<<"\nInitial joint state:"<< std::endl;
+    std::cout<<"\nInitial joint state: "<< std::endl;
     std::cout<< "Joint velocities:"<< robot_state_.qd << std::endl;
     std::cout<< "Joint positions: "<< robot_state_.q << std::endl;
     std::cout<<"\n";
@@ -320,9 +320,6 @@ int dynamics_controller::control(const bool simulation_environment,
     // Save current selection of desire control mode
     desired_control_mode_.interface = desired_control_mode;
 
-    //Print information about controller settings
-    print_settings_info();
-
     if(!simulation_environment)
     {   
         // Check if the robot is initialied and connection established
@@ -333,10 +330,21 @@ int dynamics_controller::control(const bool simulation_environment,
         stop_robot_motion();
     }
 
+    /* 
+        Get sensor data from the robot driver or
+        if simulation is on, replace current state with 
+        the integrated joint velocities and positions
+    */
+    update_current_state(simulation_environment);
+
+    //Print information about controller settings
+    print_settings_info();
+
     //Exit the program if the "Stop Motion" mode is selected
     if(desired_control_mode_.interface == control_mode::stop_motion) return -1;
-    double loop_time = 0.0;
-    int count = 0;
+
+    // double loop_time = 0.0;
+    // int count = 0;
 
     safe_control_mode_ = desired_control_mode_.interface;
     std::cout << "Control Loop Started"<< std::endl;
@@ -417,13 +425,13 @@ int dynamics_controller::control(const bool simulation_environment,
             // std::cerr << "WARNING: Control loop runs too slow \n" << std::endl;
         } 
 
-        loop_time += std::chrono::duration<double, std::micro>\
-                    (std::chrono::steady_clock::now() - loop_start_time_).count();
-        count++;
-        if(count == 1000) {
-            std::cout << loop_time / 1000.0 <<std::endl;
-            return 0;
-        }
+        // loop_time += std::chrono::duration<double, std::micro>\
+        //             (std::chrono::steady_clock::now() - loop_start_time_).count();
+        // count++;
+        // if(count == 1000) {
+        //     std::cout << loop_time / 1000.0 <<std::endl;
+        //     return 0;
+        // }
     }
     return 0;
 }

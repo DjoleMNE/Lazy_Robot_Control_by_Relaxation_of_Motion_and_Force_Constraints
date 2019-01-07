@@ -53,7 +53,7 @@ class dynamics_controller
                         const std::vector<double> joint_velocity_limits,
                         const std::vector<double> joint_acceleration_limits,
                         const std::vector<double> joint_torque_limits,
-                        const std::vector<double> rotor_inertia,
+                        const std::vector<double> joint_inertia,
                         const int rate_hz);
     ~dynamics_controller(){};
 
