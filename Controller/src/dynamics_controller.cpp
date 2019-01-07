@@ -204,6 +204,7 @@ int dynamics_controller::evaluate_dynamics()
     
     // Print Cartesian state in Debug mode
     #ifndef NDEBUG
+        std::cout << "Current Cartesian state:" << std::endl;
         std::cout << "End-effector Position: " 
                 << robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
                 << std::endl;
@@ -226,12 +227,15 @@ int dynamics_controller::enforce_loop_frequency()
                     (std::chrono::steady_clock::now() - loop_start_time_);
 
     if(loop_interval_ < std::chrono::microseconds(dt_micro_))
-    {
-        while(loop_interval_.count() < dt_micro_)
+    {   
+        //Loop is sufficiently fast
+        // clock_nanosleep((dt_micro_ - loop_interval_.count()));
+        while(loop_interval_.count() < dt_micro_){
             loop_interval_= std::chrono::duration<double, std::micro>\
                     (std::chrono::steady_clock::now() - loop_start_time_);
-    } else return -1; 
-    return 0;    
+        }
+        return 0;
+    } else return -1; //Loop is too slow
 }
 
 //Print information about controller settings
@@ -331,6 +335,8 @@ int dynamics_controller::control(const bool simulation_environment,
 
     //Exit the program if the "Stop Motion" mode is selected
     if(desired_control_mode_.interface == control_mode::stop_motion) return -1;
+    double loop_time = 0.0;
+    int count = 0;
 
     safe_control_mode_ = desired_control_mode_.interface;
     std::cout << "Control Loop Started"<< std::endl;
@@ -404,10 +410,20 @@ int dynamics_controller::control(const bool simulation_environment,
                      << "Stopping the robot!" << endl;
                 return -1;             
         }
+        
 
         // Make sure that the loop is always running with the same frequency
-        if(!enforce_loop_frequency() == 0) 
-            std::cerr << "WARNING: Control loop runs too slow \n" << std::endl;
+        if(!enforce_loop_frequency() == 0){
+            // std::cerr << "WARNING: Control loop runs too slow \n" << std::endl;
+        } 
+
+        loop_time += std::chrono::duration<double, std::micro>\
+                    (std::chrono::steady_clock::now() - loop_start_time_).count();
+        count++;
+        if(count == 1000) {
+            std::cout << loop_time / 1000.0 <<std::endl;
+            return 0;
+        }
     }
     return 0;
 }
