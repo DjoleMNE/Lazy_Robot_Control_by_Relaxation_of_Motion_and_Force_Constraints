@@ -29,60 +29,81 @@ model_prediction::model_prediction(const KDL::Chain &robot_chain):
     NUMBER_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
     NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
     NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
+    temp_state_(robot_chain.getNrOfJoints(), robot_chain.getNrOfSegments(), 
+                robot_chain.getNrOfSegments() + 1, 6),
     fk_position_solver_(robot_chain_), 
     fk_velocity_solver_(robot_chain_),
     temp_jntarrayvel_(robot_chain_.getNrOfJoints())
 {
-    time_horizon_ = 0;
+
 }
 
 // Used for checking joint limits
 void model_prediction::integrate_joint_space(
-                                    const state_specification &current_state,
-                                    state_specification &predicted_state,
-                                    const double step_size,
-                                    const int number_of_steps, const int method)
+                            const state_specification &current_state,
+                            std::vector<state_specification> &predicted_states,
+                            const double step_size, const int number_of_steps, 
+                            const int method, const bool fk_requested,
+                            const bool recompute_acceleration)
 {
-    
-    for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
-    {             
-        integrate_to_velocity(current_state.qdd(i), current_state.qd(i),
-                                predicted_state.qd(i), method, step_size);
+    assert(("Number of steps higher than the size of provided vector of states", 
+            number_of_steps <= predicted_states.size()));  
 
-        integrate_to_position(current_state.qdd(i), predicted_state.qd(i),
-                                current_state.q(i), predicted_state.q(i), 
-                                method, step_size);
+    temp_state_ = current_state;
+
+    // For each step in the future horizon
+    for (int i = 0; i < number_of_steps; i++){   
+        // For each robot's joint
+        for (int j = 0; j < NUMBER_OF_JOINTS_; j++){                         
+            integrate_to_velocity(temp_state_.qdd(j), temp_state_.qd(j),
+                                  predicted_states[i].qd(j), method, step_size);
+
+            integrate_to_position(temp_state_.qdd(j), predicted_states[i].qd(j),
+                                  temp_state_.q(j), predicted_states[i].q(j), 
+                                  method, step_size);
+        }
+
+        // TODO (Abstract description):
+        // if(recompute_acceleration){
+        //     predicted_states[i].qdd = evaluate_dynamics(predicted_states[i].q, predicted_states[i].qd)
+        //     // Integrated values overwritten to be current values for the next iteration
+        //     temp_state_.qdd = predicted_states[i].qdd;
+        // }
+
+        temp_state_.qd = predicted_states[i].qd;
+        temp_state_.q = predicted_states[i].q;
     }
 
     #ifndef NDEBUG // Print joint state in Debug mode only
         std::cout << "Computed Joint Acc: " << current_state.qdd << std::endl;
-        std::cout << "Integrated Joint Vel: " << predicted_state.qd << std::endl;
-        std::cout << "Integrated Joint Pos: " << predicted_state.q << std::endl;
+        std::cout << "Integrated Joint Vel: " << predicted_states[0].qd << std::endl;
+        std::cout << "Integrated Joint Pos: " << predicted_states[0].q << std::endl;
         std::cout << std::endl;
     #endif
 
     #ifdef NDEBUG // Print joint state in Release mode only
-    std::cout << "Computed Joint Acc: " << current_state.qdd << std::endl;
-    std::cout << "Current Joint Vel: " << current_state.qd << std::endl;
-    std::cout << "Integrated Joint Vel: " << predicted_state.qd << std::endl;
-    std::cout << std::endl;
+        std::cout << "Computed Joint Acc: " << current_state.qdd << std::endl;
+        std::cout << "Current Joint Vel: " << current_state.qd << std::endl;
+        std::cout << "Integrated Joint Vel: " << predicted_states[0].qd << std::endl;
+        std::cout << std::endl;
     #endif
 
-    // compute_FK(predicted_state);
+    if(fk_requested) compute_FK(predicted_states[number_of_steps - 1]);
 }
 
 // Used for predicting future deviation from the goal state
 void model_prediction::integrate_cartesian_space(
-    const state_specification &current_state,
-    state_specification &predicted_state,
-    const double step_size,
-    const int number_of_steps,
-    const int method)
+                            const state_specification &current_state,
+                            std::vector<state_specification> &predicted_states,
+                            const double step_size, const int number_of_steps,
+                            const int method, const bool recompute_acceleration)
 {
+    assert(("Number of steps higher than the size of provided vector of states", 
+            number_of_steps <= predicted_states.size())); 
     //TODO
 }
 
-// Simple integration from one acceleration to one velocity
+// Scalar integration from one acceleration to one velocity
 void model_prediction::integrate_to_velocity(const double &acceleration, 
                                              const double &current_velocity,
                                              double &predicted_velocity,
@@ -102,7 +123,7 @@ void model_prediction::integrate_to_velocity(const double &acceleration,
     }
 }
 
-// Simple integration from one velocity to one position/angle
+// Scalar integration from one velocity to one position/angle
 void model_prediction::integrate_to_position(const double &acceleration,
                                              const double &predicted_velocity, 
                                              const double &current_position,
@@ -124,7 +145,7 @@ void model_prediction::integrate_to_position(const double &acceleration,
     }
 }
 
-// Forward position and velocity kinematics, from itegrated values
+// Forward position and velocity kinematics, given the itegrated values
 void model_prediction::compute_FK(state_specification &predicted_state)
 {
     //Workaround for avoiding dynamic creation of JntArrayVel instance
@@ -142,7 +163,7 @@ void model_prediction::compute_FK(state_specification &predicted_state)
                         predicted_state.q, 
                         predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
     
-    // Print Cartesian predictions
+    // #ifndef NDEBUG // Print Cartesian state in Debug mode only
     // std::cout << "End-effector Velocity: " 
     //     << predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]
     //     << std::endl;
@@ -153,4 +174,5 @@ void model_prediction::compute_FK(state_specification &predicted_state)
     //           << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].getRPY()
     //           << std::endl;
     // std::cout << "\n" << std::endl;
+    // #endif
 }

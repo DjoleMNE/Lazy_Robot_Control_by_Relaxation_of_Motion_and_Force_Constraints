@@ -43,24 +43,23 @@ enum integration_method
 class model_prediction
 {
 	public:
- 		double time_horizon_;
-
 		model_prediction(const KDL::Chain &robot_chain);
 		~model_prediction(){}
 		
 		// Used for checking joint limits
-		void integrate_joint_space(const state_specification &current_state,
-								   state_specification &predicted_state,
-								   const double step_size,
-								   const int number_of_steps,
-								   const int method);
+		void integrate_joint_space(
+							const state_specification &current_state,
+							std::vector<state_specification> &predicted_states,
+							const double step_size,	const int number_of_steps,
+							const int method, const bool fk_requested,
+                            const bool recompute_acceleration);
 
 		// Used for predicting future deviation from the goal state
-		void integrate_cartesian_space(const state_specification &current_state,
-									   state_specification &predicted_state,
-									   const double step_size,
-									   const int number_of_steps,
-									   const int method);
+		void integrate_cartesian_space(
+							const state_specification &current_state,
+							std::vector<state_specification> &predicted_states,
+							const double step_size, const int number_of_steps,
+							const int method, const bool recompute_acceleration);
 
 		void integrate_to_velocity(const double &acceleration, 
 								   const double &current_velocity,
@@ -80,6 +79,10 @@ class model_prediction
 		const int NUMBER_OF_SEGMENTS_;
 		const int NUMBER_OF_JOINTS_;
 	    const int NUMBER_OF_FRAMES_;
+
+		// Temp varible required for saving intermediate state,
+		// if multi step integration requirested
+		state_specification temp_state_;
 		
 		/* Workaround KDL's requirement for specifying FK VEl solver first
 		input/argument as JntArrayVel. Due to this, 
