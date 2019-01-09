@@ -85,6 +85,7 @@ void model_prediction::integrate_joint_space(
         std::cout << "Computed Joint Acc: " << current_state.qdd << std::endl;
         std::cout << "Current Joint Vel: " << current_state.qd << std::endl;
         std::cout << "Integrated Joint Vel: " << predicted_states[0].qd << std::endl;
+        std::cout << "Current Joint Pos: " << current_state.q << std::endl;
         std::cout << std::endl;
     #endif
 

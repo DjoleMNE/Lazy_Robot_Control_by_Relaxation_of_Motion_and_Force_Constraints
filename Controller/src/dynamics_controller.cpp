@@ -301,32 +301,32 @@ void dynamics_controller::update_task()
 //Send joint commands to the robot driver
 int dynamics_controller::apply_control_commands(const bool simulation_environment)
 { 
+    // First save the current decision if desired control mode is safe or not.
+    desired_control_mode_.is_safe =\
+        (desired_control_mode_.interface == safe_control_mode_)? true : false; 
+
     switch(safe_control_mode_) {
         case control_mode::torque_control:
             assert(desired_control_mode_.is_safe);
             if (!simulation_environment)
                 robot_driver_.set_joint_torques(commands_.control_torque);
-            return 0;
+            break;
 
         case control_mode::velocity_control:
             if (!simulation_environment) 
                 robot_driver_.set_joint_velocities(commands_.qd);
             if(!desired_control_mode_.is_safe) 
-                cout << "WARNING: Control switched to velocity mode \n" << endl;
-            return 0;
+                std::cout << "WARNING: Control switched to velocity mode \n" << std::endl;
+            break;
 
         case control_mode::position_control:
             if (!simulation_environment)
                 robot_driver_.set_joint_positions(commands_.q);
             if(!desired_control_mode_.is_safe) 
-                cout << "WARNING: Control switched to position mode \n" << endl;
-            return 0;
-
-        default:
-            if (!simulation_environment) stop_robot_motion();
-            cout << "WARNING: Current commands are not safe. " 
-                    << "Stopping the robot!" << endl;
-            return -1;             
+                std::cout << "WARNING: Control switched to position mode \n" << std::endl;
+            break;
+        default: 
+            assert(false && "Program should stop before calling this function");
     }
 }
 
@@ -351,11 +351,7 @@ int dynamics_controller::control(const bool simulation_environment,
 
     if(!simulation_environment)
     {   
-        // Check if the robot is initialied and connection established
         assert(("Robot is not initialized", robot_driver_.is_initialized));   
-
-        // Make sure that robot is not moving at the start 
-        // Command zero velocities to the robot driver
         stop_robot_motion();
     }
 
@@ -419,23 +415,28 @@ int dynamics_controller::control(const bool simulation_environment,
                                         commands_, dt_sec_, 
                                         desired_control_mode_.interface,
                                         integration_method::symplectic_euler);
-
-        // Save the current decision if desired control mode is safe or not.
-        desired_control_mode_.is_safe =\
-            (desired_control_mode_.interface == safe_control_mode_)? true : false; 
+        
+        // If the computed commands are not safe, exit the program.
+        if(safe_control_mode_ == control_mode::stop_motion) {
+            if (!simulation_environment) stop_robot_motion();
+            std::cout << "WARNING: Computed commands are not safe. " 
+                      << "Stopping the robot!" << std::endl;
+            return -1;
+        }
 
         /* 
             Apply joint commands using the safe control interface.
             If simulation is on, just print the logs. Don't send anything.
         */
-        if(apply_control_commands(simulation_environment) != 0) return -1;
+        apply_control_commands(simulation_environment);
 
         // Make sure that the loop is always running with the same frequency
         if(!enforce_loop_frequency() == 0)
             std::cerr << "WARNING: Control loop runs too slow \n" << std::endl;
 
         // loop_time += std::chrono::duration<double, std::micro>\
-        //             (std::chrono::steady_clock::now() - loop_start_time_).count();
+        //             (std::chrono::steady_clock::now() -\
+        //                                          loop_start_time_).count();
         // count++;
         // if(count == 1000) {
         //     std::cout << loop_time / 1000.0 <<std::endl;

@@ -134,7 +134,7 @@ int main(int argc, char **argv)
     KDL::Chain arm_chain_;
     youbot_mediator robot_driver;
 
-    bool simulation_environment = true;
+    bool simulation_environment = false;
     bool use_custom_model = true;
 
     const std::string config_path = "/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config";
@@ -163,8 +163,8 @@ int main(int argc, char **argv)
 
     if(!simulation_environment){
         assert(("Robot is not initialized", robot_driver.is_initialized));
-        // stop_robot_motion(robot_driver, motion_);
-        // go_navigation_1(robot_driver);
+        stop_robot_motion(robot_driver, motion_);
+        go_navigation_2(robot_driver);
         // go_folded(robot_driver);
         // go_candle_3(robot_driver);
         // robot_driver.get_joint_positions(motion_.q);
@@ -179,14 +179,14 @@ int main(int argc, char **argv)
     dynamics_controller controller(robot_driver, arm_chain_, root_acc, rate_hz);
     
     //Create End_effector Cartesian Acceleration task 
-    controller.define_ee_constraint_task(std::vector<bool>{false, false, true, 
+    controller.define_ee_constraint_task(std::vector<bool>{false, false, false, 
                                                            false, false, false},
                                          std::vector<double>{0.0, 0.0, 
-                                                             20.1, 0.0, 
+                                                             0.0, 0.0, 
                                                              0.0, 0.0});
     //Create External Forces task 
     controller.define_ee_external_force_task(std::vector<double>{0.0, 0.0, 
-                                                                 0.0, 0.0, 
+                                                                 30.0, 0.0, 
                                                                  0.0, 0.0});
     //Create Feedforward torques task 
     controller.define_feadforward_torque_task(std::vector<double>{0.0, 0.0, 

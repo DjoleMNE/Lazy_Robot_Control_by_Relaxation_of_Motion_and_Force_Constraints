@@ -94,7 +94,6 @@ void youbot_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities
                                     joint_velocities(i) * radian_per_second;
 
     if(add_offsets){
-        std::cout <<"HERE"<<std::endl;
         qd_setpoint_[4].angularVelocity = 0.0 * radian_per_second;
     } 
     // if(add_offsets) 

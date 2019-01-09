@@ -221,7 +221,7 @@ bool safety_controller::position_limit_reached(const state_specification &state,
 bool safety_controller::reaching_position_limits(const state_specification &state,
                                                  const int joint)
 {
-    // TODO: make this percentage different for each joint!
+    // Maybe TODO: make this percentage different for each joint!
     // Bigger space for joint to move, bigger the percentage!
     // Or check difference ---this can be made the same for every joint
     if (state.q(joint) > 0.95 * joint_position_limits_p_[joint]){

@@ -335,9 +335,8 @@ void Solver_Vereshchagin::constraint_calculation(const JntArray& beta)
 
     //truncated svd, what would sdls, dls physically mean?
     for (unsigned int i = 0; i < nc; i++)
-        if (Sm(i) < 1e-5){
+        if (Sm(i) < 1e-10){
             Sm(i) = 0.0;
-            // std::cout<<"DOF lost"<<std::endl;
         }
         else
             Sm(i) = 1 / Sm(i);
