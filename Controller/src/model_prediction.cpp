@@ -55,14 +55,20 @@ void model_prediction::integrate_joint_space(
     }
 
     #ifndef NDEBUG // Print joint state in Debug mode only
-        std::cout << "Joint state result of integration" << std::endl;
-        std::cout << "Joint Acc: " << current_state.qdd << std::endl;
-        std::cout << "Joint Vel: " << predicted_state.qd << std::endl;
-        std::cout << "Joint Pos: " << predicted_state.q << std::endl;
+        std::cout << "Computed Joint Acc: " << current_state.qdd << std::endl;
+        std::cout << "Integrated Joint Vel: " << predicted_state.qd << std::endl;
+        std::cout << "Integrated Joint Pos: " << predicted_state.q << std::endl;
         std::cout << std::endl;
     #endif
 
-    compute_FK(predicted_state);
+    #ifdef NDEBUG // Print joint state in Release mode only
+    std::cout << "Computed Joint Acc: " << current_state.qdd << std::endl;
+    std::cout << "Current Joint Vel: " << current_state.qd << std::endl;
+    std::cout << "Integrated Joint Vel: " << predicted_state.qd << std::endl;
+    std::cout << std::endl;
+    #endif
+
+    // compute_FK(predicted_state);
 }
 
 // Used for predicting future deviation from the goal state

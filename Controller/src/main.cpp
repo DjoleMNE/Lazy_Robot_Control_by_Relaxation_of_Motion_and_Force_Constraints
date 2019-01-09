@@ -131,68 +131,24 @@ void stop_robot_motion(youbot_mediator &arm, state_specification &motion){
 
 int main(int argc, char **argv)
 {
-    //Kuka youBot store values: positive and negative
-    std::vector<double> joint_position_limits_p = {2.9496, 1.5707, 2.5481, 1.7889, 2.9234};
-    std::vector<double> joint_position_limits_n = {-2.9496, -1.1344, -2.6354, -1.7889, -2.9234};
-    
-    // Robocup Urdf file parameters
-    std::vector<double> joint_velocity_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
-    std::vector<double> joint_acceleration_limits = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
-    
-    //JP's max torques
-    // std::vector<double> joint_torque_limits = {12.9012, 12.9012, 8.2700, 4.1748, 1.7550};
-    //youBot store's max torques 
-    std::vector<double> joint_torque_limits = {9.5, 9.5, 6.0, 2.0, 1.0};
-    //Benjamin Keiser' max torques (fast version)
-    // std::vector<double> joint_torque_limits = {17.0, 17.0, 8.0, 2.7, 1.0}};
-
-    // Offsets required for the custom model: Negative Candle config values -Mine
-    // std::vector<double> youbot_joint_offsets = {-2.9496, -1.13446, 2.54818, -1.78896, -2.9234};
-    // Offsets required for the custom model: Negative Candle config values -Sven's
-    std::vector<double> youbot_joint_offsets = {-2.9496, -1.1344, 2.6354, -1.7890, -2.9234};
-    // Offsets required for the custom model: Negative Candle config values: keiser's
-    // std::vector<double> youbot_joint_offsets = {-2.9496, -1.1344, 2.5481, -1.7889, -2.9234};
-
-    // Rotor inertia - "d" in the algorithm: Computed from youBot store values
-    std::vector<double> youbot_joint_inertia = {0.33848, 0.33848, 0.13571, 0.04698, 0.01799};
-    
-    // Eigen::VectorXd d;
-    // d = Eigen::VectorXd::Map(youbot_joint_inertia.data(), youbot_joint_inertia.size());
-    // d = Eigen::Map<Eigen::VectorXd>(youbot_joint_inertia.data(),youbot_joint_inertia.size());
-    // std::cout << d << endl;
-
-    //Arm's root acceleration
-    KDL::Vector linearAcc(0.0, 0.0, 9.81); //gravitational acceleration along Z
-    KDL::Vector angularAcc(0.0, 0.0, 0.0);
-    KDL::Twist root_acc(linearAcc, angularAcc);
-
     KDL::Chain arm_chain_;
     youbot_mediator robot_driver;
 
     bool simulation_environment = true;
     bool use_custom_model = true;
 
-    if (simulation_environment){
-        if(use_custom_model){
-            //Extract KDL tree from URDF file
-            youbot_custom_model yb_model(arm_chain_);
-            std::cout << "Custom youBot model selected" << std::endl;
-        } else{
-            assert(extract_robot_model_from_urdf(arm_chain_, 
-                                                "arm_link_0", 
-                                                "arm_link_5") != -1);
-            std::cout << "URDF youBot model selected" << std::endl;
-        }
-        std::cout << "\n";
-    } else{
-        robot_driver.initialize(
-                "/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config", 
-                "arm_link_0", "arm_link_5",
-                "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf",
-                use_custom_model, false, youbot_joint_offsets, arm_chain_);
-        std::cout << "Robot initialized!" << std::endl;
-        std::cout << "\n";
-    }
+    const std::string config_path = "/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config";
+    const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf";
+    const std::string root_name = "arm_link_0";
+    const std::string tooltip_name = "arm_link_5";
+
+    //Arm's root acceleration
+    KDL::Vector linearAcc(0.0, 0.0, 9.81); //gravitational acceleration along Z
+    KDL::Vector angularAcc(0.0, 0.0, 0.0);
+    KDL::Twist root_acc(linearAcc, angularAcc);
+    
+    robot_driver.initialize(arm_chain_, config_path, root_name, tooltip_name, 
+                            urdf_path, use_custom_model, simulation_environment);
 
     int number_of_segments = arm_chain_.getNrOfSegments();
     int number_of_joints = arm_chain_.getNrOfJoints();
@@ -207,7 +163,7 @@ int main(int argc, char **argv)
 
     if(!simulation_environment){
         assert(("Robot is not initialized", robot_driver.is_initialized));
-        stop_robot_motion(robot_driver, motion_);
+        // stop_robot_motion(robot_driver, motion_);
         // go_navigation_1(robot_driver);
         // go_folded(robot_driver);
         // go_candle_3(robot_driver);
@@ -216,32 +172,17 @@ int main(int argc, char **argv)
         // return 0;
     }
 
-    // Re-initialize robot model and EtherCAT communication 
-    if(!simulation_environment){
-        robot_driver.initialize(
-                    "/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config", 
-                    "arm_link_0", "arm_link_5",
-                    "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf",
-                    use_custom_model, true, youbot_joint_offsets, arm_chain_);
-        std::cout << "Robot initialized!" << std::endl;
-        std::cout << "\n";
-    }
+    if(!simulation_environment) robot_driver.add_offsets = true;
 
     //loop rate in Hz
     int rate_hz = 1000;
-
-    dynamics_controller controller(robot_driver, arm_chain_, root_acc, 
-                                   joint_position_limits_p, 
-                                   joint_position_limits_n, 
-                                   joint_velocity_limits, 
-                                   joint_acceleration_limits, joint_torque_limits, 
-                                   youbot_joint_inertia, rate_hz);
+    dynamics_controller controller(robot_driver, arm_chain_, root_acc, rate_hz);
     
     //Create End_effector Cartesian Acceleration task 
-    controller.define_ee_constraint_task(std::vector<bool>{false, false, false, 
+    controller.define_ee_constraint_task(std::vector<bool>{false, false, true, 
                                                            false, false, false},
                                          std::vector<double>{0.0, 0.0, 
-                                                             0.0, 0.0, 
+                                                             20.1, 0.0, 
                                                              0.0, 0.0});
     //Create External Forces task 
     controller.define_ee_external_force_task(std::vector<double>{0.0, 0.0, 
@@ -250,10 +191,9 @@ int main(int argc, char **argv)
     //Create Feedforward torques task 
     controller.define_feadforward_torque_task(std::vector<double>{0.0, 0.0, 
                                                                   0.0, 0.0, 
-                                                                  0.0});
-    
+                                                                  0.0});    
     controller.control(simulation_environment, 
-                       control_mode::torque_control);
+                       control_mode::velocity_control);
     
     return 0;
 }

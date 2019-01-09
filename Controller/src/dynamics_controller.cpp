@@ -30,12 +30,6 @@ dynamics_controller::dynamics_controller(
                             youbot_mediator &robot_driver,
                             const KDL::Chain &chain,
                             const KDL::Twist &root_acc,
-                            const std::vector<double> joint_position_limits_p,
-                            const std::vector<double> joint_position_limits_n,
-                            const std::vector<double> joint_velocity_limits,
-                            const std::vector<double> joint_acceleration_limits,
-                            const std::vector<double> joint_torque_limits,
-                            const std::vector<double> joint_inertia,
                             const int rate_hz):
         robot_chain_(chain),
         root_acc_(root_acc),
@@ -51,9 +45,11 @@ dynamics_controller::dynamics_controller(
         predicted_state_(robot_state_), 
         predictor_(robot_chain_),
         robot_driver_(robot_driver),
-        safety_control_(robot_chain_, joint_position_limits_p,
-                        joint_position_limits_n, joint_velocity_limits, 
-                        joint_acceleration_limits, joint_torque_limits, true),
+        safety_control_(robot_chain_, robot_driver.get_positive_joint_pos_limits(),
+                        robot_driver.get_negative_joint_pos_limits(), 
+                        robot_driver.get_joint_vel_limits(), 
+                        robot_driver.get_joint_acc_limits(), 
+                        robot_driver.get_joint_torque_limits(), true),
         //Resize and set vector's elements to zero 
         zero_joint_velocities_(chain.getNrOfJoints()),
         solver_result_(0),
@@ -71,7 +67,7 @@ dynamics_controller::dynamics_controller(
     assert(("Desired frequency is too high", rate_hz_<= 10000));
 
     // Set vector of joint (rotor + gear) inertia: term "d" in the algorithm
-    hd_solver_.set_joint_inertia(joint_inertia);
+    hd_solver_.set_joint_inertia(robot_driver.get_joint_inertia());
     
     // Set default command interface to velocity mode and initialize it as safe
     desired_control_mode_.interface = control_mode::stop_motion;
@@ -158,6 +154,7 @@ void dynamics_controller::set_external_forces(state_specification &state,
     //For now it is only updating forces on the end-effector
     //TODO: add forces on other segments as well
     assert(external_force.size() == NUMBER_OF_CONSTRAINTS_);
+
     state.external_force[state.external_force.size() - 1] = \
                                 KDL::Wrench (KDL::Vector(external_force[0],
                                                          external_force[1],
@@ -204,17 +201,20 @@ int dynamics_controller::evaluate_dynamics()
     
     // Print Cartesian state in Debug mode
     #ifndef NDEBUG
-        std::cout << "Current Cartesian state:" << std::endl;
-        std::cout << "End-effector Position: " 
+        std::cout << "Cartesian state:" << std::endl;
+        std::cout << "Current End-effector Position: " 
                 << robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
                 << std::endl;
-        std::cout << "End-effector Velocity: " 
+        std::cout << "Current End-effector Velocity: " 
             << robot_state_.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]
             << std::endl;    
-        std::cout << "Frame ACC" << '\n';
+        std::cout << "Computed Frame ACC" << '\n';
         for (size_t i = 0; i < NUMBER_OF_SEGMENTS_ + 1; i++)
             std::cout << robot_state_.frame_acceleration[i] << '\n';
-        std::cout << std::endl;
+        std::cout << "\nJoint state:" << std::endl;
+        std::cout << "Current Joint angle" << robot_state_.q << std::endl;
+        std::cout << "Current Joint velocity" << robot_state_.qd << std::endl;
+        std::cout << "Computed Joint torque" << robot_state_.control_torque << std::endl;
     #endif 
 
     return solver_result_;
@@ -265,8 +265,7 @@ void dynamics_controller::print_settings_info()
     
     std::cout<<"\nInitial joint state: "<< std::endl;
     std::cout<< "Joint velocities:"<< robot_state_.qd << std::endl;
-    std::cout<< "Joint positions: "<< robot_state_.q << std::endl;
-    std::cout<<"\n";
+    std::cout<< "Joint positions: "<< robot_state_.q <<"\n" << std::endl;
 }
 
 //Set velocities of arm's joints to 0 value
@@ -279,10 +278,10 @@ void dynamics_controller::stop_robot_motion()
 // Predict future robot states (motion) based given the current state
 void dynamics_controller::make_predictions(const int prediction_method)
 {
-    predictor_.integrate_cartesian_space(robot_state_, 
-                                         predicted_state_, 
-                                         dt_sec_, 1, 
-                                         prediction_method);
+    // predictor_.integrate_cartesian_space(robot_state_, 
+    //                                      predicted_state_, 
+    //                                      dt_sec_, 1, 
+    //                                      prediction_method);
 }
 
 // Update the desired robot state 
@@ -293,12 +292,42 @@ void dynamics_controller::update_task()
         changing task specification in parallel (while control loop in this 
         component is running). Maybe something like a callback function.
     */
+    robot_state_.ee_acceleration_energy = desired_state_.ee_acceleration_energy;
+    robot_state_.ee_unit_constraint_force = desired_state_.ee_unit_constraint_force;
+    robot_state_.external_force = desired_state_.external_force;
+    robot_state_.feedforward_torque = desired_state_.feedforward_torque;
 }
 
 //Send joint commands to the robot driver
-void dynamics_controller::apply_control_commands()
+int dynamics_controller::apply_control_commands(const bool simulation_environment)
 { 
-    //TODO - maybe not required
+    switch(safe_control_mode_) {
+        case control_mode::torque_control:
+            assert(desired_control_mode_.is_safe);
+            if (!simulation_environment)
+                robot_driver_.set_joint_torques(commands_.control_torque);
+            return 0;
+
+        case control_mode::velocity_control:
+            if (!simulation_environment) 
+                robot_driver_.set_joint_velocities(commands_.qd);
+            if(!desired_control_mode_.is_safe) 
+                cout << "WARNING: Control switched to velocity mode \n" << endl;
+            return 0;
+
+        case control_mode::position_control:
+            if (!simulation_environment)
+                robot_driver_.set_joint_positions(commands_.q);
+            if(!desired_control_mode_.is_safe) 
+                cout << "WARNING: Control switched to position mode \n" << endl;
+            return 0;
+
+        default:
+            if (!simulation_environment) stop_robot_motion();
+            cout << "WARNING: Current commands are not safe. " 
+                    << "Stopping the robot!" << endl;
+            return -1;             
+    }
 }
 
 //Get current robot state from the joint sensors
@@ -331,9 +360,8 @@ int dynamics_controller::control(const bool simulation_environment,
     }
 
     /* 
-        Get sensor data from the robot driver or
-        if simulation is on, replace current state with 
-        the integrated joint velocities and positions
+        Get sensor data from the robot driver or if simulation is on, 
+        replace current state with the integrated joint velocities and positions
     */
     update_current_state(simulation_environment);
 
@@ -341,7 +369,10 @@ int dynamics_controller::control(const bool simulation_environment,
     print_settings_info();
 
     //Exit the program if the "Stop Motion" mode is selected
-    if(desired_control_mode_.interface == control_mode::stop_motion) return -1;
+    if(desired_control_mode_.interface == control_mode::stop_motion){
+        std::cout << "Stop Motion mode selected. Exiting the program" << std::endl;
+        return -1;
+    } 
 
     // double loop_time = 0.0;
     // int count = 0;
@@ -353,32 +384,33 @@ int dynamics_controller::control(const bool simulation_environment,
         // Save current time point
         loop_start_time_ = std::chrono::steady_clock::now();
 
-        // Check if the task specification is changed
+        // Check if the task specification is changed. Update accordingly.
         update_task();
 
         /* 
-            Get sensor data from the robot driver or
-            if simulation is on, replace current state with 
-            the integrated joint velocities and positions
+            Get sensor data from the robot driver or  if simulation is on, 
+            replace current state with integrated joint velocities and positions
         */
         update_current_state(simulation_environment);
 
-
         // Calculate robot dynamics using Vereshchagin HD solver
-        if(evaluate_dynamics() != 0){
+        if(evaluate_dynamics() != 0)
+        {
             if(!simulation_environment) stop_robot_motion();
             std::cerr << "WARNING: Dynamics Solver returned error. "
-                      << "Current commands are not safe. " 
                       << "Stopping the robot!" << std::endl;
             return -1;
         } 
 
-        // Predict future robot states (motion) based given the current state
-        // I.e. Integrate Cartesian variables
-        // make_predictions(integration_method::symplectic_euler);
+        /*  
+            Predict future robot states (motion) based given the computed state
+            from the solver. I.e. Integrate Cartesian variables.
+            Currently not implemented. Method definition is empty.
+        */
+        make_predictions(integration_method::symplectic_euler);
 
         /* 
-            All calculations done - check if the commands are over the limits
+            Check if the commands are over the limits.
             If yes: use desired control mode
             Else: use the control mode selected by the safety controller 
         */
@@ -388,42 +420,19 @@ int dynamics_controller::control(const bool simulation_environment,
                                         desired_control_mode_.interface,
                                         integration_method::symplectic_euler);
 
+        // Save the current decision if desired control mode is safe or not.
         desired_control_mode_.is_safe =\
             (desired_control_mode_.interface == safe_control_mode_)? true : false; 
 
-        switch(safe_control_mode_) {
-            case control_mode::torque_control:
-                assert(desired_control_mode_.is_safe);
-                if (!simulation_environment)
-                    robot_driver_.set_joint_torques(commands_.control_torque);
-                break;
-
-            case control_mode::velocity_control:
-                if (!simulation_environment) 
-                    robot_driver_.set_joint_velocities(commands_.qd);
-                if(!desired_control_mode_.is_safe) 
-                    cout << "WARNING: Control switched to velocity mode \n" << endl;
-                break;
-
-            case control_mode::position_control:
-                if (!simulation_environment)
-                    robot_driver_.set_joint_positions(commands_.q);
-                if(!desired_control_mode_.is_safe) 
-                    cout << "WARNING: Control switched to position mode \n" << endl;
-                break;
-
-            default:
-                if (!simulation_environment) stop_robot_motion();
-                cout << "WARNING: Current commands are not safe. " 
-                     << "Stopping the robot!" << endl;
-                return -1;             
-        }
-        
+        /* 
+            Apply joint commands using the safe control interface.
+            If simulation is on, just print the logs. Don't send anything.
+        */
+        if(apply_control_commands(simulation_environment) != 0) return -1;
 
         // Make sure that the loop is always running with the same frequency
-        if(!enforce_loop_frequency() == 0){
-            // std::cerr << "WARNING: Control loop runs too slow \n" << std::endl;
-        } 
+        if(!enforce_loop_frequency() == 0)
+            std::cerr << "WARNING: Control loop runs too slow \n" << std::endl;
 
         // loop_time += std::chrono::duration<double, std::micro>\
         //             (std::chrono::steady_clock::now() - loop_start_time_).count();
