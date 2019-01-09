@@ -57,7 +57,7 @@ class safety_controller
     ~safety_controller(){};
 
     int generate_commands(const state_specification &current_state,
-                          state_specification &predicted_state,
+                          state_specification &commands,
                           const double dt_sec,
                           const int desired_control_mode,
                           const int prediction_method);
@@ -73,36 +73,33 @@ class safety_controller
     const std::vector<double> joint_velocity_limits_;
     const std::vector<double> joint_acceleration_limits_;
     const std::vector<double> joint_torque_limits_;
-    
-    bool pos_limits_checked_;
-    bool vel_limits_checked_; 
-    std::vector<bool> pos_limit_reached_;
-    std::vector<bool> vel_limit_reached_;
 
     const KDL::Chain robot_chain_;
 	model_prediction predictor_;
+    std::vector<state_specification> predicted_states_; 
 
-    bool is_current_state_safe(const state_specification &robot_state,
-                               const state_specification &commands);
-    int check_future_state(state_specification &commands, 
-                           const int desired_control_mode);    
-    int check_torques(state_specification &commands,
-                      const int desired_control_mode);
-    int check_velocities(state_specification &commands,
-                         const int desired_control_mode,
-                         const int start_index);
-    int check_positions(state_specification &commands,
-                        const int desired_control_mode,
-                        const int start_index);
-    bool reaching_position_limits(const state_specification &state,
-                                  const int joint);
-    bool torque_limit_reached(const state_specification &command,
+    bool is_current_state_safe(const state_specification &current_state);
+    bool is_state_finite(const state_specification &current_state, 
+                         const int joint);
+    bool torque_limit_reached(const state_specification &state,
                               const int joint);
     bool velocity_limit_reached(const state_specification &state,
                                 const int joint);
     bool position_limit_reached(const state_specification &state,
                                 const int joint);
-    bool is_finite(const state_specification &commands, int joint);
-    void reduce_velocities(){};
+    bool reaching_position_limits(const state_specification &state,
+                                  const int joint);
+    
+    void set_commands(state_specification &commands,
+                      const state_specification &current_state);
+
+    int check_future_state(const state_specification &commands,
+                           const int desired_control_mode);    
+    int check_torques(const state_specification &commands);
+    int check_velocities(const state_specification &commands);
+    int check_positions(const state_specification &commands);
+
+    //Not implemented currently
+    bool reduce_velocities(const state_specification &commands);
 };
 #endif /* SAFETY_CONTROLLER_HPP_*/
