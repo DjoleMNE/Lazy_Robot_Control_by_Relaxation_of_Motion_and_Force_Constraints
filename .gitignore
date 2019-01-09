@@ -3,4 +3,4 @@ KDL/
 Controller/build/*
 Controller/release_build/*
 
-Controller/\.ipynb_checkpoints/*
+\.ipynb_checkpoints/*
