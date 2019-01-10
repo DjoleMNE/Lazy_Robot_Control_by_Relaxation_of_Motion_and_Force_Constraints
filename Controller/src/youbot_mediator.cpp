@@ -26,9 +26,7 @@ SOFTWARE.
 */
 #include "youbot_mediator.hpp"
 
-youbot_mediator::youbot_mediator(): is_initialized(false), 
-                                    NUMBER_OF_JOINTS_(5),
-                                    add_offsets(false)
+youbot_mediator::youbot_mediator(): is_initialized(false), add_offsets(false)
 {   
     //Resize measurement variables
     q_measured_.resize(NUMBER_OF_JOINTS_);
@@ -55,7 +53,7 @@ void youbot_mediator::get_joint_positions(KDL::JntArray &joint_positions)
         // Check with Sven if the last joint value should be inverted here
         // similary like in the case of getting joint velocities
         if (add_offsets) 
-            joint_positions(i) = joint_positions(i) + youbot_joint_offsets_[i];
+            joint_positions(i) = joint_positions(i) + joint_offsets_[i];
     }
 }
 
@@ -66,7 +64,7 @@ void youbot_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++){
         if (add_offsets){
             q_setpoint_[i].angle = \
-                (joint_positions(i) - youbot_joint_offsets_[i]) * radian;            
+                (joint_positions(i) - joint_offsets_[i]) * radian;            
         } else q_setpoint_[i].angle = joint_positions(i) * radian;
     }
 
@@ -93,12 +91,12 @@ void youbot_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities
         qd_setpoint_[i].angularVelocity = \
                                     joint_velocities(i) * radian_per_second;
 
-    if(add_offsets){
-        qd_setpoint_[4].angularVelocity = 0.0 * radian_per_second;
-    } 
-    // if(add_offsets) 
-        // qd_setpoint_[4].angularVelocity = \
-        //     -1 * joint_velocities(4) * radian_per_second;
+    // if(add_offsets){
+    //     qd_setpoint_[4].angularVelocity = 0.0 * radian_per_second;
+    // } 
+    if(add_offsets) 
+        qd_setpoint_[4].angularVelocity = \
+            -1 * joint_velocities(4) * radian_per_second;
 
 	youbot_arm_->setJointData(qd_setpoint_);
 }
@@ -133,22 +131,19 @@ void youbot_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
 
 std::vector<double> youbot_mediator::get_positive_joint_pos_limits()
 {
-    return joint_position_limits_p_;
+    if(custom_model_used_) return joint_position_limits_max_1_;
+    else return joint_position_limits_max_2_;
 }
 
 std::vector<double> youbot_mediator::get_negative_joint_pos_limits()
 {
-    return joint_position_limits_n_;
+    if(custom_model_used_) return joint_position_limits_min_1_;
+    else return joint_position_limits_min_2_;
 }
 
 std::vector<double> youbot_mediator::get_joint_vel_limits()
 {
     return joint_velocity_limits_;
-}
-
-std::vector<double> youbot_mediator::get_joint_acc_limits()
-{
-    return joint_acceleration_limits_;
 }
 
 std::vector<double> youbot_mediator::get_joint_torque_limits()
@@ -158,12 +153,12 @@ std::vector<double> youbot_mediator::get_joint_torque_limits()
 
 std::vector<double> youbot_mediator::get_joint_inertia()
 {
-    return youbot_joint_inertia_;
+    return joint_inertia_;
 }
 
 std::vector<double> youbot_mediator::get_joint_offsets()
 {
-    return youbot_joint_offsets_;
+    return joint_offsets_;
 }
 
 //Extract youBot model from URDF file
@@ -201,8 +196,9 @@ void youbot_mediator::initialize(KDL::Chain &arm_chain,
 {
     // Setting the path for the manipulator configuration file
     config_path_ = config_path;
+    custom_model_used_ = custom_model_used;
 
-    if(custom_model_used) //Extract KDL tree from custom cpp file 
+    if(custom_model_used_) //Extract KDL tree from custom cpp file 
         youbot_custom_model yb_model(arm_chain);
 
     else //Extract youBot model from URDF file

@@ -30,7 +30,6 @@ safety_controller::safety_controller(
                             const std::vector<double> joint_position_limits_p,
                             const std::vector<double> joint_position_limits_n,
                             const std::vector<double> joint_velocity_limits,
-                            const std::vector<double> joint_acceleration_limits,
                             const std::vector<double> joint_torque_limits,
                             const bool print_logs):
         robot_chain_(chain),
@@ -41,7 +40,6 @@ safety_controller::safety_controller(
         joint_position_limits_p_(joint_position_limits_p),
         joint_position_limits_n_(joint_position_limits_n),
         joint_velocity_limits_(joint_velocity_limits),
-        joint_acceleration_limits_(joint_acceleration_limits),
         joint_torque_limits_(joint_torque_limits),
         print_logs_(print_logs),
         predicted_states_(5, state_specification(chain.getNrOfJoints(),
@@ -224,14 +222,14 @@ bool safety_controller::reaching_position_limits(const state_specification &stat
     // Maybe TODO: make this percentage different for each joint!
     // Bigger space for joint to move, bigger the percentage!
     // Or check difference ---this can be made the same for every joint
+    // Bigger motor (mass to hold/move), bigger gap must me left!!
     if (state.q(joint) > 0.95 * joint_position_limits_p_[joint]){
-        if(state.qd(joint) > 0.01) 
+        if(state.qd(joint) > 0.02) 
             std::cout << "Joint " << joint + 1 << " is too close to the limit"
                       << std::endl;
         return true;
-    } 
-    else if (state.q(joint) < 0.95 * joint_position_limits_n_[joint]){
-        if(state.qd(joint) < -0.01) 
+    } else if (state.q(joint) < 0.95 * joint_position_limits_n_[joint]){
+        if(state.qd(joint) < -0.02) 
             std::cout << "Joint " << joint + 1 << " is too close to the limit"
                       << std::endl;
         return true;

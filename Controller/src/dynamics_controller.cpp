@@ -47,8 +47,7 @@ dynamics_controller::dynamics_controller(
         robot_driver_(robot_driver),
         safety_control_(robot_chain_, robot_driver.get_positive_joint_pos_limits(),
                         robot_driver.get_negative_joint_pos_limits(), 
-                        robot_driver.get_joint_vel_limits(), 
-                        robot_driver.get_joint_acc_limits(), 
+                        robot_driver.get_joint_vel_limits(),
                         robot_driver.get_joint_torque_limits(), true),
         //Resize and set vector's elements to zero 
         zero_joint_velocities_(chain.getNrOfJoints()),
@@ -371,7 +370,7 @@ int dynamics_controller::control(const bool simulation_environment,
     } 
 
     // double loop_time = 0.0;
-    // int count = 0;
+    int count = 0;
 
     safe_control_mode_ = desired_control_mode_.interface;
     std::cout << "Control Loop Started"<< std::endl;
@@ -437,11 +436,12 @@ int dynamics_controller::control(const bool simulation_environment,
         // loop_time += std::chrono::duration<double, std::micro>\
         //             (std::chrono::steady_clock::now() -\
         //                                          loop_start_time_).count();
-        // count++;
+        count++;
         // if(count == 1000) {
         //     std::cout << loop_time / 1000.0 <<std::endl;
         //     return 0;
         // }
+        // if(count == 250) return 0;
     }
     return 0;
 }

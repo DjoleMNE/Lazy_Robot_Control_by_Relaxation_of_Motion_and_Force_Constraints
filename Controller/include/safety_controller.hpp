@@ -51,7 +51,6 @@ class safety_controller
                       const std::vector<double> joint_position_limits_p,
                       const std::vector<double> joint_position_limits_n,
                       const std::vector<double> joint_velocity_limits,
-                      const std::vector<double> joint_acceleration_limits,
                       const std::vector<double> joint_torque_limits,
                       const bool print_logs);
     ~safety_controller(){};
@@ -71,7 +70,6 @@ class safety_controller
     const std::vector<double> joint_position_limits_p_;
     const std::vector<double> joint_position_limits_n_;
     const std::vector<double> joint_velocity_limits_;
-    const std::vector<double> joint_acceleration_limits_;
     const std::vector<double> joint_torque_limits_;
 
     const KDL::Chain robot_chain_;

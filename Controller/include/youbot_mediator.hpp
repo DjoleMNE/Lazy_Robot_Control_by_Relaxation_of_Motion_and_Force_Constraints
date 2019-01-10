@@ -5,7 +5,7 @@ Description: Mediator component for enabling conversion of data types.
 Acknowledgment: This sofware component is based on Jeyaprakash Rajagopal's 
 master thesis code.
 
-Copyright (c) [2018]
+Copyright (c) [2019]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,7 @@ SOFTWARE.
 #include <kdl_parser/kdl_parser.hpp>
 #include <urdf/model.h>
 #include <youbot_custom_model.hpp>
+#include <youbot_constants.hpp>
 #include <memory>
 
 class youbot_mediator
@@ -73,14 +74,12 @@ class youbot_mediator
 		std::vector<double> get_positive_joint_pos_limits();
 		std::vector<double> get_negative_joint_pos_limits();
 		std::vector<double> get_joint_vel_limits();
-		std::vector<double> get_joint_acc_limits();
+		// std::vector<double> get_joint_acc_limits();
 		std::vector<double> get_joint_torque_limits();
 		std::vector<double> get_joint_inertia();
 		std::vector<double> get_joint_offsets();
 
 	private:
-		// Number of joints in the manipulator
-		const int NUMBER_OF_JOINTS_;
 		bool custom_model_used_;
 		int parser_result_ = 0;
 
@@ -91,31 +90,6 @@ class youbot_mediator
 	    std::shared_ptr<youbot::YouBotManipulator> youbot_arm_;
 		KDL::Tree yb_tree;
     	urdf::Model yb_model;
-
-		//Kuka youBot store position limit values: positive and negative
-		std::vector<double> joint_position_limits_p_ = {2.9496, 1.5707, 2.5481, 1.7889, 2.9234};
-		std::vector<double> joint_position_limits_n_ = {-2.9496, -1.1344, -2.6354, -1.7889, -2.9234};
-    
-		// Robocup Urdf file parameters for velocity and acceleration limits
-		std::vector<double> joint_velocity_limits_ = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
-		std::vector<double> joint_acceleration_limits_ = {1.5707, 0.8, 1.0, 1.5707, 1.5707};
-		
-		// JP's max torques
-		// std::vector<double> joint_torque_limits = {12.9012, 12.9012, 8.2700, 4.1748, 1.7550};
-		// youBot store's max torques 
-		std::vector<double> joint_torque_limits_ = {9.5, 9.5, 6.0, 2.0, 1.0};
-		// Benjamin Keiser' max torques (fast version)
-		// std::vector<double> joint_torque_limits = {17.0, 17.0, 8.0, 2.7, 1.0}};
-
-		// Offsets required for the custom model: Negative Candle config values -Robocup
-		// std::vector<double> youbot_joint_offsets = {-2.1642, -1.13446, 2.54818, -1.78896, -2.9234};
-		// Offsets required for the custom model: Negative Candle config values -Sven's
-		std::vector<double> youbot_joint_offsets_ = {-2.9496, -1.1344, 2.6354, -1.7890, -2.9234};
-		// Offsets required for the custom model: Negative Candle config values: keiser's
-		// std::vector<double> youbot_joint_offsets = {-2.9496, -1.1344, 2.5481, -1.7889, -2.9234};
-
-		// Rotor inertia - "d" in the algorithm: Computed from youBot store values
-		std::vector<double> youbot_joint_inertia_ = {0.33848, 0.33848, 0.13571, 0.04698, 0.01799};
         
         // Joint Measured State Variables
         std::vector<youbot::JointSensedAngle> q_measured_;
