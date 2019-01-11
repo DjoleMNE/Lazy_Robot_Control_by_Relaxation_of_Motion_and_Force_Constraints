@@ -28,23 +28,23 @@ SOFTWARE.
 
 youbot_mediator::youbot_mediator(): 
                 is_initialized(false), add_offsets_(false),
-                linear_root_acc_(youbot_constants::root_acceleration_[0],
-                                    youbot_constants::root_acceleration_[1],
-                                    youbot_constants::root_acceleration_[2]),
-                angular_root_acc_(youbot_constants::root_acceleration_[3],
-                                    youbot_constants::root_acceleration_[4],
-                                    youbot_constants::root_acceleration_[5]),
+                linear_root_acc_(youbot_constants::root_acceleration[0],
+                                    youbot_constants::root_acceleration[1],
+                                    youbot_constants::root_acceleration[2]),
+                angular_root_acc_(youbot_constants::root_acceleration[3],
+                                    youbot_constants::root_acceleration[4],
+                                    youbot_constants::root_acceleration[5]),
                 root_acc_(linear_root_acc_, angular_root_acc_)
 {   
     //Resize measurement variables
-    q_measured_.resize(youbot_constants::NUMBER_OF_JOINTS_);
-    qd_measured_.resize(youbot_constants::NUMBER_OF_JOINTS_);
-    tau_measured_.resize(youbot_constants::NUMBER_OF_JOINTS_); 
+    q_measured_.resize(youbot_constants::NUMBER_OF_JOINTS);
+    qd_measured_.resize(youbot_constants::NUMBER_OF_JOINTS);
+    tau_measured_.resize(youbot_constants::NUMBER_OF_JOINTS); 
 
     //Resize setpoint variables
-    q_setpoint_.resize(youbot_constants::NUMBER_OF_JOINTS_);
-    qd_setpoint_.resize(youbot_constants::NUMBER_OF_JOINTS_);
-    tau_setpoint_.resize(youbot_constants::NUMBER_OF_JOINTS_); 
+    q_setpoint_.resize(youbot_constants::NUMBER_OF_JOINTS);
+    qd_setpoint_.resize(youbot_constants::NUMBER_OF_JOINTS);
+    tau_setpoint_.resize(youbot_constants::NUMBER_OF_JOINTS); 
 }
 
 //Get Joint Positions
@@ -53,7 +53,7 @@ void youbot_mediator::get_joint_positions(KDL::JntArray &joint_positions)
 	youbot_arm_->getJointData(q_measured_);
 
     // Converting youBot driver joint angles to KDL angles
-    for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS_; i++) 
+    for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++) 
     {
         joint_positions(i) = q_measured_[i].angle.value();
 
@@ -61,7 +61,7 @@ void youbot_mediator::get_joint_positions(KDL::JntArray &joint_positions)
         // Check with Sven if the last joint value should be inverted here
         // similary like in the case of getting joint velocities
         if (add_offsets_) 
-            joint_positions(i) = joint_positions(i) + youbot_constants::joint_offsets_[i];
+            joint_positions(i) = joint_positions(i) + youbot_constants::joint_offsets[i];
     }
 }
 
@@ -69,10 +69,10 @@ void youbot_mediator::get_joint_positions(KDL::JntArray &joint_positions)
 void youbot_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
 {
     // Converting KDL angles to youBot driver joint angles 
-    for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS_; i++){
+    for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++){
         if (add_offsets_){
             q_setpoint_[i].angle = \
-                (joint_positions(i) - youbot_constants::joint_offsets_[i]) * radian;            
+                (joint_positions(i) - youbot_constants::joint_offsets[i]) * radian;            
         } else q_setpoint_[i].angle = joint_positions(i) * radian;
     }
 
@@ -85,7 +85,7 @@ void youbot_mediator::get_joint_velocities(KDL::JntArray &joint_velocities)
 	youbot_arm_->getJointData(qd_measured_);
     
     // Converting youBot driver joint velocities to KDL joint velocities
-    for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS_; i++)
+    for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
         joint_velocities(i) = qd_measured_[i].angularVelocity.value();
 
     if (add_offsets_) joint_velocities(4) = -1 * joint_velocities(4);
@@ -95,7 +95,7 @@ void youbot_mediator::get_joint_velocities(KDL::JntArray &joint_velocities)
 void youbot_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities)
 {   
     // Converting KDL join velocities to youBot driver joint velocities 
-    for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS_; i++)
+    for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
         qd_setpoint_[i].angularVelocity = \
                                     joint_velocities(i) * radian_per_second;
 
@@ -115,7 +115,7 @@ void youbot_mediator::get_joint_torques(KDL::JntArray &joint_torques)
 	youbot_arm_->getJointData(tau_measured_);
     
     // Converting the youBot driver joint torques to KDL joint torques
-    for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS_; i++)
+    for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
         joint_torques(i) = tau_measured_[i].torque.value();
     
     if (add_offsets_) joint_torques(4) = -1 * joint_torques(4);
@@ -126,7 +126,7 @@ void youbot_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
 {
 
     // Converting KDL joint torques to youBot driver joint torques 
-    for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS_; i++)
+    for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
         tau_setpoint_[i].torque = joint_torques(i) * newton_meter;
     
     if(add_offsets_) tau_setpoint_[4].torque = 0.0 * newton_meter;
@@ -139,34 +139,39 @@ void youbot_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
 
 std::vector<double> youbot_mediator::get_positive_joint_pos_limits()
 {
-    if(custom_model_used_) return youbot_constants::joint_position_limits_max_1_;
-    else return youbot_constants::joint_position_limits_max_2_;
+    if(custom_model_used_) return youbot_constants::joint_position_limits_max_1;
+    else return youbot_constants::joint_position_limits_max_2;
 }
 
 std::vector<double> youbot_mediator::get_negative_joint_pos_limits()
 {
-    if(custom_model_used_) return youbot_constants::joint_position_limits_min_1_;
-    else return youbot_constants::joint_position_limits_min_2_;
+    if(custom_model_used_) return youbot_constants::joint_position_limits_min_1;
+    else return youbot_constants::joint_position_limits_min_2;
+}
+
+std::vector<double> youbot_mediator::get_joint_position_thresholds()
+{
+    return youbot_constants::joint_position_thresholds;
 }
 
 std::vector<double> youbot_mediator::get_joint_vel_limits()
 {
-    return youbot_constants::joint_velocity_limits_;
+    return youbot_constants::joint_velocity_limits;
 }
 
 std::vector<double> youbot_mediator::get_joint_torque_limits()
 {
-    return youbot_constants::joint_torque_limits_;
+    return youbot_constants::joint_torque_limits;
 }
 
 std::vector<double> youbot_mediator::get_joint_inertia()
 {
-    return youbot_constants::joint_inertia_;
+    return youbot_constants::joint_inertia;
 }
 
 std::vector<double> youbot_mediator::get_joint_offsets()
 {
-    return youbot_constants::joint_offsets_;
+    return youbot_constants::joint_offsets;
 }
 
 KDL::Twist youbot_mediator::get_root_acceleration()

@@ -50,6 +50,7 @@ class safety_controller
     safety_controller(const KDL::Chain &chain,
                       const std::vector<double> joint_position_limits_p,
                       const std::vector<double> joint_position_limits_n,
+                      const std::vector<double> joint_position_soft_threshold,
                       const std::vector<double> joint_velocity_limits,
                       const std::vector<double> joint_torque_limits,
                       const bool print_logs);
@@ -69,6 +70,7 @@ class safety_controller
 
     const std::vector<double> joint_position_limits_p_;
     const std::vector<double> joint_position_limits_n_;
+    const std::vector<double> joint_position_thresholds_;
     const std::vector<double> joint_velocity_limits_;
     const std::vector<double> joint_torque_limits_;
 

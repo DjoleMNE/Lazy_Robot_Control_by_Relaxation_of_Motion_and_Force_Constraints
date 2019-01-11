@@ -67,6 +67,7 @@ class youbot_mediator
 
 		std::vector<double> get_positive_joint_pos_limits();
 		std::vector<double> get_negative_joint_pos_limits();
+		std::vector<double> get_joint_position_thresholds();
 		std::vector<double> get_joint_vel_limits();
 		std::vector<double> get_joint_torque_limits();
 		std::vector<double> get_joint_inertia();

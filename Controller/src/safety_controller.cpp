@@ -29,6 +29,7 @@ safety_controller::safety_controller(
                             const KDL::Chain &chain,
                             const std::vector<double> joint_position_limits_p,
                             const std::vector<double> joint_position_limits_n,
+                            const std::vector<double> joint_position_thresholds,
                             const std::vector<double> joint_velocity_limits,
                             const std::vector<double> joint_torque_limits,
                             const bool print_logs):
@@ -39,6 +40,7 @@ safety_controller::safety_controller(
         predictor_(robot_chain_),
         joint_position_limits_p_(joint_position_limits_p),
         joint_position_limits_n_(joint_position_limits_n),
+        joint_position_thresholds_(joint_position_thresholds),
         joint_velocity_limits_(joint_velocity_limits),
         joint_torque_limits_(joint_torque_limits),
         print_logs_(print_logs),
@@ -219,18 +221,20 @@ bool safety_controller::position_limit_reached(const state_specification &state,
 bool safety_controller::reaching_position_limits(const state_specification &state,
                                                  const int joint)
 {
-    // Maybe TODO: make this percentage different for each joint!
-    // Bigger space for joint to move, bigger the percentage!
-    // Or check difference ---this can be made the same for every joint
-    // Bigger motor (mass to hold/move), bigger gap must me left!!
-    if (state.q(joint) > 0.95 * joint_position_limits_p_[joint]){
+    if ((joint_position_limits_p_[joint] - state.q(joint)) \
+        < joint_position_thresholds_[joint])
+    {
         if(state.qd(joint) > 0.02) 
-            std::cout << "Joint " << joint + 1 << " is too close to the limit"
+            std::cout << "Joint " << joint + 1 << " is too close to the max limit"
                       << std::endl;
         return true;
-    } else if (state.q(joint) < 0.95 * joint_position_limits_n_[joint]){
+    } 
+    
+    else if ((joint_position_limits_n_[joint] - state.q(joint)) \
+             > -joint_position_thresholds_[joint])
+    {
         if(state.qd(joint) < -0.02) 
-            std::cout << "Joint " << joint + 1 << " is too close to the limit"
+            std::cout << "Joint " << joint + 1 << " is too close to the min limit"
                       << std::endl;
         return true;
     } 
