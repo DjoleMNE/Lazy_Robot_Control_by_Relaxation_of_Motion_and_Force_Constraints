@@ -26,47 +26,45 @@ SOFTWARE.
 #include <dynamics_controller.hpp>
 #define SECOND 1000000
 
-dynamics_controller::dynamics_controller(
-                            youbot_mediator &robot_driver,
-                            const KDL::Chain &chain,
-                            const KDL::Twist &root_acc,
-                            const int rate_hz):
-        robot_chain_(chain),
-        root_acc_(root_acc),
-        NUMBER_OF_CONSTRAINTS_(6),
-        NUMBER_OF_JOINTS_(chain.getNrOfJoints()),
-        NUMBER_OF_SEGMENTS_(chain.getNrOfSegments()),
-        NUMBER_OF_FRAMES_(chain.getNrOfSegments() + 1),
-        hd_solver_(robot_chain_, root_acc_, NUMBER_OF_CONSTRAINTS_),
-        robot_state_(chain.getNrOfJoints(), chain.getNrOfSegments(), 
-                     chain.getNrOfSegments() + 1, NUMBER_OF_CONSTRAINTS_), 
-        commands_(robot_state_), 
-        desired_state_(robot_state_), 
-        predicted_state_(robot_state_), 
-        predictor_(robot_chain_),
+dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
+                                         const int rate_hz):
         robot_driver_(robot_driver),
-        safety_control_(robot_chain_, robot_driver.get_positive_joint_pos_limits(),
-                        robot_driver.get_negative_joint_pos_limits(), 
-                        robot_driver.get_joint_vel_limits(),
-                        robot_driver.get_joint_torque_limits(), true),
-        //Resize and set vector's elements to zero 
-        zero_joint_velocities_(chain.getNrOfJoints()),
-        solver_result_(0),
-        safe_control_mode_(-1),
         rate_hz_(rate_hz),
         // Time period defined in microseconds: 1s = 1 000 000us
         dt_micro_(SECOND / rate_hz),
-        dt_sec_(1.0 / static_cast<double>(rate_hz)) 
+        dt_sec_(1.0 / static_cast<double>(rate_hz)), 
+        robot_chain_(robot_driver_.get_robot_model()),
+        NUMBER_OF_CONSTRAINTS_(6),
+        NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
+        NUMBER_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
+        NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
+        hd_solver_(robot_chain_, robot_driver_.get_joint_inertia(),
+                   robot_driver_.get_root_acceleration(), NUMBER_OF_CONSTRAINTS_),
+        safety_control_(robot_chain_, 
+                        robot_driver_.get_positive_joint_pos_limits(),
+                        robot_driver_.get_negative_joint_pos_limits(), 
+                        robot_driver_.get_joint_vel_limits(),
+                        robot_driver_.get_joint_torque_limits(), true),
+        //Resize and set vector's elements to zero 
+        zero_joint_velocities_(NUMBER_OF_JOINTS_),
+        solver_result_(0),
+        safe_control_mode_(-1),
+        robot_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
+                     NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_), 
+        commands_(robot_state_), 
+        desired_state_(robot_state_), 
+        predicted_state_(robot_state_), 
+        predictor_(robot_chain_)
 {
+    assert(("Robot is not initialized", robot_driver_.is_initialized));
+
+    // KDL Solver constraint  
     assert(NUMBER_OF_JOINTS_ == NUMBER_OF_SEGMENTS_);
 
     // Control loop frequency must be higher than or equal to 1 Hz
     assert(("Desired frequency is too low", 1 <= rate_hz_));
     // Control loop frequency must be lower than or equal to 1000 Hz
     assert(("Desired frequency is too high", rate_hz_<= 10000));
-
-    // Set vector of joint (rotor + gear) inertia: term "d" in the algorithm
-    hd_solver_.set_joint_inertia(robot_driver.get_joint_inertia());
     
     // Set default command interface to velocity mode and initialize it as safe
     desired_control_mode_.interface = control_mode::stop_motion;
@@ -192,7 +190,6 @@ int dynamics_controller::evaluate_dynamics()
                                          robot_state_.ee_acceleration_energy,
                                          robot_state_.external_force,
                                          robot_state_.feedforward_torque);
-
     hd_solver_.get_transformed_link_pose(robot_state_.frame_pose);
     hd_solver_.get_transformed_link_velocity(robot_state_.frame_velocity);
     hd_solver_.get_transformed_link_acceleration(robot_state_.frame_acceleration);
@@ -349,8 +346,7 @@ int dynamics_controller::control(const bool simulation_environment,
     desired_control_mode_.interface = desired_control_mode;
 
     if(!simulation_environment)
-    {   
-        assert(("Robot is not initialized", robot_driver_.is_initialized));   
+    {    
         stop_robot_motion();
     }
 

@@ -46,8 +46,6 @@ class dynamics_controller
 {
   public:
     dynamics_controller(youbot_mediator &robot_driver,
-                        const KDL::Chain &chain,
-                        const KDL::Twist &root_acc,
                         const int rate_hz);
     ~dynamics_controller(){};
 
@@ -79,17 +77,18 @@ class dynamics_controller
     std::chrono::steady_clock::time_point loop_end_time_;
     std::chrono::duration <double, std::micro> loop_interval_;
 
+    youbot_mediator robot_driver_;
+    const KDL::Chain robot_chain_;
+
     const int NUMBER_OF_JOINTS_;
     const int NUMBER_OF_SEGMENTS_;
     const int NUMBER_OF_FRAMES_;
     const int NUMBER_OF_CONSTRAINTS_;
 
-    const KDL::Twist root_acc_;
     const KDL::JntArray zero_joint_velocities_;
-    const KDL::Chain robot_chain_;
-
-    youbot_mediator robot_driver_;
+    
     KDL::Solver_Vereshchagin hd_solver_;
+
 	  model_prediction predictor_;
     safety_controller safety_control_;
 

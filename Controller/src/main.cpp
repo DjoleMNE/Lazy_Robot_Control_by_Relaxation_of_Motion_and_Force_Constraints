@@ -114,29 +114,25 @@ void stop_robot_motion(youbot_mediator &arm, state_specification &motion){
 
 int main(int argc, char **argv)
 {
-    KDL::Chain arm_chain_;
     youbot_mediator robot_driver;
 
     bool simulation_environment = false;
     bool use_custom_model = false;
 
     const std::string config_path = "/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config";
+    
     // const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf";
     const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_zero_inertia.urdf";
+
     const std::string root_name = "arm_link_0";
     const std::string tooltip_name = "arm_link_5";
-
-    //Arm's root acceleration
-    KDL::Vector linearAcc(0.0, 0.0, 9.81); //gravitational acceleration along Z
-    KDL::Vector angularAcc(0.0, 0.0, 0.0);
-    KDL::Twist root_acc(linearAcc, angularAcc);
     
     // Extract robot model and if not simulation, establish connection with motor drivers
-    robot_driver.initialize(arm_chain_, config_path, root_name, tooltip_name, 
-                            urdf_path, use_custom_model, simulation_environment);
-
-    int number_of_segments = arm_chain_.getNrOfSegments();
-    int number_of_joints = arm_chain_.getNrOfJoints();
+    robot_driver.initialize(config_path, root_name, tooltip_name, urdf_path, 
+                            use_custom_model, simulation_environment);
+    
+    int number_of_segments = robot_driver.get_robot_model().getNrOfSegments();
+    int number_of_joints = robot_driver.get_robot_model().getNrOfJoints();
 
     assert(JOINTS == number_of_segments);
 
@@ -157,22 +153,14 @@ int main(int argc, char **argv)
         // return 0;
     }
 
-    if(!simulation_environment && use_custom_model) 
-        robot_driver.add_offsets = true;
-    
-    // robot_driver = youbot_mediator();
-    // robot_driver.initialize(arm_chain_, config_path, root_name, tooltip_name, 
-    //                         urdf_path, use_custom_model, simulation_environment);
-    // return 0;
-
     //loop rate in Hz
     int rate_hz = 1000;
-    dynamics_controller controller(robot_driver, arm_chain_, root_acc, rate_hz);
+    dynamics_controller controller(robot_driver, rate_hz);
     
     //Create End_effector Cartesian Acceleration task 
     controller.define_ee_constraint_task(std::vector<bool>{false, false, true, 
                                                            false, false, false},
-                                         std::vector<double>{0.0, 0.0, 10.0, 
+                                         std::vector<double>{-1.0, 10.0, 15.0, 
                                                              0.0, 0.0, 0.0});
     //Create External Forces task 
     controller.define_ee_external_force_task(std::vector<double>{0.0, 0.0, 0.0, 

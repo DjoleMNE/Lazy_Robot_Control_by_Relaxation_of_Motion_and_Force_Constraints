@@ -39,18 +39,12 @@ class youbot_mediator
 {
 	public:
 		bool is_initialized;				
-		/*
-        	If interface is used with the solver and the custom model: add offsets
-        	Else: set the original values
-    	*/ // Custom model's home state is not folded - it is candle
-		bool add_offsets;
 
 		youbot_mediator();
 		~youbot_mediator(){}
 
 		// Initializes variables and calibrates the manipulator
-		void initialize(KDL::Chain &arm_chain,
-						const std::string config_path,
+		void initialize(const std::string config_path,
 						const std::string root_name, 
 						const std::string tooltip_name,
 						const std::string urdf_path,
@@ -74,22 +68,33 @@ class youbot_mediator
 		std::vector<double> get_positive_joint_pos_limits();
 		std::vector<double> get_negative_joint_pos_limits();
 		std::vector<double> get_joint_vel_limits();
-		// std::vector<double> get_joint_acc_limits();
 		std::vector<double> get_joint_torque_limits();
 		std::vector<double> get_joint_inertia();
 		std::vector<double> get_joint_offsets();
+		
+		KDL::Twist get_root_acceleration();
+		KDL::Chain get_robot_model();
 
 	private:
 		bool custom_model_used_;
 		int parser_result_ = 0;
 
-        //Absolute path to config files 
-        std::string config_path_;
+		/*
+        	If interface is used with the solver and the custom(youBot store) model: add offsets
+        	Else: set the original values
+    	*/ // Custom model's home state is not folded - it is candle
+		bool add_offsets_;
 
 		// Handles for the youbot manipulator and kdl urdf parsel
 	    std::shared_ptr<youbot::YouBotManipulator> youbot_arm_;
 		KDL::Tree yb_tree;
     	urdf::Model yb_model;
+		KDL::Chain robot_chain_;
+
+		//Arm's root acceleration
+		const KDL::Vector linear_root_acc_;
+		const KDL::Vector angular_root_acc_;
+		const KDL::Twist root_acc_;
         
         // Joint Measured State Variables
         std::vector<youbot::JointSensedAngle> q_measured_;
@@ -103,9 +108,8 @@ class youbot_mediator
         std::vector<youbot::JointTorqueSetpoint> tau_setpoint_;
 
         //Extract youBot model from urdf file
-        int get_robot_model_from_urdf(KDL::Chain &arm_chain, 
-                                std::string root_name, 
-                                std::string tooltip_name,
-                                std::string urdf_path);
+        int get_model_from_urdf(std::string root_name, 
+								std::string tooltip_name,
+								std::string urdf_path);
 };
 #endif /* YOUBOT_MEDIATOR_HPP */
