@@ -40,11 +40,19 @@ using namespace Eigen;
  * \param root_acc The acceleration vector of the root to use during the calculation.(most likely contains gravity)
  */
 
-Solver_Vereshchagin::Solver_Vereshchagin(const Chain& chain_, Twist root_acc, unsigned int _nc) :
+Solver_Vereshchagin::Solver_Vereshchagin(const Chain& chain_,
+                                         const std::vector<double> joint_inertia_, 
+                                         const Twist root_acc, 
+                                         const unsigned int _nc) :
     chain(chain_), nj(chain.getNrOfJoints()), ns(chain.getNrOfSegments()), nc(_nc),
     results(ns + 1, segment_info(nc))
     //nc -> number of constraints
 {
+    // Set vector of joint (rotor + gear) inertia: "d" in the algorithm
+    assert(joint_inertia_.size() == nj);
+    d = Eigen::VectorXd::Map(joint_inertia_.data(), joint_inertia_.size());
+    
+    //Set root acceleration
     acc_root = root_acc;
 
     //Provide the necessary memory for computing the inverse of M0
@@ -59,13 +67,6 @@ Solver_Vereshchagin::Solver_Vereshchagin(const Chain& chain_, Twist root_acc, un
     Vm = MatrixXd::Identity(nc, nc);
     Sm = VectorXd::Ones(nc);
     tmpm = VectorXd::Ones(nc);
-    d = VectorXd::Zero(nj);
-}
-
-void Solver_Vereshchagin::updateInternalDataStructures()
-{
-    ns = chain.getNrOfSegments();
-    results.resize(ns + 1, segment_info(nc));
 }
 
 /**
@@ -84,7 +85,9 @@ void Solver_Vereshchagin::updateInternalDataStructures()
 
 int Solver_Vereshchagin::CartToJnt(const JntArray &q, const JntArray &q_dot, JntArray &q_dotdot, const Jacobian& alfa, const JntArray& beta, const Wrenches& f_ext, JntArray &torques)
 {
-    nj = chain.getNrOfJoints();
+    if (nj != chain.getNrOfJoints())
+        return (error = -3);
+
     if (ns != chain.getNrOfSegments())
         return (error = -3);
 
@@ -427,13 +430,6 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
     }
 }
 
-// Set vector of joint (rotor + gear) inertia: "d" in the algorithm
-void Solver_Vereshchagin::set_joint_inertia(const std::vector<double> &joint_inertia)
-{
-    assert(joint_inertia.size() == nj);
-    d = Eigen::VectorXd::Map(joint_inertia.data(), joint_inertia.size());
-}
-
 //Returns cartesian pose of links in robot base coordinates
 void Solver_Vereshchagin::get_transformed_link_pose(Frames& x)
 {
@@ -498,13 +494,13 @@ void Solver_Vereshchagin::get_bias_force(Wrenches &bias)
 void Solver_Vereshchagin::get_control_torque(JntArray &tau_control)
 {
     assert(tau_control.rows() == controlTorque.rows());
-    for (int i = 0; i < nj; i++) tau_control(i) = controlTorque(i);
+    tau_control = controlTorque;
 }
 
 void Solver_Vereshchagin::get_constraint_torque(JntArray &tau_constraint)
 {
     assert(tau_constraint.rows() == constraintTorque.rows());
-    for (int i = 0; i < nj; i++) tau_constraint(i) = constraintTorque(i);
+    tau_constraint = constraintTorque;
 }
 
 void Solver_Vereshchagin::get_constraint_magnitude(Eigen::VectorXd &nu_)

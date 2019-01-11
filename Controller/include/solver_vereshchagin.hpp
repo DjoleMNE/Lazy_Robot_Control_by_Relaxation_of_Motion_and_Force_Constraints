@@ -54,7 +54,9 @@ public:
      * \param root_acc The acceleration vector of the root to use during the calculation.(most likely contains gravity)
      *
      */
-    Solver_Vereshchagin(const Chain& chain, Twist root_acc, unsigned int nc);
+    Solver_Vereshchagin(const Chain& chain_, 
+                        const std::vector<double> joint_inertia_,
+                        const Twist root_acc, const unsigned int _nc);
 
     ~Solver_Vereshchagin()
     {
@@ -74,9 +76,6 @@ public:
      * @return error/success code
      */
     int CartToJnt(const JntArray &q, const JntArray &q_dot, JntArray &q_dotdot, const Jacobian& alfa, const JntArray& beta, const Wrenches& f_ext, JntArray &torques);
-    
-    /// @copydoc KDL::SolverI::updateInternalDataStructures
-    virtual void updateInternalDataStructures();
 
     void set_joint_inertia(const std::vector<double> &joint_inertia);
     void get_transformed_link_pose(Frames& x);
@@ -113,9 +112,9 @@ private:
 
 private:
     const Chain& chain;
-    unsigned int nj;
-    unsigned int ns;
-    unsigned int nc;
+    const unsigned int nj;
+    const unsigned int ns;
+    const unsigned int nc;
     Twist acc_root;
     Jacobian alfa_N;
     Jacobian alfa_N2;
