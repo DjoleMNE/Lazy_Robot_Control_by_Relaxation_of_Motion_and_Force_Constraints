@@ -65,10 +65,10 @@ class youbot_mediator
 		// Set joint torque command
 		void set_joint_torques(const KDL::JntArray &joint_torques); 
 
-		std::vector<double> get_positive_joint_pos_limits();
-		std::vector<double> get_negative_joint_pos_limits();
+		std::vector<double> get_maximum_joint_pos_limits();
+		std::vector<double> get_minimum_joint_pos_limits();
 		std::vector<double> get_joint_position_thresholds();
-		std::vector<double> get_joint_vel_limits();
+		std::vector<double> get_joint_velocity_limits();
 		std::vector<double> get_joint_torque_limits();
 		std::vector<double> get_joint_inertia();
 		std::vector<double> get_joint_offsets();
@@ -78,7 +78,7 @@ class youbot_mediator
 
 	private:
 		bool custom_model_used_;
-		int parser_result_ = 0;
+		int parser_result_;
 
 		/*
         	If interface is used with the solver and the custom(youBot store) model: add offsets
@@ -109,8 +109,8 @@ class youbot_mediator
         std::vector<youbot::JointTorqueSetpoint> tau_setpoint_;
 
         //Extract youBot model from urdf file
-        int get_model_from_urdf(std::string root_name, 
-								std::string tooltip_name,
-								std::string urdf_path);
+        int get_model_from_urdf(const std::string root_name, 
+								const std::string tooltip_name,
+								const std::string urdf_path);
 };
 #endif /* YOUBOT_MEDIATOR_HPP */

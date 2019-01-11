@@ -27,7 +27,8 @@ SOFTWARE.
 #include "youbot_mediator.hpp"
 
 youbot_mediator::youbot_mediator(): 
-                is_initialized(false), add_offsets_(false),
+                is_initialized(false), add_offsets_(false), 
+                parser_result_(0), custom_model_used_(false),
                 linear_root_acc_(youbot_constants::root_acceleration[0],
                                     youbot_constants::root_acceleration[1],
                                     youbot_constants::root_acceleration[2]),
@@ -137,13 +138,13 @@ void youbot_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
 	youbot_arm_->setJointData(tau_setpoint_);
 }
 
-std::vector<double> youbot_mediator::get_positive_joint_pos_limits()
+std::vector<double> youbot_mediator::get_maximum_joint_pos_limits()
 {
     if(custom_model_used_) return youbot_constants::joint_position_limits_max_1;
     else return youbot_constants::joint_position_limits_max_2;
 }
 
-std::vector<double> youbot_mediator::get_negative_joint_pos_limits()
+std::vector<double> youbot_mediator::get_minimum_joint_pos_limits()
 {
     if(custom_model_used_) return youbot_constants::joint_position_limits_min_1;
     else return youbot_constants::joint_position_limits_min_2;
@@ -154,7 +155,7 @@ std::vector<double> youbot_mediator::get_joint_position_thresholds()
     return youbot_constants::joint_position_thresholds;
 }
 
-std::vector<double> youbot_mediator::get_joint_vel_limits()
+std::vector<double> youbot_mediator::get_joint_velocity_limits()
 {
     return youbot_constants::joint_velocity_limits;
 }
@@ -185,9 +186,9 @@ KDL::Chain youbot_mediator::get_robot_model()
 }
 
 //Extract youBot model from URDF file
-int youbot_mediator::get_model_from_urdf(std::string root_name, 
-                                         std::string tooltip_name, 
-                                         std::string urdf_path)
+int youbot_mediator::get_model_from_urdf(const std::string root_name, 
+                                         const std::string tooltip_name, 
+                                         const std::string urdf_path)
 {
     //Extract KDL tree from the URDF file
     if (!yb_model.initFile(urdf_path))

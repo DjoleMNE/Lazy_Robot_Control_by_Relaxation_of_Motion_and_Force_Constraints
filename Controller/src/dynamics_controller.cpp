@@ -29,10 +29,10 @@ SOFTWARE.
 dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
                                          const int rate_hz):
         robot_driver_(robot_driver),
-        rate_hz_(rate_hz),
+        RATE_HZ_(rate_hz),
         // Time period defined in microseconds: 1s = 1 000 000us
-        dt_micro_(SECOND / rate_hz),
-        dt_sec_(1.0 / static_cast<double>(rate_hz)), 
+        DT_MICRO_(SECOND / RATE_HZ_),
+        DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)), 
         robot_chain_(robot_driver_.get_robot_model()),
         NUMBER_OF_CONSTRAINTS_(6),
         NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
@@ -40,32 +40,27 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
         NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
         hd_solver_(robot_chain_, robot_driver_.get_joint_inertia(),
                    robot_driver_.get_root_acceleration(), NUMBER_OF_CONSTRAINTS_),
-        safety_control_(robot_chain_, 
-                        robot_driver_.get_positive_joint_pos_limits(),
-                        robot_driver_.get_negative_joint_pos_limits(),
-                        robot_driver_.get_joint_position_thresholds(), 
-                        robot_driver_.get_joint_vel_limits(),
-                        robot_driver_.get_joint_torque_limits(), true),
+        solver_result_(0),
+        safety_control_(robot_driver_, true),
+        safe_control_mode_(-1),
+        predictor_(robot_chain_),
         //Resize and set vector's elements to zero 
         zero_joint_velocities_(NUMBER_OF_JOINTS_),
-        solver_result_(0),
-        safe_control_mode_(-1),
         robot_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
                      NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_), 
         commands_(robot_state_), 
         desired_state_(robot_state_), 
-        predicted_state_(robot_state_), 
-        predictor_(robot_chain_)
+        predicted_state_(robot_state_)
 {
+    
     assert(("Robot is not initialized", robot_driver_.is_initialized));
-
     // KDL Solver constraint  
     assert(NUMBER_OF_JOINTS_ == NUMBER_OF_SEGMENTS_);
 
     // Control loop frequency must be higher than or equal to 1 Hz
-    assert(("Desired frequency is too low", 1 <= rate_hz_));
+    assert(("Desired frequency is too low", 1 <= RATE_HZ_));
     // Control loop frequency must be lower than or equal to 1000 Hz
-    assert(("Desired frequency is too high", rate_hz_<= 10000));
+    assert(("Desired frequency is too high", RATE_HZ_<= 10000));
     
     // Set default command interface to velocity mode and initialize it as safe
     desired_control_mode_.interface = control_mode::stop_motion;
@@ -223,11 +218,11 @@ int dynamics_controller::enforce_loop_frequency()
     loop_interval_= std::chrono::duration<double, std::micro>\
                     (std::chrono::steady_clock::now() - loop_start_time_);
 
-    if(loop_interval_ < std::chrono::microseconds(dt_micro_))
+    if(loop_interval_ < std::chrono::microseconds(DT_MICRO_))
     {   
         //Loop is sufficiently fast
-        // clock_nanosleep((dt_micro_ - loop_interval_.count()));
-        while(loop_interval_.count() < dt_micro_){
+        // clock_nanosleep((DT_MICRO_ - loop_interval_.count()));
+        while(loop_interval_.count() < DT_MICRO_){
             loop_interval_= std::chrono::duration<double, std::micro>\
                     (std::chrono::steady_clock::now() - loop_start_time_);
         }
@@ -238,7 +233,7 @@ int dynamics_controller::enforce_loop_frequency()
 //Print information about controller settings
 void dynamics_controller::print_settings_info()
 {   std::cout << "Selected controller settings:" << std::endl;
-    std::cout << "Control Loop Frequency: " << rate_hz_ << " Hz" << std::endl;
+    std::cout << "Control Loop Frequency: " << RATE_HZ_ << " Hz" << std::endl;
     std::cout << "Control Mode: ";
 
     switch(desired_control_mode_.interface) 
@@ -277,7 +272,7 @@ void dynamics_controller::make_predictions(const int prediction_method)
 {
     // predictor_.integrate_cartesian_space(robot_state_, 
     //                                      predicted_state_, 
-    //                                      dt_sec_, 1, 
+    //                                      DT_SEC_, 1, 
     //                                      prediction_method);
 }
 
@@ -408,7 +403,7 @@ int dynamics_controller::control(const bool simulation_environment,
         */
         safe_control_mode_ = safety_control_.generate_commands(
                                         robot_state_, 
-                                        commands_, dt_sec_, 
+                                        commands_, DT_SEC_, 
                                         desired_control_mode_.interface,
                                         integration_method::symplectic_euler);
         

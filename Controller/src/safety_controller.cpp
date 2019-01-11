@@ -25,32 +25,27 @@ SOFTWARE.
 
 #include <safety_controller.hpp>
 
-safety_controller::safety_controller(
-                            const KDL::Chain &chain,
-                            const std::vector<double> joint_position_limits_p,
-                            const std::vector<double> joint_position_limits_n,
-                            const std::vector<double> joint_position_thresholds,
-                            const std::vector<double> joint_velocity_limits,
-                            const std::vector<double> joint_torque_limits,
-                            const bool print_logs):
-        robot_chain_(chain),
-        NUMBER_OF_JOINTS_(chain.getNrOfJoints()),
-        NUMBER_OF_SEGMENTS_(chain.getNrOfSegments()),
-        NUMBER_OF_FRAMES_(chain.getNrOfSegments() + 1),
+safety_controller::safety_controller(youbot_mediator &robot_driver,
+                                     const bool print_logs):
+        robot_driver_(robot_driver),
+        robot_chain_(robot_driver_.get_robot_model()),
+        NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
+        NUMBER_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
+        NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
+        NUMBER_OF_CONSTRAINTS_(6),
         predictor_(robot_chain_),
-        joint_position_limits_p_(joint_position_limits_p),
-        joint_position_limits_n_(joint_position_limits_n),
-        joint_position_thresholds_(joint_position_thresholds),
-        joint_velocity_limits_(joint_velocity_limits),
-        joint_torque_limits_(joint_torque_limits),
-        print_logs_(print_logs),
-        predicted_states_(5, state_specification(chain.getNrOfJoints(),
-                                                 chain.getNrOfSegments(),
-                                                 chain.getNrOfSegments() + 1,
-                                                 6))
-        {
+        joint_position_limits_max_(robot_driver_.get_maximum_joint_pos_limits()),
+        joint_position_limits_min_(robot_driver_.get_minimum_joint_pos_limits()),
+        joint_position_thresholds_(robot_driver_.get_joint_position_thresholds()),
+        joint_velocity_limits_(robot_driver_.get_joint_velocity_limits()),
+        joint_torque_limits_(robot_driver_.get_joint_torque_limits()),
+        temp_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
+                    NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
+        predicted_states_(3, temp_state_),            
+        PRINT_LOGS_(print_logs)
+{
 
-        }
+}
         
 int safety_controller::generate_commands(const state_specification &current_state,
                                          state_specification &commands,
@@ -58,6 +53,8 @@ int safety_controller::generate_commands(const state_specification &current_stat
                                          const int desired_control_mode,
                                          const int prediction_method)
 {
+    assert(NUMBER_OF_JOINTS_ == commands.qd.rows()); 
+    assert(NUMBER_OF_JOINTS_ == current_state.qd.rows());
     /* 
         First Safety Level: Is the Current State Safe?
         I.e. Check for NaN and infinite values in the commands variables.
@@ -116,7 +113,7 @@ bool safety_controller::is_current_state_safe(
            position_limit_reached(current_state, i) || \
            reaching_position_limits(current_state, i))
            {
-                if (print_logs_) 
+                if (PRINT_LOGS_) 
                     std::cout << "Current robot state is not safe" << std::endl;
                return false;
            } 
@@ -155,25 +152,25 @@ bool safety_controller::is_state_finite(const state_specification &current_state
                                         const int joint)
 {
     if (!std::isfinite(current_state.control_torque(joint))){
-        if (print_logs_) 
+        if (PRINT_LOGS_) 
             std::cout << "Computed torque for joint: "<< joint + 1 
                       <<" is not finite!" << std::endl;
         return false;
     }
     else if (!std::isfinite(current_state.qdd(joint))){
-        if (print_logs_) 
+        if (PRINT_LOGS_) 
             std::cout << "Computed joint "<< joint + 1 
                       <<" acceleration is not finite!" << std::endl;
         return false;
     }
     else if (!std::isfinite(current_state.qd(joint))){
-        if (print_logs_) 
+        if (PRINT_LOGS_) 
             std::cout << "Computed joint "<< joint + 1 
                       <<" velocity is not finite!" << std::endl;
         return false;
     }
     else if (!std::isfinite(current_state.q(joint))){
-        if (print_logs_) 
+        if (PRINT_LOGS_) 
             std::cout << "Computed joint "<< joint + 1
                       <<" position is not finite!" << std::endl;
         return false;
@@ -184,9 +181,9 @@ bool safety_controller::is_state_finite(const state_specification &current_state
 bool safety_controller::torque_limit_reached(const state_specification &state,
                                              const int joint)
 {
-    if (fabs(state.control_torque(joint)) >= joint_velocity_limits_[joint])
+    if (fabs(state.control_torque(joint)) >= joint_torque_limits_[joint])
     {
-        if(print_logs_) 
+        if(PRINT_LOGS_) 
             std::cout << "Joint " << joint + 1 
                       << " torque limit reached!" << std::endl;
         return true;        
@@ -198,7 +195,7 @@ bool safety_controller::velocity_limit_reached(const state_specification &state,
 {
     if (fabs(state.qd(joint)) >= joint_velocity_limits_[joint])
     {
-        if(print_logs_) 
+        if(PRINT_LOGS_) 
             std::cout << "Joint " << joint + 1 
                       << " velocity limit reached!" << std::endl;
         return true;        
@@ -208,10 +205,10 @@ bool safety_controller::velocity_limit_reached(const state_specification &state,
 bool safety_controller::position_limit_reached(const state_specification &state,
                                                const int joint)
 {
-    if ((state.q(joint) >= joint_position_limits_p_[joint]) || \
-        (state.q(joint) <= joint_position_limits_n_[joint]))
+    if ((state.q(joint) >= joint_position_limits_max_[joint]) || \
+        (state.q(joint) <= joint_position_limits_min_[joint]))
     {
-        if(print_logs_) 
+        if(PRINT_LOGS_) 
             std::cout << "Joint " << joint + 1 
                       << " position limit reached!" << std::endl;
         return true; 
@@ -221,22 +218,27 @@ bool safety_controller::position_limit_reached(const state_specification &state,
 bool safety_controller::reaching_position_limits(const state_specification &state,
                                                  const int joint)
 {
-    if ((joint_position_limits_p_[joint] - state.q(joint)) \
+
+    if ((joint_position_limits_max_[joint] - state.q(joint)) \
         < joint_position_thresholds_[joint])
     {
-        if(state.qd(joint) > 0.02) 
+        if(state.qd(joint) > 0.02)
+        {
             std::cout << "Joint " << joint + 1 << " is too close to the max limit"
                       << std::endl;
-        return true;
+            return true;
+        } 
     } 
     
-    else if ((joint_position_limits_n_[joint] - state.q(joint)) \
+    else if ((joint_position_limits_min_[joint] - state.q(joint)) \
              > -joint_position_thresholds_[joint])
     {
-        if(state.qd(joint) < -0.02) 
+        if(state.qd(joint) < -0.02)
+        {
             std::cout << "Joint " << joint + 1 << " is too close to the min limit"
                       << std::endl;
-        return true;
+            return true;
+        }
     } 
     else return false;
 }
@@ -256,7 +258,7 @@ int safety_controller::check_torques(const state_specification &commands)
            position_limit_reached(predicted_states_[0], i) || \
            position_limit_reached(predicted_states_[1], i))
         {
-            if (print_logs_) 
+            if (PRINT_LOGS_) 
                 std::cout << "Torque commands are not safe" << std::endl;
             return control_mode::stop_motion;
         }
@@ -272,7 +274,7 @@ int safety_controller::check_velocities(const state_specification &commands)
             position_limit_reached(predicted_states_[0], i) || \
             position_limit_reached(predicted_states_[1], i))
         {
-            if (print_logs_) 
+            if (PRINT_LOGS_) 
                 std::cout << "Velocity commands are not safe" << std::endl;
             return control_mode::stop_motion;
         }
@@ -291,7 +293,7 @@ int safety_controller::check_positions(const state_specification &commands)
     {
         if (position_limit_reached(commands, i))
         {
-            if (print_logs_)
+            if (PRINT_LOGS_)
                 std::cout << "Position commands are not safe" << std::endl;
             return control_mode::stop_motion;
         }

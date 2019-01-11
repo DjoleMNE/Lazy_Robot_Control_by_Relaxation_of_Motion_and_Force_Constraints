@@ -27,7 +27,6 @@ SOFTWARE.
 #define DYNAMICS_CONTROLLER_HPP_
 #include <solver_vereshchagin.hpp>
 #include <state_specification.hpp>
-#include <youbot_custom_model.hpp>
 #include <youbot_mediator.hpp>
 #include <model_prediction.hpp>
 #include <safety_controller.hpp>
@@ -61,9 +60,9 @@ class dynamics_controller
     void define_feadforward_torque_task(const std::vector<double> ff_torque);
 
   private:
-    int rate_hz_;
-    long dt_micro_;
-    double dt_sec_;
+    const int RATE_HZ_;
+    const long DT_MICRO_;
+    const double DT_SEC_;
     int solver_result_;
     int safe_control_mode_;
 
@@ -88,9 +87,8 @@ class dynamics_controller
     const KDL::JntArray zero_joint_velocities_;
     
     KDL::Solver_Vereshchagin hd_solver_;
-
-	  model_prediction predictor_;
     safety_controller safety_control_;
+	  model_prediction predictor_;
 
     state_specification robot_state_;
     state_specification commands_;

@@ -145,22 +145,22 @@ int main(int argc, char **argv)
     if(!simulation_environment){
         assert(("Robot is not initialized", robot_driver.is_initialized));
         stop_robot_motion(robot_driver, motion_);
-        go_navigation_2(robot_driver);
-        // go_folded(robot_driver);
+        // go_navigation_2(robot_driver);
+        go_folded(robot_driver);
         // go_candle_3(robot_driver);
         // robot_driver.get_joint_positions(motion_.q);
         // robot_driver.get_joint_velocities(motion_.qd);
-        // return 0;
+        return 0;
     }
 
     //loop rate in Hz
-    int rate_hz = 1000;
+    int rate_hz = 999;
     dynamics_controller controller(robot_driver, rate_hz);
     
     //Create End_effector Cartesian Acceleration task 
-    controller.define_ee_constraint_task(std::vector<bool>{false, false, true, 
+    controller.define_ee_constraint_task(std::vector<bool>{false, true, true, 
                                                            false, false, false},
-                                         std::vector<double>{-1.0, 10.0, 15.0, 
+                                         std::vector<double>{1.0, 5.0, 15.0, 
                                                              0.0, 0.0, 0.0});
     //Create External Forces task 
     controller.define_ee_external_force_task(std::vector<double>{0.0, 0.0, 0.0, 

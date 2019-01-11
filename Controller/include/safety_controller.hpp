@@ -28,6 +28,7 @@ SOFTWARE.
 #include <solver_vereshchagin.hpp>
 #include <state_specification.hpp>
 #include <model_prediction.hpp>
+#include <youbot_mediator.hpp>
 #include <iostream>
 #include <sstream>
 #include <time.h>
@@ -47,13 +48,7 @@ enum control_mode
 class safety_controller
 {
   public:
-    safety_controller(const KDL::Chain &chain,
-                      const std::vector<double> joint_position_limits_p,
-                      const std::vector<double> joint_position_limits_n,
-                      const std::vector<double> joint_position_soft_threshold,
-                      const std::vector<double> joint_velocity_limits,
-                      const std::vector<double> joint_torque_limits,
-                      const bool print_logs);
+    safety_controller(youbot_mediator &robot_driver, const bool print_logs);
     ~safety_controller(){};
 
     int generate_commands(const state_specification &current_state,
@@ -63,19 +58,23 @@ class safety_controller
                           const int prediction_method);
 
   private:
-    const int NUMBER_OF_JOINTS_;
-    const int NUMBER_OF_SEGMENTS_;
-    const int NUMBER_OF_FRAMES_;
-    const bool print_logs_;
+    youbot_mediator robot_driver_;
+    const KDL::Chain robot_chain_;
+	model_prediction predictor_;
 
-    const std::vector<double> joint_position_limits_p_;
-    const std::vector<double> joint_position_limits_n_;
+    const std::vector<double> joint_position_limits_max_;
+    const std::vector<double> joint_position_limits_min_;
     const std::vector<double> joint_position_thresholds_;
     const std::vector<double> joint_velocity_limits_;
     const std::vector<double> joint_torque_limits_;
+    
+    const int NUMBER_OF_JOINTS_;
+    const int NUMBER_OF_SEGMENTS_;
+    const int NUMBER_OF_FRAMES_;
+    const int NUMBER_OF_CONSTRAINTS_;
+    const bool PRINT_LOGS_;
 
-    const KDL::Chain robot_chain_;
-	model_prediction predictor_;
+    const state_specification temp_state_;
     std::vector<state_specification> predicted_states_; 
 
     bool is_current_state_safe(const state_specification &current_state);

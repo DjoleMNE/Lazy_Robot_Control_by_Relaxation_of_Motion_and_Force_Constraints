@@ -74,11 +74,12 @@ class model_prediction
 								   const int method,
 								   const double dt);
     private:
-		KDL::Chain robot_chain_;
+		const KDL::Chain robot_chain_;
 
-		const int NUMBER_OF_SEGMENTS_;
 		const int NUMBER_OF_JOINTS_;
+		const int NUMBER_OF_SEGMENTS_;
 	    const int NUMBER_OF_FRAMES_;
+	    const int NUMBER_OF_CONSTRAINTS_;
 
 		// Temp varible required for saving intermediate state,
 		// if multi step integration requirested

@@ -26,14 +26,15 @@ SOFTWARE.
 
 model_prediction::model_prediction(const KDL::Chain &robot_chain): 
     robot_chain_(robot_chain),
+    NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
     NUMBER_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
     NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
-    NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
-    temp_state_(robot_chain.getNrOfJoints(), robot_chain.getNrOfSegments(), 
-                robot_chain.getNrOfSegments() + 1, 6),
+    NUMBER_OF_CONSTRAINTS_(6),
+    temp_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
+                NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
     fk_position_solver_(robot_chain_), 
     fk_velocity_solver_(robot_chain_),
-    temp_jntarrayvel_(robot_chain_.getNrOfJoints())
+    temp_jntarrayvel_(NUMBER_OF_JOINTS_)
 {
 
 }
@@ -48,6 +49,8 @@ void model_prediction::integrate_joint_space(
 {
     assert(("Number of steps higher than the size of provided vector of states", 
             number_of_steps <= predicted_states.size()));  
+    assert(NUMBER_OF_JOINTS_ == predicted_states[0].qd.rows()); 
+    assert(NUMBER_OF_JOINTS_ == current_state.qd.rows());
 
     temp_state_ = current_state;
 
@@ -122,6 +125,7 @@ void model_prediction::integrate_to_velocity(const double &acceleration,
             //Integrate accelerations to velocities - Classical Euler method
             predicted_velocity = current_velocity + acceleration * dt;
             break;
+        default: assert(false);
     }
 }
 
@@ -144,6 +148,7 @@ void model_prediction::integrate_to_position(const double &acceleration,
             predicted_position = current_position + dt * \
                                  (predicted_velocity - acceleration * dt / 2.0);
             break;
+        default: assert(false);
     }
 }
 

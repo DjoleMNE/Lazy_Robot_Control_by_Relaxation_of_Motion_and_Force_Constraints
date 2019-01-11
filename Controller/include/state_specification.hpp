@@ -71,7 +71,6 @@ class state_specification
 		{
 			reset_values();
 		}
-
 		~state_specification(){}
 
 		state_specification& operator=(const state_specification &rhs)
