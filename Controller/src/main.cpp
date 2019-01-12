@@ -21,10 +21,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-#include <kdl_parser/kdl_parser.hpp>
-#include <youbot_custom_model.hpp>
-#include <urdf/model.h>
-#include <youbot_mediator.hpp>
 #include <state_specification.hpp>
 #include <dynamics_controller.hpp>
 #include <iostream>
@@ -116,20 +112,11 @@ int main(int argc, char **argv)
 {
     youbot_mediator robot_driver;
 
-    bool simulation_environment = true;
-    bool use_custom_model = false;
+    int environment_ = youbot_environment::SIMULATION;
+    int robot_model_ = youbot_model::URDF;
 
-    const std::string config_path = "/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config";
-    
-    // const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf";
-    const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_zero_inertia.urdf";
-
-    const std::string root_name = "arm_link_0";
-    const std::string tooltip_name = "arm_link_5";
-    
     // Extract robot model and if not simulation, establish connection with motor drivers
-    robot_driver.initialize(config_path, root_name, tooltip_name, urdf_path, 
-                            use_custom_model, simulation_environment);
+    robot_driver.initialize(robot_model_, environment_);
     
     int number_of_segments = robot_driver.get_robot_model().getNrOfSegments();
     int number_of_joints = robot_driver.get_robot_model().getNrOfJoints();
@@ -140,9 +127,7 @@ int main(int argc, char **argv)
                                 number_of_segments,
                                 number_of_segments + 1,
                                 NUMBER_OF_CONSTRAINTS);
-    state_specification commands_(motion_);
-
-    if(!simulation_environment){
+    if(!environment_){
         assert(("Robot is not initialized", robot_driver.is_initialized));
         stop_robot_motion(robot_driver, motion_);
         // go_navigation_2(robot_driver);
@@ -169,8 +154,7 @@ int main(int argc, char **argv)
     controller.define_feadforward_torque_task(std::vector<double>{0.0, 0.0, 
                                                                   0.0, 0.0, 
                                                                   0.0});    
-    controller.control(simulation_environment, 
-                       control_mode::VELOCITY);
+    controller.control(environment_, control_mode::VELOCITY);
 
     return 0;
 }
