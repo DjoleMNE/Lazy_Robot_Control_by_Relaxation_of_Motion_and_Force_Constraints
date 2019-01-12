@@ -35,21 +35,29 @@ SOFTWARE.
 #include <youbot_constants.hpp>
 #include <memory>
 
+enum youbot_model 
+{
+    URDF = 0,
+    YB_STORE = 1   
+};
+
+enum youbot_environment 
+{
+    REAL = 0,
+    SIMULATION = 1   
+};
+
 class youbot_mediator
 {
 	public:
-		bool is_initialized;				
+		bool is_initialized;
 
 		youbot_mediator();
 		~youbot_mediator(){}
 
 		// Initializes variables and calibrates the manipulator
-		void initialize(const std::string config_path,
-						const std::string root_name, 
-						const std::string tooltip_name,
-						const std::string urdf_path,
-						const bool custom_model_used,
-						const bool simulation_environment);
+		void initialize(const int robot_model,
+						const int robot_environment);
 
 		// Get current joint positions
 		void get_joint_positions(KDL::JntArray &joint_positions);
@@ -77,20 +85,20 @@ class youbot_mediator
 		KDL::Chain get_robot_model();
 
 	private:
-		bool custom_model_used_;
-		bool simulation_environment_;
 		int parser_result_;
+		int youbot_model_;
+		int youbot_environment_;
 
 		/*
         	If interface is used with the solver and the custom(youBot store) model: add offsets
         	Else: set the original values
-    	*/ // Custom model's home state is not folded - it is candle
+    	*/ // Custom (youBot Store) model's home state is not folded - it is candle
 		bool add_offsets_;
 
 		// Handles for the youbot manipulator and kdl urdf parsel
 	    std::shared_ptr<youbot::YouBotManipulator> youbot_arm_;
-		KDL::Tree yb_tree;
-    	urdf::Model yb_model;
+		KDL::Tree yb_tree_;
+    	urdf::Model yb_urdf_model_;
 		KDL::Chain robot_chain_;
 
 		//Arm's root acceleration
@@ -110,8 +118,6 @@ class youbot_mediator
         std::vector<youbot::JointTorqueSetpoint> tau_setpoint_;
 
         //Extract youBot model from urdf file
-        int get_model_from_urdf(const std::string root_name, 
-								const std::string tooltip_name,
-								const std::string urdf_path);
+        int get_model_from_urdf();
 };
 #endif /* YOUBOT_MEDIATOR_HPP */
