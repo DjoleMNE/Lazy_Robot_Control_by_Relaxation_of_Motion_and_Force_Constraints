@@ -170,7 +170,7 @@ int main(int argc, char **argv)
                                                                   0.0, 0.0, 
                                                                   0.0});    
     controller.control(simulation_environment, 
-                       control_mode::velocity_control);
+                       control_mode::VELOCITY);
 
     return 0;
 }

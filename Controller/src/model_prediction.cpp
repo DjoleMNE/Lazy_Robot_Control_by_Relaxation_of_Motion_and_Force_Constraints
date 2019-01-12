@@ -116,12 +116,12 @@ void model_prediction::integrate_to_velocity(const double &acceleration,
                                              const double dt)
 {
     switch(method) {
-        case integration_method::symplectic_euler:
+        case integration_method::SYMPLECTIC_EULER:
             //Integrate accelerations to velocities - Classical Euler method
             predicted_velocity = current_velocity + acceleration * dt;
             break;
         
-        case integration_method::predictor_corrector:
+        case integration_method::PREDICTOR_CORRECTOR:
             //Integrate accelerations to velocities - Classical Euler method
             predicted_velocity = current_velocity + acceleration * dt;
             break;
@@ -138,12 +138,12 @@ void model_prediction::integrate_to_position(const double &acceleration,
                                              const double dt)
 {
     switch(method) {
-        case integration_method::symplectic_euler:
+        case integration_method::SYMPLECTIC_EULER:
             //Integrate velocities to positions - Symplectic Euler method
             predicted_position = current_position + predicted_velocity * dt;
             break;
         
-        case integration_method::predictor_corrector:
+        case integration_method::PREDICTOR_CORRECTOR:
             //Integrate velocities to joint positions - Trapezoidal method
             predicted_position = current_position + dt * \
                                  (predicted_velocity - acceleration * dt / 2.0);

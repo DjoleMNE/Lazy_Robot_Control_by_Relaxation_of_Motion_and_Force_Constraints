@@ -63,7 +63,7 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     assert(("Desired frequency is too high", RATE_HZ_<= 10000));
     
     // Set default command interface to velocity mode and initialize it as safe
-    desired_control_mode_.interface = control_mode::stop_motion;
+    desired_control_mode_.interface = control_mode::STOP_MOTION;
     desired_control_mode_.is_safe = false;
 }
 
@@ -238,19 +238,19 @@ void dynamics_controller::print_settings_info()
 
     switch(desired_control_mode_.interface) 
     {
-        case control_mode::stop_motion:
+        case control_mode::STOP_MOTION:
             std::cout << "STOP MOTION \n" << "Stopping the robot!" << std::endl;
             break;
 
-        case control_mode::velocity_control:
+        case control_mode::VELOCITY:
             std::cout << "Velocity Control" << std::endl;
             break;
 
-        case control_mode::position_control:
+        case control_mode::POSITION:
             std::cout << "Position Control" << std::endl;
             break;
 
-        case control_mode::torque_control:
+        case control_mode::TORQUE:
             std::cout << "Torque Control" << std::endl;
             break;
     }
@@ -298,20 +298,20 @@ int dynamics_controller::apply_control_commands(const bool simulation_environmen
         (desired_control_mode_.interface == safe_control_mode_)? true : false; 
 
     switch(safe_control_mode_) {
-        case control_mode::torque_control:
+        case control_mode::TORQUE:
             assert(desired_control_mode_.is_safe);
             if (!simulation_environment)
                 robot_driver_.set_joint_torques(commands_.control_torque);
             break;
 
-        case control_mode::velocity_control:
+        case control_mode::VELOCITY:
             if (!simulation_environment) 
                 robot_driver_.set_joint_velocities(commands_.qd);
             if(!desired_control_mode_.is_safe) 
                 std::cout << "WARNING: Control switched to velocity mode \n" << std::endl;
             break;
 
-        case control_mode::position_control:
+        case control_mode::POSITION:
             if (!simulation_environment)
                 robot_driver_.set_joint_positions(commands_.q);
             if(!desired_control_mode_.is_safe) 
@@ -356,7 +356,7 @@ int dynamics_controller::control(const bool simulation_environment,
     print_settings_info();
 
     //Exit the program if the "Stop Motion" mode is selected
-    if(desired_control_mode_.interface == control_mode::stop_motion){
+    if(desired_control_mode_.interface == control_mode::STOP_MOTION){
         std::cout << "Stop Motion mode selected. Exiting the program" << std::endl;
         return -1;
     } 
@@ -394,7 +394,7 @@ int dynamics_controller::control(const bool simulation_environment,
             from the solver. I.e. Integrate Cartesian variables.
             Currently not implemented. Method definition is empty.
         */
-        make_predictions(integration_method::symplectic_euler);
+        make_predictions(integration_method::SYMPLECTIC_EULER);
 
         /* 
             Check if the commands are over the limits.
@@ -405,10 +405,10 @@ int dynamics_controller::control(const bool simulation_environment,
                                         robot_state_, 
                                         commands_, DT_SEC_, 
                                         desired_control_mode_.interface,
-                                        integration_method::symplectic_euler);
+                                        integration_method::SYMPLECTIC_EULER);
         
         // If the computed commands are not safe, exit the program.
-        if(safe_control_mode_ == control_mode::stop_motion) {
+        if(safe_control_mode_ == control_mode::STOP_MOTION) {
             if (!simulation_environment) stop_robot_motion();
             std::cout << "WARNING: Computed commands are not safe. " 
                       << "Stopping the robot!" << std::endl;

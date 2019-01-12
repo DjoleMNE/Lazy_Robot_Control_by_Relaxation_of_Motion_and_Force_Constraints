@@ -39,10 +39,10 @@ SOFTWARE.
 
 enum control_mode 
 {
-    torque_control = 0,
-    velocity_control = 1,
-    position_control = 2, 
-    stop_motion = -1   
+    TORQUE = 0,
+    VELOCITY = 1,
+    POSITION = 2, 
+    STOP_MOTION = -1   
 };
 
 class safety_controller

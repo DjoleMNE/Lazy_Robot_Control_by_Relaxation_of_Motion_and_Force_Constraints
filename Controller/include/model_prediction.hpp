@@ -36,8 +36,8 @@ SOFTWARE.
 
 enum integration_method 
 {
-    predictor_corrector = 0,
-    symplectic_euler = 1
+    PREDICTOR_CORRECTOR = 0,
+    SYMPLECTIC_EULER = 1
 };
 
 class model_prediction

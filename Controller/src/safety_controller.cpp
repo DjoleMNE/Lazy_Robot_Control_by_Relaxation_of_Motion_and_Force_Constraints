@@ -27,22 +27,22 @@ SOFTWARE.
 
 safety_controller::safety_controller(youbot_mediator &robot_driver,
                                      const bool print_logs):
-        robot_driver_(robot_driver),
-        robot_chain_(robot_driver_.get_robot_model()),
-        NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
-        NUMBER_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
-        NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
-        NUMBER_OF_CONSTRAINTS_(6),
-        predictor_(robot_chain_),
-        joint_position_limits_max_(robot_driver_.get_maximum_joint_pos_limits()),
-        joint_position_limits_min_(robot_driver_.get_minimum_joint_pos_limits()),
-        joint_position_thresholds_(robot_driver_.get_joint_position_thresholds()),
-        joint_velocity_limits_(robot_driver_.get_joint_velocity_limits()),
-        joint_torque_limits_(robot_driver_.get_joint_torque_limits()),
-        temp_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
-                    NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
-        predicted_states_(3, temp_state_),            
-        PRINT_LOGS_(print_logs)
+    robot_driver_(robot_driver),
+    robot_chain_(robot_driver_.get_robot_model()),
+    NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
+    NUMBER_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
+    NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
+    NUMBER_OF_CONSTRAINTS_(6),
+    predictor_(robot_chain_),
+    joint_position_limits_max_(robot_driver_.get_maximum_joint_pos_limits()),
+    joint_position_limits_min_(robot_driver_.get_minimum_joint_pos_limits()),
+    joint_position_thresholds_(robot_driver_.get_joint_position_thresholds()),
+    joint_velocity_limits_(robot_driver_.get_joint_velocity_limits()),
+    joint_torque_limits_(robot_driver_.get_joint_torque_limits()),
+    temp_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
+                NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
+    predicted_states_(3, temp_state_),            
+    PRINT_LOGS_(print_logs)
 {
 
 }
@@ -65,7 +65,7 @@ int safety_controller::generate_commands(const state_specification &current_stat
         If everything ok, proceed to the second level.
     */
     if (!is_current_state_safe(current_state)) 
-        return control_mode::stop_motion;
+        return control_mode::STOP_MOTION;
 
     /*
         Make predictions - Integrate joint accelerations to velocities and positions
@@ -135,16 +135,16 @@ int safety_controller::check_future_state(const state_specification &commands,
 {
     switch (desired_control_mode)
     {   
-        case control_mode::torque_control:
+        case control_mode::TORQUE:
             return check_torques(commands);
 
-        case control_mode::velocity_control:
+        case control_mode::VELOCITY:
             return check_velocities(commands);
 
-        case control_mode::position_control:
+        case control_mode::POSITION:
             return check_positions(commands);
     
-        default: return control_mode::stop_motion;
+        default: return control_mode::STOP_MOTION;
     }
 }
 
@@ -260,9 +260,9 @@ int safety_controller::check_torques(const state_specification &commands)
         {
             if (PRINT_LOGS_) 
                 std::cout << "Torque commands are not safe" << std::endl;
-            return control_mode::stop_motion;
+            return control_mode::STOP_MOTION;
         }
-    } return control_mode::torque_control;
+    } return control_mode::TORQUE;
 }
 
 int safety_controller::check_velocities(const state_specification &commands)
@@ -276,10 +276,10 @@ int safety_controller::check_velocities(const state_specification &commands)
         {
             if (PRINT_LOGS_) 
                 std::cout << "Velocity commands are not safe" << std::endl;
-            return control_mode::stop_motion;
+            return control_mode::STOP_MOTION;
         }
     }
-    return control_mode::velocity_control;
+    return control_mode::VELOCITY;
 }
 
 /*
@@ -295,10 +295,10 @@ int safety_controller::check_positions(const state_specification &commands)
         {
             if (PRINT_LOGS_)
                 std::cout << "Position commands are not safe" << std::endl;
-            return control_mode::stop_motion;
+            return control_mode::STOP_MOTION;
         }
     }
-    return control_mode::position_control;
+    return control_mode::POSITION;
 }
 
 bool safety_controller::reduce_velocities(const state_specification &commands)
