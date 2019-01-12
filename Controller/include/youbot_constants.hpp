@@ -55,9 +55,11 @@ namespace youbot_constants
 
     //Position limit values from URDF file: positive and negative
     const std::vector<double> joint_position_limits_max_2 {5.89921, 2.70526,  0.00000, 3.57792, 5.84685};
+    const std::vector<double> joint_position_limits_max_2_sim {5.89921, 2.70526,  -0.00100, 3.57792, 5.84685};
     const std::vector<double> joint_position_limits_min_2 {0.00000, 0.00000, -5.16617, 0.00000, 0.00000};
-    
-    const std::vector<double> joint_position_thresholds {DEG_TO_RAD(15), DEG_TO_RAD(15), DEG_TO_RAD(12), DEG_TO_RAD(10), DEG_TO_RAD(7)};
+    const std::vector<double> joint_position_limits_min_2_sim {-0.00100, -0.00100, -5.16617, -0.00100, -0.00100};
+
+    const std::vector<double> joint_position_thresholds {DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(8), DEG_TO_RAD(5)};
 
     // Robocup URDF file parameters for velocity limits
     // std::vector<double> joint_velocity_limits {1.5707, 0.8, 1.0, 1.5707, 1.5707};

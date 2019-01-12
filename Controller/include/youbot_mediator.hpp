@@ -78,6 +78,7 @@ class youbot_mediator
 
 	private:
 		bool custom_model_used_;
+		bool simulation_environment_;
 		int parser_result_;
 
 		/*

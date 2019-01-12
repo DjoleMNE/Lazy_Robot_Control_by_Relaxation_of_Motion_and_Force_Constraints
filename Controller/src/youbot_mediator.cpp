@@ -141,13 +141,23 @@ void youbot_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
 std::vector<double> youbot_mediator::get_maximum_joint_pos_limits()
 {
     if(custom_model_used_) return youbot_constants::joint_position_limits_max_1;
-    else return youbot_constants::joint_position_limits_max_2;
+    else 
+    {
+        if(!simulation_environment_)
+            return youbot_constants::joint_position_limits_max_2;
+        else return youbot_constants::joint_position_limits_max_2_sim;
+    }
 }
 
 std::vector<double> youbot_mediator::get_minimum_joint_pos_limits()
 {
     if(custom_model_used_) return youbot_constants::joint_position_limits_min_1;
-    else return youbot_constants::joint_position_limits_min_2;
+    else 
+    {
+        if(!simulation_environment_)
+            return youbot_constants::joint_position_limits_min_2;
+        else return youbot_constants::joint_position_limits_min_2_sim;
+    }
 }
 
 std::vector<double> youbot_mediator::get_joint_position_thresholds()
@@ -217,7 +227,8 @@ void youbot_mediator::initialize(const std::string config_path,
                                  const bool simulation_environment)
 {
     custom_model_used_ = custom_model_used;
-
+    simulation_environment_ = simulation_environment;
+    
     if(custom_model_used_) //Extract KDL tree from custom cpp file 
         youbot_custom_model yb_model(robot_chain_);
 

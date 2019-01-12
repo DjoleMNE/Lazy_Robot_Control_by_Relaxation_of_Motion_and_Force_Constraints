@@ -116,7 +116,7 @@ int main(int argc, char **argv)
 {
     youbot_mediator robot_driver;
 
-    bool simulation_environment = false;
+    bool simulation_environment = true;
     bool use_custom_model = false;
 
     const std::string config_path = "/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config";
@@ -150,7 +150,7 @@ int main(int argc, char **argv)
         // go_candle_3(robot_driver);
         // robot_driver.get_joint_positions(motion_.q);
         // robot_driver.get_joint_velocities(motion_.qd);
-        return 0;
+        // return 0;
     }
 
     //loop rate in Hz
