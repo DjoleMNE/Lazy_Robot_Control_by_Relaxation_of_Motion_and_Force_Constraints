@@ -31,11 +31,10 @@ SOFTWARE.
 #include <safety_controller.hpp>
 #include <iostream>
 #include <sstream>
-#include <chrono>
-#include <thread> 
-#include <unistd.h>
-#include <time.h>
 #include <fstream>
+#include <chrono>
+#include <time.h>
+#include <thread> 
 #include <unistd.h> /*usleep function*/
 #include <cmath>
 #include <stdlib.h>     /* abs */
@@ -81,7 +80,7 @@ class dynamics_controller
     
     KDL::Solver_Vereshchagin hd_solver_;
     safety_controller safety_control_;
-	  model_prediction predictor_;
+    model_prediction predictor_;
 
     state_specification robot_state_;
     state_specification commands_;
