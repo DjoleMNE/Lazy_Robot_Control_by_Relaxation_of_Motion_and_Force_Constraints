@@ -46,6 +46,9 @@ class ABAG
     Eigen::VectorXd get_command();
     double get_command(const int dimension);
 
+    Eigen::VectorXd get_error();
+    double get_error(const int dimension);
+
     Eigen::VectorXd get_bias();
     double get_bias(const int dimension);
 
@@ -108,6 +111,7 @@ class ABAG
     } parameter;
 
     void compute_commands();
+    void compute_error();
     void compute_bias();
     void compute_gain();
 };
