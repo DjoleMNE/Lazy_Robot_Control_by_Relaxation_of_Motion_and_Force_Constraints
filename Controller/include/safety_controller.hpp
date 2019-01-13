@@ -51,11 +51,14 @@ class safety_controller
     safety_controller(youbot_mediator &robot_driver, const bool print_logs);
     ~safety_controller(){};
 
-    int generate_commands(const state_specification &current_state,
-                          state_specification &commands,
-                          const double dt_sec,
-                          const int desired_control_mode,
-                          const int prediction_method);
+    int set_control_commands(const state_specification &current_state,
+                             const double dt_sec,
+                             const int desired_control_mode,
+                             const int prediction_method);
+
+    void get_control_commands(state_specification &commands);
+    void get_current_state(state_specification &current_state);
+    void stop_robot_motion();
 
   private:
     youbot_mediator robot_driver_;
@@ -73,12 +76,14 @@ class safety_controller
     const int NUMBER_OF_FRAMES_;
     const int NUMBER_OF_CONSTRAINTS_;
     const bool PRINT_LOGS_;
+    
+    const KDL::JntArray zero_joint_velocities_;
 
-    const state_specification temp_state_;
+    state_specification commands_;
     std::vector<state_specification> predicted_states_; 
 
     bool is_current_state_safe(const state_specification &current_state);
-    bool is_state_finite(const state_specification &current_state, 
+    bool is_state_finite(const state_specification &state, 
                          const int joint);
     bool torque_limit_reached(const state_specification &state,
                               const int joint);
@@ -89,16 +94,14 @@ class safety_controller
     bool reaching_position_limits(const state_specification &state,
                                   const int joint);
     
-    void set_commands(state_specification &commands,
-                      const state_specification &current_state);
+    void generate_commands(const state_specification &current_state);
 
-    int check_future_state(const state_specification &commands,
-                           const int desired_control_mode);    
-    int check_torques(const state_specification &commands);
-    int check_velocities(const state_specification &commands);
-    int check_positions(const state_specification &commands);
+    int check_future_state(const int desired_control_mode);    
+    int check_torques();
+    int check_velocities();
+    int check_positions();
 
     //Not implemented currently
-    bool reduce_velocities(const state_specification &commands);
+    bool reduce_velocities();
 };
 #endif /* SAFETY_CONTROLLER_HPP_*/

@@ -27,7 +27,6 @@ SOFTWARE.
 #define DYNAMICS_CONTROLLER_HPP_
 #include <solver_vereshchagin.hpp>
 #include <state_specification.hpp>
-#include <youbot_mediator.hpp>
 #include <model_prediction.hpp>
 #include <safety_controller.hpp>
 #include <iostream>
@@ -44,18 +43,16 @@ SOFTWARE.
 class dynamics_controller
 {
   public:
-    dynamics_controller(youbot_mediator &robot_driver,
-                        const int rate_hz);
+    dynamics_controller(youbot_mediator &robot_driver, const int rate_hz);
     ~dynamics_controller(){};
 
-    int control(const bool is_simulation_environment,
-                const int desired_control_mode);
+    int control(const int desired_control_mode);
 
     void reset_desired_state();
 
     //Methods for defining robot task via 3 interfaces
     void define_ee_constraint_task(const std::vector<bool> constraint_direction,
-                              const std::vector<double> cartesian_acceleration);
+                                   const std::vector<double> cartesian_acceleration);
     void define_ee_external_force_task(const std::vector<double> external_force);
     void define_feadforward_torque_task(const std::vector<double> ff_torque);
 
@@ -76,15 +73,11 @@ class dynamics_controller
     std::chrono::steady_clock::time_point loop_end_time_;
     std::chrono::duration <double, std::micro> loop_interval_;
 
-    youbot_mediator robot_driver_;
     const KDL::Chain robot_chain_;
-
     const int NUMBER_OF_JOINTS_;
     const int NUMBER_OF_SEGMENTS_;
     const int NUMBER_OF_FRAMES_;
     const int NUMBER_OF_CONSTRAINTS_;
-
-    const KDL::JntArray zero_joint_velocities_;
     
     KDL::Solver_Vereshchagin hd_solver_;
     safety_controller safety_control_;
@@ -99,9 +92,9 @@ class dynamics_controller
     void reset_state(state_specification &state);
     void stop_robot_motion();
     void update_task();
-    void update_current_state(const bool simulation_environment);
+    void update_current_state();
     void make_predictions(const int prediction_method);
-    int apply_control_commands(const bool simulation_environment);
+    int apply_control_commands();
     int evaluate_dynamics();
     int enforce_loop_frequency();
 

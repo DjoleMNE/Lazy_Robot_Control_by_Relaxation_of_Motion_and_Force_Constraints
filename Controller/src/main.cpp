@@ -127,7 +127,8 @@ int main(int argc, char **argv)
                                 number_of_segments,
                                 number_of_segments + 1,
                                 NUMBER_OF_CONSTRAINTS);
-    if(!environment_){
+                                
+    if(environment_ != youbot_environment::SIMULATION){
         assert(("Robot is not initialized", robot_driver.is_initialized));
         stop_robot_motion(robot_driver, motion_);
         // go_navigation_2(robot_driver);
@@ -138,6 +139,10 @@ int main(int argc, char **argv)
         // return 0;
     }
 
+    // robot_model_ = youbot_model::YB_STORE;
+    // Extract robot model and if not simulation, establish connection with motor drivers
+    // robot_driver.initialize(robot_model_, environment_);
+    
     //loop rate in Hz
     int rate_hz = 999;
     dynamics_controller controller(robot_driver, rate_hz);
@@ -154,7 +159,7 @@ int main(int argc, char **argv)
     controller.define_feadforward_torque_task(std::vector<double>{0.0, 0.0, 
                                                                   0.0, 0.0, 
                                                                   0.0});    
-    controller.control(environment_, control_mode::VELOCITY);
+    controller.control(control_mode::VELOCITY);
 
     return 0;
 }

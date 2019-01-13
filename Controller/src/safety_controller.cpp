@@ -29,31 +29,30 @@ safety_controller::safety_controller(youbot_mediator &robot_driver,
                                      const bool print_logs):
     robot_driver_(robot_driver),
     robot_chain_(robot_driver_.get_robot_model()),
-    NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
-    NUMBER_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
-    NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
-    NUMBER_OF_CONSTRAINTS_(6),
     predictor_(robot_chain_),
     joint_position_limits_max_(robot_driver_.get_maximum_joint_pos_limits()),
     joint_position_limits_min_(robot_driver_.get_minimum_joint_pos_limits()),
     joint_position_thresholds_(robot_driver_.get_joint_position_thresholds()),
     joint_velocity_limits_(robot_driver_.get_joint_velocity_limits()),
     joint_torque_limits_(robot_driver_.get_joint_torque_limits()),
-    temp_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
+    NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
+    NUMBER_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
+    NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
+    NUMBER_OF_CONSTRAINTS_(6),
+    commands_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
                 NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
-    predicted_states_(3, temp_state_),            
-    PRINT_LOGS_(print_logs)
+    PRINT_LOGS_(print_logs),
+    zero_joint_velocities_(NUMBER_OF_JOINTS_),
+    predicted_states_(3, commands_) 
 {
 
 }
         
-int safety_controller::generate_commands(const state_specification &current_state,
-                                         state_specification &commands,
-                                         const double dt_sec,
-                                         const int desired_control_mode,
-                                         const int prediction_method)
+int safety_controller::set_control_commands(const state_specification &current_state,
+                                            const double dt_sec,
+                                            const int desired_control_mode,
+                                            const int prediction_method)
 {
-    assert(NUMBER_OF_JOINTS_ == commands.qd.rows()); 
     assert(NUMBER_OF_JOINTS_ == current_state.qd.rows());
     /* 
         First Safety Level: Is the Current State Safe?
@@ -76,7 +75,7 @@ int safety_controller::generate_commands(const state_specification &current_stat
                                      2, prediction_method, false, false);
 
     // Write computed torques, predicted velocities & positions in command state
-    set_commands(commands, current_state);
+    generate_commands(current_state);
 
     /*
         Second Safety Level: Is the Future State Safe?
@@ -86,11 +85,10 @@ int safety_controller::generate_commands(const state_specification &current_stat
         or stop the robot.
         If not: continue with the original commands.
     */
-    return check_future_state(commands, desired_control_mode);
+    return check_future_state(desired_control_mode);
 }
 
-bool safety_controller::is_current_state_safe(
-                                    const state_specification &current_state)
+bool safety_controller::is_current_state_safe(const state_specification &current_state)
 {
     /* 
         Check current velocities and position for every case. 
@@ -121,55 +119,28 @@ bool safety_controller::is_current_state_safe(
     return true;
 }
 
-void safety_controller::set_commands(state_specification &commands,
-                                     const state_specification &current_state)
-{
-    commands.control_torque = current_state.control_torque;
-    commands.qdd = current_state.qdd;
-    commands.qd = predicted_states_[0].qd;
-    commands.q = predicted_states_[0].q;
-}
-
-int safety_controller::check_future_state(const state_specification &commands,
-                                          const int desired_control_mode)
-{
-    switch (desired_control_mode)
-    {   
-        case control_mode::TORQUE:
-            return check_torques(commands);
-
-        case control_mode::VELOCITY:
-            return check_velocities(commands);
-
-        case control_mode::POSITION:
-            return check_positions(commands);
-    
-        default: return control_mode::STOP_MOTION;
-    }
-}
-
-bool safety_controller::is_state_finite(const state_specification &current_state, 
+bool safety_controller::is_state_finite(const state_specification &state, 
                                         const int joint)
 {
-    if (!std::isfinite(current_state.control_torque(joint))){
+    if (!std::isfinite(state.control_torque(joint))){
         if (PRINT_LOGS_) 
             std::cout << "Computed torque for joint: "<< joint + 1 
                       <<" is not finite!" << std::endl;
         return false;
     }
-    else if (!std::isfinite(current_state.qdd(joint))){
+    else if (!std::isfinite(state.qdd(joint))){
         if (PRINT_LOGS_) 
             std::cout << "Computed joint "<< joint + 1 
                       <<" acceleration is not finite!" << std::endl;
         return false;
     }
-    else if (!std::isfinite(current_state.qd(joint))){
+    else if (!std::isfinite(state.qd(joint))){
         if (PRINT_LOGS_) 
             std::cout << "Computed joint "<< joint + 1 
                       <<" velocity is not finite!" << std::endl;
         return false;
     }
-    else if (!std::isfinite(current_state.q(joint))){
+    else if (!std::isfinite(state.q(joint))){
         if (PRINT_LOGS_) 
             std::cout << "Computed joint "<< joint + 1
                       <<" position is not finite!" << std::endl;
@@ -243,42 +214,70 @@ bool safety_controller::reaching_position_limits(const state_specification &stat
     else return false;
 }
 
+int safety_controller::check_future_state(const int desired_control_mode)
+{
+    switch (desired_control_mode)
+    {   
+        case control_mode::TORQUE:
+            return check_torques();
+
+        case control_mode::VELOCITY:
+            return check_velocities();
+
+        case control_mode::POSITION:
+            return check_positions();
+    
+        default: return control_mode::STOP_MOTION;
+    }
+}
+
 /*
     Check if the commaned torques are over torque limits.
     Check if the commanded torqes will make a joint go over the position limits.
     If all ok: continue with this control mode.
     Else: stop the robot.
 */
-int safety_controller::check_torques(const state_specification &commands)
+int safety_controller::check_torques()
 {
-
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
     {
-        if(torque_limit_reached(commands, i) || \
+        if(torque_limit_reached(commands_, i) || \
            position_limit_reached(predicted_states_[0], i) || \
            position_limit_reached(predicted_states_[1], i))
         {
-            if (PRINT_LOGS_) 
-                std::cout << "Torque commands are not safe" << std::endl;
-            return control_mode::STOP_MOTION;
-        }
-    } return control_mode::TORQUE;
-}
-
-int safety_controller::check_velocities(const state_specification &commands)
-{
-    //If a velocity limit reached, rescale velocities or stop the control
-    for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
-    {
-        if (velocity_limit_reached(commands, i) || \
-            position_limit_reached(predicted_states_[0], i) || \
-            position_limit_reached(predicted_states_[1], i))
-        {
-            if (PRINT_LOGS_) 
-                std::cout << "Velocity commands are not safe" << std::endl;
+            stop_robot_motion();
+            if (PRINT_LOGS_) std::cout << "Torque commands not safe" << std::endl;
             return control_mode::STOP_MOTION;
         }
     }
+
+    // Commands are valid. Send them to the robot driver
+    robot_driver_.set_joint_torques(commands_.control_torque);
+    return control_mode::TORQUE;
+}
+
+/*
+    Check if the commaned velocities are over velocity limits.
+    Check if the commanded velocities will make a joint go over position limits.
+    If all ok: continue with this control mode.
+    Else: stop the robot.
+*/
+int safety_controller::check_velocities()
+{
+    for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
+    {
+        if (velocity_limit_reached(commands_, i) || \
+            position_limit_reached(predicted_states_[0], i) || \
+            position_limit_reached(predicted_states_[1], i))
+        {
+            stop_robot_motion();
+            if (PRINT_LOGS_) std::cout << "Velocity commands not safe" << std::endl;
+            return control_mode::STOP_MOTION;
+        }
+    }
+
+    // Commands are valid. Send them to the robot driver
+    robot_driver_.set_joint_velocities(commands_.qd);
     return control_mode::VELOCITY;
 }
 
@@ -286,22 +285,52 @@ int safety_controller::check_velocities(const state_specification &commands)
     Simple check if the computed postion commands are valid, i.e. over the limit.
     Last step in safety check.
 */
-int safety_controller::check_positions(const state_specification &commands)
+int safety_controller::check_positions()
 {
     //If a position limit reached, stop the program
     for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
     {
-        if (position_limit_reached(commands, i))
+        if (position_limit_reached(commands_, i))
         {
-            if (PRINT_LOGS_)
-                std::cout << "Position commands are not safe" << std::endl;
+            stop_robot_motion();
+            if (PRINT_LOGS_) std::cout << "Position commands not safe" << std::endl;
             return control_mode::STOP_MOTION;
         }
     }
+
+    //Commands are valid. Send them to the robot driver
+    robot_driver_.set_joint_positions(commands_.q);
     return control_mode::POSITION;
 }
 
-bool safety_controller::reduce_velocities(const state_specification &commands)
+void safety_controller::generate_commands(const state_specification &current_state)
+{
+    commands_.control_torque = current_state.control_torque;
+    commands_.qd = predicted_states_[0].qd;
+    commands_.q = predicted_states_[0].q;
+}
+
+void safety_controller::get_control_commands(state_specification &commands)
+{
+    commands.control_torque = commands_.control_torque;
+    commands.qd = commands_.qd;
+    commands.q = commands_.q;
+}
+
+//Set velocities of arm's joints to 0 and send commands to the robot driver
+void safety_controller::stop_robot_motion()
+{   
+    robot_driver_.set_joint_velocities(zero_joint_velocities_);
+}
+
+//Get current robot state from the joint sensors
+void safety_controller::get_current_state(state_specification &current_state)
+{
+    robot_driver_.get_joint_positions(current_state.q);
+    robot_driver_.get_joint_velocities(current_state.qd);
+}
+
+bool safety_controller::reduce_velocities()
 {
     //TODO: Maybe not necessary
     return true;
