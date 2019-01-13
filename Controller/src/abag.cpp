@@ -54,6 +54,12 @@ void ABAG::compute_commands()
 } 
 
 // - private method
+void ABAG::compute_error()
+{
+    //TODO
+}
+
+// - private method
 void ABAG::compute_bias()
 {
     //TODO
@@ -74,45 +80,67 @@ void ABAG::reset_state()
 // Set all state values to 0 - public method
 void ABAG::reset_state(const int dimension)
 {
+    assert(("Not valid dimension number", dimension >= 0));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
     //TODO
 }
 
 /*
     Getters
 */
-// Get command values for all dimensions - public method
+// Get command signal values for all dimensions - public method
 Eigen::VectorXd ABAG::get_command()
 {
     return signal.command_;
 }
 
-// Get command value for specific dimension - public method
+// Get command signal value for specific dimension - public method
 double ABAG::get_command(const int dimension)
 {
+    assert(("Not valid dimension number", dimension >= 0));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
     return signal.command_(dimension);
 }
 
-// Get bias values for all dimensions - public method
+// Get error signal values for all dimensions - public method
+Eigen::VectorXd ABAG::get_error()
+{
+    return signal.error_;
+}
+
+// Get error signal value for specific dimension - public method
+double ABAG::get_error(const int dimension)
+{
+    assert(("Not valid dimension number", dimension >= 0));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
+    return signal.error_(dimension);
+}
+
+// Get bias signal values for all dimensions - public method
 Eigen::VectorXd ABAG::get_bias()
 {
     return signal.bias_;
 }
 
-// Get bias value for specific dimension - public method
+// Get bias signal value for specific dimension - public method
 double ABAG::get_bias(const int dimension)
 {
+    assert(("Not valid dimension number", dimension >= 0));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
     return signal.bias_(dimension);
 }
 
-// Get gain values for all dimensions - public method
+// Get gain signal values for all dimensions - public method
 Eigen::VectorXd ABAG::get_gain()
 {
     return signal.gain_;
 }
 
-// Get gain value for specific dimension - public method
+// Get gain signal value for specific dimension - public method
 double ABAG::get_gain(const int dimension)
 {
+    assert(("Not valid dimension number", dimension >= 0));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
     return signal.gain_(dimension);
 }
 
@@ -122,35 +150,52 @@ double ABAG::get_gain(const int dimension)
 // Set bias parameter for all dimensions - public method
 void ABAG::set_low_pass_parameter(const Eigen::VectorXd low_pass)
 {
+    assert(("Not valid dimension number", low_pass.rows() > 0));
+    assert(("Not valid dimension number", low_pass.rows() <= DIMENSIONS_));
+
     parameter.low_pass_ = low_pass;
 }
 
 // Set bias parameter for specific dimension - public method
 void ABAG::set_low_pass_parameter(const double low_pass, const int dimension)
 {
+    assert(("Not valid dimension number", dimension >= 0));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
     parameter.low_pass_(dimension) = low_pass;
 }
 
 // Set bias parameter for all dimensions - public method
 void ABAG::set_bias_parameter(const Eigen::VectorXd bias)
 {
+    assert(("Not valid dimension number", bias.rows() > 0));
+    assert(("Not valid dimension number", bias.rows() <= DIMENSIONS_));
+
     parameter.bias_ = bias;
 }
 
 // Set bias parameter for specific dimension - public method
 void ABAG::set_bias_parameter(double bias, const int dimension)
 {
+    assert(("Not valid dimension number", dimension >= 0));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
+
     parameter.bias_(dimension) = bias;
 }
 
 // Set gain parameter for all dimensions - public method
 void ABAG::set_gain_parameter(const Eigen::VectorXd gain)
 {
+    assert(("Not valid dimension number", gain.rows() > 0));
+    assert(("Not valid dimension number", gain.rows() <= DIMENSIONS_));
+
     parameter.gain_ = gain;
 }
 
 // Set gain parameter for specific dimension - public method
 void ABAG::set_gain_parameter(double gain, const int dimension)
 {
+    assert(("Not valid dimension number", dimension >= 0));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
+
     parameter.gain_(dimension) = gain;
 }
