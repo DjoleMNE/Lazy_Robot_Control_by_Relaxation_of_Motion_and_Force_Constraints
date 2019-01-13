@@ -29,6 +29,7 @@ SOFTWARE.
 #include <state_specification.hpp>
 #include <model_prediction.hpp>
 #include <safety_controller.hpp>
+#include <abag.hpp>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -80,6 +81,7 @@ class dynamics_controller
     
     KDL::Solver_Vereshchagin hd_solver_;
     safety_controller safety_control_;
+    ABAG abag_;
     model_prediction predictor_;
 
     state_specification robot_state_;

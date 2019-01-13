@@ -26,9 +26,11 @@ SOFTWARE.
 #include <abag.hpp>
 
 ABAG::ABAG(const int num_of_dimensions):
-    DIMENSIONS_(num_of_dimensions)
+    DIMENSIONS_(num_of_dimensions),
+    signal(num_of_dimensions), 
+    gain(num_of_dimensions)
 {
-    assert(("Controller not initialized properly", DIMENSIONS_ == 0));
+    assert(("ABAG Controller not initialized properly", DIMENSIONS_ > 0));
 }
 
 // Set all state values to 0 - public method
@@ -38,61 +40,61 @@ void ABAG::reset_state()
 }
 
 // Set all state values to 0 - public method
-void ABAG::reset_state(int dimension)
+void ABAG::reset_state(const int dimension)
 {
     //TODO
 }
 
 // Get command values for all dimensions - public method
-int ABAG::get_command()
+Eigen::VectorXd ABAG::get_command()
 {
-    //TODO
+    return signal.command_;
 }
 
 // Get command value for specific dimension - public method
-int ABAG::get_command(int dimension)
+double ABAG::get_command(const int dimension)
 {
-    //TODO
+    return signal.command_(dimension);
 }
 
 // Get bias values for all dimensions - public method
-int ABAG::get_bias()
+Eigen::VectorXd ABAG::get_bias()
 {
-    //TODO
+    return signal.bias_;
 }
 
 // Get bias value for specific dimension - public method
-int ABAG::get_bias(int dimension)
+double ABAG::get_bias(const int dimension)
 {
-    //TODO
+    return signal.bias_(dimension);
 }
 
 // Get gain values for all dimensions - public method
-int ABAG::get_gain()
+Eigen::VectorXd ABAG::get_gain()
 {
-    //TODO
+    return signal.gain_;
 }
 
 // Get gain value for specific dimension - public method
-int ABAG::get_gain(int dimension)
+double ABAG::get_gain(const int dimension)
 {
-    //TODO
+    return signal.gain_(dimension);
 }
 
 // - private method
-int compute_commands()
+void ABAG::compute_commands()
 {
     //TODO
 } 
 
 // - private method
-int compute_bias()
+void ABAG::compute_bias()
 {
     //TODO
 }
 
 // - private method
-int compute_gain()
+void ABAG::compute_gain()
 {
     //TODO
 }

@@ -42,7 +42,7 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     NUMBER_OF_CONSTRAINTS_(6),
     hd_solver_(robot_chain_, robot_driver.get_joint_inertia(),
                 robot_driver.get_root_acceleration(), NUMBER_OF_CONSTRAINTS_),
-    safety_control_(robot_driver, true),
+    safety_control_(robot_driver, true), abag_(NUMBER_OF_CONSTRAINTS_),
     predictor_(robot_chain_),
     robot_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
                     NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_), 
@@ -65,12 +65,14 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
 }
 
 // Set all values of desired state to 0 - public method
-void dynamics_controller::reset_desired_state(){
+void dynamics_controller::reset_desired_state()
+{
     reset_state(desired_state_);
 }
 
 // Set all values of selected state to 0 - Private method
-void dynamics_controller::reset_state(state_specification &state){
+void dynamics_controller::reset_state(state_specification &state)
+{
     desired_state_.reset_values();
 }
 

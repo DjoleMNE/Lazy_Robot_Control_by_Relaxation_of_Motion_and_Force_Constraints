@@ -25,7 +25,7 @@ SOFTWARE.
 
 #ifndef ABAG_HPP_
 #define ABAG_HPP_
-#include <state_specification.hpp>
+#include <Eigen/Core>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -41,25 +41,57 @@ class ABAG
     ABAG(const int num_of_dimensions);
     ~ABAG(){};
 
-    int get_command();
-    int get_command(int dimension);
-    int get_bias();
-    int get_bias(int dimension);
-    int get_gain();
-    int get_gain(int dimension);
+    Eigen::VectorXd get_command();
+    double get_command(const int dimension);
+
+    Eigen::VectorXd get_bias();
+    double get_bias(const int dimension);
+
+    Eigen::VectorXd get_gain();
+    double get_gain(const int dimension);
 
     void reset_state();
-    void reset_state(int dimension);
+    void reset_state(const int dimension);
 
   private:
     const int DIMENSIONS_;
+
+    struct abag_signal 
+    {
+        abag_signal(const int num_of_dimensions):
+            command_(num_of_dimensions),
+            bias_(num_of_dimensions),
+            gain_(num_of_dimensions),
+            error_(num_of_dimensions) {
+        }
+        ~abag_signal(){};
+        
+        Eigen::VectorXd command_;
+        Eigen::VectorXd bias_;
+        Eigen::VectorXd gain_;
+        Eigen::VectorXd error_;
+    } signal;
+
+    struct abag_gain
+    {
+        abag_gain(const int num_of_dimensions):
+            low_pass_(num_of_dimensions, num_of_dimensions),
+            bias_(num_of_dimensions, num_of_dimensions),
+            gain_(num_of_dimensions, num_of_dimensions) {
+        }
+        ~abag_gain(){};
+
+        Eigen::MatrixXd low_pass_;
+        Eigen::MatrixXd bias_;
+        Eigen::MatrixXd gain_;
+    } gain;
 
     std::chrono::steady_clock::time_point loop_start_time_;
     std::chrono::steady_clock::time_point loop_end_time_;
     std::chrono::duration <double, std::micro> loop_interval_{};
 
-    int compute_commands();
-    int compute_bias();
-    int compute_gain();
+    void compute_commands();
+    void compute_bias();
+    void compute_gain();
 };
 #endif /* ABAG_HPP_*/
