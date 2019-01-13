@@ -35,23 +35,22 @@ ABAG::ABAG(const int num_of_dimensions):
 }
 
 // Constructor with the predifined set/s of parameters
-ABAG::ABAG(const int num_of_dimensions, const Eigen::VectorXd low_pass, 
-           const Eigen::VectorXd bias, const Eigen::VectorXd gain):
+ABAG::ABAG(const int num_of_dimensions, const Eigen::VectorXd filtering_factor,
+           const Eigen::VectorXd bias_threshold, const Eigen::VectorXd bias_step, 
+           const Eigen::VectorXd gain_threshold, const Eigen::VectorXd gain_step):
     DIMENSIONS_(num_of_dimensions),
     signal(num_of_dimensions), 
-    parameter(low_pass, bias, gain)
+    parameter(filtering_factor, bias_threshold, 
+              bias_step, gain_threshold, gain_step)
 {
     assert(("ABAG Controller not initialized properly", DIMENSIONS_ > 0));
-    assert(DIMENSIONS_ == parameter.low_pass_.rows());
-    assert(DIMENSIONS_ == parameter.bias_.rows());
-    assert(DIMENSIONS_ == parameter.gain_.rows());
+    assert(DIMENSIONS_ == parameter.filtering_factor_.rows());
+    assert(DIMENSIONS_ == parameter.bias_threshold_.rows());
+    assert(DIMENSIONS_ == parameter.bias_step_.rows());
+    assert(DIMENSIONS_ == parameter.gain_threshold_.rows());
+    assert(DIMENSIONS_ == parameter.gain_step_.rows());
 }
 
-// - private method
-void ABAG::compute_commands()
-{
-    //TODO
-} 
 
 // - private method
 void ABAG::compute_error()
@@ -71,10 +70,19 @@ void ABAG::compute_gain()
     //TODO
 }
 
+// - private method
+void ABAG::compute_commands()
+{
+    //TODO
+} 
+
 // Set all state values to 0 - public method
 void ABAG::reset_state()
 {
-    //TODO
+    signal.command_.setZero();
+    signal.error_.setZero();
+    signal.bias_.setZero();
+    signal.gain_.setZero();
 }
 
 // Set all state values to 0 - public method
@@ -82,7 +90,11 @@ void ABAG::reset_state(const int dimension)
 {
     assert(("Not valid dimension number", dimension >= 0));
     assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
-    //TODO
+
+    signal.command_(dimension) = 0;
+    signal.error_(dimension) = 0;
+    signal.bias_(dimension) = 0;
+    signal.gain_(dimension) = 0;
 }
 
 /*
@@ -99,6 +111,7 @@ double ABAG::get_command(const int dimension)
 {
     assert(("Not valid dimension number", dimension >= 0));
     assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
+    // compute_commands()
     return signal.command_(dimension);
 }
 
@@ -147,55 +160,92 @@ double ABAG::get_gain(const int dimension)
 /*
     Setters
 */
-// Set bias parameter for all dimensions - public method
-void ABAG::set_low_pass_parameter(const Eigen::VectorXd low_pass)
+// Set filtering factor parameter for all dimensions - public method
+void ABAG::set_filtering_factor(const Eigen::VectorXd filtering_factor)
 {
-    assert(("Not valid dimension number", low_pass.rows() > 0));
-    assert(("Not valid dimension number", low_pass.rows() <= DIMENSIONS_));
+    assert(("Not valid dimension number", filtering_factor.rows() > 0));
+    assert(("Not valid dimension number", filtering_factor.rows() <= DIMENSIONS_));
 
-    parameter.low_pass_ = low_pass;
+    parameter.filtering_factor_ = filtering_factor;
 }
 
-// Set bias parameter for specific dimension - public method
-void ABAG::set_low_pass_parameter(const double low_pass, const int dimension)
-{
-    assert(("Not valid dimension number", dimension >= 0));
-    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
-    parameter.low_pass_(dimension) = low_pass;
-}
-
-// Set bias parameter for all dimensions - public method
-void ABAG::set_bias_parameter(const Eigen::VectorXd bias)
-{
-    assert(("Not valid dimension number", bias.rows() > 0));
-    assert(("Not valid dimension number", bias.rows() <= DIMENSIONS_));
-
-    parameter.bias_ = bias;
-}
-
-// Set bias parameter for specific dimension - public method
-void ABAG::set_bias_parameter(double bias, const int dimension)
+// Set filtering factor parameter for specific dimension - public method
+void ABAG::set_filtering_factor(const double filtering_factor, const int dimension)
 {
     assert(("Not valid dimension number", dimension >= 0));
     assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
-
-    parameter.bias_(dimension) = bias;
+    
+    parameter.filtering_factor_(dimension) = filtering_factor;
 }
 
-// Set gain parameter for all dimensions - public method
-void ABAG::set_gain_parameter(const Eigen::VectorXd gain)
+// Set bias threshold parameter for all dimensions - public method
+void ABAG::set_bias_threshold(const Eigen::VectorXd bias_threshold)
 {
-    assert(("Not valid dimension number", gain.rows() > 0));
-    assert(("Not valid dimension number", gain.rows() <= DIMENSIONS_));
+    assert(("Not valid dimension number", bias_threshold.rows() > 0));
+    assert(("Not valid dimension number", bias_threshold.rows() <= DIMENSIONS_));
 
-    parameter.gain_ = gain;
+    parameter.bias_threshold_ = bias_threshold;
 }
 
-// Set gain parameter for specific dimension - public method
-void ABAG::set_gain_parameter(double gain, const int dimension)
+// Set bias threshold parameter for specific dimension - public method
+void ABAG::set_bias_threshold(double bias_threshold, const int dimension)
 {
     assert(("Not valid dimension number", dimension >= 0));
     assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
 
-    parameter.gain_(dimension) = gain;
+    parameter.bias_threshold_(dimension) = bias_threshold;
+}
+
+// Set bias step parameter for all dimensions - public method
+void ABAG::set_bias_step(const Eigen::VectorXd bias_step)
+{
+    assert(("Not valid dimension number", bias_step.rows() > 0));
+    assert(("Not valid dimension number", bias_step.rows() <= DIMENSIONS_));
+
+    parameter.bias_step_ = bias_step;
+}
+
+// Set bias step parameter for specific dimension - public method
+void ABAG::set_bias_step(double bias_step, const int dimension)
+{
+    assert(("Not valid dimension number", dimension >= 0));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
+
+    parameter.bias_step_(dimension) = bias_step;
+}
+
+// Set gain threshold parameter for all dimensions - public method
+void ABAG::set_gain_threshold(const Eigen::VectorXd gain_threshold)
+{
+    assert(("Not valid dimension number", gain_threshold.rows() > 0));
+    assert(("Not valid dimension number", gain_threshold.rows() <= DIMENSIONS_));
+
+    parameter.gain_threshold_ = gain_threshold;
+}
+
+// Set gain threshold parameter for specific dimension - public method
+void ABAG::set_gain_threshold(double gain_threshold, const int dimension)
+{
+    assert(("Not valid dimension number", dimension >= 0));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
+
+    parameter.gain_threshold_(dimension) = gain_threshold;
+}
+
+// Set gain step parameter for all dimensions - public method
+void ABAG::set_gain_step(const Eigen::VectorXd gain_step)
+{
+    assert(("Not valid dimension number", gain_step.rows() > 0));
+    assert(("Not valid dimension number", gain_step.rows() <= DIMENSIONS_));
+
+    parameter.gain_step_ = gain_step;
+}
+
+// Set gain step parameter for specific dimension - public method
+void ABAG::set_gain_step(double gain_step, const int dimension)
+{
+    assert(("Not valid dimension number", dimension >= 0));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
+
+    parameter.gain_step_(dimension) = gain_step;
 }

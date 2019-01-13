@@ -39,8 +39,9 @@ class ABAG
 {
   public:
     ABAG(const int num_of_dimensions);
-    ABAG(const int num_of_dimensions, const Eigen::VectorXd low_pass, 
-         const Eigen::VectorXd bias, const Eigen::VectorXd gain);
+    ABAG(const int num_of_dimensions, const Eigen::VectorXd filtering_factor,
+         const Eigen::VectorXd bias_threshold, const Eigen::VectorXd bias_step, 
+         const Eigen::VectorXd gain_threshold, const Eigen::VectorXd gain_step);
     ~ABAG(){};
 
     Eigen::VectorXd get_command();
@@ -55,14 +56,20 @@ class ABAG
     Eigen::VectorXd get_gain();
     double get_gain(const int dimension);
 
-    void set_bias_parameter(double bias, const int dimension);
-    void set_bias_parameter(const Eigen::VectorXd bias);
+    void set_filtering_factor(const double filtering_factor , const int dimension);
+    void set_filtering_factor(const Eigen::VectorXd filtering_factor);
+    
+    void set_bias_threshold(double bias_step, const int dimension);
+    void set_bias_threshold(const Eigen::VectorXd bias_step);
 
-    void set_low_pass_parameter(const double low_pass, const int dimension);
-    void set_low_pass_parameter(const Eigen::VectorXd low_pass);
+    void set_bias_step(double bias_step, const int dimension);
+    void set_bias_step(const Eigen::VectorXd bias_step);
 
-    void set_gain_parameter(const Eigen::VectorXd gain);
-    void set_gain_parameter(double gain, const int dimension);
+    void set_gain_threshold(const Eigen::VectorXd gain_step);
+    void set_gain_threshold(double gain_step, const int dimension);
+
+    void set_gain_step(const Eigen::VectorXd gain_step);
+    void set_gain_step(double gain_step, const int dimension);
 
     void reset_state();
     void reset_state(const int dimension);
@@ -75,39 +82,47 @@ class ABAG
         abag_signal(const int num_of_dimensions) 
         {
             command_ = Eigen::VectorXd::Zero(num_of_dimensions);
+            error_ = Eigen::VectorXd::Zero(num_of_dimensions);
             bias_ = Eigen::VectorXd::Zero(num_of_dimensions);
             gain_ = Eigen::VectorXd::Zero(num_of_dimensions);
-            error_ = Eigen::VectorXd::Zero(num_of_dimensions);
         }
         ~abag_signal(){};
-        
+
         Eigen::VectorXd command_;
+        Eigen::VectorXd error_;
         Eigen::VectorXd bias_;
         Eigen::VectorXd gain_;
-        Eigen::VectorXd error_;
     } signal;
 
     struct abag_parameter
     {
         abag_parameter(const int num_of_dimensions)
         {
-            low_pass_ = Eigen::VectorXd::Zero(num_of_dimensions);
-            bias_ = Eigen::VectorXd::Zero(num_of_dimensions);
-            gain_ = Eigen::VectorXd::Zero(num_of_dimensions);
+            filtering_factor_ = Eigen::VectorXd::Zero(num_of_dimensions);
+            bias_threshold_ = Eigen::VectorXd::Zero(num_of_dimensions);
+            bias_step_ = Eigen::VectorXd::Zero(num_of_dimensions);
+            gain_threshold_ = Eigen::VectorXd::Zero(num_of_dimensions);
+            gain_step_ = Eigen::VectorXd::Zero(num_of_dimensions);
         }
-        
-        abag_parameter(const Eigen::VectorXd low_pass, 
-                       const Eigen::VectorXd bias, 
-                       const Eigen::VectorXd gain):
-            low_pass_(low_pass),
-            bias_(bias),
-            gain_(gain){};
+
+        abag_parameter(const Eigen::VectorXd filtering_factor, 
+                       const Eigen::VectorXd bias_threshold, 
+                       const Eigen::VectorXd bias_step,
+                       const Eigen::VectorXd gain_threshold, 
+                       const Eigen::VectorXd gain_step):
+            filtering_factor_(filtering_factor),
+            bias_threshold_(bias_threshold),
+            bias_step_(bias_step),
+            gain_threshold_(gain_threshold),
+            gain_step_(gain_step){};
 
         ~abag_parameter(){};
 
-        Eigen::VectorXd low_pass_;
-        Eigen::VectorXd bias_;
-        Eigen::VectorXd gain_;
+        Eigen::VectorXd filtering_factor_;
+        Eigen::VectorXd bias_threshold_;
+        Eigen::VectorXd bias_step_;
+        Eigen::VectorXd gain_threshold_;
+        Eigen::VectorXd gain_step_;
     } parameter;
 
     void compute_commands();
