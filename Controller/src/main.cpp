@@ -139,9 +139,9 @@ int main(int argc, char **argv)
         // return 0;
     }
 
-    // robot_model_ = youbot_model::YB_STORE;
+    robot_model_ = youbot_model::YB_STORE;
     // Extract robot model and if not simulation, establish connection with motor drivers
-    // robot_driver.initialize(robot_model_, environment_);
+    robot_driver.initialize(robot_model_, environment_);
     
     //loop rate in Hz
     int rate_hz = 999;

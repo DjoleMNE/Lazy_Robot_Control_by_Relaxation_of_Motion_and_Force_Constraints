@@ -27,16 +27,17 @@ SOFTWARE.
 #include "youbot_mediator.hpp"
 
 youbot_mediator::youbot_mediator(): 
-                is_initialized(false), add_offsets_(false), parser_result_(0), 
-                youbot_model_(youbot_model::URDF),
-                youbot_environment_(youbot_environment::SIMULATION),
-                linear_root_acc_(youbot_constants::root_acceleration[0],
-                                 youbot_constants::root_acceleration[1],
-                                 youbot_constants::root_acceleration[2]),
-                angular_root_acc_(youbot_constants::root_acceleration[3],
-                                  youbot_constants::root_acceleration[4],
-                                  youbot_constants::root_acceleration[5]),
-                root_acc_(linear_root_acc_, angular_root_acc_)
+    is_initialized(false), add_offsets_(false), parser_result_(0), 
+    connection_established_(false), youbot_model_(youbot_model::URDF),
+    youbot_environment_(youbot_environment::SIMULATION),
+    linear_root_acc_(youbot_constants::root_acceleration[0],
+                        youbot_constants::root_acceleration[1],
+                        youbot_constants::root_acceleration[2]),
+    angular_root_acc_(youbot_constants::root_acceleration[3],
+                        youbot_constants::root_acceleration[4],
+                        youbot_constants::root_acceleration[5]),
+    root_acc_(linear_root_acc_, angular_root_acc_), 
+    robot_chain_(), yb_tree_(), yb_urdf_model_()
 {   
     //Resize measurement variables
     q_measured_.resize(youbot_constants::NUMBER_OF_JOINTS);
@@ -72,7 +73,7 @@ void youbot_mediator::get_joint_positions(KDL::JntArray &joint_positions)
         }
     }
 
-    else // Assign to current state whatever was previously passed as command 
+    else // Assign to the current state the previously passed command 
     {
         for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
             joint_positions(i) = q_setpoint_[i].angle.value();
@@ -112,7 +113,7 @@ void youbot_mediator::get_joint_velocities(KDL::JntArray &joint_velocities)
         if (add_offsets_) joint_velocities(4) = -1 * joint_velocities(4);
     }
 
-    else // Assign to current state whatever was previously passed as command 
+    else // Assign to the current state the previously passed command  
     {
         for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
             joint_velocities(i) = qd_setpoint_[i].angularVelocity.value();
@@ -156,7 +157,7 @@ void youbot_mediator::get_joint_torques(KDL::JntArray &joint_torques)
         if (add_offsets_) joint_torques(4) = -1 * joint_torques(4);
     }
 
-    else // Assign to current state whatever was previously passed as command 
+    else // Assign to the current state the previously passed command 
     {
         for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
             joint_torques(i) = tau_setpoint_[i].torque.value();
@@ -269,20 +270,28 @@ void youbot_mediator::initialize(const int robot_model,
 {
     youbot_model_ = robot_model;
     youbot_environment_ = robot_environment;
+    robot_chain_ = KDL::Chain();
+    
+    // Reset Flags
+    is_initialized = false;
     add_offsets_ = false;
     parser_result_ = 0;
 
-    if(youbot_model_ == youbot_model::YB_STORE){
+    if(youbot_model_ == youbot_model::YB_STORE)
+    {
         //Extract model from custom file 
         youbot_custom_model yb_store_model(robot_chain_);
+        
         // Add offsets to match real robot and the youBot store model
         if(youbot_environment_ != youbot_environment::SIMULATION) 
             add_offsets_ = true;
     }
+    
     //Extract youBot model from the URDF file
     else parser_result_ = get_model_from_urdf();
     
-    if (youbot_environment_ != youbot_environment::SIMULATION)
+    if (youbot_environment_ != youbot_environment::SIMULATION \
+        && !connection_established_)
     {
         this->youbot_arm_ = \
             std::make_shared<youbot::YouBotManipulator>("youbot-manipulator", 
@@ -291,11 +300,11 @@ void youbot_mediator::initialize(const int robot_model,
         youbot_arm_->doJointCommutation();
         // Calibrate youBot arm
         youbot_arm_->calibrateManipulator();
+        connection_established_ = true;
     }
     
     if(parser_result_ != 0){
         std::cout << "Cannot create the youBot model!" << std::endl;
-        is_initialized = false;
     } else{
         is_initialized = true;
 	    std::cout << "youBot initialized successfully! " << std::endl;

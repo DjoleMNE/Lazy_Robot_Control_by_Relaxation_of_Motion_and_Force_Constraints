@@ -94,12 +94,14 @@ class youbot_mediator
         	Else: set the original values
     	*/ // Custom (youBot Store) model's home state is not folded - it is candle
 		bool add_offsets_;
+		bool connection_established_;
 
 		// Handles for the youbot manipulator and kdl urdf parsel
 	    std::shared_ptr<youbot::YouBotManipulator> youbot_arm_;
 		KDL::Tree yb_tree_;
     	urdf::Model yb_urdf_model_;
 		KDL::Chain robot_chain_;
+		
 
 		//Arm's root acceleration
 		const KDL::Vector linear_root_acc_;
