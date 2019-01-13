@@ -71,7 +71,7 @@ class dynamics_controller
 
     std::chrono::steady_clock::time_point loop_start_time_;
     std::chrono::steady_clock::time_point loop_end_time_;
-    std::chrono::duration <double, std::micro> loop_interval_;
+    std::chrono::duration <double, std::micro> loop_interval_{};
 
     const KDL::Chain robot_chain_;
     const int NUMBER_OF_JOINTS_;

@@ -25,16 +25,15 @@ SOFTWARE.
 #include <model_prediction.hpp>
 
 model_prediction::model_prediction(const KDL::Chain &robot_chain): 
-    robot_chain_(robot_chain),
-    NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
-    NUMBER_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
-    NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
+    NUMBER_OF_JOINTS_(robot_chain.getNrOfJoints()),
+    NUMBER_OF_SEGMENTS_(robot_chain.getNrOfSegments()),
+    NUMBER_OF_FRAMES_(robot_chain.getNrOfSegments() + 1),
     NUMBER_OF_CONSTRAINTS_(6),
     temp_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
                 NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
-    fk_position_solver_(robot_chain_), 
-    fk_velocity_solver_(robot_chain_),
-    temp_jntarrayvel_(NUMBER_OF_JOINTS_)
+    temp_jntarrayvel_(NUMBER_OF_JOINTS_),
+    fk_position_solver_(robot_chain), 
+    fk_velocity_solver_(robot_chain)
 {
 
 }

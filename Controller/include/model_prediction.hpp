@@ -74,8 +74,6 @@ class model_prediction
 								   const int method,
 								   const double dt);
     private:
-		const KDL::Chain robot_chain_;
-
 		const int NUMBER_OF_JOINTS_;
 		const int NUMBER_OF_SEGMENTS_;
 	    const int NUMBER_OF_FRAMES_;

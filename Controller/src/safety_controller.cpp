@@ -39,10 +39,10 @@ safety_controller::safety_controller(youbot_mediator &robot_driver,
     NUMBER_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
     NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
     NUMBER_OF_CONSTRAINTS_(6),
-    commands_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
-                NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
     PRINT_LOGS_(print_logs),
     zero_joint_velocities_(NUMBER_OF_JOINTS_),
+    commands_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
+                NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
     predicted_states_(3, commands_) 
 {
 
