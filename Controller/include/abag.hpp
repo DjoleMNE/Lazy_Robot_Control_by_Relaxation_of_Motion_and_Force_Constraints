@@ -129,5 +129,11 @@ class ABAG
     void compute_error();
     void compute_bias();
     void compute_gain();
+    Eigen::VectorXd saturate(const Eigen::VectorXd value, 
+                const double min_limit, 
+                const double max_limit);
+    double saturate(const double value, 
+                    const double min_limit, 
+                    const double max_limit);
 };
 #endif /* ABAG_HPP_*/

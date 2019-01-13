@@ -249,3 +249,17 @@ void ABAG::set_gain_step(double gain_step, const int dimension)
 
     parameter.gain_step_(dimension) = gain_step;
 }
+
+Eigen::VectorXd ABAG::saturate(const Eigen::VectorXd value, 
+                               const double min_limit, 
+                               const double max_limit)
+{   
+    return value.cwiseMin(max_limit).cwiseMax(min_limit);
+}
+
+double ABAG::saturate(const double value, 
+                      const double min_limit, 
+                      const double max_limit)
+{
+    return std::max(min_limit, std::min(max_limit, value));
+}
