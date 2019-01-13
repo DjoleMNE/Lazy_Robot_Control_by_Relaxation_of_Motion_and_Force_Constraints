@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5.1)
 project(Controller)
 
 include(CheckCXXCompilerFlag)
@@ -42,6 +42,7 @@ add_executable(main
   src/youbot_mediator.cpp
   src/youbot_custom_model.cpp
   src/safety_controller.cpp
+  src/abag.cpp
   src/dynamics_controller.cpp
 )
 
