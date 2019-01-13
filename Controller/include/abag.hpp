@@ -69,11 +69,13 @@ class ABAG
 
     struct abag_signal 
     {
-        abag_signal(const int num_of_dimensions):
-            command_(num_of_dimensions),
-            bias_(num_of_dimensions),
-            gain_(num_of_dimensions),
-            error_(num_of_dimensions) {};
+        abag_signal(const int num_of_dimensions) 
+        {
+            command_ = Eigen::VectorXd::Zero(num_of_dimensions);
+            bias_ = Eigen::VectorXd::Zero(num_of_dimensions);
+            gain_ = Eigen::VectorXd::Zero(num_of_dimensions);
+            error_ = Eigen::VectorXd::Zero(num_of_dimensions);
+        }
         ~abag_signal(){};
         
         Eigen::VectorXd command_;
@@ -84,10 +86,12 @@ class ABAG
 
     struct abag_parameter
     {
-        abag_parameter(const int num_of_dimensions):
-            low_pass_(num_of_dimensions),
-            bias_(num_of_dimensions),
-            gain_(num_of_dimensions){};
+        abag_parameter(const int num_of_dimensions)
+        {
+            low_pass_ = Eigen::VectorXd::Zero(num_of_dimensions);
+            bias_ = Eigen::VectorXd::Zero(num_of_dimensions);
+            gain_ = Eigen::VectorXd::Zero(num_of_dimensions);
+        }
         
         abag_parameter(const Eigen::VectorXd low_pass, 
                        const Eigen::VectorXd bias, 
