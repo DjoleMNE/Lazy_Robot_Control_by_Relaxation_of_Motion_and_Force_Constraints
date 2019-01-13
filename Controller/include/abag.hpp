@@ -39,6 +39,8 @@ class ABAG
 {
   public:
     ABAG(const int num_of_dimensions);
+    ABAG(const int num_of_dimensions, const Eigen::VectorXd low_pass, 
+         const Eigen::VectorXd bias, const Eigen::VectorXd gain);
     ~ABAG(){};
 
     Eigen::VectorXd get_command();
@@ -49,6 +51,15 @@ class ABAG
 
     Eigen::VectorXd get_gain();
     double get_gain(const int dimension);
+
+    void set_bias_parameter(double bias, const int dimension);
+    void set_bias_parameter(const Eigen::VectorXd bias);
+
+    void set_low_pass_parameter(const double low_pass, const int dimension);
+    void set_low_pass_parameter(const Eigen::VectorXd low_pass);
+
+    void set_gain_parameter(const Eigen::VectorXd gain);
+    void set_gain_parameter(double gain, const int dimension);
 
     void reset_state();
     void reset_state(const int dimension);
@@ -62,8 +73,7 @@ class ABAG
             command_(num_of_dimensions),
             bias_(num_of_dimensions),
             gain_(num_of_dimensions),
-            error_(num_of_dimensions) {
-        }
+            error_(num_of_dimensions) {};
         ~abag_signal(){};
         
         Eigen::VectorXd command_;
@@ -72,23 +82,26 @@ class ABAG
         Eigen::VectorXd error_;
     } signal;
 
-    struct abag_gain
+    struct abag_parameter
     {
-        abag_gain(const int num_of_dimensions):
-            low_pass_(num_of_dimensions, num_of_dimensions),
-            bias_(num_of_dimensions, num_of_dimensions),
-            gain_(num_of_dimensions, num_of_dimensions) {
-        }
-        ~abag_gain(){};
+        abag_parameter(const int num_of_dimensions):
+            low_pass_(num_of_dimensions),
+            bias_(num_of_dimensions),
+            gain_(num_of_dimensions){};
+        
+        abag_parameter(const Eigen::VectorXd low_pass, 
+                       const Eigen::VectorXd bias, 
+                       const Eigen::VectorXd gain):
+            low_pass_(low_pass),
+            bias_(bias),
+            gain_(gain){};
 
-        Eigen::MatrixXd low_pass_;
-        Eigen::MatrixXd bias_;
-        Eigen::MatrixXd gain_;
-    } gain;
+        ~abag_parameter(){};
 
-    std::chrono::steady_clock::time_point loop_start_time_;
-    std::chrono::steady_clock::time_point loop_end_time_;
-    std::chrono::duration <double, std::micro> loop_interval_{};
+        Eigen::VectorXd low_pass_;
+        Eigen::VectorXd bias_;
+        Eigen::VectorXd gain_;
+    } parameter;
 
     void compute_commands();
     void compute_bias();

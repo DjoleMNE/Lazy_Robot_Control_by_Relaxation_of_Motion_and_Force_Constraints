@@ -25,12 +25,44 @@ SOFTWARE.
 
 #include <abag.hpp>
 
+// Constructor without the predifined set/s of parameters
 ABAG::ABAG(const int num_of_dimensions):
     DIMENSIONS_(num_of_dimensions),
     signal(num_of_dimensions), 
-    gain(num_of_dimensions)
+    parameter(num_of_dimensions)
 {
     assert(("ABAG Controller not initialized properly", DIMENSIONS_ > 0));
+}
+
+// Constructor with the predifined set/s of parameters
+ABAG::ABAG(const int num_of_dimensions, const Eigen::VectorXd low_pass, 
+           const Eigen::VectorXd bias, const Eigen::VectorXd gain):
+    DIMENSIONS_(num_of_dimensions),
+    signal(num_of_dimensions), 
+    parameter(low_pass, bias, gain)
+{
+    assert(("ABAG Controller not initialized properly", DIMENSIONS_ > 0));
+    assert(DIMENSIONS_ == parameter.low_pass_.rows());
+    assert(DIMENSIONS_ == parameter.bias_.rows());
+    assert(DIMENSIONS_ == parameter.gain_.rows());
+}
+
+// - private method
+void ABAG::compute_commands()
+{
+    //TODO
+} 
+
+// - private method
+void ABAG::compute_bias()
+{
+    //TODO
+}
+
+// - private method
+void ABAG::compute_gain()
+{
+    //TODO
 }
 
 // Set all state values to 0 - public method
@@ -45,6 +77,9 @@ void ABAG::reset_state(const int dimension)
     //TODO
 }
 
+/*
+    Getters
+*/
 // Get command values for all dimensions - public method
 Eigen::VectorXd ABAG::get_command()
 {
@@ -81,20 +116,41 @@ double ABAG::get_gain(const int dimension)
     return signal.gain_(dimension);
 }
 
-// - private method
-void ABAG::compute_commands()
+/*
+    Setters
+*/
+// Set bias parameter for all dimensions - public method
+void ABAG::set_low_pass_parameter(const Eigen::VectorXd low_pass)
 {
-    //TODO
-} 
-
-// - private method
-void ABAG::compute_bias()
-{
-    //TODO
+    parameter.low_pass_ = low_pass;
 }
 
-// - private method
-void ABAG::compute_gain()
+// Set bias parameter for specific dimension - public method
+void ABAG::set_low_pass_parameter(const double low_pass, const int dimension)
 {
-    //TODO
+    parameter.low_pass_(dimension) = low_pass;
+}
+
+// Set bias parameter for all dimensions - public method
+void ABAG::set_bias_parameter(const Eigen::VectorXd bias)
+{
+    parameter.bias_ = bias;
+}
+
+// Set bias parameter for specific dimension - public method
+void ABAG::set_bias_parameter(double bias, const int dimension)
+{
+    parameter.bias_(dimension) = bias;
+}
+
+// Set gain parameter for all dimensions - public method
+void ABAG::set_gain_parameter(const Eigen::VectorXd gain)
+{
+    parameter.gain_ = gain;
+}
+
+// Set gain parameter for specific dimension - public method
+void ABAG::set_gain_parameter(double gain, const int dimension)
+{
+    parameter.gain_(dimension) = gain;
 }
