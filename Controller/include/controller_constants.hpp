@@ -1,9 +1,6 @@
 /*
 Author(s): Djordje Vukcevic, Sven Schneider
 Institute: Hochschule Bonn-Rhein-Sieg
-Description: Mediator component for enabling conversion of data types.
-Acknowledgment: This sofware component is based on Jeyaprakash Rajagopal's 
-master thesis code.
 
 Copyright (c) [2019]
 
