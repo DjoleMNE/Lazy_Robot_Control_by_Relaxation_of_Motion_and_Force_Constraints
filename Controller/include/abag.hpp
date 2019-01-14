@@ -38,8 +38,9 @@ SOFTWARE.
 class ABAG
 {
   public:
-    ABAG(const int num_of_dimensions);
-    ABAG(const int num_of_dimensions, const Eigen::VectorXd alpha,
+    ABAG(const int num_of_dimensions, const bool use_error_magnitude);
+    ABAG(const int num_of_dimensions, const bool use_error_magnitude,
+         const Eigen::VectorXd alpha,
          const Eigen::VectorXd bias_threshold, const Eigen::VectorXd bias_step, 
          const Eigen::VectorXd gain_threshold, const Eigen::VectorXd gain_step,
          const Eigen::VectorXd min_sat_limit, const Eigen::VectorXd max_sat_limit);
@@ -79,6 +80,7 @@ class ABAG
 
   private:
     const int DIMENSIONS_;
+    const bool USE_ERROR_MAGNITUDE_;
     const Eigen::VectorXd ones_;
     Eigen::VectorXd error_sign_;
     Eigen::VectorXd error_magnitude_;

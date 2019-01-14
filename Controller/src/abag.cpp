@@ -26,8 +26,9 @@ SOFTWARE.
 #include <abag.hpp>
 
 // Constructor without the predifined set/s of parameters
-ABAG::ABAG(const int num_of_dimensions):
+ABAG::ABAG(const int num_of_dimensions, const bool use_error_magnitude):
     DIMENSIONS_(num_of_dimensions), 
+    USE_ERROR_MAGNITUDE_(use_error_magnitude),
     error_sign_(Eigen::VectorXd::Zero(num_of_dimensions)),
     error_magnitude_(Eigen::VectorXd::Zero(num_of_dimensions)), 
     ones_(Eigen::VectorXd::Ones(num_of_dimensions)), 
@@ -37,11 +38,13 @@ ABAG::ABAG(const int num_of_dimensions):
 }
 
 // Constructor with the predifined set/s of parameters
-ABAG::ABAG(const int num_of_dimensions, const Eigen::VectorXd error_alpha,
+ABAG::ABAG(const int num_of_dimensions, const bool use_error_magnitude,
+           const Eigen::VectorXd error_alpha,
            const Eigen::VectorXd bias_threshold, const Eigen::VectorXd bias_step, 
            const Eigen::VectorXd gain_threshold, const Eigen::VectorXd gain_step,
            const Eigen::VectorXd min_sat_limit, const Eigen::VectorXd max_sat_limit):
     DIMENSIONS_(num_of_dimensions), 
+    USE_ERROR_MAGNITUDE_(use_error_magnitude),
     error_sign_(Eigen::VectorXd::Zero(num_of_dimensions)),
     error_magnitude_(Eigen::VectorXd::Zero(num_of_dimensions)), 
     ones_(Eigen::VectorXd::Ones(num_of_dimensions)), 
@@ -79,8 +82,9 @@ Eigen::VectorXd ABAG::update_state(const Eigen::VectorXd measured,
 
     // TODO: 
     // Add code for checking area error! See python code.
-    // Add flag for chosing between erro sign and magnitude in the first equation
+    if(USE_ERROR_MAGNITUDE_) error_magnitude_ = measured - desired;
     error_sign_ = (measured - desired).cwiseSign();
+
     update_error();
     std::cout << "Error: \n" << signal.error_.transpose() << std::endl;
     update_bias();
@@ -101,7 +105,7 @@ void ABAG::update_error()
         However, for the command signal, the error sign is consistent.
     */
     signal.error_ = parameter.ERROR_ALPHA.cwiseProduct( signal.error_ ) + \
-                    (ones_ - parameter.ERROR_ALPHA).cwiseProduct( error_sign_ );
+                    (ones_ - parameter.ERROR_ALPHA).cwiseProduct( USE_ERROR_MAGNITUDE_? error_magnitude_ : error_sign_ );
 }
 
 // - private method
