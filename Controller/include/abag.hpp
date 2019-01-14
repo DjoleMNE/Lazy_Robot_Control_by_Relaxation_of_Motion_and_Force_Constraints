@@ -59,8 +59,8 @@ class ABAG
     Eigen::VectorXd get_gain();
     double get_gain(const int dimension);
 
-    void set_alpha(const Eigen::VectorXd alpha);
-    void set_alpha(const double alpha , const int dimension);
+    void set_error_alpha(const Eigen::VectorXd alpha);
+    void set_error_alpha(const double alpha , const int dimension);
     
     void set_bias_threshold(const Eigen::VectorXd bias_step);
     void set_bias_threshold(double bias_step, const int dimension);
@@ -109,7 +109,7 @@ class ABAG
             GAIN_THRESHOLD(Eigen::VectorXd::Zero(num_of_dimensions)),
             GAIN_STEP(Eigen::VectorXd::Zero(num_of_dimensions)),
             MIN_SAT_LIMIT(Eigen::VectorXd::Zero(num_of_dimensions)),
-            MAX_SAT_LIMIT(Eigen::VectorXd::Zero(num_of_dimensions)) {};
+            MAX_SAT_LIMIT(Eigen::VectorXd::Ones(num_of_dimensions)) {};
 
         abag_parameter(const Eigen::VectorXd alpha, 
                        const Eigen::VectorXd bias_threshold, 

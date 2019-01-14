@@ -2,7 +2,7 @@
 Author(s): Djordje Vukcevic, Sven Schneider
 Institute: Hochschule Bonn-Rhein-Sieg
 
-Copyright (c) [2018]
+Copyright (c) [2019]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,7 @@ SOFTWARE.
 #include <model_prediction.hpp>
 #include <safety_controller.hpp>
 #include <abag.hpp>
+#include <controller_constants.hpp>
 #include <iostream>
 #include <sstream>
 #include <fstream>

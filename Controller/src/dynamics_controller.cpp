@@ -2,7 +2,7 @@
 Author(s): Djordje Vukcevic, Sven Schneider
 Institute: Hochschule Bonn-Rhein-Sieg
 
-Copyright (c) [2018]
+Copyright (c) [2019]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -39,11 +39,11 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
     NUMBER_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
     NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
-    NUMBER_OF_CONSTRAINTS_(6),
+    NUMBER_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
     hd_solver_(robot_chain_, robot_driver.get_joint_inertia(),
                 robot_driver.get_root_acceleration(), NUMBER_OF_CONSTRAINTS_),
     safety_control_(robot_driver, true), 
-    abag_(NUMBER_OF_CONSTRAINTS_),
+    abag_(abag_parameter::DIMENSIONS),
     predictor_(robot_chain_),
     robot_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
                     NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_), 
@@ -64,18 +64,18 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     desired_control_mode_.interface = control_mode::STOP_MOTION;
     desired_control_mode_.is_safe = false;
 
-    // Setting paratemeters of the ABAG Controller
-    abag_.set_alpha(Eigen::VectorXd::Constant(NUMBER_OF_CONSTRAINTS_, 0.75));    
-    abag_.set_bias_threshold(Eigen::VectorXd::Constant(NUMBER_OF_CONSTRAINTS_, 0.75));
-    abag_.set_bias_step(Eigen::VectorXd::Constant(NUMBER_OF_CONSTRAINTS_, 0.000976));
-    abag_.set_gain_threshold(Eigen::VectorXd::Constant(NUMBER_OF_CONSTRAINTS_, 0.5));
-    abag_.set_gain_step(Eigen::VectorXd::Constant(NUMBER_OF_CONSTRAINTS_, 0.001953));
+    // Setting parameters of the ABAG Controller
+    abag_.set_error_alpha(abag_parameter::ERROR_ALPHA);    
+    abag_.set_bias_threshold(abag_parameter::BIAS_THRESHOLD);
+    abag_.set_bias_step(abag_parameter::BIAS_STEP);
+    abag_.set_gain_threshold(abag_parameter::GAIN_THRESHOLD);
+    abag_.set_gain_step(abag_parameter::GAIN_STEP);
     
-    Eigen::VectorXd v1(NUMBER_OF_CONSTRAINTS_);
-    v1 = Eigen::VectorXd::Constant(NUMBER_OF_CONSTRAINTS_, 1.0 / 0.10);
+    Eigen::VectorXd v1(abag_parameter::DIMENSIONS);
+    v1 = Eigen::VectorXd::Constant(abag_parameter::DIMENSIONS, 1.0 / 0.10);
     
-    Eigen::VectorXd v2(NUMBER_OF_CONSTRAINTS_);
-    v2 = Eigen::VectorXd::Constant(NUMBER_OF_CONSTRAINTS_, 1.0 / 50.0);
+    Eigen::VectorXd v2(abag_parameter::DIMENSIONS);
+    v2 = Eigen::VectorXd::Constant(abag_parameter::DIMENSIONS, 1.0 / 50.0);
     
     std::cout << "Command: \n" << abag_.update_state(v1, v2).transpose() << std::endl;
 }

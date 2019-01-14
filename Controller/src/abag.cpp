@@ -221,7 +221,7 @@ double ABAG::get_gain(const int dimension)
     Setters
 */
 // Set filtering factor parameter for all dimensions - public method
-void ABAG::set_alpha(const Eigen::VectorXd error_alpha)
+void ABAG::set_error_alpha(const Eigen::VectorXd error_alpha)
 {
     assert(("Not valid dimension number", error_alpha.rows() > 0));
     assert(("Not valid dimension number", error_alpha.rows() <= DIMENSIONS_));
@@ -232,7 +232,7 @@ void ABAG::set_alpha(const Eigen::VectorXd error_alpha)
 }
 
 // Set filtering factor parameter for specific dimension - public method
-void ABAG::set_alpha(const double error_alpha, const int dimension)
+void ABAG::set_error_alpha(const double error_alpha, const int dimension)
 {
     assert(("Not valid dimension number", dimension >= 0));
     assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1) ));

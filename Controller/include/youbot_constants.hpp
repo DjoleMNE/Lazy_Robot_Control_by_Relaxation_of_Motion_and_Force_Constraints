@@ -31,9 +31,6 @@ SOFTWARE.
 
 #include <stdlib.h> /* abs */
 #include <unistd.h>
-#include <iostream>
-#include <sstream>
-#include <fstream>
 #include <cmath>
 
 #define PI 3.14159265358979323846

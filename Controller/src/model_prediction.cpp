@@ -28,7 +28,7 @@ model_prediction::model_prediction(const KDL::Chain &robot_chain):
     NUMBER_OF_JOINTS_(robot_chain.getNrOfJoints()),
     NUMBER_OF_SEGMENTS_(robot_chain.getNrOfSegments()),
     NUMBER_OF_FRAMES_(robot_chain.getNrOfSegments() + 1),
-    NUMBER_OF_CONSTRAINTS_(6),
+    NUMBER_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
     temp_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
                 NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
     temp_jntarrayvel_(NUMBER_OF_JOINTS_),
