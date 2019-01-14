@@ -37,7 +37,7 @@ ABAG::ABAG(const int num_of_dimensions):
 }
 
 // Constructor with the predifined set/s of parameters
-ABAG::ABAG(const int num_of_dimensions, const Eigen::VectorXd alpha,
+ABAG::ABAG(const int num_of_dimensions, const Eigen::VectorXd error_alpha,
            const Eigen::VectorXd bias_threshold, const Eigen::VectorXd bias_step, 
            const Eigen::VectorXd gain_threshold, const Eigen::VectorXd gain_step,
            const Eigen::VectorXd min_sat_limit, const Eigen::VectorXd max_sat_limit):
@@ -45,15 +45,15 @@ ABAG::ABAG(const int num_of_dimensions, const Eigen::VectorXd alpha,
     error_sign_(Eigen::VectorXd::Zero(num_of_dimensions)),
     error_magnitude_(Eigen::VectorXd::Zero(num_of_dimensions)), 
     ones_(Eigen::VectorXd::Ones(num_of_dimensions)), 
-    signal(num_of_dimensions), parameter(alpha, bias_threshold, bias_step, 
+    signal(num_of_dimensions), parameter(error_alpha, bias_threshold, bias_step, 
                                          gain_threshold, gain_step, 
                                          min_sat_limit, max_sat_limit)
 {
-    // Enforce Constraints
+    // Enforce Parameter Constraints defined in the original paper 
     assert(("ABAG Controller not initialized properly", DIMENSIONS_ > 0));
-    assert(DIMENSIONS_ == parameter.ALPHA.rows());
-    assert(parameter.ALPHA.maxCoeff() < 1.0);
-    assert(parameter.ALPHA.minCoeff() > 0.0);
+    assert(DIMENSIONS_ == parameter.ERROR_ALPHA.rows());
+    assert(parameter.ERROR_ALPHA.maxCoeff() < 1.0);
+    assert(parameter.ERROR_ALPHA.minCoeff() > 0.0);
     assert(DIMENSIONS_ == parameter.BIAS_THRESHOLD.rows());
     assert(parameter.BIAS_THRESHOLD.maxCoeff() < 1.0);
     assert(parameter.BIAS_THRESHOLD.minCoeff() > 0.0);
@@ -100,8 +100,8 @@ void ABAG::update_error()
         implementation. Here, pseudo code from the paper is taken as a reference.
         However, for the command signal, the error sign is consistent.
     */
-    signal.error_ = parameter.ALPHA.cwiseProduct( signal.error_ ) + \
-                    (ones_ - parameter.ALPHA).cwiseProduct( error_sign_ );
+    signal.error_ = parameter.ERROR_ALPHA.cwiseProduct( signal.error_ ) + \
+                    (ones_ - parameter.ERROR_ALPHA).cwiseProduct( error_sign_ );
 }
 
 // - private method
@@ -221,25 +221,25 @@ double ABAG::get_gain(const int dimension)
     Setters
 */
 // Set filtering factor parameter for all dimensions - public method
-void ABAG::set_alpha(const Eigen::VectorXd alpha)
+void ABAG::set_alpha(const Eigen::VectorXd error_alpha)
 {
-    assert(("Not valid dimension number", alpha.rows() > 0));
-    assert(("Not valid dimension number", alpha.rows() <= DIMENSIONS_));
-    assert(alpha.maxCoeff() < 1.0);
-    assert(alpha.minCoeff() > 0.0);
+    assert(("Not valid dimension number", error_alpha.rows() > 0));
+    assert(("Not valid dimension number", error_alpha.rows() <= DIMENSIONS_));
+    assert(error_alpha.maxCoeff() < 1.0);
+    assert(error_alpha.minCoeff() > 0.0);
 
-    parameter.ALPHA = alpha;
+    parameter.ERROR_ALPHA = error_alpha;
 }
 
 // Set filtering factor parameter for specific dimension - public method
-void ABAG::set_alpha(const double alpha, const int dimension)
+void ABAG::set_alpha(const double error_alpha, const int dimension)
 {
     assert(("Not valid dimension number", dimension >= 0));
     assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1) ));
-    assert(alpha < 1.0);
-    assert(alpha > 0.0);
+    assert(error_alpha < 1.0);
+    assert(error_alpha > 0.0);
 
-    parameter.ALPHA(dimension) = alpha;
+    parameter.ERROR_ALPHA(dimension) = error_alpha;
 }
 
 // Set bias threshold parameter for all dimensions - public method

@@ -103,7 +103,7 @@ class ABAG
     struct abag_parameter
     {
         abag_parameter(const int num_of_dimensions): 
-            ALPHA(Eigen::VectorXd::Zero(num_of_dimensions)),
+            ERROR_ALPHA(Eigen::VectorXd::Zero(num_of_dimensions)),
             BIAS_THRESHOLD(Eigen::VectorXd::Zero(num_of_dimensions)),
             BIAS_STEP(Eigen::VectorXd::Zero(num_of_dimensions)),
             GAIN_THRESHOLD(Eigen::VectorXd::Zero(num_of_dimensions)),
@@ -118,7 +118,7 @@ class ABAG
                        const Eigen::VectorXd gain_step,
                        const Eigen::VectorXd min_sat_limit, 
                        const Eigen::VectorXd max_sat_limit):
-            ALPHA(alpha),
+            ERROR_ALPHA(alpha),
             BIAS_THRESHOLD(bias_threshold),
             BIAS_STEP(bias_step),
             GAIN_THRESHOLD(gain_threshold),
@@ -128,7 +128,7 @@ class ABAG
 
         ~abag_parameter(){};
 
-        Eigen::VectorXd ALPHA;
+        Eigen::VectorXd ERROR_ALPHA;
         Eigen::VectorXd BIAS_THRESHOLD;
         Eigen::VectorXd BIAS_STEP;
         Eigen::VectorXd GAIN_THRESHOLD;
