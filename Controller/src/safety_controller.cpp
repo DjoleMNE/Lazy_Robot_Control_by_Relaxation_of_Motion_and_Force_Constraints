@@ -67,12 +67,11 @@ int safety_controller::set_control_commands(const state_specification &current_s
         return control_mode::STOP_MOTION;
 
     /*
-        Make predictions - Integrate joint accelerations to velocities and positions
+        Integrate joint accelerations to velocities and positions
         I.e. generate initial commands and predict where the robot will end-up
         in next two steps, if the computed commands have been applied.
     */
-    predictor_.integrate_joint_space(current_state, predicted_states_, dt_sec, 
-                                     2, prediction_method, false, false);
+    make_predictions(current_state, dt_sec, prediction_method);
 
     // Write computed torques, predicted velocities & positions in command state
     generate_commands(current_state);
@@ -328,6 +327,19 @@ void safety_controller::get_current_state(state_specification &current_state)
 {
     robot_driver_.get_joint_positions(current_state.q);
     robot_driver_.get_joint_velocities(current_state.qd);
+}
+
+/*
+    Integrate joint accelerations to velocities and positions
+    I.e. generate initial commands and predict where the robot will end-up
+    in next two steps, if the computed commands have been applied.
+*/
+void safety_controller::make_predictions(const state_specification &current_state,
+                                         const double dt_sec, 
+                                         const int prediction_method)
+{
+    predictor_.integrate_joint_space(current_state, predicted_states_, 
+                                     dt_sec, 2, prediction_method, false, false);
 }
 
 bool safety_controller::reduce_velocities()

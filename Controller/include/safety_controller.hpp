@@ -101,6 +101,9 @@ class safety_controller
     int check_velocities();
     int check_positions();
 
+    void make_predictions(const state_specification &current_state,
+                          const double dt_sec, const int prediction_method);
+
     //Not implemented currently
     bool reduce_velocities();
 };

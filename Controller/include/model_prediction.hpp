@@ -51,7 +51,7 @@ class model_prediction
 							const state_specification &current_state,
 							std::vector<state_specification> &predicted_states,
 							const double step_size,	const int number_of_steps,
-							const int method, const bool fk_requested,
+							const int method, const bool fk_required,
                             const bool recompute_acceleration);
 
 		// Used for predicting future deviation from the goal state

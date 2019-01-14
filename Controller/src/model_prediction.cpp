@@ -43,7 +43,7 @@ void model_prediction::integrate_joint_space(
                             const state_specification &current_state,
                             std::vector<state_specification> &predicted_states,
                             const double step_size, const int number_of_steps, 
-                            const int method, const bool fk_requested,
+                            const int method, const bool fk_required,
                             const bool recompute_acceleration)
 {
     assert(("Number of steps higher than the size of provided vector of states", 
@@ -92,7 +92,7 @@ void model_prediction::integrate_joint_space(
         std::cout << std::endl;
     #endif
 
-    if(fk_requested) compute_FK(predicted_states[number_of_steps - 1]);
+    if(fk_required) compute_FK(predicted_states[number_of_steps - 1]);
 }
 
 // Used for predicting future deviation from the goal state
