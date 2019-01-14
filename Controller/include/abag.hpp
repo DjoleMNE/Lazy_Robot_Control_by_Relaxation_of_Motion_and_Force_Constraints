@@ -45,8 +45,10 @@ class ABAG
          const Eigen::VectorXd min_sat_limit, const Eigen::VectorXd max_sat_limit);
     ~ABAG(){};
 
-    Eigen::VectorXd update_command(const Eigen::VectorXd measured, 
-                                   const Eigen::VectorXd desired);
+    Eigen::VectorXd update_state(const Eigen::VectorXd measured, 
+                                 const Eigen::VectorXd desired);
+    Eigen::VectorXd get_command();
+    double get_command(const int dimension);
 
     Eigen::VectorXd get_error();
     double get_error(const int dimension);

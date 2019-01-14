@@ -71,8 +71,8 @@ ABAG::ABAG(const int num_of_dimensions, const Eigen::VectorXd alpha,
 }
 
 // Get command signal values for all dimensions - public method
-Eigen::VectorXd ABAG::update_command(const Eigen::VectorXd measured, 
-                                     const Eigen::VectorXd desired)
+Eigen::VectorXd ABAG::update_state(const Eigen::VectorXd measured, 
+                                   const Eigen::VectorXd desired)
 {   
     assert(DIMENSIONS_ == measured.rows());
     assert(DIMENSIONS_ == desired.rows());
@@ -149,7 +149,7 @@ void ABAG::reset_state()
 void ABAG::reset_state(const int dimension)
 {
     assert(("Not valid dimension number", dimension >= 0));
-    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1) ));
 
     signal.command_(dimension) = 0;
     signal.error_(dimension) = 0;
@@ -161,6 +161,20 @@ void ABAG::reset_state(const int dimension)
     Getters
 */
 
+// Get command signal values for all dimensions - public method
+Eigen::VectorXd ABAG::get_command()
+{
+    return signal.command_;
+}
+
+// Get command signal value for specific dimension - public method
+double ABAG::get_command(const int dimension)
+{
+    assert(("Not valid dimension number", dimension >= 0));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1) ));
+    return signal.command_(dimension);
+}
+
 // Get error signal values for all dimensions - public method
 Eigen::VectorXd ABAG::get_error()
 {
@@ -171,7 +185,7 @@ Eigen::VectorXd ABAG::get_error()
 double ABAG::get_error(const int dimension)
 {
     assert(("Not valid dimension number", dimension >= 0));
-    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1) ));
     return signal.error_(dimension);
 }
 
@@ -185,7 +199,7 @@ Eigen::VectorXd ABAG::get_bias()
 double ABAG::get_bias(const int dimension)
 {
     assert(("Not valid dimension number", dimension >= 0));
-    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1) ));
     return signal.bias_(dimension);
 }
 
@@ -199,7 +213,7 @@ Eigen::VectorXd ABAG::get_gain()
 double ABAG::get_gain(const int dimension)
 {
     assert(("Not valid dimension number", dimension >= 0));
-    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1) ));
     return signal.gain_(dimension);
 }
 
@@ -221,7 +235,7 @@ void ABAG::set_alpha(const Eigen::VectorXd alpha)
 void ABAG::set_alpha(const double alpha, const int dimension)
 {
     assert(("Not valid dimension number", dimension >= 0));
-    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1) ));
     assert(alpha < 1.0);
     assert(alpha > 0.0);
 
@@ -243,7 +257,7 @@ void ABAG::set_bias_threshold(const Eigen::VectorXd bias_threshold)
 void ABAG::set_bias_threshold(double bias_threshold, const int dimension)
 {
     assert(("Not valid dimension number", dimension >= 0));
-    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1) ));
     assert(bias_threshold < 1.0);
     assert(bias_threshold > 0.0);
 
@@ -265,7 +279,7 @@ void ABAG::set_bias_step(const Eigen::VectorXd bias_step)
 void ABAG::set_bias_step(double bias_step, const int dimension)
 {
     assert(("Not valid dimension number", dimension >= 0));
-    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1) ));
     assert(bias_step < 1.0);
     assert(bias_step > 0.0);
 
@@ -287,7 +301,7 @@ void ABAG::set_gain_threshold(const Eigen::VectorXd gain_threshold)
 void ABAG::set_gain_threshold(double gain_threshold, const int dimension)
 {
     assert(("Not valid dimension number", dimension >= 0));
-    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1) ));
     assert(gain_threshold < 1.0);
     assert(gain_threshold > 0.0);
 
@@ -309,7 +323,7 @@ void ABAG::set_gain_step(const Eigen::VectorXd gain_step)
 void ABAG::set_gain_step(double gain_step, const int dimension)
 {
     assert(("Not valid dimension number", dimension >= 0));
-    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1)));
+    assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1) ));
     assert(gain_step < 1.0);
     assert(gain_step > 0.0);
 

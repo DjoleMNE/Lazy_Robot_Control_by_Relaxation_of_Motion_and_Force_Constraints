@@ -77,7 +77,7 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     Eigen::VectorXd v2(NUMBER_OF_CONSTRAINTS_);
     v2 = Eigen::VectorXd::Constant(NUMBER_OF_CONSTRAINTS_, 1.0 / 50.0);
     
-    std::cout << "Command: \n" << abag_.update_command(v1, v2).transpose() << std::endl;
+    std::cout << "Command: \n" << abag_.update_state(v1, v2).transpose() << std::endl;
 }
 
 // Set all values of desired state to 0 - public method
