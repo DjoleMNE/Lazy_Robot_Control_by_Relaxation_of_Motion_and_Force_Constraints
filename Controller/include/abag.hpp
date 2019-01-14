@@ -39,13 +39,14 @@ class ABAG
 {
   public:
     ABAG(const int num_of_dimensions);
-    ABAG(const int num_of_dimensions, const Eigen::VectorXd filtering_factor,
+    ABAG(const int num_of_dimensions, const Eigen::VectorXd alpha,
          const Eigen::VectorXd bias_threshold, const Eigen::VectorXd bias_step, 
-         const Eigen::VectorXd gain_threshold, const Eigen::VectorXd gain_step);
+         const Eigen::VectorXd gain_threshold, const Eigen::VectorXd gain_step,
+         const Eigen::VectorXd min_sat_limit, const Eigen::VectorXd max_sat_limit);
     ~ABAG(){};
 
-    Eigen::VectorXd get_command();
-    double get_command(const int dimension);
+    Eigen::VectorXd update_command(const Eigen::VectorXd measured, 
+                                   const Eigen::VectorXd desired);
 
     Eigen::VectorXd get_error();
     double get_error(const int dimension);
@@ -56,14 +57,14 @@ class ABAG
     Eigen::VectorXd get_gain();
     double get_gain(const int dimension);
 
-    void set_filtering_factor(const double filtering_factor , const int dimension);
-    void set_filtering_factor(const Eigen::VectorXd filtering_factor);
+    void set_alpha(const Eigen::VectorXd alpha);
+    void set_alpha(const double alpha , const int dimension);
     
-    void set_bias_threshold(double bias_step, const int dimension);
     void set_bias_threshold(const Eigen::VectorXd bias_step);
+    void set_bias_threshold(double bias_step, const int dimension);
 
-    void set_bias_step(double bias_step, const int dimension);
     void set_bias_step(const Eigen::VectorXd bias_step);
+    void set_bias_step(double bias_step, const int dimension);
 
     void set_gain_threshold(const Eigen::VectorXd gain_step);
     void set_gain_threshold(double gain_step, const int dimension);
@@ -76,6 +77,9 @@ class ABAG
 
   private:
     const int DIMENSIONS_;
+    const Eigen::VectorXd ones_;
+    Eigen::VectorXd error_sign_;
+    Eigen::VectorXd error_magnitude_;
 
     struct abag_signal 
     {
@@ -96,44 +100,51 @@ class ABAG
 
     struct abag_parameter
     {
-        abag_parameter(const int num_of_dimensions)
-        {
-            filtering_factor_ = Eigen::VectorXd::Zero(num_of_dimensions);
-            bias_threshold_ = Eigen::VectorXd::Zero(num_of_dimensions);
-            bias_step_ = Eigen::VectorXd::Zero(num_of_dimensions);
-            gain_threshold_ = Eigen::VectorXd::Zero(num_of_dimensions);
-            gain_step_ = Eigen::VectorXd::Zero(num_of_dimensions);
-        }
+        abag_parameter(const int num_of_dimensions): 
+            ALPHA(Eigen::VectorXd::Zero(num_of_dimensions)),
+            BIAS_THRESHOLD(Eigen::VectorXd::Zero(num_of_dimensions)),
+            BIAS_STEP(Eigen::VectorXd::Zero(num_of_dimensions)),
+            GAIN_THRESHOLD(Eigen::VectorXd::Zero(num_of_dimensions)),
+            GAIN_STEP(Eigen::VectorXd::Zero(num_of_dimensions)),
+            MIN_SAT_LIMIT(Eigen::VectorXd::Zero(num_of_dimensions)),
+            MAX_SAT_LIMIT(Eigen::VectorXd::Zero(num_of_dimensions)) {};
 
-        abag_parameter(const Eigen::VectorXd filtering_factor, 
+        abag_parameter(const Eigen::VectorXd alpha, 
                        const Eigen::VectorXd bias_threshold, 
                        const Eigen::VectorXd bias_step,
                        const Eigen::VectorXd gain_threshold, 
-                       const Eigen::VectorXd gain_step):
-            filtering_factor_(filtering_factor),
-            bias_threshold_(bias_threshold),
-            bias_step_(bias_step),
-            gain_threshold_(gain_threshold),
-            gain_step_(gain_step){};
+                       const Eigen::VectorXd gain_step,
+                       const Eigen::VectorXd min_sat_limit, 
+                       const Eigen::VectorXd max_sat_limit):
+            ALPHA(alpha),
+            BIAS_THRESHOLD(bias_threshold),
+            BIAS_STEP(bias_step),
+            GAIN_THRESHOLD(gain_threshold),
+            GAIN_STEP(gain_step),
+            MIN_SAT_LIMIT(min_sat_limit),
+            MAX_SAT_LIMIT(max_sat_limit){};
 
         ~abag_parameter(){};
 
-        Eigen::VectorXd filtering_factor_;
-        Eigen::VectorXd bias_threshold_;
-        Eigen::VectorXd bias_step_;
-        Eigen::VectorXd gain_threshold_;
-        Eigen::VectorXd gain_step_;
+        Eigen::VectorXd ALPHA;
+        Eigen::VectorXd BIAS_THRESHOLD;
+        Eigen::VectorXd BIAS_STEP;
+        Eigen::VectorXd GAIN_THRESHOLD;
+        Eigen::VectorXd GAIN_STEP;
+        Eigen::VectorXd MIN_SAT_LIMIT;
+        Eigen::VectorXd MAX_SAT_LIMIT;
     } parameter;
 
-    void compute_commands();
-    void compute_error();
-    void compute_bias();
-    void compute_gain();
-    Eigen::VectorXd saturate(const Eigen::VectorXd value, 
-                const double min_limit, 
-                const double max_limit);
-    double saturate(const double value, 
-                    const double min_limit, 
-                    const double max_limit);
+    void update_error();
+    void update_bias();
+    void update_gain();
+
+    // User customizable functions
+    Eigen::VectorXd bias_decision_map();
+    Eigen::VectorXd gain_decision_map();
+
+    // Help functions
+    Eigen::VectorXd saturate(const Eigen::VectorXd value);
+    Eigen::VectorXd heaviside(const Eigen::VectorXd value);
 };
 #endif /* ABAG_HPP_*/

@@ -63,6 +63,21 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     // Set default command interface to velocity mode and initialize it as safe
     desired_control_mode_.interface = control_mode::STOP_MOTION;
     desired_control_mode_.is_safe = false;
+
+    // Setting paratemeters of the ABAG Controller
+    abag_.set_alpha(Eigen::VectorXd::Constant(NUMBER_OF_CONSTRAINTS_, 0.75));    
+    abag_.set_bias_threshold(Eigen::VectorXd::Constant(NUMBER_OF_CONSTRAINTS_, 0.75));
+    abag_.set_bias_step(Eigen::VectorXd::Constant(NUMBER_OF_CONSTRAINTS_, 0.000976));
+    abag_.set_gain_threshold(Eigen::VectorXd::Constant(NUMBER_OF_CONSTRAINTS_, 0.5));
+    abag_.set_gain_step(Eigen::VectorXd::Constant(NUMBER_OF_CONSTRAINTS_, 0.001953));
+    
+    Eigen::VectorXd v1(NUMBER_OF_CONSTRAINTS_);
+    v1 = Eigen::VectorXd::Constant(NUMBER_OF_CONSTRAINTS_, 1.0 / 0.10);
+    
+    Eigen::VectorXd v2(NUMBER_OF_CONSTRAINTS_);
+    v2 = Eigen::VectorXd::Constant(NUMBER_OF_CONSTRAINTS_, 1.0 / 50.0);
+    
+    std::cout << "Command: \n" << abag_.update_command(v1, v2).transpose() << std::endl;
 }
 
 // Set all values of desired state to 0 - public method
@@ -346,6 +361,7 @@ void dynamics_controller::stop_robot_motion()
 //Main control loop
 int dynamics_controller::control(const int desired_control_mode)
 {   
+    return 0;
     // Save current selection of desire control mode
     desired_control_mode_.interface = desired_control_mode;
     
