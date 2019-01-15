@@ -38,6 +38,8 @@ const int JOINTS = 5;
 const int NUMBER_OF_CONSTRAINTS = 6;
 const int MILLISECOND = 1000;
 const long SECOND = 1000000;
+int environment_ = youbot_environment::SIMULATION;
+int robot_model_ = youbot_model::URDF;
 
 // Go to Candle 1 configuration  
 void go_candle_1(youbot_mediator &arm){
@@ -45,7 +47,7 @@ void go_candle_1(youbot_mediator &arm){
     double candle[] = {2.1642, 1.13446, -2.54818, 1.78896, 0.12};
     for (int i = 0; i < JOINTS; i++) candle_pose(i) = candle[i];  
     arm.set_joint_positions(candle_pose);
-    usleep(5000 * MILLISECOND);
+    if(environment_ != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
 }
 
 // Go to Candle 2 configuration  
@@ -54,7 +56,7 @@ void go_candle_2(youbot_mediator &arm){
     double candle[] = {2.9496, 1.1344, -2.6354, 1.7890, 2.9234};
     for (int i = 0; i < JOINTS; i++) candle_pose(i) = candle[i];  
     arm.set_joint_positions(candle_pose);
-    usleep(5000 * MILLISECOND);
+    if(environment_ != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
 }
 
 // Go to Candle 3 configuration  
@@ -63,7 +65,7 @@ void go_candle_3(youbot_mediator &arm){
     double candle[] = {2.9496, 1.1344, -2.54818, 1.78896, 2.9234};
     for (int i = 0; i < JOINTS; i++) candle_pose(i) = candle[i];  
     arm.set_joint_positions(candle_pose);
-    usleep(5000 * MILLISECOND);
+    if(environment_ != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
 }
 
 // Go to Folded configuration  
@@ -72,7 +74,7 @@ void go_folded(youbot_mediator &arm){
     double folded[] = {0.02, 0.02, -0.02, 0.023, 0.12};
     for (int i = 0; i < JOINTS; i++) folded_pose(i) = folded[i];  
     arm.set_joint_positions(folded_pose);
-    usleep(5000 * MILLISECOND);
+    if(environment_ != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
 }
 
 void go_folded_2(youbot_mediator &arm){
@@ -80,7 +82,7 @@ void go_folded_2(youbot_mediator &arm){
     double folded[] = {0.02, 0.22, -0.02, 0.223, 0.12};
     for (int i = 0; i < JOINTS; i++) folded_pose(i) = folded[i];  
     arm.set_joint_positions(folded_pose);
-    usleep(5000 * MILLISECOND);
+    if(environment_ != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
 }
 
 // Go to Navigation 1 configuration  
@@ -89,7 +91,7 @@ void go_navigation_1(youbot_mediator &arm){
     double navigation[] = {2.9496, 0.075952, -1.53240, 3.35214, 2.93816};
     for (int i = 0; i < JOINTS; i++) desired_pose(i) = navigation[i];  
     arm.set_joint_positions(desired_pose);
-    usleep(5000 * MILLISECOND);
+    if(environment_ != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
 }
 
 // Go to Navigation 2 configuration  
@@ -98,7 +100,7 @@ void go_navigation_2(youbot_mediator &arm){
     double navigation[] = {2.9496, 1.0, -1.53240, 2.85214, 2.93816};
     for (int i = 0; i < JOINTS; i++) desired_pose(i) = navigation[i];  
     arm.set_joint_positions(desired_pose);
-    usleep(5000 * MILLISECOND);
+    if(environment_ != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
 }
 
 // Go to Navigation 3 configuration  
@@ -107,7 +109,7 @@ void go_navigation_3(youbot_mediator &arm){
     double navigation[] = {1.3796, 1.0, -1.53240, 2.85214, 2.93816};
     for (int i = 0; i < JOINTS; i++) desired_pose(i) = navigation[i];  
     arm.set_joint_positions(desired_pose);
-    usleep(5000 * MILLISECOND);
+    if(environment_ != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
 }
 
 //Set velocities of arm's joints to 0 value
@@ -120,8 +122,8 @@ int main(int argc, char **argv)
 {
     youbot_mediator robot_driver;
 
-    int environment_ = youbot_environment::SIMULATION;
-    int robot_model_ = youbot_model::URDF;
+    environment_ = youbot_environment::SIMULATION;
+    robot_model_ = youbot_model::URDF;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
     robot_driver.initialize(robot_model_, environment_);
