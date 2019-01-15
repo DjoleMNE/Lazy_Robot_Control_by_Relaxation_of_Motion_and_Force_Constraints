@@ -124,28 +124,29 @@ bool safety_controller::is_state_finite(const state_specification &state,
     if (!std::isfinite(state.control_torque(joint))){
         if (PRINT_LOGS_) 
             std::cout << "Computed torque for joint: "<< joint + 1 
-                      <<" is not finite!" << std::endl;
+                      << " is not finite!" << std::endl;
         return false;
     }
     else if (!std::isfinite(state.qdd(joint))){
         if (PRINT_LOGS_) 
             std::cout << "Computed joint "<< joint + 1 
-                      <<" acceleration is not finite!" << std::endl;
+                      << " acceleration is not finite!" << std::endl;
         return false;
     }
     else if (!std::isfinite(state.qd(joint))){
         if (PRINT_LOGS_) 
             std::cout << "Computed joint "<< joint + 1 
-                      <<" velocity is not finite!" << std::endl;
+                      << " velocity is not finite!" << std::endl;
         return false;
     }
     else if (!std::isfinite(state.q(joint))){
         if (PRINT_LOGS_) 
             std::cout << "Computed joint "<< joint + 1
-                      <<" position is not finite!" << std::endl;
+                      << " position is not finite!" << std::endl;
         return false;
     }
-    else return true;
+    
+    return true;
 }
 
 bool safety_controller::torque_limit_reached(const state_specification &state,
@@ -157,7 +158,9 @@ bool safety_controller::torque_limit_reached(const state_specification &state,
             std::cout << "Joint " << joint + 1 
                       << " torque limit reached!" << std::endl;
         return true;        
-    } else return false;
+    }
+    
+    return false;
 }
 
 bool safety_controller::velocity_limit_reached(const state_specification &state,
@@ -169,7 +172,9 @@ bool safety_controller::velocity_limit_reached(const state_specification &state,
             std::cout << "Joint " << joint + 1 
                       << " velocity limit reached!" << std::endl;
         return true;        
-    } else return false;
+    }
+    
+    return false;
 }
 
 bool safety_controller::position_limit_reached(const state_specification &state,
@@ -182,7 +187,9 @@ bool safety_controller::position_limit_reached(const state_specification &state,
             std::cout << "Joint " << joint + 1 
                       << " position limit reached!" << std::endl;
         return true; 
-    } else return false;
+    }
+    
+    return false;
 }
 
 bool safety_controller::reaching_position_limits(const state_specification &state,
@@ -210,7 +217,8 @@ bool safety_controller::reaching_position_limits(const state_specification &stat
             return true;
         }
     } 
-    else return false;
+    
+    return false;
 }
 
 int safety_controller::check_future_state(const int desired_control_mode)
