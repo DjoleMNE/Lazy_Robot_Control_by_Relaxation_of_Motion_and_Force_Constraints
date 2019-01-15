@@ -41,13 +41,21 @@ SOFTWARE.
 #include <cmath>
 #include <stdlib.h>     /* abs */
 
+enum task_interface
+{
+  CART_VELOCITY = 1,
+  CART_ACCELERATION = 2,
+  CART_FORCE = 3,
+  FF_JOINT_TORQUE = 4
+};
+
 class dynamics_controller
 {
   public:
     dynamics_controller(youbot_mediator &robot_driver, const int rate_hz);
     ~dynamics_controller(){};
 
-    int control(const int desired_control_mode);
+    int control(const int desired_control_mode, const int desired_task_interface);
 
     void reset_desired_state();
 

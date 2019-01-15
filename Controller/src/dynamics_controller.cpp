@@ -359,9 +359,9 @@ void dynamics_controller::stop_robot_motion()
 }
 
 //Main control loop
-int dynamics_controller::control(const int desired_control_mode)
+int dynamics_controller::control(const int desired_control_mode, 
+                                 const int desired_task_interface)
 {   
-    // return 0;
     // Save current selection of desire control mode
     desired_control_mode_.interface = desired_control_mode;
     

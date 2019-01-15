@@ -131,15 +131,15 @@ int main(int argc, char **argv)
     if(environment_ != youbot_environment::SIMULATION){
         assert(("Robot is not initialized", robot_driver.is_initialized));
         stop_robot_motion(robot_driver, motion_);
-        // go_navigation_2(robot_driver);
-        go_folded(robot_driver);
+        go_navigation_2(robot_driver);
+        // go_folded(robot_driver);
         // go_candle_3(robot_driver);
         // robot_driver.get_joint_positions(motion_.q);
         // robot_driver.get_joint_velocities(motion_.qd);
         // return 0;
     }
 
-    robot_model_ = youbot_model::YB_STORE;
+    robot_model_ = youbot_model::URDF;
     // Extract robot model and if not simulation, establish connection with motor drivers
     robot_driver.initialize(robot_model_, environment_);
     
@@ -148,9 +148,9 @@ int main(int argc, char **argv)
     dynamics_controller controller(robot_driver, rate_hz);
     
     //Create End_effector Cartesian Acceleration task 
-    controller.define_ee_constraint_task(std::vector<bool>{false, true, true, 
+    controller.define_ee_constraint_task(std::vector<bool>{true, false, true, 
                                                            false, false, false},
-                                         std::vector<double>{1.0, 5.0, 15.0, 
+                                         std::vector<double>{-5.0, -5.0, 15.0, 
                                                              0.0, 0.0, 0.0});
     //Create External Forces task 
     controller.define_ee_external_force_task(std::vector<double>{0.0, 0.0, 0.0, 
@@ -158,8 +158,9 @@ int main(int argc, char **argv)
     //Create Feedforward torques task 
     controller.define_feadforward_torque_task(std::vector<double>{0.0, 0.0, 
                                                                   0.0, 0.0, 
-                                                                  0.0});    
-    controller.control(control_mode::VELOCITY);
+                                                                  0.0}); 
+
+    controller.control(control_mode::VELOCITY, task_interface::CART_VELOCITY);
 
     return 0;
 }
