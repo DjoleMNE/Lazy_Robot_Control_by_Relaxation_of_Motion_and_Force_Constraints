@@ -79,11 +79,18 @@ Eigen::VectorXd ABAG::update_state(const Eigen::VectorXd measured,
 {   
     assert(DIMENSIONS_ == measured.rows());
     assert(DIMENSIONS_ == desired.rows());
-
+    bool reverse_error = true;
+    
     // TODO: 
     // Add code for checking area error! See python code.
-    if(USE_ERROR_MAGNITUDE_) error_magnitude_ = measured - desired;
-    error_sign_ = (measured - desired).cwiseSign();
+    if(reverse_error){
+        error_magnitude_ = desired - measured;
+        error_sign_ = (error_magnitude_).cwiseSign();
+    }
+    else{
+        error_magnitude_ = measured - desired;
+        error_sign_ = (error_magnitude_).cwiseSign();
+    }
 
     update_error();
     std::cout << "Error: \n" << signal.error_.transpose() << std::endl;
@@ -91,7 +98,8 @@ Eigen::VectorXd ABAG::update_state(const Eigen::VectorXd measured,
     std::cout << "Bias: \n" << signal.bias_.transpose() << std::endl;
     update_gain();
     std::cout << "Gain: \n" << signal.gain_.transpose() << std::endl;
-    signal.command_ = saturate(signal.bias_ + signal.gain_.cwiseProduct(error_sign_));
+    signal.command_ = saturate((signal.bias_ + signal.gain_.cwiseProduct(error_sign_)),\
+                               -1 * ones_, ones_);
     return signal.command_;
 }
 
