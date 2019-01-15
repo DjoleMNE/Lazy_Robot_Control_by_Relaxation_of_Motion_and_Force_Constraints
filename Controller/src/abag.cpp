@@ -340,6 +340,14 @@ Eigen::VectorXd ABAG::saturate(const Eigen::VectorXd value)
     return value.cwiseMin(parameter.MAX_SAT_LIMIT).cwiseMax(parameter.MIN_SAT_LIMIT);
 }
 
+Eigen::VectorXd ABAG::saturate(const Eigen::VectorXd value, 
+                               const Eigen::VectorXd MIN_LIMIT, 
+                               const Eigen::VectorXd MAX_LIMIT)
+{   
+    assert(parameter.MAX_SAT_LIMIT.rows() == value.rows());
+    return value.cwiseMin(MAX_LIMIT).cwiseMax(MIN_LIMIT);
+}
+
 Eigen::VectorXd ABAG::heaviside(const Eigen::VectorXd value)
 {   
     return 0.5 * (value.cwiseSign() + ones_);

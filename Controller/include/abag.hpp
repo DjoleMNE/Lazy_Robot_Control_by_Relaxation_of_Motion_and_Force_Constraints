@@ -149,6 +149,10 @@ class ABAG
 
     // Help functions
     Eigen::VectorXd saturate(const Eigen::VectorXd value);
+    Eigen::VectorXd saturate(const Eigen::VectorXd value, 
+                             const Eigen::VectorXd MIN_LIMIT, 
+                             const Eigen::VectorXd MAX_LIMIT);
+
     Eigen::VectorXd heaviside(const Eigen::VectorXd value);
 };
 #endif /* ABAG_HPP_*/
