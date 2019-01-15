@@ -120,7 +120,7 @@ int main(int argc, char **argv)
 {
     youbot_mediator robot_driver;
 
-    int environment_ = youbot_environment::REAL;
+    int environment_ = youbot_environment::SIMULATION;
     int robot_model_ = youbot_model::URDF;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
@@ -136,16 +136,16 @@ int main(int argc, char **argv)
                                 number_of_segments + 1,
                                 NUMBER_OF_CONSTRAINTS);
                                 
-    if(environment_ != youbot_environment::SIMULATION){
-        assert(("Robot is not initialized", robot_driver.is_initialized));
-        stop_robot_motion(robot_driver, motion_);
-        // go_navigation_2(robot_driver);
-        go_folded_2(robot_driver);
-        // go_candle_3(robot_driver);
-        // robot_driver.get_joint_positions(motion_.q);
-        // robot_driver.get_joint_velocities(motion_.qd);
-        // return 0;
-    }
+
+    assert(("Robot is not initialized", robot_driver.is_initialized));
+    stop_robot_motion(robot_driver, motion_);
+    // go_navigation_2(robot_driver);
+    go_folded_2(robot_driver);
+    // go_candle_3(robot_driver);
+    // robot_driver.get_joint_positions(motion_.q);
+    // robot_driver.get_joint_velocities(motion_.qd);
+    // return 0;
+
 
     robot_model_ = youbot_model::URDF;
     // Extract robot model and if not simulation, establish connection with motor drivers

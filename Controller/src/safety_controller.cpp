@@ -201,8 +201,8 @@ bool safety_controller::reaching_position_limits(const state_specification &stat
     {
         if(state.qd(joint) > 0.02)
         {
-            std::cout << "Joint " << joint + 1 << " is too close to the max limit"
-                      << std::endl;
+            std::cout << "Joint " << joint + 1 << " is too close to the max limit "
+                      << state.q(joint) << " " << state.qd(joint) << std::endl;
             return true;
         } 
     } 
@@ -212,12 +212,12 @@ bool safety_controller::reaching_position_limits(const state_specification &stat
     {
         if(state.qd(joint) < -0.02)
         {
-            std::cout << "Joint " << joint + 1 << " is too close to the min limit"
-                      << std::endl;
+            std::cout << "Joint " << joint + 1 << " is too close to the min limit "
+                      << state.q(joint) << " " << state.qd(joint) << std::endl;
             return true;
         }
     } 
-    
+
     return false;
 }
 
@@ -259,7 +259,9 @@ int safety_controller::check_torques()
     }
 
     // Commands are valid. Send them to the robot driver
-    robot_driver_.set_joint_torques(commands_.control_torque);
+    robot_driver_.set_joint_command(commands_.q, commands_.qd,
+                                    commands_.control_torque,
+                                    control_mode::TORQUE);
     return control_mode::TORQUE;
 }
 
@@ -284,7 +286,9 @@ int safety_controller::check_velocities()
     }
 
     // Commands are valid. Send them to the robot driver
-    robot_driver_.set_joint_velocities(commands_.qd);
+    robot_driver_.set_joint_command(commands_.q, commands_.qd,
+                                    commands_.control_torque, 
+                                    control_mode::VELOCITY);
     return control_mode::VELOCITY;
 }
 
@@ -305,8 +309,10 @@ int safety_controller::check_positions()
         }
     }
 
-    //Commands are valid. Send them to the robot driver
-    robot_driver_.set_joint_positions(commands_.q);
+    // Commands are valid. Send them to the robot driver
+    robot_driver_.set_joint_command(commands_.q, commands_.qd,
+                                    commands_.control_torque,
+                                    control_mode::POSITION);
     return control_mode::POSITION;
 }
 
@@ -347,7 +353,7 @@ void safety_controller::make_predictions(const state_specification &current_stat
                                          const int prediction_method)
 {
     predictor_.integrate_joint_space(current_state, predicted_states_, 
-                                     dt_sec, 2, prediction_method, false, false);
+                                     dt_sec, 2, prediction_method, true, false);
 }
 
 bool safety_controller::reduce_velocities()
