@@ -49,10 +49,12 @@ namespace youbot_constants
 
     //Position limit values from URDF file: positive and negative
     const std::vector<double> joint_position_limits_max_2 {5.89921, 2.70526,  0.00000, 3.57792, 5.84685};
-    const std::vector<double> joint_position_limits_max_2_sim {5.89921, 2.70526,  0.00100, 3.57792, 5.84685};
-
     const std::vector<double> joint_position_limits_min_2 {0.00000, 0.00000, -5.16617, 0.00000, 0.00000};
-    const std::vector<double> joint_position_limits_min_2_sim {-0.00100, -0.00100, -5.16617, -0.00100, -0.00100};
+    // const std::vector<double> joint_position_limits_max_2 { 5.899210,  2.705260,  0.000001,  3.577920,  5.846850};
+    // const std::vector<double> joint_position_limits_min_2 {-0.000001, -0.000001, -5.166170, -0.000001, -0.000001};
+    
+    const std::vector<double> joint_position_limits_max_2_sim { 5.899210,  2.705260,  0.000001,  3.577920,  5.846850};
+    const std::vector<double> joint_position_limits_min_2_sim {-0.000001, -0.000001, -5.166170, -0.000001, -0.000001};
 
     const std::vector<double> joint_position_thresholds {DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(8), DEG_TO_RAD(5)};
 
@@ -90,6 +92,7 @@ namespace youbot_constants
     
     // const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf";
     const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_zero_inertia.urdf";
+    // const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_zero_inertia_new_mass.urdf";
 
     const std::string root_name = "arm_link_0";
     const std::string tooltip_name = "arm_link_5";

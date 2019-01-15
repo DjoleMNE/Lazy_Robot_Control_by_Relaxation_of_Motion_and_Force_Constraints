@@ -77,7 +77,7 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     Eigen::VectorXd v2(abag_parameter::DIMENSIONS);
     v2 = Eigen::VectorXd::Constant(abag_parameter::DIMENSIONS, 1.0 / 50.0);
     
-    std::cout << "Command: \n" << abag_.update_state(v1, v2).transpose() << std::endl;
+    // std::cout << "Command: \n" << abag_.update_state(v1, v2).transpose() << std::endl;
 }
 
 // Set all values of desired state to 0 - public method
@@ -318,7 +318,15 @@ void dynamics_controller::update_task()
 
 //Print information about controller settings
 void dynamics_controller::print_settings_info()
-{   std::cout << "Selected controller settings:" << std::endl;
+{   
+    #ifdef NDEBUG
+        std::cout << "The program is build in RELEASE mode." << std::endl;
+    #endif
+    #ifndef NDEBUG
+        std::cout << "The program is build in DEBUG mode." << std::endl;
+    #endif
+    
+    std::cout << "Selected controller settings:" << std::endl;
     std::cout << "Control Loop Frequency: " << RATE_HZ_ << " Hz" << std::endl;
     std::cout << "Control Mode: ";
 
@@ -389,6 +397,9 @@ int dynamics_controller::control(const int desired_control_mode,
     std::cout << "Control Loop Started"<< std::endl;
     while(1)
     {   
+        // count++;
+        // std::cout << "Loop Count: "<< count << std::endl;
+
         // Save current time point
         loop_start_time_ = std::chrono::steady_clock::now();
 
@@ -424,7 +435,6 @@ int dynamics_controller::control(const int desired_control_mode,
         // loop_time += std::chrono::duration<double, std::micro>\
         //             (std::chrono::steady_clock::now() -\
         //                                          loop_start_time_).count();
-        // count++;
         // if(count == 1000) {
         //     std::cout << loop_time / 1000.0 <<std::endl;
         //     return 0;

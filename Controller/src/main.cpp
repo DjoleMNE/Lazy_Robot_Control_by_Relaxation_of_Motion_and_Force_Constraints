@@ -75,6 +75,14 @@ void go_folded(youbot_mediator &arm){
     usleep(5000 * MILLISECOND);
 }
 
+void go_folded_2(youbot_mediator &arm){
+    KDL::JntArray folded_pose(JOINTS);
+    double folded[] = {0.02, 0.22, -0.02, 0.223, 0.12};
+    for (int i = 0; i < JOINTS; i++) folded_pose(i) = folded[i];  
+    arm.set_joint_positions(folded_pose);
+    usleep(5000 * MILLISECOND);
+}
+
 // Go to Navigation 1 configuration  
 void go_navigation_1(youbot_mediator &arm){
     KDL::JntArray desired_pose(JOINTS);
@@ -112,7 +120,7 @@ int main(int argc, char **argv)
 {
     youbot_mediator robot_driver;
 
-    int environment_ = youbot_environment::SIMULATION;
+    int environment_ = youbot_environment::REAL;
     int robot_model_ = youbot_model::URDF;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
@@ -131,8 +139,8 @@ int main(int argc, char **argv)
     if(environment_ != youbot_environment::SIMULATION){
         assert(("Robot is not initialized", robot_driver.is_initialized));
         stop_robot_motion(robot_driver, motion_);
-        go_navigation_2(robot_driver);
-        // go_folded(robot_driver);
+        // go_navigation_2(robot_driver);
+        go_folded_2(robot_driver);
         // go_candle_3(robot_driver);
         // robot_driver.get_joint_positions(motion_.q);
         // robot_driver.get_joint_velocities(motion_.qd);
@@ -148,9 +156,9 @@ int main(int argc, char **argv)
     dynamics_controller controller(robot_driver, rate_hz);
     
     //Create End_effector Cartesian Acceleration task 
-    controller.define_ee_constraint_task(std::vector<bool>{true, false, true, 
+    controller.define_ee_constraint_task(std::vector<bool>{false, false, false, 
                                                            false, false, false},
-                                         std::vector<double>{-5.0, -5.0, 15.0, 
+                                         std::vector<double>{0.0, 0.0, 0.0, 
                                                              0.0, 0.0, 0.0});
     //Create External Forces task 
     controller.define_ee_external_force_task(std::vector<double>{0.0, 0.0, 0.0, 

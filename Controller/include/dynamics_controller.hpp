@@ -43,6 +43,7 @@ SOFTWARE.
 
 enum task_interface
 {
+  CART_POSITION = 0,
   CART_VELOCITY = 1,
   CART_ACCELERATION = 2,
   CART_FORCE = 3,
