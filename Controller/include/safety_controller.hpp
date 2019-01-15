@@ -37,14 +37,6 @@ SOFTWARE.
 #include <math.h>       /* fabs */
 #include <stdlib.h>     /* abs */
 
-enum control_mode 
-{
-    TORQUE = 0,
-    VELOCITY = 1,
-    POSITION = 2, 
-    STOP_MOTION = -1   
-};
-
 class safety_controller
 {
   public:

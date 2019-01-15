@@ -31,6 +31,8 @@ SOFTWARE.
 #include <safety_controller.hpp>
 #include <abag.hpp>
 #include <controller_constants.hpp>
+#include <kdl_conversions/kdl_msg.h>
+#include <eigen_conversions/eigen_kdl.h>
 #include <iostream>
 #include <sstream>
 #include <fstream>
