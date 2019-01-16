@@ -36,6 +36,16 @@ SOFTWARE.
 
 class state_specification
 {
+	private:
+		const int NUMBER_OF_JOINTS_;
+		const int NUMBER_OF_SEGMENTS_;
+		const int NUMBER_OF_FRAMES_;
+		const int NUMBER_OF_CONSTRAINTS_;
+
+		// Temporary and help variables for faster reset of state vectors 
+		const KDL::Frame identity_pose_frame_ = KDL::Frame::Identity();
+		const KDL::Twist zero_value_twist_ = KDL::Twist::Zero();
+
 	public:
 		KDL::JntArray q;
 		KDL::JntArray qd;
@@ -57,17 +67,17 @@ class state_specification
 			NUMBER_OF_SEGMENTS_(number_of_segments),
 			NUMBER_OF_FRAMES_(number_of_frames),
 			NUMBER_OF_CONSTRAINTS_(number_of_constraints),
-			q(number_of_joints),
-			qd(number_of_joints),
-			qdd(number_of_joints),
-			feedforward_torque(number_of_joints),
-			control_torque(number_of_joints),
-			ee_unit_constraint_force(number_of_constraints), //alpha
-			ee_acceleration_energy(number_of_constraints), //beta
-			external_force(number_of_segments),
-			frame_pose(number_of_segments),
-			frame_velocity(number_of_segments),
-			frame_acceleration(number_of_frames)
+			q(NUMBER_OF_JOINTS_),
+			qd(NUMBER_OF_JOINTS_),
+			qdd(NUMBER_OF_JOINTS_),
+			feedforward_torque(NUMBER_OF_JOINTS_),
+			control_torque(NUMBER_OF_JOINTS_),
+			ee_unit_constraint_force(NUMBER_OF_CONSTRAINTS_), //alpha
+			ee_acceleration_energy(NUMBER_OF_CONSTRAINTS_), //beta
+			external_force(NUMBER_OF_SEGMENTS_),
+			frame_pose(NUMBER_OF_SEGMENTS_),
+			frame_velocity(NUMBER_OF_SEGMENTS_),
+			frame_acceleration(NUMBER_OF_FRAMES_)
 		{
 			reset_values();
 		}
@@ -117,15 +127,5 @@ class state_specification
 			for (int i = 0; i < NUMBER_OF_FRAMES_; i++)
 				KDL::SetToZero(frame_acceleration[i]);
 		}
-
-		private:
-			const int NUMBER_OF_JOINTS_;
-			const int NUMBER_OF_SEGMENTS_;
-			const int NUMBER_OF_FRAMES_;
-			const int NUMBER_OF_CONSTRAINTS_;
-
-			// Temporary and help variables for faster reset of state vectors 
-			const KDL::Frame identity_pose_frame_ = KDL::Frame::Identity();
-			const KDL::Twist zero_value_twist_ = KDL::Twist::Zero();
 };
 #endif /* STATE_SPECIFICATION_HPP */
