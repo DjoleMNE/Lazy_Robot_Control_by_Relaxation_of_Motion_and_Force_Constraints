@@ -1,2 +1,2 @@
 # MT_testing
-Testing code and graphs for Master Thesis
+Testing code and graphs for Master's Thesis
