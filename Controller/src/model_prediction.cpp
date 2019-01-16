@@ -31,9 +31,7 @@ model_prediction::model_prediction(const KDL::Chain &robot_chain):
     NUMBER_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
     temp_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
                 NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
-    temp_jntarrayvel_(NUMBER_OF_JOINTS_),
-    fk_position_solver_(robot_chain), 
-    fk_velocity_solver_(robot_chain)
+    fk_vereshchagin_(robot_chain), fk_solver_result_(0)
 {
 
 }
@@ -77,8 +75,7 @@ void model_prediction::integrate_joint_space(
     }
 
     #ifndef NDEBUG // Print joint state in Debug mode only
-        std::cout << "Computed Joint Acc: " << current_state.qdd << std::endl;
-        std::cout << "Integrated Joint Vel: " << predicted_states[0].qd << std::endl;
+        std::cout << "\nIntegrated Joint Vel: " << predicted_states[0].qd << std::endl;
         std::cout << "Integrated Joint Pos: " << predicted_states[0].q << std::endl;
         std::cout << std::endl;
     #endif
@@ -92,7 +89,7 @@ void model_prediction::integrate_joint_space(
         std::cout << "\n" << std::endl;
     #endif
 
-    if(fk_required) compute_FK(predicted_states[number_of_steps - 1]);
+    if(fk_required) compute_FK(predicted_states[0]);
 }
 
 // Used for predicting future deviation from the goal state
@@ -154,31 +151,24 @@ void model_prediction::integrate_to_position(const double &acceleration,
 // Forward position and velocity kinematics, given the itegrated values
 void model_prediction::compute_FK(state_specification &predicted_state)
 {
-    //Workaround for avoiding dynamic creation of JntArrayVel instance
-    //See this class' hpp for explanation
-    temp_jntarrayvel_.q = predicted_state.q;
-    temp_jntarrayvel_.qdot = predicted_state.qd;
-
-    //Compute angular and linear velocity of the end-effector
-    fk_velocity_solver_.JntToCart(temp_jntarrayvel_, temp_framevel_);
-    predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1] = \
-                                                    temp_framevel_.GetTwist();
-
-    //Compute postion and orientation of the end-effector
-    fk_position_solver_.JntToCart(
-                        predicted_state.q, 
-                        predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
+    // Compute angular and linear velocity of the end-effector
+    // Compute postion and orientation of the end-effector
+    fk_solver_result_ = fk_vereshchagin_.JntToCart(predicted_state.q, 
+                                                   predicted_state.qd, 
+                                                   predicted_state.frame_pose, 
+                                                   predicted_state.frame_velocity);
+    if(fk_solver_result_ != 0) 
+        std::cout << "Warning: FK solver returned an error! " << fk_solver_result_ << std::endl;
     
-    // #ifndef NDEBUG // Print Cartesian state in Debug mode only
-    // std::cout << "End-effector Velocity: " 
-    //     << predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]
-    //     << std::endl;
-    // std::cout << "End-effector Position: " 
-    //           << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
-    //           << std::endl;
-    // std::cout << "End-effector Orientation: " 
-    //           << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].getRPY()
-    //           << std::endl;
-    // std::cout << "\n" << std::endl;
-    // #endif
+    #ifndef NDEBUG // Print Cartesian state in Debug mode only
+        std::cout << "Predicted End-effector Position: " 
+                << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
+                << std::endl;
+        // std::cout << "Predicted End-effector Orientation: " 
+        //         << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].getRPY()
+        //         << "\n" << std::endl;
+        std::cout << "Predicted End-effector Velocity: " 
+            << predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]
+            << std::endl;
+    #endif
 }

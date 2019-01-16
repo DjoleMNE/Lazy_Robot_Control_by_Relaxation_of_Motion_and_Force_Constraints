@@ -39,6 +39,7 @@ add_executable(main
   src/main.cpp
   src/model_prediction.cpp
   src/solver_vereshchagin.cpp
+  src/fk_vereshchagin.cpp
   src/youbot_mediator.cpp
   src/youbot_custom_model.cpp
   src/safety_controller.cpp

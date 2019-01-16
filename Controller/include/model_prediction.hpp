@@ -27,6 +27,7 @@ SOFTWARE.
 #define MODEL_PREDICTION_HPP
 #include <state_specification.hpp>
 #include <controller_constants.hpp>
+#include <fk_vereshchagin.hpp>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -44,7 +45,7 @@ class model_prediction
 {
 	public:
 		model_prediction(const KDL::Chain &robot_chain);
-		~model_prediction(){}
+		~model_prediction(){};
 		
 		// Used for checking joint limits
 		void integrate_joint_space(
@@ -79,21 +80,13 @@ class model_prediction
 	    const int NUMBER_OF_FRAMES_;
 	    const int NUMBER_OF_CONSTRAINTS_;
 
+		int fk_solver_result_;
+		KDL::FK_Vereshchagin fk_vereshchagin_;
+
 		// Temp varible required for saving intermediate state,
 		// if multi step integration requirested
 		state_specification temp_state_;
-		
-		/* Workaround KDL's requirement for specifying FK VEl solver first
-		input/argument as JntArrayVel. Due to this, 
-		in each iteration of integration loop new JntArrayVel instance, 
-		which is not real time operations. Its better to create one
-		in the begging and just update its values in the loop */
-		KDL::JntArrayVel temp_jntarrayvel_; 
-		KDL::FrameVel temp_framevel_ = KDL::FrameVel::Identity();
 
-		KDL::ChainFkSolverPos_recursive fk_position_solver_;
-		KDL::ChainFkSolverVel_recursive fk_velocity_solver_;
-		
 		// Forward position and velocity kinematics, from itegrated values
 		void compute_FK(state_specification &predicted_state);
 };

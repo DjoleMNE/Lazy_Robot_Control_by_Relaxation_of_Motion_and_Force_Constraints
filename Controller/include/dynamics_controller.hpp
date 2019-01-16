@@ -26,6 +26,7 @@ SOFTWARE.
 #ifndef DYNAMICS_CONTROLLER_HPP_
 #define DYNAMICS_CONTROLLER_HPP_
 #include <solver_vereshchagin.hpp>
+#include <fk_vereshchagin.hpp>
 #include <state_specification.hpp>
 #include <model_prediction.hpp>
 #include <safety_controller.hpp>
@@ -73,6 +74,7 @@ class dynamics_controller
     const long DT_MICRO_;
     const double DT_SEC_;
     int solver_result_;
+    int fk_solver_result_;
     int safe_control_mode_;
 
     struct desired_control_mode
@@ -92,6 +94,7 @@ class dynamics_controller
     const int NUMBER_OF_CONSTRAINTS_;
     
     KDL::Solver_Vereshchagin hd_solver_;
+    KDL::FK_Vereshchagin fk_vereshchagin_;
     safety_controller safety_control_;
     ABAG abag_;
     model_prediction predictor_;

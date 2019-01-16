@@ -352,8 +352,8 @@ void safety_controller::make_predictions(const state_specification &current_stat
                                          const double dt_sec, 
                                          const int prediction_method)
 {
-    predictor_.integrate_joint_space(current_state, predicted_states_, 
-                                     dt_sec, 2, prediction_method, true, false);
+    predictor_.integrate_joint_space(current_state, predicted_states_, dt_sec, 
+                                     2, prediction_method, false, false);
 }
 
 bool safety_controller::reduce_velocities()
