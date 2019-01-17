@@ -35,6 +35,9 @@ SOFTWARE.
 
 namespace youbot_constants
 {
+    //Robot ID/Name
+    const std::string ID("yb_arm");
+
     // Number of joints in the manipulator
     const int NUMBER_OF_JOINTS(5);
     const int NUMBER_OF_SEGMENTS(5);

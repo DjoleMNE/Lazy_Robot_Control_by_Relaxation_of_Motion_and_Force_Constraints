@@ -59,6 +59,7 @@ class youbot_mediator
 {
 	public:
 		bool is_initialized;
+		const std::string ROBOT_ID;
 
 		youbot_mediator();
 		~youbot_mediator(){}

@@ -27,8 +27,9 @@ SOFTWARE.
 #include "youbot_mediator.hpp"
 
 youbot_mediator::youbot_mediator(): 
-    is_initialized(false), add_offsets_(false), parser_result_(0), 
-    connection_established_(false), youbot_model_(youbot_model::URDF),
+    is_initialized(false), ROBOT_ID(youbot_constants::ID), add_offsets_(false),
+    parser_result_(0), connection_established_(false), 
+    youbot_model_(youbot_model::URDF),
     youbot_environment_(youbot_environment::SIMULATION),
     linear_root_acc_(youbot_constants::root_acceleration[0],
                         youbot_constants::root_acceleration[1],
