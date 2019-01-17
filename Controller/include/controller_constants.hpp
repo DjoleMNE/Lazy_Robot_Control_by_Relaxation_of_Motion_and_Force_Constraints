@@ -37,6 +37,7 @@ namespace abag_parameter
 {
     // How many dimension ABAG controller is supposed to control
     const int DIMENSIONS(6);
+    const bool REVERSE_ERROR(true);
     const bool USE_ERROR_MAGNITUDE(false);
 
     const Eigen::VectorXd ERROR_ALPHA = (Eigen::VectorXd(DIMENSIONS) \

@@ -26,9 +26,11 @@ SOFTWARE.
 #include <abag.hpp>
 
 // Constructor without the predifined set/s of parameters
-ABAG::ABAG(const int num_of_dimensions, const bool use_error_magnitude):
+ABAG::ABAG(const int num_of_dimensions, 
+           const bool reverse_error, 
+           const bool use_error_magnitude):
     DIMENSIONS_(num_of_dimensions), 
-    USE_ERROR_MAGNITUDE_(use_error_magnitude),
+    REVERSE_ERROR_(reverse_error), USE_ERROR_MAGNITUDE_(use_error_magnitude),
     error_sign_(Eigen::VectorXd::Zero(num_of_dimensions)),
     error_magnitude_(Eigen::VectorXd::Zero(num_of_dimensions)), 
     ONES_(Eigen::VectorXd::Ones(num_of_dimensions)), 
@@ -38,14 +40,13 @@ ABAG::ABAG(const int num_of_dimensions, const bool use_error_magnitude):
 }
 
 // Constructor with the predifined set/s of parameters
-ABAG::ABAG(const int num_of_dimensions, 
-           const bool use_error_magnitude,
-           const Eigen::VectorXd error_alpha,
+ABAG::ABAG(const int num_of_dimensions, const bool reverse_error,
+           const bool use_error_magnitude, const Eigen::VectorXd error_alpha,
            const Eigen::VectorXd bias_threshold, const Eigen::VectorXd bias_step, 
            const Eigen::VectorXd gain_threshold, const Eigen::VectorXd gain_step,
            const Eigen::VectorXd min_sat_limit, const Eigen::VectorXd max_sat_limit):
     DIMENSIONS_(num_of_dimensions), 
-    USE_ERROR_MAGNITUDE_(use_error_magnitude),
+    REVERSE_ERROR_(reverse_error), USE_ERROR_MAGNITUDE_(use_error_magnitude),
     error_sign_(Eigen::VectorXd::Zero(num_of_dimensions)),
     error_magnitude_(Eigen::VectorXd::Zero(num_of_dimensions)), 
     ONES_(Eigen::VectorXd::Ones(num_of_dimensions)), 
@@ -80,11 +81,10 @@ Eigen::VectorXd ABAG::update_state(const Eigen::VectorXd measured,
 {   
     assert(DIMENSIONS_ == measured.rows());
     assert(DIMENSIONS_ == desired.rows());
-    bool reverse_error = true;
     
     // TODO: 
     // Add code for checking area error! See python code.
-    if(reverse_error){
+    if(REVERSE_ERROR_){
         error_magnitude_ = desired - measured;
         error_sign_ = (error_magnitude_).cwiseSign();
     }
@@ -99,8 +99,9 @@ Eigen::VectorXd ABAG::update_state(const Eigen::VectorXd measured,
     std::cout << "Bias: \n" << signal.bias_.transpose() << std::endl;
     update_gain();
     std::cout << "Gain: \n" << signal.gain_.transpose() << std::endl;
-    signal.command_ = saturate((signal.bias_ + signal.gain_.cwiseProduct(error_sign_)),\
-                               -1 * ONES_, ONES_);
+    signal.command_ = saturate(signal.bias_ + signal.gain_.cwiseProduct(error_sign_));
+    // signal.command_ = saturate((signal.bias_ + signal.gain_.cwiseProduct(error_sign_)),\
+    //                            -1 * ONES_, ONES_);
     return signal.command_;
 }
 

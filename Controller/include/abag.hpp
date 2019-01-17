@@ -38,9 +38,11 @@ SOFTWARE.
 class ABAG
 {
   public:
-    ABAG(const int num_of_dimensions, const bool use_error_magnitude);
-
     ABAG(const int num_of_dimensions, 
+         const bool reverse_error, 
+         const bool use_error_magnitude);
+
+    ABAG(const int num_of_dimensions, const bool reverse_error,
          const bool use_error_magnitude, const Eigen::VectorXd error_alpha,
          const Eigen::VectorXd bias_threshold, const Eigen::VectorXd bias_step, 
          const Eigen::VectorXd gain_threshold, const Eigen::VectorXd gain_step,
@@ -83,6 +85,7 @@ class ABAG
 
   private:
     const int DIMENSIONS_;
+    const bool REVERSE_ERROR_;
     const bool USE_ERROR_MAGNITUDE_;
     const Eigen::VectorXd ONES_;
     

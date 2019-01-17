@@ -30,12 +30,10 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
                                          const int rate_hz):
     RATE_HZ_(rate_hz),
     // Time period defined in microseconds: 1s = 1 000 000us
-    DT_MICRO_(SECOND / RATE_HZ_),
-    DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)), 
-    solver_result_(0),
-    fk_solver_result_(0),
-    safe_control_mode_(-1),
-    // loop_start_time_(), loop_end_time_(), //Not sure if required to init
+    DT_MICRO_(SECOND / RATE_HZ_),  DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
+    loop_count_(0), loop_time_(0.0),
+    solver_result_(0), fk_solver_result_(0), safe_control_mode_(-1),
+    loop_start_time_(), loop_end_time_(), //Not sure if required to init
     robot_chain_(robot_driver.get_robot_model()),
     NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
     NUMBER_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
@@ -45,12 +43,14 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
                robot_driver.get_root_acceleration(), NUMBER_OF_CONSTRAINTS_),
     fk_vereshchagin_(robot_chain_),
     safety_control_(robot_driver, true), 
-    abag_(abag_parameter::DIMENSIONS, abag_parameter::USE_ERROR_MAGNITUDE),
+    abag_(abag_parameter::DIMENSIONS, 
+          abag_parameter::REVERSE_ERROR, 
+          abag_parameter::USE_ERROR_MAGNITUDE),
     predictor_(robot_chain_),
-    robot_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
-                 NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_), 
-    commands_(robot_state_), 
-    desired_state_(robot_state_), 
+    robot_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_,
+                 NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
+    commands_(robot_state_),
+    desired_state_(robot_state_),
     predicted_state_(robot_state_)
 {
     assert(("Robot is not initialized", robot_driver.is_initialized));
@@ -203,7 +203,10 @@ int dynamics_controller::enforce_loop_frequency()
     } else return -1; //Loop is too slow
 }
 
-//Send joint commands to the robot driver
+/*
+    Apply joint commands using safe control interface.
+    If the computed commands are not safe, exit the program.
+*/
 int dynamics_controller::apply_control_commands()
 { 
     /* 
@@ -348,7 +351,12 @@ void dynamics_controller::print_settings_info()
     std::cout<< "Joint velocities:"<< robot_state_.qd << "\n" << std::endl;
 }
 
-//Get current robot state from the joint sensors, velocities and angles
+
+/* 
+    If it is working on the real robot get sensor data from the driver 
+    or if simulation is on, replace current state with 
+    integrated joint velocities and positions.
+*/
 void dynamics_controller::update_current_state()
 {
     safety_control_.get_current_state(robot_state_);
@@ -398,8 +406,8 @@ int dynamics_controller::control(const int desired_control_mode,
         return -1;
     } 
 
-    // double loop_time = 0.0;
-    int count = 0;
+    loop_time_ = 0.0;
+    loop_count_ = 0;
     
     Eigen::VectorXd abag_command(abag_parameter::DIMENSIONS);
     abag_command = Eigen::VectorXd::Constant(abag_parameter::DIMENSIONS, 0.0);
@@ -413,9 +421,10 @@ int dynamics_controller::control(const int desired_control_mode,
 
     safe_control_mode_ = desired_control_mode_.interface;
     std::cout << "Control Loop Started"<< std::endl;
+
     while(1)
     {   
-        count++;
+        loop_count_++;
         // std::cout << "Loop Count: "<< count << std::endl;
 
         // Save current time point
@@ -424,11 +433,7 @@ int dynamics_controller::control(const int desired_control_mode,
         // Check if the task specification is changed. Update accordingly.
         update_task();
 
-        /* 
-            If it is working on the real robot get sensor data from the driver 
-            or if simulation is on, replace current state with 
-            integrated joint velocities and positions.
-        */
+        //Get current robot state from the joint sensors, velocities and angles
         update_current_state();
 
         measured_cart_vel(2) = robot_state_.frame_velocity[4].vel(2);
@@ -452,21 +457,20 @@ int dynamics_controller::control(const int desired_control_mode,
         make_predictions(integration_method::SYMPLECTIC_EULER);
 
         // Apply joint commands using safe control interface.
-        // If the computed commands are not safe, exit the program.
         if(apply_control_commands() != 0) return -1;
 
         // Make sure that the loop is always running with the same frequency
         if(!enforce_loop_frequency() == 0)
             std::cerr << "WARNING: Control loop runs too slow \n" << std::endl;
 
-        // loop_time += std::chrono::duration<double, std::micro>\
+        // loop_time_ += std::chrono::duration<double, std::micro>\
         //             (std::chrono::steady_clock::now() -\
         //                                          loop_start_time_).count();
-        // if(count == 1000) {
-        //     std::cout << loop_time / 1000.0 <<std::endl;
+        // if(loop_count_ == 1000) {
+        //     std::cout << loop_time_ / 1000.0 <<std::endl;
         //     return 0;
         // }
-        // if(count == 250) return 0;
+        // if(loop_count_ == 250) return 0;
     }
     return 0;
 }
