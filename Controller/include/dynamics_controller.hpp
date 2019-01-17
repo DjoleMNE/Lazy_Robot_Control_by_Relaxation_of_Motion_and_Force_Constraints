@@ -73,6 +73,8 @@ class dynamics_controller
     const int RATE_HZ_;
     const long DT_MICRO_;
     const double DT_SEC_;
+    int loop_count_;
+    double loop_time_;
     int solver_result_;
     int fk_solver_result_;
     int safe_control_mode_;

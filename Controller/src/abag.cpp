@@ -31,14 +31,15 @@ ABAG::ABAG(const int num_of_dimensions, const bool use_error_magnitude):
     USE_ERROR_MAGNITUDE_(use_error_magnitude),
     error_sign_(Eigen::VectorXd::Zero(num_of_dimensions)),
     error_magnitude_(Eigen::VectorXd::Zero(num_of_dimensions)), 
-    ones_(Eigen::VectorXd::Ones(num_of_dimensions)), 
+    ONES_(Eigen::VectorXd::Ones(num_of_dimensions)), 
     signal(num_of_dimensions), parameter(num_of_dimensions)
 {
     assert(("ABAG Controller not initialized properly", DIMENSIONS_ > 0));
 }
 
 // Constructor with the predifined set/s of parameters
-ABAG::ABAG(const int num_of_dimensions, const bool use_error_magnitude,
+ABAG::ABAG(const int num_of_dimensions, 
+           const bool use_error_magnitude,
            const Eigen::VectorXd error_alpha,
            const Eigen::VectorXd bias_threshold, const Eigen::VectorXd bias_step, 
            const Eigen::VectorXd gain_threshold, const Eigen::VectorXd gain_step,
@@ -47,7 +48,7 @@ ABAG::ABAG(const int num_of_dimensions, const bool use_error_magnitude,
     USE_ERROR_MAGNITUDE_(use_error_magnitude),
     error_sign_(Eigen::VectorXd::Zero(num_of_dimensions)),
     error_magnitude_(Eigen::VectorXd::Zero(num_of_dimensions)), 
-    ones_(Eigen::VectorXd::Ones(num_of_dimensions)), 
+    ONES_(Eigen::VectorXd::Ones(num_of_dimensions)), 
     signal(num_of_dimensions), parameter(error_alpha, bias_threshold, bias_step, 
                                          gain_threshold, gain_step, 
                                          min_sat_limit, max_sat_limit)
@@ -99,7 +100,7 @@ Eigen::VectorXd ABAG::update_state(const Eigen::VectorXd measured,
     update_gain();
     std::cout << "Gain: \n" << signal.gain_.transpose() << std::endl;
     signal.command_ = saturate((signal.bias_ + signal.gain_.cwiseProduct(error_sign_)),\
-                               -1 * ones_, ones_);
+                               -1 * ONES_, ONES_);
     return signal.command_;
 }
 
@@ -113,7 +114,7 @@ void ABAG::update_error()
         However, for the command signal, the error sign is consistent.
     */
     signal.error_ = parameter.ERROR_ALPHA.cwiseProduct( signal.error_ ) + \
-                    (ones_ - parameter.ERROR_ALPHA).cwiseProduct( USE_ERROR_MAGNITUDE_? error_magnitude_ : error_sign_ );
+                    (ONES_ - parameter.ERROR_ALPHA).cwiseProduct( USE_ERROR_MAGNITUDE_? error_magnitude_ : error_sign_ );
 }
 
 // - private method
@@ -358,5 +359,5 @@ Eigen::VectorXd ABAG::saturate(const Eigen::VectorXd value,
 
 Eigen::VectorXd ABAG::heaviside(const Eigen::VectorXd value)
 {   
-    return 0.5 * (value.cwiseSign() + ones_);
+    return 0.5 * (value.cwiseSign() + ONES_);
 }

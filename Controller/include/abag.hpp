@@ -39,15 +39,18 @@ class ABAG
 {
   public:
     ABAG(const int num_of_dimensions, const bool use_error_magnitude);
-    ABAG(const int num_of_dimensions, const bool use_error_magnitude,
-         const Eigen::VectorXd alpha,
+
+    ABAG(const int num_of_dimensions, 
+         const bool use_error_magnitude, const Eigen::VectorXd error_alpha,
          const Eigen::VectorXd bias_threshold, const Eigen::VectorXd bias_step, 
          const Eigen::VectorXd gain_threshold, const Eigen::VectorXd gain_step,
          const Eigen::VectorXd min_sat_limit, const Eigen::VectorXd max_sat_limit);
+
     ~ABAG(){};
 
     Eigen::VectorXd update_state(const Eigen::VectorXd measured, 
                                  const Eigen::VectorXd desired);
+
     Eigen::VectorXd get_command();
     double get_command(const int dimension);
 
@@ -81,7 +84,8 @@ class ABAG
   private:
     const int DIMENSIONS_;
     const bool USE_ERROR_MAGNITUDE_;
-    const Eigen::VectorXd ones_;
+    const Eigen::VectorXd ONES_;
+    
     Eigen::VectorXd error_sign_;
     Eigen::VectorXd error_magnitude_;
 
@@ -113,14 +117,14 @@ class ABAG
             MIN_SAT_LIMIT(Eigen::VectorXd::Zero(num_of_dimensions)),
             MAX_SAT_LIMIT(Eigen::VectorXd::Ones(num_of_dimensions)) {};
 
-        abag_parameter(const Eigen::VectorXd alpha, 
+        abag_parameter(const Eigen::VectorXd error_alpha, 
                        const Eigen::VectorXd bias_threshold, 
                        const Eigen::VectorXd bias_step,
                        const Eigen::VectorXd gain_threshold, 
                        const Eigen::VectorXd gain_step,
                        const Eigen::VectorXd min_sat_limit, 
                        const Eigen::VectorXd max_sat_limit):
-            ERROR_ALPHA(alpha),
+            ERROR_ALPHA(error_alpha),
             BIAS_THRESHOLD(bias_threshold),
             BIAS_STEP(bias_step),
             GAIN_THRESHOLD(gain_threshold),
@@ -152,7 +156,6 @@ class ABAG
     Eigen::VectorXd saturate(const Eigen::VectorXd value, 
                              const Eigen::VectorXd MIN_LIMIT, 
                              const Eigen::VectorXd MAX_LIMIT);
-
     Eigen::VectorXd heaviside(const Eigen::VectorXd value);
 };
 #endif /* ABAG_HPP_*/
