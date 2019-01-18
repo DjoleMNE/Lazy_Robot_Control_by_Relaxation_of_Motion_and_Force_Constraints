@@ -46,7 +46,9 @@ class ABAG
          const bool use_error_magnitude, const Eigen::VectorXd error_alpha,
          const Eigen::VectorXd bias_threshold, const Eigen::VectorXd bias_step, 
          const Eigen::VectorXd gain_threshold, const Eigen::VectorXd gain_step,
-         const Eigen::VectorXd min_sat_limit, const Eigen::VectorXd max_sat_limit);
+         const Eigen::VectorXd min_bias_sat_limit, const Eigen::VectorXd max_bias_sat_limit,
+         const Eigen::VectorXd min_gain_sat_limit, const Eigen::VectorXd max_gain_sat_limit,
+         const Eigen::VectorXd min_command_sat_limit, const Eigen::VectorXd max_command_sat_limit);
 
     ~ABAG(){};
 
@@ -117,23 +119,35 @@ class ABAG
             BIAS_STEP(Eigen::VectorXd::Zero(num_of_dimensions)),
             GAIN_THRESHOLD(Eigen::VectorXd::Zero(num_of_dimensions)),
             GAIN_STEP(Eigen::VectorXd::Zero(num_of_dimensions)),
-            MIN_SAT_LIMIT(Eigen::VectorXd::Zero(num_of_dimensions)),
-            MAX_SAT_LIMIT(Eigen::VectorXd::Ones(num_of_dimensions)) {};
+            MIN_BIAS_SAT_LIMIT(Eigen::VectorXd::Zero(num_of_dimensions)),
+            MAX_BIAS_SAT_LIMIT(Eigen::VectorXd::Ones(num_of_dimensions)),
+            MIN_GAIN_SAT_LIMIT(Eigen::VectorXd::Zero(num_of_dimensions)),
+            MAX_GAIN_SAT_LIMIT(Eigen::VectorXd::Ones(num_of_dimensions)),
+            MIN_COMMAND_SAT_LIMIT(Eigen::VectorXd::Zero(num_of_dimensions)),
+            MAX_COMMAND_SAT_LIMIT(Eigen::VectorXd::Ones(num_of_dimensions))   {};
 
         abag_parameter(const Eigen::VectorXd error_alpha, 
                        const Eigen::VectorXd bias_threshold, 
                        const Eigen::VectorXd bias_step,
                        const Eigen::VectorXd gain_threshold, 
                        const Eigen::VectorXd gain_step,
-                       const Eigen::VectorXd min_sat_limit, 
-                       const Eigen::VectorXd max_sat_limit):
+                       const Eigen::VectorXd min_bias_sat_limit, 
+                       const Eigen::VectorXd max_bias_sat_limit,
+                       const Eigen::VectorXd min_gain_sat_limit, 
+                       const Eigen::VectorXd max_gain_sat_limit,
+                       const Eigen::VectorXd min_command_sat_limit, 
+                       const Eigen::VectorXd max_command_sat_limit):
             ERROR_ALPHA(error_alpha),
             BIAS_THRESHOLD(bias_threshold),
             BIAS_STEP(bias_step),
             GAIN_THRESHOLD(gain_threshold),
             GAIN_STEP(gain_step),
-            MIN_SAT_LIMIT(min_sat_limit),
-            MAX_SAT_LIMIT(max_sat_limit){};
+            MIN_BIAS_SAT_LIMIT(min_bias_sat_limit),
+            MAX_BIAS_SAT_LIMIT(max_bias_sat_limit),
+            MIN_GAIN_SAT_LIMIT(min_gain_sat_limit),
+            MAX_GAIN_SAT_LIMIT(max_gain_sat_limit),
+            MIN_COMMAND_SAT_LIMIT(min_command_sat_limit),
+            MAX_COMMAND_SAT_LIMIT(max_command_sat_limit){};
 
         ~abag_parameter(){};
 
@@ -142,20 +156,28 @@ class ABAG
         Eigen::VectorXd BIAS_STEP;
         Eigen::VectorXd GAIN_THRESHOLD;
         Eigen::VectorXd GAIN_STEP;
-        Eigen::VectorXd MIN_SAT_LIMIT;
-        Eigen::VectorXd MAX_SAT_LIMIT;
+        Eigen::VectorXd MIN_BIAS_SAT_LIMIT;
+        Eigen::VectorXd MAX_BIAS_SAT_LIMIT;
+        Eigen::VectorXd MIN_GAIN_SAT_LIMIT;
+        Eigen::VectorXd MAX_GAIN_SAT_LIMIT;
+        Eigen::VectorXd MIN_COMMAND_SAT_LIMIT;
+        Eigen::VectorXd MAX_COMMAND_SAT_LIMIT;
     } parameter;
 
-    void update_error();
+    void update_error(const Eigen::VectorXd measured, 
+                      const Eigen::VectorXd desired);
     void update_bias();
     void update_gain();
-
+    void update_command();
+    
     // User customizable functions
     Eigen::VectorXd bias_decision_map();
     Eigen::VectorXd gain_decision_map();
 
     // Help functions
-    Eigen::VectorXd saturate(const Eigen::VectorXd value);
+    Eigen::VectorXd saturate_bias(const Eigen::VectorXd value);
+    Eigen::VectorXd saturate_gain(const Eigen::VectorXd value);
+    Eigen::VectorXd saturate_command(const Eigen::VectorXd value);
     Eigen::VectorXd saturate(const Eigen::VectorXd value, 
                              const Eigen::VectorXd MIN_LIMIT, 
                              const Eigen::VectorXd MAX_LIMIT);

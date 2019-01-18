@@ -39,22 +39,27 @@ ABAG::ABAG(const int num_of_dimensions,
     assert(("ABAG Controller not initialized properly", DIMENSIONS_ > 0));
 }
 
-// Constructor with the predifined set/s of parameters
+// Constructor with all predifined set/s of parameters
 ABAG::ABAG(const int num_of_dimensions, const bool reverse_error,
            const bool use_error_magnitude, const Eigen::VectorXd error_alpha,
            const Eigen::VectorXd bias_threshold, const Eigen::VectorXd bias_step, 
            const Eigen::VectorXd gain_threshold, const Eigen::VectorXd gain_step,
-           const Eigen::VectorXd min_sat_limit, const Eigen::VectorXd max_sat_limit):
+           const Eigen::VectorXd min_bias_sat_limit, const Eigen::VectorXd max_bias_sat_limit,
+           const Eigen::VectorXd min_gain_sat_limit, const Eigen::VectorXd max_gain_sat_limit,
+           const Eigen::VectorXd min_command_sat_limit, const Eigen::VectorXd max_command_sat_limit):
     DIMENSIONS_(num_of_dimensions), 
     REVERSE_ERROR_(reverse_error), USE_ERROR_MAGNITUDE_(use_error_magnitude),
     error_sign_(Eigen::VectorXd::Zero(num_of_dimensions)),
     error_magnitude_(Eigen::VectorXd::Zero(num_of_dimensions)), 
     ONES_(Eigen::VectorXd::Ones(num_of_dimensions)), 
-    signal(num_of_dimensions), parameter(error_alpha, bias_threshold, bias_step, 
+    signal(num_of_dimensions), parameter(error_alpha, 
+                                         bias_threshold, bias_step, 
                                          gain_threshold, gain_step, 
-                                         min_sat_limit, max_sat_limit)
+                                         min_bias_sat_limit, max_bias_sat_limit, 
+                                         min_gain_sat_limit, max_gain_sat_limit, 
+                                         min_command_sat_limit, max_command_sat_limit)
 {
-    // Enforce Parameter Constraints defined in the original paper 
+    // Enforce general parameter constraints and those defined in the original publication 
     assert(("ABAG Controller not initialized properly", DIMENSIONS_ > 0));
     assert(DIMENSIONS_ == parameter.ERROR_ALPHA.rows());
     assert(parameter.ERROR_ALPHA.maxCoeff() < 1.0);
@@ -71,49 +76,68 @@ ABAG::ABAG(const int num_of_dimensions, const bool reverse_error,
     assert(DIMENSIONS_ == parameter.GAIN_STEP.rows());
     assert(parameter.GAIN_STEP.maxCoeff() < 1.0);
     assert(parameter.GAIN_STEP.minCoeff() > 0.0);
-    assert(DIMENSIONS_ == parameter.MIN_SAT_LIMIT.rows());
-    assert(DIMENSIONS_ == parameter.MAX_SAT_LIMIT.rows());
+    assert(DIMENSIONS_ == parameter.MIN_BIAS_SAT_LIMIT.rows());
+    assert(DIMENSIONS_ == parameter.MAX_BIAS_SAT_LIMIT.rows());
+    assert(DIMENSIONS_ == parameter.MIN_GAIN_SAT_LIMIT.rows());
+    assert(DIMENSIONS_ == parameter.MAX_GAIN_SAT_LIMIT.rows());
+    assert(DIMENSIONS_ == parameter.MIN_COMMAND_SAT_LIMIT.rows());
+    assert(DIMENSIONS_ == parameter.MAX_COMMAND_SAT_LIMIT.rows());
 }
 
-// Get command signal values for all dimensions - public method
+// Update state values for all dimensions and return the command singal - public method
 Eigen::VectorXd ABAG::update_state(const Eigen::VectorXd measured, 
                                    const Eigen::VectorXd desired)
 {   
     assert(DIMENSIONS_ == measured.rows());
     assert(DIMENSIONS_ == desired.rows());
-    
-    // TODO: 
-    // Add code for checking area error! See python code.
-    if(REVERSE_ERROR_){
-        error_magnitude_ = desired - measured;
-        error_sign_ = (error_magnitude_).cwiseSign();
-    }
-    else{
-        error_magnitude_ = measured - desired;
-        error_sign_ = (error_magnitude_).cwiseSign();
-    }
 
-    update_error();
+    update_error(measured, desired);
     std::cout << "Error: \n" << signal.error_.transpose() << std::endl;
+
     update_bias();
     std::cout << "Bias: \n" << signal.bias_.transpose() << std::endl;
+
     update_gain();
     std::cout << "Gain: \n" << signal.gain_.transpose() << std::endl;
-    signal.command_ = saturate(signal.bias_ + signal.gain_.cwiseProduct(error_sign_));
-    // signal.command_ = saturate((signal.bias_ + signal.gain_.cwiseProduct(error_sign_)),\
-    //                            -1 * ONES_, ONES_);
+
+    update_command();
+    std::cout << "Command: \n" << signal.command_.transpose() << std::endl;
+
     return signal.command_;
 }
 
+
 // - private method
-void ABAG::update_error()
+void ABAG::update_error(const Eigen::VectorXd measured, 
+                        const Eigen::VectorXd desired)
 {
     /*
-        Be careful and test! Cheking of the error sign in the Paper's pseudo code
+        Be careful and test! Cheking of the error sign in the Paper's pseudo code (line 3)
         is not consistent with cheking of the error sign in the orignal author's
         implementation. Here, pseudo code from the paper is taken as a reference.
-        However, for the command signal, the error sign is consistent.
+        However, for the command signal(line 6), the error sign is consistent.
     */
+
+    /*
+    *   Reversing error is important due to possibility of different controller inputs.
+    *   If e.g. velocity is given in Hz or m/s, the error should be reversed w.r.t. 
+    *   pseudo code error explained in the original publication. 
+    *   Else if, e.g. the velocity is given as a period of rotation, 
+    *   the error calculation should be the same as in the orginal pseudo code.
+    */
+    if(REVERSE_ERROR_)
+    {
+        error_magnitude_ = desired - measured;
+    }
+    else
+    {
+        error_magnitude_ = measured - desired;
+    }
+    
+    error_sign_ = (error_magnitude_).cwiseSign();
+    
+    // Using error magnitude here instead of sign is an experimental feature!
+    // Be carefull with setting "USE_ERROR_MAGNITUDE_" flag!
     signal.error_ = parameter.ERROR_ALPHA.cwiseProduct( signal.error_ ) + \
                     (ONES_ - parameter.ERROR_ALPHA).cwiseProduct( USE_ERROR_MAGNITUDE_? error_magnitude_ : error_sign_ );
 }
@@ -121,36 +145,42 @@ void ABAG::update_error()
 // - private method
 void ABAG::update_bias()
 {
-    // std::cout << (signal.error_ - parameter.BIAS_THRESHOLD).cwiseSign() << std::endl;
-    signal.bias_ = saturate(signal.bias_ + \
-                            parameter.BIAS_STEP.cwiseProduct( bias_decision_map() )\
-                           );
+    signal.bias_ = saturate_bias(signal.bias_ + \
+                                 parameter.BIAS_STEP.cwiseProduct( bias_decision_map() )\
+                                );
 }
 
 // - private method
 void ABAG::update_gain()
 {
-    // std::cout << (signal.error_.cwiseAbs() - parameter.GAIN_THRESHOLD).cwiseSign() << std::endl;
-    signal.gain_ = \
-        saturate( signal.gain_ + \
-                  parameter.GAIN_STEP.cwiseProduct( gain_decision_map() ) \
-                );
+    signal.gain_ = saturate_gain(signal.gain_ + \
+                                 parameter.GAIN_STEP.cwiseProduct( gain_decision_map() ) \
+                                );
 }
 
+// - private method
+void ABAG::update_command()
+{
+    signal.command_ = saturate_command( signal.bias_ + signal.gain_.cwiseProduct(error_sign_) );
+}
+
+
+// User customizable function
 Eigen::VectorXd ABAG::bias_decision_map()
 {
     return heaviside(signal.error_.cwiseAbs() - \
-                     parameter.BIAS_THRESHOLD).cwiseProduct( (signal.error_ - \
-                                                              parameter.BIAS_THRESHOLD).cwiseSign() \
-                                                           );
+                     parameter.BIAS_THRESHOLD \
+                    ).cwiseProduct( (signal.error_ - parameter.BIAS_THRESHOLD).cwiseSign() );
 }
 
+// User customizable function
 Eigen::VectorXd ABAG::gain_decision_map()
 {
     return (signal.error_.cwiseAbs() - parameter.GAIN_THRESHOLD).cwiseSign();
 }
 
-// Set all state values to 0 - public method
+
+// Set all state values to 0, for all dimensions - public method
 void ABAG::reset_state()
 {
     signal.command_.setZero();
@@ -159,7 +189,7 @@ void ABAG::reset_state()
     signal.gain_.setZero();
 }
 
-// Set all state values to 0 - public method
+// Set all state values to 0, for specific dimension - public method
 void ABAG::reset_state(const int dimension)
 {
     assert(("Not valid dimension number", dimension >= 0));
@@ -170,6 +200,7 @@ void ABAG::reset_state(const int dimension)
     signal.bias_(dimension) = 0;
     signal.gain_(dimension) = 0;
 }
+
 
 /*
     Getters
@@ -189,6 +220,7 @@ double ABAG::get_command(const int dimension)
     return signal.command_(dimension);
 }
 
+
 // Get error signal values for all dimensions - public method
 Eigen::VectorXd ABAG::get_error()
 {
@@ -202,6 +234,7 @@ double ABAG::get_error(const int dimension)
     assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1) ));
     return signal.error_(dimension);
 }
+
 
 // Get bias signal values for all dimensions - public method
 Eigen::VectorXd ABAG::get_bias()
@@ -217,6 +250,7 @@ double ABAG::get_bias(const int dimension)
     return signal.bias_(dimension);
 }
 
+
 // Get gain signal values for all dimensions - public method
 Eigen::VectorXd ABAG::get_gain()
 {
@@ -231,8 +265,9 @@ double ABAG::get_gain(const int dimension)
     return signal.gain_(dimension);
 }
 
+
 /*
-    Setters
+    Setters: Useful for online parameter adaptation
 */
 // Set filtering factor parameter for all dimensions - public method
 void ABAG::set_error_alpha(const Eigen::VectorXd error_alpha)
@@ -256,6 +291,7 @@ void ABAG::set_error_alpha(const double error_alpha, const int dimension)
     parameter.ERROR_ALPHA(dimension) = error_alpha;
 }
 
+
 // Set bias threshold parameter for all dimensions - public method
 void ABAG::set_bias_threshold(const Eigen::VectorXd bias_threshold)
 {
@@ -278,6 +314,7 @@ void ABAG::set_bias_threshold(double bias_threshold, const int dimension)
     parameter.BIAS_THRESHOLD(dimension) = bias_threshold;
 }
 
+
 // Set bias step parameter for all dimensions - public method
 void ABAG::set_bias_step(const Eigen::VectorXd bias_step)
 {
@@ -299,6 +336,7 @@ void ABAG::set_bias_step(double bias_step, const int dimension)
 
     parameter.BIAS_STEP(dimension) = bias_step;
 }
+
 
 // Set gain threshold parameter for all dimensions - public method
 void ABAG::set_gain_threshold(const Eigen::VectorXd gain_threshold)
@@ -344,17 +382,36 @@ void ABAG::set_gain_step(double gain_step, const int dimension)
     parameter.GAIN_STEP(dimension) = gain_step;
 }
 
-Eigen::VectorXd ABAG::saturate(const Eigen::VectorXd value)
+/*
+    Help functions
+*/
+Eigen::VectorXd ABAG::saturate_bias(const Eigen::VectorXd value)
 {   
-    assert(parameter.MAX_SAT_LIMIT.rows() == value.rows());
-    return value.cwiseMin(parameter.MAX_SAT_LIMIT).cwiseMax(parameter.MIN_SAT_LIMIT);
+    assert(parameter.MAX_BIAS_SAT_LIMIT.rows() == value.rows());
+    assert(parameter.MIN_BIAS_SAT_LIMIT.rows() == value.rows());
+    return value.cwiseMin(parameter.MAX_BIAS_SAT_LIMIT).cwiseMax(parameter.MIN_BIAS_SAT_LIMIT);
+}
+
+Eigen::VectorXd ABAG::saturate_gain(const Eigen::VectorXd value)
+{   
+    assert(parameter.MAX_GAIN_SAT_LIMIT.rows() == value.rows());
+    assert(parameter.MIN_GAIN_SAT_LIMIT.rows() == value.rows());
+    return value.cwiseMin(parameter.MAX_GAIN_SAT_LIMIT).cwiseMax(parameter.MIN_GAIN_SAT_LIMIT);
+}
+
+Eigen::VectorXd ABAG::saturate_command(const Eigen::VectorXd value)
+{   
+    assert(parameter.MAX_COMMAND_SAT_LIMIT.rows() == value.rows());
+    assert(parameter.MIN_COMMAND_SAT_LIMIT.rows() == value.rows());
+    return value.cwiseMin(parameter.MAX_COMMAND_SAT_LIMIT).cwiseMax(parameter.MIN_COMMAND_SAT_LIMIT);
 }
 
 Eigen::VectorXd ABAG::saturate(const Eigen::VectorXd value, 
                                const Eigen::VectorXd MIN_LIMIT, 
                                const Eigen::VectorXd MAX_LIMIT)
 {   
-    assert(parameter.MAX_SAT_LIMIT.rows() == value.rows());
+    assert(MAX_LIMIT.rows() == value.rows());
+    assert(MIN_LIMIT.rows() == value.rows());
     return value.cwiseMin(MAX_LIMIT).cwiseMax(MIN_LIMIT);
 }
 

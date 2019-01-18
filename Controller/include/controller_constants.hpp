@@ -60,11 +60,30 @@ namespace abag_parameter
                                        << 0.001953, 0.001953, 0.001953, 
                                           0.001953, 0.001953, 0.001953).finished();
 
-    const Eigen::VectorXd MIN_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
+   
+    const Eigen::VectorXd MIN_BIAS_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
+                                           << -1.0, -1.0, -1.0, 
+                                              -1.0, -1.0, -1.0).finished();
+
+    const Eigen::VectorXd MAX_BIAS_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
+                                           << 1.0, 1.0, 1.0, 
+                                              1.0, 1.0, 1.0).finished();
+
+
+    const Eigen::VectorXd MIN_GAIN_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
                                            << 0.0, 0.0, 0.0, 
                                               0.0, 0.0, 0.0).finished();
 
-    const Eigen::VectorXd MAX_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
+    const Eigen::VectorXd MAX_GAIN_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
+                                           << 1.0, 1.0, 1.0, 
+                                              1.0, 1.0, 1.0).finished();
+
+
+    const Eigen::VectorXd MIN_COMMAND_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
+                                           << -1.0, -1.0, -1.0, 
+                                              -1.0, -1.0, -1.0).finished();
+
+    const Eigen::VectorXd MAX_COMMAND_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
                                            << 1.0, 1.0, 1.0, 
                                               1.0, 1.0, 1.0).finished();
 }
