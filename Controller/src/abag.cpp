@@ -112,27 +112,14 @@ void ABAG::update_error(const Eigen::VectorXd measured,
                         const Eigen::VectorXd desired)
 {
     /*
-        Be careful and test! Cheking of the error sign in the Paper's pseudo code (line 3)
-        is not consistent with cheking of the error sign in the orignal author's
-        implementation. Here, pseudo code from the paper is taken as a reference.
-        However, for the command signal(line 6), the error sign is consistent.
-    */
-
-    /*
     *   Reversing error is important due to possibility of different controller inputs.
     *   If e.g. velocity is given in Hz or m/s, the error should be reversed w.r.t. 
     *   pseudo code error explained in the original publication. 
     *   Else if, e.g. the velocity is given as a period of rotation, 
     *   the error calculation should be the same as in the orginal pseudo code.
     */
-    if(REVERSE_ERROR_)
-    {
-        error_magnitude_ = desired - measured;
-    }
-    else
-    {
-        error_magnitude_ = measured - desired;
-    }
+    if (REVERSE_ERROR_) error_magnitude_ = desired - measured;
+    else                error_magnitude_ = measured - desired;
     
     error_sign_ = (error_magnitude_).cwiseSign();
     

@@ -425,7 +425,7 @@ int dynamics_controller::control(const int desired_control_mode,
     while(1)
     {   
         loop_count_++;
-        // std::cout << "Loop Count: "<< count << std::endl;
+        std::cout << "Loop Count: "<< loop_count_ << std::endl;
 
         // Save current time point
         loop_start_time_ = std::chrono::steady_clock::now();
