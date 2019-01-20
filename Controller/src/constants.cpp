@@ -80,26 +80,29 @@ namespace abag_parameter
     const bool USE_ERROR_MAGNITUDE(false);
 
     const Eigen::VectorXd ERROR_ALPHA = (Eigen::VectorXd(DIMENSIONS) \
-                                         << 0.178001, 0.178001, 0.008001, 
-                                            0.178001, 0.178001, 0.178001).finished();
+                                     << 0.178001, 0.178001, 0.150000, 
+                                        0.178001, 0.178001, 0.178001).finished();
 
+    // Bias parameters
     const Eigen::VectorXd BIAS_THRESHOLD = (Eigen::VectorXd(DIMENSIONS) \
-                                            << 0.724277, 0.724277, 0.024277, 
-                                               0.724277, 0.724277, 0.724277).finished();
+                                     << 0.724277, 0.724277, 0.004277, 
+                                        0.724277, 0.724277, 0.724277).finished();
 
     const Eigen::VectorXd BIAS_STEP = (Eigen::VectorXd(DIMENSIONS) \
-                                       << 0.503495, 0.503495, 0.503495, 
-                                          0.503495, 0.503495, 0.503495).finished();
+                                     << 0.503495, 0.503495, 0.013495, 
+                                        0.503495, 0.503495, 0.503495).finished();
 
+
+    // Gain parameters
     const Eigen::VectorXd GAIN_THRESHOLD = (Eigen::VectorXd(DIMENSIONS) \
-                                            << 0.432492, 0.432492, 0.732492, 
-                                               0.432492, 0.432492, 0.432492).finished();
+                                     << 0.432492, 0.432492, 0.952492, 
+                                        0.432492, 0.432492, 0.432492).finished();
 
     const Eigen::VectorXd GAIN_STEP = (Eigen::VectorXd(DIMENSIONS) \
-                                       << 0.655152, 0.655152, 0.155152, 
-                                          0.655152, 0.655152, 0.655152).finished();
+                                     << 0.655152, 0.655152, 0.015152, 
+                                        0.655152, 0.655152, 0.655152).finished();
 
-   
+    // Saturation limits   
     const Eigen::VectorXd MIN_BIAS_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
                                            << -1.0, -1.0, -1.0, 
                                               -1.0, -1.0, -1.0).finished();
@@ -131,6 +134,6 @@ namespace dynamics_parameter
 {
     // Number of task constraints imposed on the robot, i.e. Cartesian DOFS
     const int NUMBER_OF_CONSTRAINTS(6);
-    const Eigen::IOFormat WRITE_FORMAT(5, Eigen::DontAlignCols, " ", "", "", "\n");
+    const Eigen::IOFormat WRITE_FORMAT(6, Eigen::DontAlignCols, " ", "", "", "\n");
     const std::string LOG_FILE_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/control_error.txt");
 }

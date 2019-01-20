@@ -10,7 +10,7 @@ import time
 import pyinotify
 
 desired_dim = np.int(sys.argv[1])
-print("You selected dimension: ", desired_dim)
+print("Selected dimension: ", desired_dim)
 
 _cached_stamp = 0
 filename = "control_error.txt"
@@ -23,7 +23,7 @@ def restart_program(): #restart application
 class ModHandler(pyinotify.ProcessEvent):
     # evt has useful properties, including pathname
     def process_IN_CLOSE_WRITE(self, evt):
-        print("file changed")
+        print("Data file has changed")
         restart_program()
 
 
@@ -35,6 +35,7 @@ wdd = wm.add_watch(filename, pyinotify.IN_CLOSE_WRITE)
 input_data = np.loadtxt(filename, dtype='double', delimiter=' ')
 rows = input_data.shape[0]
 cols = input_data.shape[1]
+print("Data size: ", rows/5, ",", cols)
 num_samples = rows / 5
 final_data = []
 measured = []
@@ -58,7 +59,7 @@ gain = np.array(gain)
 command = np.array(command)
 plt.ion()
 plt.show()
-plt.figure(figsize = (10,8))
+plt.figure(figsize = (8,8))
 plt.subplot(2, 1, 1)
 plt.plot(measured, c = 'purple', label='X_m', linewidth = 2, zorder=1)
 if not num_samples == 1:
@@ -73,6 +74,7 @@ plt.plot(bias, c = 'green', label='b', linewidth=2, zorder=2)
 plt.plot(gain, c = 'red', label='g', linewidth=2, zorder=3)
 plt.plot(command, c = 'blue', label='u', linewidth=2, zorder=1)
 plt.legend(loc=1, fontsize = 'x-large')
+
 plt.draw()
 plt.pause(0.001)
 notifier.loop()
