@@ -141,8 +141,8 @@ int main(int argc, char **argv)
 
     assert(("Robot is not initialized", robot_driver.is_initialized));
     stop_robot_motion(robot_driver, motion_);
-    // go_navigation_2(robot_driver);
-    go_folded_2(robot_driver);
+    go_navigation_2(robot_driver);
+    // go_folded_2(robot_driver);
     // go_candle_3(robot_driver);
     // robot_driver.get_joint_positions(motion_.q);
     // robot_driver.get_joint_velocities(motion_.qd);

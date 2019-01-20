@@ -77,7 +77,7 @@ namespace abag_parameter
     // How many dimension ABAG controller is supposed to control
     const int DIMENSIONS(6);
     const bool REVERSE_ERROR(true);
-    const bool USE_ERROR_MAGNITUDE(false);
+    const bool USE_ERROR_MAGNITUDE(false); //Experimental feature! False is normal!
 
     const Eigen::VectorXd ERROR_ALPHA = (Eigen::VectorXd(DIMENSIONS) \
                                      << 0.178001, 0.178001, 0.150000, 
@@ -85,7 +85,7 @@ namespace abag_parameter
 
     // Bias parameters
     const Eigen::VectorXd BIAS_THRESHOLD = (Eigen::VectorXd(DIMENSIONS) \
-                                     << 0.724277, 0.724277, 0.004277, 
+                                     << 0.724277, 0.724277, 0.000007, 
                                         0.724277, 0.724277, 0.724277).finished();
 
     const Eigen::VectorXd BIAS_STEP = (Eigen::VectorXd(DIMENSIONS) \
@@ -95,11 +95,11 @@ namespace abag_parameter
 
     // Gain parameters
     const Eigen::VectorXd GAIN_THRESHOLD = (Eigen::VectorXd(DIMENSIONS) \
-                                     << 0.432492, 0.432492, 0.952492, 
+                                     << 0.432492, 0.432492, 0.752492, 
                                         0.432492, 0.432492, 0.432492).finished();
 
     const Eigen::VectorXd GAIN_STEP = (Eigen::VectorXd(DIMENSIONS) \
-                                     << 0.655152, 0.655152, 0.015152, 
+                                     << 0.655152, 0.655152, 0.025152, 
                                         0.655152, 0.655152, 0.655152).finished();
 
     // Saturation limits   
