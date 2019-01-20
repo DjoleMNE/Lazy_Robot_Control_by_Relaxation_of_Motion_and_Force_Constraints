@@ -29,7 +29,7 @@ SOFTWARE.
 #include <state_specification.hpp>
 #include <model_prediction.hpp>
 #include <youbot_mediator.hpp>
-#include <controller_constants.hpp>
+#include <constants.hpp>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -55,7 +55,7 @@ class safety_controller
   private:
     youbot_mediator robot_driver_;
     const KDL::Chain robot_chain_;
-	model_prediction predictor_;
+	  model_prediction predictor_;
 
     const std::vector<double> joint_position_limits_max_;
     const std::vector<double> joint_position_limits_min_;

@@ -37,6 +37,7 @@ link_directories(
 
 add_executable(main
   src/main.cpp
+  src/constants.cpp
   src/model_prediction.cpp
   src/solver_vereshchagin.cpp
   src/fk_vereshchagin.cpp

@@ -31,7 +31,7 @@ SOFTWARE.
 #include <model_prediction.hpp>
 #include <safety_controller.hpp>
 #include <abag.hpp>
-#include <controller_constants.hpp>
+#include <constants.hpp>
 #include <kdl_conversions/kdl_msg.h>
 #include <eigen_conversions/eigen_kdl.h>
 #include <iostream>
@@ -42,7 +42,7 @@ SOFTWARE.
 #include <thread> 
 #include <unistd.h> /*usleep function*/
 #include <cmath>
-#include <stdlib.h>     /* abs */
+#include <stdlib.h> /* abs */
 
 enum task_interface
 {

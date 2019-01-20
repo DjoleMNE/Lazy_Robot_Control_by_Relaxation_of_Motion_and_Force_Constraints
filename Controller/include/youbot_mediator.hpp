@@ -32,7 +32,7 @@ SOFTWARE.
 #include <kdl_parser/kdl_parser.hpp>
 #include <urdf/model.h>
 #include <youbot_custom_model.hpp>
-#include <youbot_constants.hpp>
+#include <constants.hpp>
 #include <memory>
 
 enum youbot_model 

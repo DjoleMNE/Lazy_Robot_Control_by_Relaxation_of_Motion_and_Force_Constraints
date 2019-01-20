@@ -26,7 +26,7 @@ SOFTWARE.
 #ifndef MODEL_PREDICTION_HPP
 #define MODEL_PREDICTION_HPP
 #include <state_specification.hpp>
-#include <controller_constants.hpp>
+#include <constants.hpp>
 #include <fk_vereshchagin.hpp>
 #include <iostream>
 #include <sstream>
