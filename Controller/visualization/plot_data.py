@@ -1,12 +1,38 @@
 # Author(s): Djordje Vukcevic
 # Year: 2019
-
+import sys, os
+from PyQt4 import QtCore
 import numpy as np
 import sympy as sp
 from sympy import *
 import matplotlib.pyplot as plt
+import time
+import pyinotify
 
-input_data = np.loadtxt("control_error.txt", dtype='double', delimiter=' ')
+desired_dim = np.int(sys.argv[1])
+print("You selected dimension: ", desired_dim)
+
+_cached_stamp = 0
+filename = "control_error.txt"
+file_ = open(filename, 'r')
+
+def restart_program(): #restart application
+    python = sys.executable
+    os.execl(python, python, * sys.argv)
+
+class ModHandler(pyinotify.ProcessEvent):
+    # evt has useful properties, including pathname
+    def process_IN_CLOSE_WRITE(self, evt):
+        print("file changed")
+        restart_program()
+
+
+handler = ModHandler()
+wm = pyinotify.WatchManager()
+notifier = pyinotify.Notifier(wm, handler)
+wdd = wm.add_watch(filename, pyinotify.IN_CLOSE_WRITE)
+
+input_data = np.loadtxt(filename, dtype='double', delimiter=' ')
 rows = input_data.shape[0]
 cols = input_data.shape[1]
 num_samples = rows / 5
@@ -16,8 +42,6 @@ desired = []
 bias = []
 gain = []
 command = []
-
-desired_dim = 2
 
 for sample_ in range(0, rows, 5):
     measured.append(input_data[sample_, desired_dim])
@@ -32,8 +56,9 @@ desired = np.array(desired)
 bias = np.array(bias)
 gain = np.array(gain)
 command = np.array(command)
-
-plt.figure(figsize = (8,8))
+plt.ion()
+plt.show()
+plt.figure(figsize = (10,8))
 plt.subplot(2, 1, 1)
 plt.plot(measured, c = 'purple', label='X_m', linewidth = 2, zorder=1)
 if not num_samples == 1:
@@ -48,4 +73,6 @@ plt.plot(bias, c = 'green', label='b', linewidth=2, zorder=2)
 plt.plot(gain, c = 'red', label='g', linewidth=2, zorder=3)
 plt.plot(command, c = 'blue', label='u', linewidth=2, zorder=1)
 plt.legend(loc=1, fontsize = 'x-large')
-plt.show()
+plt.draw()
+plt.pause(0.001)
+notifier.loop()
