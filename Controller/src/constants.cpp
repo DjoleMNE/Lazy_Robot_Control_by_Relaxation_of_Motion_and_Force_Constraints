@@ -79,11 +79,12 @@ namespace abag_parameter
     const bool REVERSE_ERROR(true);
     const bool USE_ERROR_MAGNITUDE(false); //Experimental feature! False is normal!
 
+    // Error parameters: Low pass filter threshold
     const Eigen::VectorXd ERROR_ALPHA = (Eigen::VectorXd(DIMENSIONS) \
                                      << 0.178001, 0.178001, 0.150000, 
                                         0.178001, 0.178001, 0.178001).finished();
 
-    // Bias parameters
+    // Bias parameters: threshold and step
     const Eigen::VectorXd BIAS_THRESHOLD = (Eigen::VectorXd(DIMENSIONS) \
                                      << 0.724277, 0.724277, 0.000007, 
                                         0.724277, 0.724277, 0.724277).finished();
@@ -93,7 +94,7 @@ namespace abag_parameter
                                         0.503495, 0.503495, 0.503495).finished();
 
 
-    // Gain parameters
+    // Gain parameters: threshold and step
     const Eigen::VectorXd GAIN_THRESHOLD = (Eigen::VectorXd(DIMENSIONS) \
                                      << 0.432492, 0.432492, 0.752492, 
                                         0.432492, 0.432492, 0.432492).finished();

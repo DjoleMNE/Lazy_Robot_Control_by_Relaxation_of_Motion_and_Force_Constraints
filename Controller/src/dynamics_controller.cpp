@@ -396,6 +396,7 @@ void dynamics_controller::write_to_file(Eigen::VectorXd measured,
 {   
     log_file_ << measured.transpose().format(WRITE_FORMAT_);
     log_file_ << desired.transpose().format(WRITE_FORMAT_);
+    log_file_ << abag_.get_error().transpose().format(WRITE_FORMAT_);
     log_file_ << abag_.get_bias().transpose().format(WRITE_FORMAT_);
     log_file_ << abag_.get_gain().transpose().format(WRITE_FORMAT_);
     log_file_ << abag_.get_command().transpose().format(WRITE_FORMAT_);

@@ -92,16 +92,16 @@ Eigen::VectorXd ABAG::update_state(const Eigen::VectorXd measured,
     assert(DIMENSIONS_ == desired.rows());
 
     update_error(measured, desired);
-    std::cout << "Error: \n" << signal.error_.transpose() << std::endl;
+    // std::cout << "Error: \n" << signal.error_.transpose() << std::endl;
 
     update_bias();
-    std::cout << "Bias: \n" << signal.bias_.transpose() << std::endl;
+    // std::cout << "Bias: \n" << signal.bias_.transpose() << std::endl;
 
     update_gain();
-    std::cout << "Gain: \n" << signal.gain_.transpose() << std::endl;
+    // std::cout << "Gain: \n" << signal.gain_.transpose() << std::endl;
 
     update_command();
-    std::cout << "Command: \n" << signal.command_.transpose() << std::endl;
+    // std::cout << "Command: \n" << signal.command_.transpose() << std::endl;
 
     return signal.command_;
 }

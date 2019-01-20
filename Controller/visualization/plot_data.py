@@ -11,10 +11,9 @@ import pyinotify
 
 desired_dim = np.int(sys.argv[1])
 print("Selected dimension: ", desired_dim)
+variable_num = 6
 
-_cached_stamp = 0
 filename = "control_error.txt"
-file_ = open(filename, 'r')
 
 def restart_program(): #restart application
     python = sys.executable
@@ -35,21 +34,23 @@ wdd = wm.add_watch(filename, pyinotify.IN_CLOSE_WRITE)
 input_data = np.loadtxt(filename, dtype='double', delimiter=' ')
 rows = input_data.shape[0]
 cols = input_data.shape[1]
-print("Data size: ", rows/5, ",", cols)
-num_samples = rows / 5
-final_data = []
+num_samples = rows / variable_num
+print("Data size: ", num_samples, ",", cols)
+
 measured = []
 desired = []
+error = []
 bias = []
 gain = []
 command = []
 
-for sample_ in range(0, rows, 5):
+for sample_ in range(0, rows, variable_num):
     measured.append(input_data[sample_, desired_dim])
     desired.append(input_data[1 + sample_, desired_dim])
-    bias.append(input_data[2 + sample_, desired_dim])
-    gain.append(input_data[3 + sample_, desired_dim])
-    command.append(input_data[4 + sample_, desired_dim])
+    error.append(input_data[2 + sample_, desired_dim])
+    bias.append(input_data[3 + sample_, desired_dim])
+    gain.append(input_data[4 + sample_, desired_dim])
+    command.append(input_data[5 + sample_, desired_dim])
 
 samples = np.arange(0, num_samples, 1)
 measured = np.array(measured)
@@ -61,10 +62,10 @@ plt.ion()
 plt.show()
 plt.figure(figsize = (8,10))
 plt.gca().set_axis_off()
-plt.subplots_adjust(hspace = 0, wspace = 0)
+plt.subplots_adjust(hspace = 0.02, wspace = 0)
 plt.margins(0,0)
 
-plt.subplot(2, 1, 1)
+plt.subplot(3, 1, 1)
 plt.plot(measured, c = 'purple', label='X_measured', linewidth = 2, zorder = 2)
 if not num_samples == 1:
     plt.step(samples, desired, label='X_desired', linewidth = 2, where='post', color = 'black', zorder = 1)
@@ -74,13 +75,19 @@ else:
 plt.legend(loc=4, fontsize = 'x-large')
 plt.grid()
 
-plt.subplot(2, 1, 2)
+plt.subplot(3, 1, 2)
 plt.plot(bias, c = 'green', label='bias', linewidth=2, zorder=2)
 plt.plot(gain, c = 'red', label='gain', linewidth=2, zorder=3)
 plt.plot(command, c = 'blue', label='u', linewidth=2, zorder=1)
-plt.legend(loc=4, fontsize = 'x-large')
+plt.legend(fontsize = 'x-large')
+plt.grid()
+
+plt.subplot(3, 1, 3)
+plt.plot(error, c = 'orange', label='low_pass-error', linewidth=2, zorder=2)
+plt.legend(fontsize = 'x-large')
 plt.grid()
 
 plt.draw()
 plt.pause(0.001)
+plt.savefig('z_linear_control.pdf')
 notifier.loop()
