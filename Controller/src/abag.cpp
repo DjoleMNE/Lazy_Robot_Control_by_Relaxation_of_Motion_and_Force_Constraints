@@ -133,7 +133,7 @@ void ABAG::update_error(const Eigen::VectorXd measured,
 void ABAG::update_bias()
 {
     signal.bias_ = saturate_bias(signal.bias_ + \
-                                 parameter.BIAS_STEP.cwiseProduct( bias_decision_map() )\
+                                 parameter.BIAS_STEP.cwiseProduct( bias_decision_map() ) \
                                 );
 }
 
