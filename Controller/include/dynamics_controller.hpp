@@ -59,7 +59,9 @@ class dynamics_controller
     dynamics_controller(youbot_mediator &robot_driver, const int rate_hz);
     ~dynamics_controller(){};
 
-    int control(const int desired_control_mode, const int desired_task_interface);
+    int control(const int desired_control_mode, 
+                const int desired_task_interface,
+                const bool store_control_data);
 
     void reset_desired_state();
 
@@ -78,6 +80,10 @@ class dynamics_controller
     int solver_result_;
     int fk_solver_result_;
     int safe_control_mode_;
+    const std::string LOG_FILE_PATH_;
+    const Eigen::IOFormat WRITE_FORMAT_;
+    std::ofstream log_file_;
+
 
     struct desired_control_mode
     {
@@ -107,6 +113,7 @@ class dynamics_controller
     state_specification predicted_state_;
 
     void print_settings_info();
+    void write_to_file(Eigen::VectorXd measured, Eigen::VectorXd desired);
     void reset_state(state_specification &state);
     void stop_robot_motion();
     void update_task();

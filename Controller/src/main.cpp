@@ -170,7 +170,9 @@ int main(int argc, char **argv)
                                                                   0.0, 0.0, 
                                                                   0.0}); 
 
-    controller.control(control_mode::VELOCITY, task_interface::CART_VELOCITY);
+    controller.control(control_mode::VELOCITY, 
+                       task_interface::CART_VELOCITY, 
+                       true);
 
     return 0;
 }

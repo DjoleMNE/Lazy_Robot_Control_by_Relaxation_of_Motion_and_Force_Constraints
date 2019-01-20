@@ -33,6 +33,8 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     DT_MICRO_(SECOND / RATE_HZ_),  DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
     loop_count_(0), loop_time_(0.0),
     solver_result_(0), fk_solver_result_(0), safe_control_mode_(-1),
+    LOG_FILE_PATH_(dynamics_parameter::LOG_FILE_PATH),
+    WRITE_FORMAT_(dynamics_parameter::WRITE_FORMAT),
     loop_start_time_(), loop_end_time_(), //Not sure if required to init
     robot_chain_(robot_driver.get_robot_model()),
     NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
@@ -370,15 +372,15 @@ void dynamics_controller::update_current_state()
 
     // Print Current robot state in Debug mode
     #ifndef NDEBUG
-        std::cout << "\nCurrent Joint state:          " << std::endl;
-        std::cout << "Joint angle:    " << robot_state_.q << std::endl;
-        std::cout << "Joint velocity: " << robot_state_.qd << std::endl;
+        // std::cout << "\nCurrent Joint state:          " << std::endl;
+        // std::cout << "Joint angle:    " << robot_state_.q << std::endl;
+        // std::cout << "Joint velocity: " << robot_state_.qd << std::endl;
         
-        std::cout << "\nCurrent Cartesian state:                 " << std::endl;
-        std::cout << "End-effector Position:   " 
-                  << robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p  << std::endl;
-        std::cout << "End-effector Velocity:   " 
-                  << robot_state_.frame_velocity[NUMBER_OF_SEGMENTS_ - 1] << std::endl;
+        // std::cout << "\nCurrent Cartesian state:                 " << std::endl;
+        // std::cout << "End-effector Position:   " 
+        //           << robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p  << std::endl;
+        // std::cout << "End-effector Velocity:   " 
+        //           << robot_state_.frame_velocity[NUMBER_OF_SEGMENTS_ - 1] << std::endl;
     #endif 
 }
 
@@ -388,9 +390,21 @@ void dynamics_controller::stop_robot_motion()
     safety_control_.stop_robot_motion();
 }
 
+// Write control data to a file
+void dynamics_controller::write_to_file(Eigen::VectorXd measured,
+                                        Eigen::VectorXd desired)
+{   
+    log_file_ << measured.transpose().format(WRITE_FORMAT_);
+    log_file_ << desired.transpose().format(WRITE_FORMAT_);
+    log_file_ << abag_.get_bias().transpose().format(WRITE_FORMAT_);
+    log_file_ << abag_.get_gain().transpose().format(WRITE_FORMAT_);
+    log_file_ << abag_.get_command().transpose().format(WRITE_FORMAT_);
+}
+
 //Main control loop
 int dynamics_controller::control(const int desired_control_mode, 
-                                 const int desired_task_interface)
+                                 const int desired_task_interface,
+                                 const bool store_control_data)
 {   
     // Save current selection of desire control mode
     desired_control_mode_.interface = desired_control_mode;
@@ -406,8 +420,6 @@ int dynamics_controller::control(const int desired_control_mode,
         return -1;
     } 
 
-    loop_time_ = 0.0;
-    loop_count_ = 0;
     
     Eigen::VectorXd abag_command(abag_parameter::DIMENSIONS);
     abag_command = Eigen::VectorXd::Constant(abag_parameter::DIMENSIONS, 0.0);
@@ -418,6 +430,18 @@ int dynamics_controller::control(const int desired_control_mode,
     Eigen::VectorXd desired_cart_vel(abag_parameter::DIMENSIONS);
     desired_cart_vel = Eigen::VectorXd::Constant(abag_parameter::DIMENSIONS, 0.0);
     desired_cart_vel(2) = 0.1;
+
+    loop_time_ = 0.0;
+    loop_count_ = 0;
+    
+    if (store_control_data) 
+    {
+        log_file_.open(LOG_FILE_PATH_);
+        if (!log_file_.is_open()) {
+            std::cout << "Unable to open the file"<< std::endl;
+            return -1;
+        }
+    }
 
     safe_control_mode_ = desired_control_mode_.interface;
     std::cout << "Control Loop Started"<< std::endl;
@@ -443,11 +467,13 @@ int dynamics_controller::control(const int desired_control_mode,
         robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(2) = abag_command(2) * 40.0;
                                           
         std::cout << "\nABAG Command: " << abag_command(2) * 40.0 << std::endl;
+        if (store_control_data) write_to_file(measured_cart_vel, desired_cart_vel);
 
         // Calculate robot dynamics using the Vereshchagin HD solver
         if(evaluate_dynamics() != 0)
         {
             stop_robot_motion();
+            if (store_control_data) log_file_.close();
             std::cerr << "WARNING: Dynamics Solver returned error. "
                       << "Stopping the robot!" << std::endl;
             return -1;
@@ -457,7 +483,10 @@ int dynamics_controller::control(const int desired_control_mode,
         make_predictions(integration_method::SYMPLECTIC_EULER);
 
         // Apply joint commands using safe control interface.
-        if(apply_control_commands() != 0) return -1;
+        if(apply_control_commands() != 0){
+            if (store_control_data) log_file_.close();
+            return -1;
+        } 
 
         // Make sure that the loop is always running with the same frequency
         if(!enforce_loop_frequency() == 0)
@@ -472,5 +501,6 @@ int dynamics_controller::control(const int desired_control_mode,
         // }
         // if(loop_count_ == 250) return 0;
     }
+    if (store_control_data) log_file_.close();
     return 0;
 }
