@@ -81,7 +81,7 @@ namespace abag_parameter
 
     // Error parameters: Low pass filter threshold
     const Eigen::VectorXd ERROR_ALPHA = (Eigen::VectorXd(DIMENSIONS) \
-                                     << 0.178001, 0.178001, 0.150000, 
+                                     << 0.178001, 0.178001, 0.550000, 
                                         0.178001, 0.178001, 0.178001).finished();
 
     // Bias parameters: threshold and step
@@ -96,7 +96,7 @@ namespace abag_parameter
 
     // Gain parameters: threshold and step
     const Eigen::VectorXd GAIN_THRESHOLD = (Eigen::VectorXd(DIMENSIONS) \
-                                     << 0.432492, 0.432492, 0.752492, 
+                                     << 0.432492, 0.432492, 0.252492, 
                                         0.432492, 0.432492, 0.432492).finished();
 
     const Eigen::VectorXd GAIN_STEP = (Eigen::VectorXd(DIMENSIONS) \
