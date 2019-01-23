@@ -85,8 +85,8 @@ ABAG::ABAG(const int num_of_dimensions, const bool reverse_error,
 }
 
 // Update state values for all dimensions and return the command singal - public method
-Eigen::VectorXd ABAG::update_state(const Eigen::VectorXd measured, 
-                                   const Eigen::VectorXd desired)
+Eigen::VectorXd ABAG::update_state(const Eigen::VectorXd &measured, 
+                                   const Eigen::VectorXd &desired)
 {   
     assert(DIMENSIONS_ == measured.rows());
     assert(DIMENSIONS_ == desired.rows());
@@ -108,8 +108,8 @@ Eigen::VectorXd ABAG::update_state(const Eigen::VectorXd measured,
 
 
 // - private method
-void ABAG::update_error(const Eigen::VectorXd measured, 
-                        const Eigen::VectorXd desired)
+void ABAG::update_error(const Eigen::VectorXd &measured, 
+                        const Eigen::VectorXd &desired)
 {
     /*
     *   Reversing error is important due to possibility of different controller inputs.
@@ -257,7 +257,7 @@ double ABAG::get_gain(const int dimension)
     Setters: Useful for online parameter adaptation
 */
 // Set filtering factor parameter for all dimensions - public method
-void ABAG::set_error_alpha(const Eigen::VectorXd error_alpha)
+void ABAG::set_error_alpha(const Eigen::VectorXd &error_alpha)
 {
     assert(("Not valid dimension number", error_alpha.rows() > 0));
     assert(("Not valid dimension number", error_alpha.rows() <= DIMENSIONS_));
@@ -280,7 +280,7 @@ void ABAG::set_error_alpha(const double error_alpha, const int dimension)
 
 
 // Set bias threshold parameter for all dimensions - public method
-void ABAG::set_bias_threshold(const Eigen::VectorXd bias_threshold)
+void ABAG::set_bias_threshold(const Eigen::VectorXd &bias_threshold)
 {
     assert(("Not valid dimension number", bias_threshold.rows() > 0));
     assert(("Not valid dimension number", bias_threshold.rows() <= DIMENSIONS_));
@@ -303,7 +303,7 @@ void ABAG::set_bias_threshold(double bias_threshold, const int dimension)
 
 
 // Set bias step parameter for all dimensions - public method
-void ABAG::set_bias_step(const Eigen::VectorXd bias_step)
+void ABAG::set_bias_step(const Eigen::VectorXd &bias_step)
 {
     assert(("Not valid dimension number", bias_step.rows() > 0));
     assert(("Not valid dimension number", bias_step.rows() <= DIMENSIONS_));
@@ -326,7 +326,7 @@ void ABAG::set_bias_step(double bias_step, const int dimension)
 
 
 // Set gain threshold parameter for all dimensions - public method
-void ABAG::set_gain_threshold(const Eigen::VectorXd gain_threshold)
+void ABAG::set_gain_threshold(const Eigen::VectorXd &gain_threshold)
 {
     assert(("Not valid dimension number", gain_threshold.rows() > 0));
     assert(("Not valid dimension number", gain_threshold.rows() <= DIMENSIONS_));
@@ -348,7 +348,7 @@ void ABAG::set_gain_threshold(double gain_threshold, const int dimension)
 }
 
 // Set gain step parameter for all dimensions - public method
-void ABAG::set_gain_step(const Eigen::VectorXd gain_step)
+void ABAG::set_gain_step(const Eigen::VectorXd &gain_step)
 {
     assert(("Not valid dimension number", gain_step.rows() > 0));
     assert(("Not valid dimension number", gain_step.rows() <= DIMENSIONS_));
@@ -372,37 +372,37 @@ void ABAG::set_gain_step(double gain_step, const int dimension)
 /*
     Help functions
 */
-Eigen::VectorXd ABAG::saturate_bias(const Eigen::VectorXd value)
+Eigen::VectorXd ABAG::saturate_bias(const Eigen::VectorXd &value)
 {   
     assert(parameter.MAX_BIAS_SAT_LIMIT.rows() == value.rows());
     assert(parameter.MIN_BIAS_SAT_LIMIT.rows() == value.rows());
     return value.cwiseMin(parameter.MAX_BIAS_SAT_LIMIT).cwiseMax(parameter.MIN_BIAS_SAT_LIMIT);
 }
 
-Eigen::VectorXd ABAG::saturate_gain(const Eigen::VectorXd value)
+Eigen::VectorXd ABAG::saturate_gain(const Eigen::VectorXd &value)
 {   
     assert(parameter.MAX_GAIN_SAT_LIMIT.rows() == value.rows());
     assert(parameter.MIN_GAIN_SAT_LIMIT.rows() == value.rows());
     return value.cwiseMin(parameter.MAX_GAIN_SAT_LIMIT).cwiseMax(parameter.MIN_GAIN_SAT_LIMIT);
 }
 
-Eigen::VectorXd ABAG::saturate_command(const Eigen::VectorXd value)
+Eigen::VectorXd ABAG::saturate_command(const Eigen::VectorXd &value)
 {   
     assert(parameter.MAX_COMMAND_SAT_LIMIT.rows() == value.rows());
     assert(parameter.MIN_COMMAND_SAT_LIMIT.rows() == value.rows());
     return value.cwiseMin(parameter.MAX_COMMAND_SAT_LIMIT).cwiseMax(parameter.MIN_COMMAND_SAT_LIMIT);
 }
 
-Eigen::VectorXd ABAG::saturate(const Eigen::VectorXd value, 
-                               const Eigen::VectorXd MIN_LIMIT, 
-                               const Eigen::VectorXd MAX_LIMIT)
+Eigen::VectorXd ABAG::saturate(const Eigen::VectorXd &value, 
+                               const Eigen::VectorXd &MIN_LIMIT, 
+                               const Eigen::VectorXd &MAX_LIMIT)
 {   
     assert(MAX_LIMIT.rows() == value.rows());
     assert(MIN_LIMIT.rows() == value.rows());
     return value.cwiseMin(MAX_LIMIT).cwiseMax(MIN_LIMIT);
 }
 
-Eigen::VectorXd ABAG::heaviside(const Eigen::VectorXd value)
+Eigen::VectorXd ABAG::heaviside(const Eigen::VectorXd &value)
 {   
     return 0.5 * (value.cwiseSign() + ONES_);
 }
