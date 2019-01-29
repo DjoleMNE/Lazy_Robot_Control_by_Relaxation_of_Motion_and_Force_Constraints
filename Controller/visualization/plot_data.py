@@ -31,10 +31,15 @@ wm = pyinotify.WatchManager()
 notifier = pyinotify.Notifier(wm, handler)
 wdd = wm.add_watch(filename, pyinotify.IN_CLOSE_WRITE)
 
-input_data = np.loadtxt(filename, dtype='double', delimiter=' ')
-rows = input_data.shape[0]
-cols = input_data.shape[1]
-num_samples = rows / variable_num
+# input_data = np.loadtxt(filename, dtype='double', delimiter=' ')
+with open(filename,"r") as f:
+    all_data = [x.split() for x in f.readlines()]
+    input_data = np.array(all_data)[:-2]
+
+rows = np.shape(input_data)[0]
+cols = np.shape(input_data[0])[0]
+rows = rows - (rows % variable_num)
+num_samples = np.int(rows / variable_num) 
 print("Data size: ", num_samples, ",", cols)
 
 measured = []
@@ -45,12 +50,12 @@ gain = []
 command = []
 
 for sample_ in range(0, rows, variable_num):
-    measured.append(input_data[sample_, desired_dim])
-    desired.append(input_data[1 + sample_, desired_dim])
-    error.append(input_data[2 + sample_, desired_dim])
-    bias.append(input_data[3 + sample_, desired_dim])
-    gain.append(input_data[4 + sample_, desired_dim])
-    command.append(input_data[5 + sample_, desired_dim])
+    measured.append(np.float32( input_data[sample_]    [desired_dim]) )
+    desired.append( np.float32( input_data[1 + sample_][desired_dim]) )
+    error.append(   np.float32( input_data[2 + sample_][desired_dim]) )
+    bias.append(    np.float32( input_data[3 + sample_][desired_dim]) )
+    gain.append(    np.float32( input_data[4 + sample_][desired_dim]) )
+    command.append( np.float32( input_data[5 + sample_][desired_dim]) )
 
 samples = np.arange(0, num_samples, 1)
 measured = np.array(measured)
