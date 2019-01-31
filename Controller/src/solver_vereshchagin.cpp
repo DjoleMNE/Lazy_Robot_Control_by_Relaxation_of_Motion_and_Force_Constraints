@@ -430,7 +430,7 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
     }
 }
 
-//Returns cartesian pose of links in robot base coordinates
+// Returns Cartesian pose of links in robot base coordinates
 void Solver_Vereshchagin::get_transformed_link_pose(Frames& x)
 {
     assert(x.size() == ns);
@@ -440,7 +440,19 @@ void Solver_Vereshchagin::get_transformed_link_pose(Frames& x)
     }
 }
 
-//Returns cartesian velocity of links in robot base coordinates
+// Returns Cartesian velocity of links in robot base coordinates and base reference point 
+// Tranformation from base-fixed twist to screw twist?
+void Solver_Vereshchagin::get_screw_twist(Twists& xDot)
+{
+    assert(xDot.size() == ns);
+
+    for (int i = 0; i < ns; i++) {
+        xDot[i] = results[i + 1].F_base * results[i + 1].v;
+    }
+}
+
+// Returns Cartesian velocity of links in robot base coordinates. 
+// Returns Pose twist?
 void Solver_Vereshchagin::get_transformed_link_velocity(Twists& xDot)
 {
     assert(xDot.size() == ns);
@@ -450,7 +462,7 @@ void Solver_Vereshchagin::get_transformed_link_velocity(Twists& xDot)
     }
 }
 
-//Returns cartesian acceleration of links in link's tip coordinates
+// Returns Cartesian acceleration of links in link's tip coordinates
 void Solver_Vereshchagin::get_link_acceleration(Twists& xDotdot)
 {
     assert(xDotdot.size() == ns + 1);
@@ -460,7 +472,7 @@ void Solver_Vereshchagin::get_link_acceleration(Twists& xDotdot)
     }
 }
 
-//Returns cartesian acceleration of links in robot base coordinates
+// Returns Cartesian acceleration of links in robot base coordinates
 void Solver_Vereshchagin::get_transformed_link_acceleration(Twists& xDotdot)
 {
     assert(xDotdot.size() == ns + 1);

@@ -79,6 +79,7 @@ public:
 
     void set_joint_inertia(const std::vector<double> &joint_inertia);
     void get_transformed_link_pose(Frames& x);
+    void get_screw_twist(Twists& xDot);
     void get_transformed_link_velocity(Twists& xDot);
     void get_link_acceleration(Twists& xDotdot);
     void get_transformed_link_acceleration(Twists& xDotdot);
