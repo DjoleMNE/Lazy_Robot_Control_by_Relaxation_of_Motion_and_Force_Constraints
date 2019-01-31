@@ -262,10 +262,21 @@ void dynamics_controller::make_predictions(const int prediction_method)
     //                                      prediction_method);
 }
 
+/*  
+    Compute the error between current (measured) Cartesian state and 
+    predicted (integrated) Cartesian state.
+*/
+void dynamics_controller::compute_error()
+{
+    predictor_.integrate_cartesian_space(robot_state_, 
+                                         predicted_state_, 
+                                         DT_SEC_, 1);
+}
+
 //Calculate robot dynamics - Resolve the motion using the Vereshchagin HD solver
 int dynamics_controller::evaluate_dynamics()
 {
-    solver_result_= hd_solver_.CartToJnt(robot_state_.q,
+    hd_solver_result_= hd_solver_.CartToJnt(robot_state_.q,
                                          robot_state_.qd,
                                          robot_state_.qdd,
                                          robot_state_.ee_unit_constraint_force,
@@ -273,26 +284,34 @@ int dynamics_controller::evaluate_dynamics()
                                          robot_state_.external_force,
                                          robot_state_.feedforward_torque);
 
-    if(solver_result_ != 0) return solver_result_;
+    if(hd_solver_result_ != 0) return hd_solver_result_;
 
-    hd_solver_.get_transformed_link_pose(robot_state_.frame_pose);
-    hd_solver_.get_transformed_link_velocity(robot_state_.frame_velocity);
+    // hd_solver_.get_transformed_link_pose(robot_state_.frame_pose);
+    // hd_solver_.get_transformed_link_velocity(robot_state_.frame_velocity);
     hd_solver_.get_transformed_link_acceleration(robot_state_.frame_acceleration);
     hd_solver_.get_control_torque(robot_state_.control_torque);
     
     // Print computed state in Debug mode
     #ifndef NDEBUG
-        std::cout << "\nComputed Cartesian state:" << std::endl;
-        std::cout << "Frame ACC" << '\n';
-        for (size_t i = 0; i < NUMBER_OF_SEGMENTS_ + 1; i++)
-            std::cout << robot_state_.frame_acceleration[i] << '\n';
+        // std::cout << "\nComputed Cartesian state:" << std::endl;
 
-        std::cout << "\nComputed Joint state:          " << std::endl;
-        std::cout << "Joint torque:  " << robot_state_.control_torque << std::endl;
-        std::cout << "Joint acc:     " << robot_state_.qdd << std::endl;
+        // std::cout << "Frame ACC" << '\n';
+        // for (size_t i = 0; i < NUMBER_OF_SEGMENTS_ + 1; i++)
+        //     std::cout << robot_state_.frame_acceleration[i] << '\n';
+
+        // std::cout << "End-effector Position:   " 
+        //       << robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p  << std::endl;
+
+        // std::cout << "\nComputed Joint state:          " << std::endl;
+        // std::cout << "Joint torque:  " << robot_state_.control_torque << std::endl;
+        // std::cout << "Joint acc:     " << robot_state_.qdd << std::endl;
     #endif 
 
-    return solver_result_;
+    #ifdef NDEBUG
+        std::cout << "Joint torque:  " << robot_state_.control_torque << std::endl;
+    #endif
+
+    return hd_solver_result_;
 }
 
 // Update the desired robot state 
@@ -379,9 +398,14 @@ void dynamics_controller::update_current_state()
         // std::cout << "\nCurrent Cartesian state:                 " << std::endl;
         // std::cout << "End-effector Position:   " 
         //           << robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p  << std::endl;
-        // std::cout << "End-effector Velocity:   " 
-        //           << robot_state_.frame_velocity[NUMBER_OF_SEGMENTS_ - 1] << std::endl;
+        std::cout << "End-effector Velocity:                " 
+                  << robot_state_.frame_velocity[NUMBER_OF_SEGMENTS_ - 1] << std::endl;
     #endif 
+
+    #ifdef NDEBUG
+        std::cout << "End-effector Velocity:   " 
+                  << robot_state_.frame_velocity[NUMBER_OF_SEGMENTS_ - 1] << std::endl;
+    #endif
 }
 
 //Send 0 joints velocities to the robot driver
@@ -421,26 +445,31 @@ int dynamics_controller::control(const int desired_control_mode,
         return -1;
     } 
 
-    
+    int desired_dim = 0;
     Eigen::VectorXd abag_command(abag_parameter::DIMENSIONS);
     abag_command = Eigen::VectorXd::Constant(abag_parameter::DIMENSIONS, 0.0);
     
-    Eigen::VectorXd measured_cart_vel(abag_parameter::DIMENSIONS);
-    measured_cart_vel = Eigen::VectorXd::Constant(abag_parameter::DIMENSIONS, 0.0);
+    Eigen::VectorXd measured_cart(abag_parameter::DIMENSIONS);
+    measured_cart = Eigen::VectorXd::Constant(abag_parameter::DIMENSIONS, 0.0);
 
-    Eigen::VectorXd desired_cart_vel(abag_parameter::DIMENSIONS);
-    desired_cart_vel = Eigen::VectorXd::Constant(abag_parameter::DIMENSIONS, 0.0);
-    desired_cart_vel(2) = 0.1;
+    Eigen::VectorXd desired_cart(abag_parameter::DIMENSIONS);
+    desired_cart = Eigen::VectorXd::Constant(abag_parameter::DIMENSIONS, 0.0);
+    desired_cart(4) = 0.0;
+    desired_cart(2) = 0.01 + robot_state_.frame_pose[4].p(2);
+    // desired_cart(0) = 0.1;
+
+    double max_lin_force = 60.0;
+    double max_ang_force = 20.0;
+    if (desired_control_mode == control_mode::TORQUE) max_lin_force = 40.0;
 
     loop_time_ = 0.0;
     loop_count_ = 0;
-    
+
     if (store_control_data) 
     {
         log_file_.open(LOG_FILE_PATH_);
         if (!log_file_.is_open()) {
             std::cout << "Unable to open the file"<< std::endl;
-            return -1;
         }
     }
 
@@ -455,20 +484,29 @@ int dynamics_controller::control(const int desired_control_mode,
         // Save current time point
         loop_start_time_ = std::chrono::steady_clock::now();
 
-        // Check if the task specification is changed. Update accordingly.
+        // Check if the task specification has changed. Update accordingly.
         update_task();
 
         //Get current robot state from the joint sensors, velocities and angles
         update_current_state();
 
-        measured_cart_vel(2) = robot_state_.frame_velocity[4].vel(2);
-        abag_command = abag_.update_state(measured_cart_vel, \
-                                          desired_cart_vel).transpose();
+        compute_error();
 
-        robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(2) = abag_command(2) * 40.0;
-                                          
-        std::cout << "\nABAG Command: " << abag_command(2) * 40.0 << std::endl;
-        if (store_control_data) write_to_file(measured_cart_vel, desired_cart_vel);
+        // measured_cart(0) = robot_state_.frame_velocity[4].vel(0);
+        measured_cart(4) = robot_state_.frame_velocity[4].rot(1);
+        measured_cart(2) = robot_state_.frame_pose[4].p(2);
+
+
+        abag_command = abag_.update_state(measured_cart, \
+                                          desired_cart).transpose();
+
+        // robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(1) = abag_command(4) * max_ang_force;
+        // robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(2) = abag_command(2) * max_lin_force;
+
+        // std::cout << "\n" << robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque  << std::endl;
+        // std::cout << robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force  << std::endl;
+
+        if (store_control_data) write_to_file(measured_cart, desired_cart);
 
         // Calculate robot dynamics using the Vereshchagin HD solver
         if(evaluate_dynamics() != 0)
@@ -480,8 +518,6 @@ int dynamics_controller::control(const int desired_control_mode,
             return -1;
         }
 
-        // Currently not implemented. Method definition is empty.
-        make_predictions(integration_method::SYMPLECTIC_EULER);
 
         // Apply joint commands using safe control interface.
         if(apply_control_commands() != 0){
@@ -500,7 +536,7 @@ int dynamics_controller::control(const int desired_control_mode,
         //     std::cout << loop_time_ / 1000.0 <<std::endl;
         //     return 0;
         // }
-        // if(loop_count_ == 250) return 0;
+        if(loop_count_ == 2) return 0;
     }
     if (store_control_data) log_file_.close();
     return 0;
