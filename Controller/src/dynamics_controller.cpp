@@ -32,7 +32,7 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     // Time period defined in microseconds: 1s = 1 000 000us
     DT_MICRO_(SECOND / RATE_HZ_),  DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
     loop_count_(0), loop_time_(0.0),
-    solver_result_(0), fk_solver_result_(0), safe_control_mode_(-1),
+    hd_solver_result_(0), fk_solver_result_(0), safe_control_mode_(-1),
     LOG_FILE_PATH_(dynamics_parameter::LOG_FILE_PATH),
     WRITE_FORMAT_(dynamics_parameter::WRITE_FORMAT),
     loop_start_time_(), loop_end_time_(), //Not sure if required to init
@@ -60,9 +60,9 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     assert(NUMBER_OF_JOINTS_ == NUMBER_OF_SEGMENTS_);
 
     // Control loop frequency must be higher than or equal to 1 Hz
-    assert(("Desired frequency is too low", 1 <= RATE_HZ_));
+    assert(("Selected frequency is too low", 1 <= RATE_HZ_));
     // Control loop frequency must be lower than or equal to 1000 Hz
-    assert(("Desired frequency is too high", RATE_HZ_<= 10000));
+    assert(("Selected frequency is too high", RATE_HZ_<= 10000));
     
     // Set default command interface to velocity mode and initialize it as safe
     desired_control_mode_.interface = control_mode::STOP_MOTION;
@@ -251,8 +251,8 @@ int dynamics_controller::apply_control_commands()
 }
 
 /*  
-    Predict future robot states (motion) based given the computed state
-    from the solver. I.e. Integrate Cartesian variables.
+    Predict future robot Cartesian states given the current Cartesian state.
+    I.e. Integrate Cartesian variables.
 */
 void dynamics_controller::make_predictions(const int prediction_method)
 {
