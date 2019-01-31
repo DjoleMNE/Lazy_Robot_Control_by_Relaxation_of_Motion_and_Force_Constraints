@@ -92,18 +92,6 @@ void model_prediction::integrate_joint_space(
     if(fk_required) compute_FK(predicted_states[0]);
 }
 
-// Used for predicting future deviation from the goal state
-void model_prediction::integrate_cartesian_space(
-                            const state_specification &current_state,
-                            std::vector<state_specification> &predicted_states,
-                            const double step_size, const int number_of_steps,
-                            const int method, const bool recompute_acceleration)
-{
-    assert(("Number of steps higher than the size of provided vector of states", 
-            number_of_steps <= predicted_states.size())); 
-    //TODO
-}
-
 // Scalar integration from one acceleration to one velocity
 void model_prediction::integrate_to_velocity(const double &acceleration, 
                                              const double &current_velocity,
@@ -171,4 +159,73 @@ void model_prediction::compute_FK(state_specification &predicted_state)
             << predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]
             << std::endl;
     #endif
+}
+
+/*
+    Used for predicting future deviation from the goal state
+    Saves the intermediate states computed throughout the itegration
+*/
+void model_prediction::integrate_cartesian_space(
+                            const state_specification &current_state,
+                            std::vector<state_specification> &predicted_states,
+                            const double dt, const int number_of_steps)
+{
+    assert(("Number of steps higher than the size of provided vector of states", 
+            number_of_steps <= predicted_states.size())); 
+    //TODO
+}
+
+/*
+    Used for predicting future deviation from the goal state.
+    The intermediate states computed throughout the itegration are not saved.
+    The function expects constant SCREW twist (not body-fixed twist).
+    I.e. both the reference frame and the reference point are in the base link.
+*/
+void model_prediction::integrate_cartesian_space(
+                            const state_specification &current_state,
+                            state_specification &predicted_state,
+                            const double dt, const int number_of_steps)
+{
+    // Only frame/s and velocities of one segment should be passed! change func def!
+    assert(NUMBER_OF_SEGMENTS_ == current_state.frame_velocity.size());
+    assert(NUMBER_OF_SEGMENTS_ == predicted_state.frame_velocity.size()); 
+
+    // This should go in hpp file
+    double x, y, z, w;
+
+    std::cout << "Measured End-effector Position:       " 
+              << current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p  << std::endl;
+
+    predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1] = \
+        KDL::addDelta(current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1], 
+                      current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1], 
+                      dt);
+    std::cout << "Integrated End-effector Position 1:   " 
+              << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p  << std::endl;
+    
+    predicted_state = current_state;
+    
+    predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].Integrate(current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1], 1.0 / dt);
+    std::cout << "Integrated End-effector Position 2:   " 
+              << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p  << std::endl;
+
+    // Normalize rotation matrix in each iteration: maybe make a function for this!
+    predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.GetQuaternion(x, y, z, w);
+    predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M = KDL::Rotation::Quaternion(x, y, z, w);
+    
+    // This should go in hpp file or in dynamics controller
+    KDL::Vector position_error(0.0, 0.0, 0.0);
+    KDL::Vector orientation_error(0.0, 0.0, 0.0);
+    KDL::Frame error_frame = KDL::Frame::Identity();
+
+    // Relative motion necessary to go from predicted to desired/measured
+    // Frame of desired/measured w.r.t predicted frame
+    error_frame = predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].Inverse() * current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1];
+    position_error = error_frame.p;
+    // Check docs for RPY due to issue with non uniqueness of values
+    error_frame.M.GetRPY(orientation_error(0), orientation_error(1), orientation_error(2));
+
+    std::cout << "Errro Position:                        " << position_error  << std::endl;
+    std::cout << "Errro Orientation:                     " << orientation_error  << std::endl;
+
 }
