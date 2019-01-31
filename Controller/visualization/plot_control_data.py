@@ -1,12 +1,10 @@
 # Author(s): Djordje Vukcevic
 # Year: 2019
 import sys, os
-from PyQt4 import QtCore
 import numpy as np
 import sympy as sp
 from sympy import *
 import matplotlib.pyplot as plt
-import time
 import pyinotify
 
 desired_dim = np.int(sys.argv[1])
