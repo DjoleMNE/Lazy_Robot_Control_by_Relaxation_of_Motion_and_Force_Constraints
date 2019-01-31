@@ -28,6 +28,7 @@ SOFTWARE.
 #include <state_specification.hpp>
 #include <constants.hpp>
 #include <fk_vereshchagin.hpp>
+#include <Eigen/Geometry>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -59,8 +60,13 @@ class model_prediction
 		void integrate_cartesian_space(
 							const state_specification &current_state,
 							std::vector<state_specification> &predicted_states,
-							const double step_size, const int number_of_steps,
-							const int method, const bool recompute_acceleration);
+							const double dt, const int number_of_steps);
+		
+		// Used for predicting future deviation from the goal state
+		void integrate_cartesian_space(
+							const state_specification &current_state,
+							state_specification &predicted_state,
+							const double dt, const int number_of_steps);
 
 		void integrate_to_velocity(const double &acceleration, 
 								   const double &current_velocity,
@@ -84,7 +90,7 @@ class model_prediction
 		KDL::FK_Vereshchagin fk_vereshchagin_;
 
 		// Temp varible required for saving intermediate state,
-		// if multi step integration requirested
+		// if multi-step integration requirested
 		state_specification temp_state_;
 
 		// Forward position and velocity kinematics, from itegrated values

@@ -32,7 +32,6 @@ SOFTWARE.
 #include <safety_controller.hpp>
 #include <abag.hpp>
 #include <constants.hpp>
-#include <kdl_conversions/kdl_msg.h>
 #include <eigen_conversions/eigen_kdl.h>
 #include <iostream>
 #include <sstream>
@@ -77,9 +76,11 @@ class dynamics_controller
     const double DT_SEC_;
     int loop_count_;
     double loop_time_;
-    int solver_result_;
+
+    int hd_solver_result_;
     int fk_solver_result_;
     int safe_control_mode_;
+
     const std::string LOG_FILE_PATH_;
     const Eigen::IOFormat WRITE_FORMAT_;
     std::ofstream log_file_;
@@ -118,6 +119,7 @@ class dynamics_controller
     void stop_robot_motion();
     void update_task();
     void update_current_state();
+    void compute_error();
     void make_predictions(const int prediction_method);
     int apply_control_commands();
     int evaluate_dynamics();

@@ -41,7 +41,6 @@ namespace KDL
     class FK_Vereshchagin: public KDL::SolverI
     {
         typedef std::vector<Twist> Twists;
-        typedef std::vector<ArticulatedBodyInertia> Inertias;
         typedef std::vector<Frame> Frames;
 
     public:
