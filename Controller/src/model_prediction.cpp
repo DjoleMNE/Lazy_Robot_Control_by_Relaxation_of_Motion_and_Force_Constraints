@@ -190,11 +190,11 @@ void model_prediction::integrate_cartesian_space(
     assert(NUMBER_OF_SEGMENTS_ == current_state.frame_velocity.size());
     assert(NUMBER_OF_SEGMENTS_ == predicted_state.frame_velocity.size()); 
 
-    // This should go in hpp file
-    double x, y, z, w;
-
     std::cout << "Measured End-effector Position:       " 
               << current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p  << std::endl;
+
+    std::cout << "Measured End-effector Orientation:       \n" 
+            << current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M  << std::endl;
 
     predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1] = \
         KDL::addDelta(current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1], 
@@ -203,15 +203,28 @@ void model_prediction::integrate_cartesian_space(
     std::cout << "Integrated End-effector Position 1:   " 
               << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p  << std::endl;
     
-    predicted_state = current_state;
+    std::cout << "Integrated End-effector Orientation 1:       \n" 
+            << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M  << std::endl;
     
-    predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].Integrate(current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1], 1.0 / dt);
-    std::cout << "Integrated End-effector Position 2:   " 
-              << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p  << std::endl;
+    // predicted_state = current_state;
+    
+    // predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].Integrate(current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1], 1.0 / dt);
+    // std::cout << "Integrated End-effector Position 2:   " 
+    //           << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p  << std::endl;
+    // std::cout << "Integrated End-effector Orientation 2:       \n" 
+    //           << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M  << std::endl;
+    
+    normalize_rot_matrix(predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M);
 
-    // Normalize rotation matrix in each iteration: maybe make a function for this!
-    predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.GetQuaternion(x, y, z, w);
-    predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M = KDL::Rotation::Quaternion(x, y, z, w);
+    #ifndef NDEBUG
+        measured_data_file_.open(MEASURED_DATA_PATH_);
+        save_pose_to_file(measured_data_file_, 
+                        current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
+
+        predicted_data_file_.open(PREDICTED_DATA_PATH_);
+        save_pose_to_file(predicted_data_file_, 
+                        predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
+    #endif
     
     // This should go in hpp file or in dynamics controller
     KDL::Vector position_error(0.0, 0.0, 0.0);
@@ -225,7 +238,33 @@ void model_prediction::integrate_cartesian_space(
     // Check docs for RPY due to issue with non uniqueness of values
     error_frame.M.GetRPY(orientation_error(0), orientation_error(1), orientation_error(2));
 
-    std::cout << "Errro Position:                        " << position_error  << std::endl;
-    std::cout << "Errro Orientation:                     " << orientation_error  << std::endl;
+    std::cout << "Error Position:                        " << position_error  << std::endl;
+    std::cout << "Error Orientation:                     " << orientation_error  << std::endl;
+}
 
+void model_prediction::save_pose_to_file(std::ofstream &pose_data_file, 
+                                         const KDL::Frame &frame_pose)
+{
+    if (!pose_data_file.is_open()) {
+        std::cout << "Unable to open the file"<< std::endl;
+    }
+    
+    for(int i = 0; i < 3; i++){
+        for (int j = 0; j < 3; j++)
+            pose_data_file << frame_pose.M(i, j) << std::endl;
+    }
+
+    for (int j = 0; j < 3; j++)
+        pose_data_file << frame_pose.p(j)<< std::endl;
+
+    pose_data_file.close();
+}
+
+void model_prediction::normalize_rot_matrix(KDL::Rotation &rot_martrix)
+{
+    // This should go in hpp file
+    double x, y, z, w;
+
+    rot_martrix.GetQuaternion(x, y, z, w);
+    rot_martrix = KDL::Rotation::Quaternion(x, y, z, w);
 }

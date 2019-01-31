@@ -93,7 +93,17 @@ class model_prediction
 		// if multi-step integration requirested
 		state_specification temp_state_;
 
+		const std::string MEASURED_DATA_PATH_= "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/measured_pose.txt";
+		std::ofstream measured_data_file_;
+
+		const std::string PREDICTED_DATA_PATH_= "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/predicted_pose.txt";
+		std::ofstream predicted_data_file_;
+    	
 		// Forward position and velocity kinematics, from itegrated values
 		void compute_FK(state_specification &predicted_state);
+
+		void save_pose_to_file(std::ofstream &pose_data_file, 
+                               const KDL::Frame &frame_pose);
+		void normalize_rot_matrix(KDL::Rotation &rot_martrix);
 };
 #endif /* MODEL_PREDICTION_HPP */
