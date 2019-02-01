@@ -17,7 +17,7 @@ plt.rcParams['xtick.labelsize'] = label_size
 # Read Pose DATA
 measured_pose_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/measured_pose.txt"
 predicted_pose_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/predicted_pose.txt"
-
+twist_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/current_twist.txt"
 
 def restart_program(): #restart application
     python = sys.executable
@@ -33,7 +33,7 @@ handler = ModHandler()
 wm = pyinotify.WatchManager()
 notifier = pyinotify.Notifier(wm, handler)
 wdd = wm.add_watch(predicted_pose_path, pyinotify.IN_CLOSE_WRITE)
-
+    
 class Arrow3D(FancyArrowPatch):
     def __init__(self, xs, ys, zs, *args, **kwargs):
         FancyArrowPatch.__init__(self, (0,0), (0,0), *args, **kwargs)
@@ -76,11 +76,16 @@ with open(measured_pose_path,"r") as f:
 with open(predicted_pose_path,"r") as f:
     predicted_pose = [x.split() for x in f.readlines()]
     predicted_pose = np.array(predicted_pose)
+
+with open(twist_path,"r") as f:
+    twist_vector = [x.split() for x in f.readlines()]
+    twist_vector = np.array(np.float32(twist_vector))
     
 ### Create and visualize your sketch here###    
 figure = plt.figure(1, figsize=(10, 10))
 ax = figure.add_subplot(111, projection='3d')
-axis_length = 0.15
+axis_length = 0.20
+plt.subplots_adjust(bottom=0.0, right=1.0, top=1.0, left = 0.0)
 
 # world frame (plot line from (0,0) to (1,0)) === Base Frame
 #plot X axis
@@ -107,17 +112,17 @@ R_1 = np.array([[np.float32(measured_pose[0][0]), np.float32(measured_pose[1][0]
 #X axis
 ax.plot([position_origin_1[0], position_origin_1[0] +  (axis_length * R_1[0, 0]) ], 
         [position_origin_1[1], position_origin_1[1] +  (axis_length * R_1[1, 0]) ], 
-        [position_origin_1[2], position_origin_1[2] +  (axis_length * R_1[2, 0]) ], 'o--r', label='Measured: X axis')
+        [position_origin_1[2], position_origin_1[2] +  (axis_length * R_1[2, 0]) ], '--r', label='Current: X axis')
 
 #Y axix
 ax.plot([position_origin_1[0], position_origin_1[0] +  (axis_length * R_1[0, 1]) ], 
         [position_origin_1[1], position_origin_1[1] +  (axis_length * R_1[1, 1]) ], 
-        [position_origin_1[2], position_origin_1[2] +  (axis_length * R_1[2, 1]) ],  'o--g', label='Measured: Y axis')
+        [position_origin_1[2], position_origin_1[2] +  (axis_length * R_1[2, 1]) ],  '--g', label='Current: Y axis')
 
 #Y axix
 ax.plot([position_origin_1[0], position_origin_1[0] +  (axis_length * R_1[0, 2]) ], 
         [position_origin_1[1], position_origin_1[1] +  (axis_length * R_1[1, 2]) ], 
-        [position_origin_1[2], position_origin_1[2] +  (axis_length * R_1[2, 2]) ],  'o--b', label='Measured: Z axis')
+        [position_origin_1[2], position_origin_1[2] +  (axis_length * R_1[2, 2]) ],  '--b', label='Current: Z axis')
 
 
 
@@ -131,37 +136,47 @@ R_2 = np.array([[np.float32(predicted_pose[0][0]), np.float32(predicted_pose[1][
 #X axis
 ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 0]) ], 
         [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 0]) ], 
-        [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 0]) ], 'r^--', label='Predicted: X axis')
+        [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 0]) ], 'r:', label='Predicted: X axis')
 
 #Y axix
 ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 1]) ], 
         [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 1]) ], 
-        [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 1]) ],  '^--g', label='Predicted: Y axis')
+        [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 1]) ],  ':g', label='Predicted: Y axis')
 
 #Y axix
 ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 2]) ], 
         [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 2]) ], 
-        [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 2]) ],  '^--b', label='Predicted: Z axis')
+        [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 2]) ],  ':b', label='Predicted: Z axis')
 
+#Plot the vector of "data estimated" twist
+a1 = Arrow3D([position_origin_1[0], position_origin_2[0]], 
+            [position_origin_1[1], position_origin_2[1]], 
+            [position_origin_1[2], position_origin_2[2]], 
+            mutation_scale=10, lw=1, arrowstyle="-|>", color="orange")
+ax.add_artist(a1)
 
+#Plot the vector of "commanded" twist
+a2 = Arrow3D([0.0, twist_vector[0][0]], 
+            [0.0, twist_vector[1][0]], 
+            [0.0, twist_vector[2][0]], 
+            mutation_scale=10, lw=1, arrowstyle="-|>", color="purple",label='My label')
+ax.add_artist(a2)
 
-#Plot the vector of position
-# a = Arrow3D([0., calculated[0]], [0.,  calculated[1]], 
-#                 [0.,  calculated[2]], mutation_scale=20, 
-#                 lw=3, arrowstyle="-|>", color="r")
-# ax.add_artist(a)
-# ax.scatter(calculated[0], calculated[1], calculated[2],  s=20)
-
-ax.legend()
+ax.legend(loc=3)
 ax.set_aspect('equal')
 plt.xlabel('x')
 plt.ylabel('y')
-plt.title('Twist test')
+plt.title('Twist test: {}'.format([twist_vector[0][0], 
+                                   twist_vector[1][0], 
+                                   twist_vector[2][0], 
+                                   twist_vector[3][0], 
+                                   twist_vector[4][0],
+                                   twist_vector[5][0]]))
 set_axes_equal(ax)             # important!
 
 # rotate the axes and update
 ax.view_init(25, 105)
-# plt.draw()
-plt.pause(0.001)
+plt.show()
+# plt.pause(0.001)
 # plt.savefig('frames.pdf')
 notifier.loop()

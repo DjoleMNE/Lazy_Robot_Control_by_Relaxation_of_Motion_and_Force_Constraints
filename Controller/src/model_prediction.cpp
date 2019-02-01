@@ -29,9 +29,14 @@ model_prediction::model_prediction(const KDL::Chain &robot_chain):
     NUMBER_OF_SEGMENTS_(robot_chain.getNrOfSegments()),
     NUMBER_OF_FRAMES_(robot_chain.getNrOfSegments() + 1),
     NUMBER_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
+    fk_solver_result_(0), fk_vereshchagin_(robot_chain), 
+    x_(0.0), y_(0.0), z_(0.0), w_(0.0), // Temp quaternion parameters
     temp_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
                 NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
-    fk_vereshchagin_(robot_chain), fk_solver_result_(0)
+    temp_pose_(KDL::Frame::Identity()),
+    CURRENT_POSE_DATA_PATH_(prediction_parameter::CURRENT_POSE_DATA_PATH),
+    PREDICTED_POSE_DATA_PATH_(prediction_parameter::PREDICTED_POSE_DATA_PATH),
+    TWIST_DATA_PATH_(prediction_parameter::TWIST_DATA_PATH)
 {
 
 }
@@ -136,11 +141,93 @@ void model_prediction::integrate_to_position(const double &acceleration,
     }
 }
 
+/*
+    Used for predicting future deviation from the goal state.
+    The intermediate states computed throughout the itegration are not saved.
+    The function expects constant Pose twist (not screw twist).
+*/
+KDL::Frame model_prediction::integrate_cartesian_space(
+                            const KDL::Frame &current_pose,
+                            const KDL::Twist &current_twist,
+                            const double dt, const int number_of_steps)
+{
+    assert(dt > 0.0);
+    assert(number_of_steps > 0);
+    
+    temp_pose_ = current_pose;
+
+    for (int i = 0; i < number_of_steps; i++){
+        temp_pose_ = KDL::addDelta(temp_pose_, current_twist, dt);
+        // temp_pose_.Integrate(current_twist, 1.0 / dt);
+        normalize_rot_matrix(temp_pose_.M);
+    }
+    
+    #ifndef NDEBUG
+        std::cout << "Measured End-effector Position:\n" 
+                << current_pose.p  << std::endl;
+
+        std::cout << "Measured End-effector Orientation:\n" 
+                << current_pose.M  << std::endl;
+
+        std::cout << "Integrated End-effector Position 1:\n" 
+                << temp_pose_.p  << std::endl;
+        
+        std::cout << "Integrated End-effector Orientation 1:\n" 
+                << temp_pose_.M  << std::endl;
+
+        twist_data_file_.open(TWIST_DATA_PATH_);
+        save_twist_to_file(twist_data_file_, current_twist * dt * number_of_steps);
+
+        current_pose_data_file_.open(CURRENT_POSE_DATA_PATH_);
+        save_pose_to_file(current_pose_data_file_, current_pose);
+
+        predicted_pose_data_file_.open(PREDICTED_POSE_DATA_PATH_);
+        save_pose_to_file(predicted_pose_data_file_, temp_pose_);
+    #endif
+    
+    return temp_pose_;
+}
+
+void model_prediction::save_pose_to_file(std::ofstream &pose_data_file, 
+                                         const KDL::Frame &pose)
+{
+    if (!pose_data_file.is_open()) {
+        std::cout << "Unable to open the pose file"<< std::endl;
+    }
+    
+    for(int i = 0; i < 3; i++){
+        for (int j = 0; j < 3; j++)
+            pose_data_file << pose.M(i, j) << std::endl;
+    }
+
+    for (int j = 0; j < 3; j++)
+        pose_data_file << pose.p(j)<< std::endl;
+
+    pose_data_file.close();
+}
+
+void model_prediction::save_twist_to_file(std::ofstream &twist_data_file, 
+                                         const KDL::Twist &twist)
+{
+    if (!twist_data_file.is_open()) {
+        std::cout << "Unable to open the twist file"<< std::endl;
+    }
+    for (int j = 0; j < 6; j++) twist_data_file << twist(j)<< std::endl;
+    twist_data_file.close();
+}
+
+void model_prediction::normalize_rot_matrix(KDL::Rotation &rot_martrix)
+{
+    // Internally KDL normalizes the quaternion before return
+    rot_martrix.GetQuaternion(x_, y_, z_, w_);
+    rot_martrix = KDL::Rotation::Quaternion(x_, y_, z_, w_);
+}
+
 // Forward position and velocity kinematics, given the itegrated values
 void model_prediction::compute_FK(state_specification &predicted_state)
 {
     // Compute angular and linear velocity of the end-effector
-    // Compute postion and orientation of the end-effector
+    // Compute position and orientation of the end-effector
     fk_solver_result_ = fk_vereshchagin_.JntToCart(predicted_state.q, 
                                                    predicted_state.qd, 
                                                    predicted_state.frame_pose, 
@@ -149,122 +236,14 @@ void model_prediction::compute_FK(state_specification &predicted_state)
         std::cout << "Warning: FK solver returned an error! " << fk_solver_result_ << std::endl;
     
     #ifndef NDEBUG // Print Cartesian state in Debug mode only
-        std::cout << "Predicted End-effector Position: " 
-                << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
-                << std::endl;
-        // std::cout << "Predicted End-effector Orientation: " 
-        //         << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].getRPY()
-        //         << "\n" << std::endl;
-        std::cout << "Predicted End-effector Velocity: " 
-            << predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]
-            << std::endl;
+        std::cout << "Predicted End-effector Position: \n" 
+                  << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
+                  << std::endl;
+        std::cout << "Predicted End-effector Orientation: \n" 
+                  << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M
+                  << "\n" << std::endl;
+        std::cout << "Predicted End-effector Velocity: \n" 
+                  << predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]
+                  << std::endl;
     #endif
-}
-
-/*
-    Used for predicting future deviation from the goal state
-    Saves the intermediate states computed throughout the itegration
-*/
-void model_prediction::integrate_cartesian_space(
-                            const state_specification &current_state,
-                            std::vector<state_specification> &predicted_states,
-                            const double dt, const int number_of_steps)
-{
-    assert(("Number of steps higher than the size of provided vector of states", 
-            number_of_steps <= predicted_states.size())); 
-    //TODO
-}
-
-/*
-    Used for predicting future deviation from the goal state.
-    The intermediate states computed throughout the itegration are not saved.
-    The function expects constant SCREW twist (not body-fixed twist).
-    I.e. both the reference frame and the reference point are in the base link.
-*/
-void model_prediction::integrate_cartesian_space(
-                            const state_specification &current_state,
-                            state_specification &predicted_state,
-                            const double dt, const int number_of_steps)
-{
-    // Only frame/s and velocities of one segment should be passed! change func def!
-    assert(NUMBER_OF_SEGMENTS_ == current_state.frame_velocity.size());
-    assert(NUMBER_OF_SEGMENTS_ == predicted_state.frame_velocity.size()); 
-
-    std::cout << "Measured End-effector Position:       " 
-              << current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p  << std::endl;
-
-    std::cout << "Measured End-effector Orientation:       \n" 
-            << current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M  << std::endl;
-
-    predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1] = \
-        KDL::addDelta(current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1], 
-                      current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1], 
-                      dt);
-    std::cout << "Integrated End-effector Position 1:   " 
-              << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p  << std::endl;
-    
-    std::cout << "Integrated End-effector Orientation 1:       \n" 
-            << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M  << std::endl;
-    
-    // predicted_state = current_state;
-    
-    // predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].Integrate(current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1], 1.0 / dt);
-    // std::cout << "Integrated End-effector Position 2:   " 
-    //           << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p  << std::endl;
-    // std::cout << "Integrated End-effector Orientation 2:       \n" 
-    //           << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M  << std::endl;
-    
-    normalize_rot_matrix(predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M);
-
-    #ifndef NDEBUG
-        measured_data_file_.open(MEASURED_DATA_PATH_);
-        save_pose_to_file(measured_data_file_, 
-                        current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
-
-        predicted_data_file_.open(PREDICTED_DATA_PATH_);
-        save_pose_to_file(predicted_data_file_, 
-                        predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
-    #endif
-    
-    // This should go in hpp file or in dynamics controller
-    KDL::Vector position_error(0.0, 0.0, 0.0);
-    KDL::Vector orientation_error(0.0, 0.0, 0.0);
-    KDL::Frame error_frame = KDL::Frame::Identity();
-
-    // Relative motion necessary to go from predicted to desired/measured
-    // Frame of desired/measured w.r.t predicted frame
-    error_frame = predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].Inverse() * current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1];
-    position_error = error_frame.p;
-    // Check docs for RPY due to issue with non uniqueness of values
-    error_frame.M.GetRPY(orientation_error(0), orientation_error(1), orientation_error(2));
-
-    std::cout << "Error Position:                        " << position_error  << std::endl;
-    std::cout << "Error Orientation:                     " << orientation_error  << std::endl;
-}
-
-void model_prediction::save_pose_to_file(std::ofstream &pose_data_file, 
-                                         const KDL::Frame &frame_pose)
-{
-    if (!pose_data_file.is_open()) {
-        std::cout << "Unable to open the file"<< std::endl;
-    }
-    
-    for(int i = 0; i < 3; i++){
-        for (int j = 0; j < 3; j++)
-            pose_data_file << frame_pose.M(i, j) << std::endl;
-    }
-
-    for (int j = 0; j < 3; j++)
-        pose_data_file << frame_pose.p(j)<< std::endl;
-
-    pose_data_file.close();
-}
-
-void model_prediction::normalize_rot_matrix(KDL::Rotation &rot_martrix)
-{
-    // This should go in hpp file
-    double x, y, z, w;
-
-    rot_martrix.GetQuaternion(x, y, z, w);
-    rot_martrix = KDL::Rotation::Quaternion(x, y, z, w);
 }

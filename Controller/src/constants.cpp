@@ -142,3 +142,10 @@ namespace dynamics_parameter
     const Eigen::IOFormat WRITE_FORMAT(6, Eigen::DontAlignCols, " ", "", "", "\n");
     const std::string LOG_FILE_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/control_error.txt");
 }
+
+namespace prediction_parameter
+{
+		const std::string CURRENT_POSE_DATA_PATH = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/measured_pose.txt";
+		const std::string PREDICTED_POSE_DATA_PATH = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/predicted_pose.txt";
+		const std::string TWIST_DATA_PATH = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/current_twist.txt";
+}

@@ -111,4 +111,11 @@ namespace dynamics_parameter
     extern const std::string LOG_FILE_PATH;
 }
 
+namespace prediction_parameter
+{
+    extern const std::string CURRENT_POSE_DATA_PATH;
+    extern const std::string PREDICTED_POSE_DATA_PATH;
+    extern const std::string TWIST_DATA_PATH;
+}
+
 #endif /* CONSTANTS_HPP_ */

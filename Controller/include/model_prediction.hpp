@@ -57,16 +57,10 @@ class model_prediction
                             const bool recompute_acceleration);
 
 		// Used for predicting future deviation from the goal state
-		void integrate_cartesian_space(
-							const state_specification &current_state,
-							std::vector<state_specification> &predicted_states,
-							const double dt, const int number_of_steps);
-		
-		// Used for predicting future deviation from the goal state
-		void integrate_cartesian_space(
-							const state_specification &current_state,
-							state_specification &predicted_state,
-							const double dt, const int number_of_steps);
+		KDL::Frame integrate_cartesian_space(const KDL::Frame &current_pose,
+                            		   const KDL::Twist &current_twist,
+                                       const double dt, 
+									   const int number_of_steps);
 
 		void integrate_to_velocity(const double &acceleration, 
 								   const double &current_velocity,
@@ -91,19 +85,28 @@ class model_prediction
 
 		// Temp varible required for saving intermediate state,
 		// if multi-step integration requirested
+		double x_, y_, z_, w_;
 		state_specification temp_state_;
+		KDL::Frame temp_pose_;
 
-		const std::string MEASURED_DATA_PATH_= "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/measured_pose.txt";
-		std::ofstream measured_data_file_;
+		// For saving prediction DATA, necessary for visualization
+		const std::string CURRENT_POSE_DATA_PATH_;
+		const std::string TWIST_DATA_PATH_;
+		const std::string PREDICTED_POSE_DATA_PATH_;
 
-		const std::string PREDICTED_DATA_PATH_= "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/predicted_pose.txt";
-		std::ofstream predicted_data_file_;
-    	
-		// Forward position and velocity kinematics, from itegrated values
+		std::ofstream current_pose_data_file_;
+		std::ofstream predicted_pose_data_file_;
+		std::ofstream twist_data_file_;
+
+    	// Help functions
+		void save_pose_to_file(std::ofstream &pose_data_file, 
+                               const KDL::Frame &pose);
+		void save_twist_to_file(std::ofstream &twist_data_file, 
+                                const KDL::Twist &twist);
+		void normalize_rot_matrix(KDL::Rotation &rot_martrix);
+
+		// Forward position and velocity kinematics, from itegrated joint values
 		void compute_FK(state_specification &predicted_state);
 
-		void save_pose_to_file(std::ofstream &pose_data_file, 
-                               const KDL::Frame &frame_pose);
-		void normalize_rot_matrix(KDL::Rotation &rot_martrix);
 };
 #endif /* MODEL_PREDICTION_HPP */

@@ -268,9 +268,28 @@ void dynamics_controller::make_predictions(const int prediction_method)
 */
 void dynamics_controller::compute_error()
 {
-    predictor_.integrate_cartesian_space(robot_state_, 
-                                         predicted_state_, 
-                                         DT_SEC_, 1);
+    predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1] = \
+        predictor_.integrate_cartesian_space(
+                        robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1], 
+                        robot_state_.frame_velocity[NUMBER_OF_SEGMENTS_ - 1], 
+                        200 * DT_SEC_, 1);
+
+
+    // // This should go in hpp file or in dynamics controller
+    // KDL::Vector position_error(0.0, 0.0, 0.0);
+    // KDL::Vector orientation_error(0.0, 0.0, 0.0);
+    // KDL::Frame error_frame = KDL::Frame::Identity();
+
+    // // Relative motion necessary to go from predicted to desired/measured
+    // // Frame of desired/measured w.r.t predicted frame
+    // error_frame = predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].Inverse() * current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1];
+    // position_error = error_frame.p;
+    
+    // // Check docs for RPY due to issue with non uniqueness of values
+    // error_frame.M.GetRPY(orientation_error(0), orientation_error(1), orientation_error(2));
+
+    // std::cout << "Error Position:                        " << position_error  << std::endl;
+    // std::cout << "Error Orientation:                     " << orientation_error  << std::endl;
 }
 
 //Calculate robot dynamics - Resolve the motion using the Vereshchagin HD solver
@@ -398,12 +417,12 @@ void dynamics_controller::update_current_state()
         // std::cout << "\nCurrent Cartesian state:                 " << std::endl;
         // std::cout << "End-effector Position:   " 
         //           << robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p  << std::endl;
-        std::cout << "End-effector Velocity:                " 
+        std::cout << "End-effector Velocity:                \n" 
                   << robot_state_.frame_velocity[NUMBER_OF_SEGMENTS_ - 1] << std::endl;
     #endif 
 
     #ifdef NDEBUG
-        std::cout << "End-effector Velocity:   " 
+        std::cout << "End-effector Velocity:   \n" 
                   << robot_state_.frame_velocity[NUMBER_OF_SEGMENTS_ - 1] << std::endl;
     #endif
 }
@@ -470,6 +489,7 @@ int dynamics_controller::control(const int desired_control_mode,
         log_file_.open(LOG_FILE_PATH_);
         if (!log_file_.is_open()) {
             std::cout << "Unable to open the file"<< std::endl;
+            return -1;
         }
     }
 
@@ -490,7 +510,10 @@ int dynamics_controller::control(const int desired_control_mode,
         //Get current robot state from the joint sensors, velocities and angles
         update_current_state();
 
-        compute_error();
+        if(loop_count_ == 92) {
+            compute_error();
+            return 0;
+        }
 
         // measured_cart(0) = robot_state_.frame_velocity[4].vel(0);
         measured_cart(4) = robot_state_.frame_velocity[4].rot(1);
@@ -536,7 +559,7 @@ int dynamics_controller::control(const int desired_control_mode,
         //     std::cout << loop_time_ / 1000.0 <<std::endl;
         //     return 0;
         // }
-        if(loop_count_ == 2) return 0;
+        // if(loop_count_ == 100) return 0;
     }
     if (store_control_data) log_file_.close();
     return 0;
