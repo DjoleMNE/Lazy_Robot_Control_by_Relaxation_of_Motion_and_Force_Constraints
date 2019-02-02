@@ -85,7 +85,6 @@ class dynamics_controller
     const Eigen::IOFormat WRITE_FORMAT_;
     std::ofstream log_file_;
 
-
     struct desired_control_mode
     {
       int interface;
@@ -102,6 +101,9 @@ class dynamics_controller
     const int NUMBER_OF_FRAMES_;
     const int NUMBER_OF_CONSTRAINTS_;
     
+    Eigen::VectorXd error_vector_;
+    KDL::Rotation error_rot_matrix_;
+
     KDL::Solver_Vereshchagin hd_solver_;
     KDL::FK_Vereshchagin fk_vereshchagin_;
     safety_controller safety_control_;
@@ -120,7 +122,7 @@ class dynamics_controller
     void update_task();
     void update_current_state();
     void compute_error();
-    void make_predictions(const int prediction_method);
+    void make_predictions();
     int apply_control_commands();
     int evaluate_dynamics();
     int enforce_loop_frequency();

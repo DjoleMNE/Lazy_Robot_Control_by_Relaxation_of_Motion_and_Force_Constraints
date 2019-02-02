@@ -41,6 +41,7 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     NUMBER_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
     NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
     NUMBER_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
+    error_vector_(NUMBER_OF_CONSTRAINTS_),
     hd_solver_(robot_chain_, robot_driver.get_joint_inertia(),
                robot_driver.get_root_acceleration(), NUMBER_OF_CONSTRAINTS_),
     fk_vereshchagin_(robot_chain_),
@@ -74,6 +75,14 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     abag_.set_bias_step(abag_parameter::BIAS_STEP);
     abag_.set_gain_threshold(abag_parameter::GAIN_THRESHOLD);
     abag_.set_gain_step(abag_parameter::GAIN_STEP);
+}
+
+template <typename Derived>
+inline void twist_to_eigen(const KDL::Twist &kdl_vector,
+                           Eigen::MatrixBase<Derived> &eigen_vector)
+{
+    assert(eigen_vector.rows() == 6);
+    for(int i = 0; i < eigen_vector.rows(); i++) eigen_vector(i) = kdl_vector(i);
 }
 
 // Set all values of desired state to 0 - public method
@@ -254,12 +263,13 @@ int dynamics_controller::apply_control_commands()
     Predict future robot Cartesian states given the current Cartesian state.
     I.e. Integrate Cartesian variables.
 */
-void dynamics_controller::make_predictions(const int prediction_method)
+void dynamics_controller::make_predictions()
 {
-    // predictor_.integrate_cartesian_space(robot_state_, 
-    //                                      predicted_state_, 
-    //                                      DT_SEC_, 1, 
-    //                                      prediction_method);
+    predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1] = \
+        predictor_.integrate_cartesian_space(
+                        robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1], 
+                        robot_state_.frame_velocity[NUMBER_OF_SEGMENTS_ - 1], 
+                        1, 1);
 }
 
 /*  
@@ -268,28 +278,57 @@ void dynamics_controller::make_predictions(const int prediction_method)
 */
 void dynamics_controller::compute_error()
 {
-    predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1] = \
-        predictor_.integrate_cartesian_space(
-                        robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1], 
-                        robot_state_.frame_velocity[NUMBER_OF_SEGMENTS_ - 1], 
-                        200 * DT_SEC_, 1);
+    make_predictions();
+    // desired_state_ = robot_state_;
 
+    // Linear motion (error) necessary to go from predicted to desired
+    // (positive direction of motion)
+    for(int i = 0; i < 3; i++)
+    {
+        error_vector_(i) = \
+            desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i) - \
+            predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i);
+    }
 
-    // // This should go in hpp file or in dynamics controller
-    // KDL::Vector position_error(0.0, 0.0, 0.0);
-    // KDL::Vector orientation_error(0.0, 0.0, 0.0);
-    // KDL::Frame error_frame = KDL::Frame::Identity();
+    // Rotation (error) necessary to go from predicted to desired orientation 
+    // (positive direction of rotation)
+    /*
+    * Reference for computation of orientation error using 
+    * rotation matrix representation:
+    * [1] "Pose Control of Robot Manipulators Using Different Orientation
+    *      Representations: A Comparative Review", Campa and de la Torre, 2009.
+    * [2] "Resolved Acceleration Control Of Mechanical Manipulators", Luh et al. 1980
+    * Quote from the [2]: "...the orientation error e_o, of the hand 
+    * will be corrected if [n,s,u] (measured rotation matrix) is rotated 
+    * $\phi$ radians about axis r. Hence, to correct for the orientation error,
+    * the actual angular velocity of the hand w should be in the same direction 
+    * as e_o."
+    */
 
-    // // Relative motion necessary to go from predicted to desired/measured
-    // // Frame of desired/measured w.r.t predicted frame
-    // error_frame = predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].Inverse() * current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1];
-    // position_error = error_frame.p;
+    //My version of error matrix
+    // error_rot_matrix_ = \
+    //     predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.Inverse() * \
+    //     desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M;
+
+    //[1, 2]'s version of error matrix
+    error_rot_matrix_ = \
+        desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * \
+        predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.Inverse();
     
-    // // Check docs for RPY due to issue with non uniqueness of values
-    // error_frame.M.GetRPY(orientation_error(0), orientation_error(1), orientation_error(2));
+    // double roll, pitch, yaw;
+    // desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.GetRPY(roll, pitch, yaw);
+    // std::cout << "RPY desired: " << roll << " "  << pitch << " " << yaw << std::endl;
+    // predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.GetRPY(roll, pitch, yaw);
+    // std::cout << "RPY predicted: " << roll << " "  << pitch << " " << yaw << std::endl;
+    // std::cout << "Error Matrix:\n" << error_rot_matrix_ << std::endl;
 
-    // std::cout << "Error Position:                        " << position_error  << std::endl;
-    // std::cout << "Error Orientation:                     " << orientation_error  << std::endl;
+    error_vector_(3) = 0.5 * (error_rot_matrix_(2, 1) - error_rot_matrix_(1, 2));
+    error_vector_(4) = 0.5 * (error_rot_matrix_(0, 2) - error_rot_matrix_(2, 0));
+    error_vector_(5) = 0.5 * (error_rot_matrix_(1, 0) - error_rot_matrix_(0, 1));
+
+    #ifndef NDEBUG
+        std::cout << "Error:\n" << error_vector_.transpose() << std::endl;
+    #endif
 }
 
 //Calculate robot dynamics - Resolve the motion using the Vereshchagin HD solver
