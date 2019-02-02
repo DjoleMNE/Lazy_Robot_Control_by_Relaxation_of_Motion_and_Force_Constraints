@@ -64,11 +64,31 @@ class dynamics_controller
 
     void reset_desired_state();
 
-    //Methods for defining robot task via 3 interfaces
-    void define_ee_constraint_task(const std::vector<bool> &constraint_direction,
-                                   const std::vector<double> &cartesian_acceleration);
-    void define_ee_external_force_task(const std::vector<double> &external_force);
-    void define_feadforward_torque_task(const std::vector<double> &ff_torque);
+    /**
+     * Method for defining desired robot pose. Interface exposed by this controller.
+     * constraint_direction argument defines which of 6 DOF should be controlled.
+     * Basically, some of DOFs can be left out to not be controlled by this 
+     * controller, but left out to be controlled by natural dynamics of the 
+     * system and environment.
+     * First 3 elements of cartesian_pose vector define x, y, z positions
+     * Last 3 elements define orientations around x, y, z axes - Roll, Pitch, Yaw 
+     * All DOF are specified w.r.t. fixed (non-moving) robot base reference frame
+     * 
+     * Orientation convention (last 3 elements of cartesian_pose vector):
+     * - First rotate around X with roll, then around the fixed Y with pitch, 
+     *   then around fixed Z with yaw.
+     * - Invariants:
+     *   - RPY(roll, pitch, yaw) == RPY( roll +/- PI, PI - pitch, yaw +/- PI )
+     *   - angles + 2*k*PI
+     */
+    void define_desired_ee_pose(const std::vector<bool> &constraint_direction,
+                                const std::vector<double> &cartesian_pose);
+
+    // Methods for defining robot task via 3 interfaces exposed by Vereshchagin
+    void define_ee_acc_constraint(const std::vector<bool> &constraint_direction,
+                                  const std::vector<double> &cartesian_acceleration);
+    void define_ee_external_force(const std::vector<double> &external_force);
+    void define_feadforward_torque(const std::vector<double> &ff_torque);
 
   private:
     const int RATE_HZ_;
@@ -121,15 +141,15 @@ class dynamics_controller
     void stop_robot_motion();
     void update_task();
     void update_current_state();
-    void compute_error();
+    void compute_control_error();
     void make_predictions();
     int apply_joint_control_commands();
     int evaluate_dynamics();
     int enforce_loop_frequency();
 
-    void set_ee_constraints(state_specification &state,
-                            const std::vector<bool> &constraint_direction,
-                            const std::vector<double> &cartesian_acceleration);
+    void set_ee_acc_constraints(state_specification &state,
+                                const std::vector<bool> &constraint_direction,
+                                const std::vector<double> &cartesian_acceleration);
     void set_external_forces(state_specification &state, 
                              const std::vector<double> &external_force);
     void set_feadforward_torque(state_specification &state,

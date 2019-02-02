@@ -97,19 +97,35 @@ void dynamics_controller::reset_state(state_specification &state)
     desired_state_.reset_values();
 }
 
+void dynamics_controller::define_desired_ee_pose(
+                            const std::vector<bool> &constraint_direction,
+                            const std::vector<double> &cartesian_pose)
+{
+    for(int i = 0; i < 3; i++)
+    {
+       desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i) = cartesian_pose[i];
+    }
+
+    desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M = \
+                                        KDL::Rotation::RPY(cartesian_pose[3],
+                                                           cartesian_pose[4],
+                                                           cartesian_pose[5]);
+}
+
 // Define Cartesian Acceleration task on the end-effector - Public Method
-void dynamics_controller::define_ee_constraint_task(
+void dynamics_controller::define_ee_acc_constraint(
                             const std::vector<bool> &constraint_direction,
                             const std::vector<double> &cartesian_acceleration)
 {    
     //Call private method for this state
-    set_ee_constraints(desired_state_, 
-                       constraint_direction, 
-                       cartesian_acceleration);
+    set_ee_acc_constraints(desired_state_, 
+                           constraint_direction, 
+                           cartesian_acceleration);
 }
 
 // Define Cartesian Acceleration task on the end-effector - Private Method
-void dynamics_controller::set_ee_constraints(state_specification &state,
+void dynamics_controller::set_ee_acc_constraints(
+                                state_specification &state,
                                 const std::vector<bool> &constraint_direction, 
                                 const std::vector<double> &cartesian_acceleration)
 {    
@@ -153,7 +169,7 @@ void dynamics_controller::set_ee_constraints(state_specification &state,
 }
 
 // Define External force task - Public Method
-void dynamics_controller::define_ee_external_force_task(
+void dynamics_controller::define_ee_external_force(
                                     const std::vector<double> &external_force)
 {
     //Call private method for this state
@@ -161,7 +177,8 @@ void dynamics_controller::define_ee_external_force_task(
 }
 
 // Define External force task - Private Method
-void dynamics_controller::set_external_forces(state_specification &state, 
+void dynamics_controller::set_external_forces(
+                                    state_specification &state, 
                                     const std::vector<double> &external_force)
 {
     //For now it is only updating forces on the end-effector
@@ -178,7 +195,7 @@ void dynamics_controller::set_external_forces(state_specification &state,
 }
 
 // Define FeedForward joint torques task - Public Method
-void dynamics_controller::define_feadforward_torque_task(
+void dynamics_controller::define_feadforward_torque(
                                         const std::vector<double> &ff_torque)
 {
     //Call private method for this state
@@ -272,13 +289,15 @@ void dynamics_controller::make_predictions()
     Compute the error between current (measured) Cartesian state and 
     predicted (integrated) Cartesian state.
 */
-void dynamics_controller::compute_error()
+void dynamics_controller::compute_control_error()
 {
     make_predictions();
     // desired_state_ = robot_state_;
 
-    // Linear motion (error) necessary to go from predicted to desired
-    // (positive direction of translation)
+    /**
+     *  Linear motion (error) necessary to go from predicted to desired position
+     *  (positive direction of translation).
+    */
     for(int i = 0; i < 3; i++)
     {
         error_vector_(i) = \
@@ -286,9 +305,9 @@ void dynamics_controller::compute_error()
             predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i);
     }
 
-    // Rotation (error) necessary to go from predicted to desired orientation 
-    // (positive direction of rotation)
     /*
+    * Rotation (error) necessary to go from predicted to desired orientation 
+    * (positive direction of rotation).
     * Reference for computation of orientation error using 
     * rotation matrix representation:
     * [1] "Pose Control of Robot Manipulators Using Different Orientation
@@ -312,6 +331,7 @@ void dynamics_controller::compute_error()
         predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.Inverse();
     
     double roll, pitch, yaw;
+    std::cout << "Desired position: " << desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p << std::endl;
     desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.GetRPY(roll, pitch, yaw);
     std::cout << "RPY desired: " << roll << " "  << pitch << " " << yaw << std::endl;
     predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.GetRPY(roll, pitch, yaw);
@@ -330,13 +350,14 @@ void dynamics_controller::compute_error()
 //Calculate robot dynamics - Resolve the motion using the Vereshchagin HD solver
 int dynamics_controller::evaluate_dynamics()
 {
-    hd_solver_result_= hd_solver_.CartToJnt(robot_state_.q,
-                                         robot_state_.qd,
-                                         robot_state_.qdd,
-                                         robot_state_.ee_unit_constraint_force,
-                                         robot_state_.ee_acceleration_energy,
-                                         robot_state_.external_force,
-                                         robot_state_.feedforward_torque);
+    hd_solver_result_= hd_solver_.CartToJnt(
+                                        robot_state_.q,
+                                        robot_state_.qd,
+                                        robot_state_.qdd,
+                                        robot_state_.ee_unit_constraint_force,
+                                        robot_state_.ee_acceleration_energy,
+                                        robot_state_.external_force,
+                                        robot_state_.feedforward_torque);
 
     if(hd_solver_result_ != 0) return hd_solver_result_;
 
@@ -546,7 +567,7 @@ int dynamics_controller::control(const int desired_control_mode,
         update_current_state();
 
         if(loop_count_ == 92) {
-            compute_error();
+            compute_control_error();
             return 0;
         }
 

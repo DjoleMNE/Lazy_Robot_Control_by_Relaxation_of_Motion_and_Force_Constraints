@@ -158,17 +158,22 @@ int main(int argc, char **argv)
     dynamics_controller controller(robot_driver, rate_hz);
     
     //Create End_effector Cartesian Acceleration task 
-    controller.define_ee_constraint_task(std::vector<bool>{false, false, false, 
-                                                           false, false, false},
-                                         std::vector<double>{0.0, 0.0, 0.0, 
-                                                             0.0, 0.0, 0.0});
+    controller.define_ee_acc_constraint(std::vector<bool>{false, false, false, // Linear
+                                                          false, false, false}, // Angular
+                                        std::vector<double>{0.0, 0.0, 0.0, // Linear
+                                                            0.0, 0.0, 0.0}); // Angular
     //Create External Forces task 
-    controller.define_ee_external_force_task(std::vector<double>{0.0, 0.0, 0.0, 
-                                                                 0.0, 0.0, 0.0});
+    controller.define_ee_external_force(std::vector<double>{0.0, 0.0, 0.0, // Linear
+                                                            0.0, 0.0, 0.0}); // Angular
     //Create Feedforward torques task 
-    controller.define_feadforward_torque_task(std::vector<double>{0.0, 0.0, 
-                                                                  0.0, 0.0, 
+    controller.define_feadforward_torque(std::vector<double>{0.0, 0.0, 
+                                                             0.0, 0.0, 
                                                                   0.0}); 
+    // Method for defining desired robot pose.
+    controller.define_desired_ee_pose(std::vector<bool>{false, false, false, // Linear
+                                                        false, false, false}, // Angular
+                                       std::vector<double>{1.0, 5.0, -85.0, // Linear
+                                                           0.0, 1.0, 0.5}); // Angular
 
     controller.control(control_mode::VELOCITY, 
                        task_interface::CART_VELOCITY, 
