@@ -65,10 +65,10 @@ class dynamics_controller
     void reset_desired_state();
 
     //Methods for defining robot task via 3 interfaces
-    void define_ee_constraint_task(const std::vector<bool> constraint_direction,
-                                   const std::vector<double> cartesian_acceleration);
-    void define_ee_external_force_task(const std::vector<double> external_force);
-    void define_feadforward_torque_task(const std::vector<double> ff_torque);
+    void define_ee_constraint_task(const std::vector<bool> &constraint_direction,
+                                   const std::vector<double> &cartesian_acceleration);
+    void define_ee_external_force_task(const std::vector<double> &external_force);
+    void define_feadforward_torque_task(const std::vector<double> &ff_torque);
 
   private:
     const int RATE_HZ_;
@@ -116,7 +116,7 @@ class dynamics_controller
     state_specification predicted_state_;
 
     void print_settings_info();
-    void write_to_file(Eigen::VectorXd measured, Eigen::VectorXd desired);
+    void write_to_file(const Eigen::VectorXd &measured, const Eigen::VectorXd &desired);
     void reset_state(state_specification &state);
     void stop_robot_motion();
     void update_task();
@@ -128,11 +128,11 @@ class dynamics_controller
     int enforce_loop_frequency();
 
     void set_ee_constraints(state_specification &state,
-                            const std::vector<bool> constraint_direction,
-                            const std::vector<double> cartesian_acceleration);
+                            const std::vector<bool> &constraint_direction,
+                            const std::vector<double> &cartesian_acceleration);
     void set_external_forces(state_specification &state, 
-                             const std::vector<double> external_force);
+                             const std::vector<double> &external_force);
     void set_feadforward_torque(state_specification &state,
-                                const std::vector<double> ff_torque);    
+                                const std::vector<double> &ff_torque);    
 };
 #endif /* DYNAMICS_CONTROLLER_HPP_*/

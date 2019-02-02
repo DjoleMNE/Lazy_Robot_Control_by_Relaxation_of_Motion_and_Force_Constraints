@@ -99,8 +99,8 @@ void dynamics_controller::reset_state(state_specification &state)
 
 // Define Cartesian Acceleration task on the end-effector - Public Method
 void dynamics_controller::define_ee_constraint_task(
-                            const std::vector<bool> constraint_direction,
-                            const std::vector<double> cartesian_acceleration)
+                            const std::vector<bool> &constraint_direction,
+                            const std::vector<double> &cartesian_acceleration)
 {    
     //Call private method for this state
     set_ee_constraints(desired_state_, 
@@ -110,8 +110,8 @@ void dynamics_controller::define_ee_constraint_task(
 
 // Define Cartesian Acceleration task on the end-effector - Private Method
 void dynamics_controller::set_ee_constraints(state_specification &state,
-                                const std::vector<bool> constraint_direction, 
-                                const std::vector<double> cartesian_acceleration)
+                                const std::vector<bool> &constraint_direction, 
+                                const std::vector<double> &cartesian_acceleration)
 {    
     assert(constraint_direction.size() == NUMBER_OF_CONSTRAINTS_);
     assert(cartesian_acceleration.size() == NUMBER_OF_CONSTRAINTS_);
@@ -154,7 +154,7 @@ void dynamics_controller::set_ee_constraints(state_specification &state,
 
 // Define External force task - Public Method
 void dynamics_controller::define_ee_external_force_task(
-                                    const std::vector<double> external_force)
+                                    const std::vector<double> &external_force)
 {
     //Call private method for this state
     set_external_forces(desired_state_, external_force);
@@ -162,7 +162,7 @@ void dynamics_controller::define_ee_external_force_task(
 
 // Define External force task - Private Method
 void dynamics_controller::set_external_forces(state_specification &state, 
-                                    const std::vector<double> external_force)
+                                    const std::vector<double> &external_force)
 {
     //For now it is only updating forces on the end-effector
     //TODO: add forces on other segments as well
@@ -179,7 +179,7 @@ void dynamics_controller::set_external_forces(state_specification &state,
 
 // Define FeedForward joint torques task - Public Method
 void dynamics_controller::define_feadforward_torque_task(
-                                            const std::vector<double> ff_torque)
+                                        const std::vector<double> &ff_torque)
 {
     //Call private method for this state
     set_feadforward_torque(desired_state_, ff_torque);
@@ -188,7 +188,7 @@ void dynamics_controller::define_feadforward_torque_task(
 // Define FeedForward joint torques task - Private Method
 void dynamics_controller::set_feadforward_torque(
                                             state_specification &state, 
-                                            const std::vector<double> ff_torque)
+                                            const std::vector<double> &ff_torque)
 {
     assert(ff_torque.size() == NUMBER_OF_JOINTS_);
 
@@ -311,12 +311,12 @@ void dynamics_controller::compute_error()
         desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * \
         predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.Inverse();
     
-    // double roll, pitch, yaw;
-    // desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.GetRPY(roll, pitch, yaw);
-    // std::cout << "RPY desired: " << roll << " "  << pitch << " " << yaw << std::endl;
-    // predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.GetRPY(roll, pitch, yaw);
-    // std::cout << "RPY predicted: " << roll << " "  << pitch << " " << yaw << std::endl;
-    // std::cout << "Error Matrix:\n" << error_rot_matrix_ << std::endl;
+    double roll, pitch, yaw;
+    desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.GetRPY(roll, pitch, yaw);
+    std::cout << "RPY desired: " << roll << " "  << pitch << " " << yaw << std::endl;
+    predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.GetRPY(roll, pitch, yaw);
+    std::cout << "RPY predicted: " << roll << " "  << pitch << " " << yaw << std::endl;
+    std::cout << "Error Matrix:\n" << error_rot_matrix_ << std::endl;
 
     error_vector_(3) = 0.5 * (error_rot_matrix_(2, 1) - error_rot_matrix_(1, 2));
     error_vector_(4) = 0.5 * (error_rot_matrix_(0, 2) - error_rot_matrix_(2, 0));
@@ -469,8 +469,8 @@ void dynamics_controller::stop_robot_motion()
 }
 
 // Write control data to a file
-void dynamics_controller::write_to_file(Eigen::VectorXd measured,
-                                        Eigen::VectorXd desired)
+void dynamics_controller::write_to_file(const Eigen::VectorXd &measured,
+                                        const Eigen::VectorXd &desired)
 {   
     log_file_ << measured.transpose().format(WRITE_FORMAT_);
     log_file_ << desired.transpose().format(WRITE_FORMAT_);
