@@ -282,7 +282,9 @@ int dynamics_controller::apply_joint_control_commands()
 */
 void dynamics_controller::make_predictions()
 {
-    predictor_.integrate_cartesian_space(robot_state_, predicted_state_, 1, 1);
+    predictor_.integrate_cartesian_space(robot_state_, 
+                                         predicted_state_, 
+                                         1, 1);
 }
 
 /*  

@@ -45,11 +45,11 @@ SOFTWARE.
 
 enum task_interface
 {
-  CART_POSITION = 0,
-  CART_VELOCITY = 1,
-  CART_ACCELERATION = 2,
-  CART_FORCE = 3,
-  FF_JOINT_TORQUE = 4
+  CART_POSE,
+  CART_VELOCITY,
+  CART_ACCELERATION,
+  CART_FORCE,
+  FF_JOINT_TORQUE
 };
 
 class dynamics_controller

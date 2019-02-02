@@ -52,28 +52,28 @@ class model_prediction
 		void integrate_joint_space(
 							const state_specification &current_state,
 							std::vector<state_specification> &predicted_states,
-							const double step_size,	const int number_of_steps,
+							const double dt_sec, const int num_of_steps,
 							const int method, const bool fk_required,
                             const bool recompute_acceleration);
 
 		// Used for predicting future deviation from the goal state
 		void integrate_cartesian_space(const state_specification &current_state,
                                        state_specification &predicted_state,
-                                       const double dt, 
-									   const int number_of_steps);
+                                       const double dt_sec, 
+									   const int num_of_steps);
 
 		void integrate_to_velocity(const double &acceleration, 
 								   const double &current_velocity,
 								   double &predicted_velocity,
 								   const int method,
-							       const double dt);
+							       const double dt_sec);
 
 		void integrate_to_position(const double &acceleration,
 								   const double &predicted_velocity, 
 								   const double &current_position,
 								   double &predicted_position,
 								   const int method,
-								   const double dt);
+								   const double dt_sec);
     private:
 		const int NUMBER_OF_JOINTS_;
 		const int NUMBER_OF_SEGMENTS_;
@@ -87,6 +87,7 @@ class model_prediction
 		// if multi-step integration requirested
 		double x_, y_, z_, w_;
 		state_specification temp_state_;
+		KDL::Twist current_twist_;
 		KDL::Frame temp_pose_;
 
 		// For saving prediction DATA, necessary for visualization
@@ -104,6 +105,8 @@ class model_prediction
 		void save_twist_to_file(std::ofstream &twist_data_file, 
                                 const KDL::Twist &twist);
 		void normalize_rot_matrix(KDL::Rotation &rot_martrix);
+		bool is_rotation_matrix(const KDL::Rotation &m);
+		double determinant(const KDL::Rotation &m);
 
 		// Forward position and velocity kinematics, from itegrated joint values
 		void compute_FK(state_specification &predicted_state);

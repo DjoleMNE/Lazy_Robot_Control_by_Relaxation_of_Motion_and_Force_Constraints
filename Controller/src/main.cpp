@@ -169,14 +169,14 @@ int main(int argc, char **argv)
     controller.define_feadforward_torque(std::vector<double>{0.0, 0.0, 
                                                              0.0, 0.0, 
                                                                   0.0}); 
-    // Method for defining desired robot pose.
+    // Define desired robot pose. See hpp file for details 
     controller.define_desired_ee_pose(std::vector<bool>{false, false, false, // Linear
                                                         false, false, false}, // Angular
-                                       std::vector<double>{1.0, 5.0, -85.0, // Linear
-                                                           0.0, 1.0, 0.5}); // Angular
+                                      std::vector<double>{1.0, 5.0, -85.0, // Linear
+                                                          0.0, 1.0, 0.5}); // Angular (RPY fixed frame)
 
     controller.control(control_mode::VELOCITY, 
-                       task_interface::CART_VELOCITY, 
+                       task_interface::CART_POSE, 
                        true);
 
     return 0;

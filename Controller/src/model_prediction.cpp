@@ -23,6 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #include <model_prediction.hpp>
+#define EPSILON 0.01  // margin to allow for rounding errors
 
 model_prediction::model_prediction(const KDL::Chain &robot_chain): 
     NUMBER_OF_JOINTS_(robot_chain.getNrOfJoints()),
@@ -33,7 +34,7 @@ model_prediction::model_prediction(const KDL::Chain &robot_chain):
     x_(0.0), y_(0.0), z_(0.0), w_(0.0), // Temp quaternion parameters
     temp_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
                 NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
-    temp_pose_(KDL::Frame::Identity()),
+    current_twist_(KDL::Twist::Zero()), temp_pose_(KDL::Frame::Identity()),
     CURRENT_POSE_DATA_PATH_(prediction_parameter::CURRENT_POSE_DATA_PATH),
     PREDICTED_POSE_DATA_PATH_(prediction_parameter::PREDICTED_POSE_DATA_PATH),
     TWIST_DATA_PATH_(prediction_parameter::TWIST_DATA_PATH)
@@ -45,27 +46,27 @@ model_prediction::model_prediction(const KDL::Chain &robot_chain):
 void model_prediction::integrate_joint_space(
                             const state_specification &current_state,
                             std::vector<state_specification> &predicted_states,
-                            const double step_size, const int number_of_steps, 
+                            const double dt_sec, const int num_of_steps, 
                             const int method, const bool fk_required,
                             const bool recompute_acceleration)
 {
     assert(("Number of steps higher than the size of provided vector of states", 
-            number_of_steps <= predicted_states.size()));  
+            num_of_steps <= predicted_states.size()));  
     assert(NUMBER_OF_JOINTS_ == predicted_states[0].qd.rows()); 
     assert(NUMBER_OF_JOINTS_ == current_state.qd.rows());
 
     temp_state_ = current_state;
 
     // For each step in the future horizon
-    for (int i = 0; i < number_of_steps; i++){   
+    for (int i = 0; i < num_of_steps; i++){   
         // For each robot's joint
         for (int j = 0; j < NUMBER_OF_JOINTS_; j++){
             integrate_to_velocity(temp_state_.qdd(j), temp_state_.qd(j),
-                                  predicted_states[i].qd(j), method, step_size);
+                                  predicted_states[i].qd(j), method, dt_sec);
 
             integrate_to_position(temp_state_.qdd(j), predicted_states[i].qd(j),
                                   temp_state_.q(j), predicted_states[i].q(j), 
-                                  method, step_size);
+                                  method, dt_sec);
         }
 
         // TODO (Abstract description):
@@ -102,17 +103,17 @@ void model_prediction::integrate_to_velocity(const double &acceleration,
                                              const double &current_velocity,
                                              double &predicted_velocity,
                                              const int method,
-                                             const double dt)
+                                             const double dt_sec)
 {
     switch(method) {
         case integration_method::SYMPLECTIC_EULER:
             //Integrate accelerations to velocities - Classical Euler method
-            predicted_velocity = current_velocity + acceleration * dt;
+            predicted_velocity = current_velocity + acceleration * dt_sec;
             break;
         
         case integration_method::PREDICTOR_CORRECTOR:
             //Integrate accelerations to velocities - Classical Euler method
-            predicted_velocity = current_velocity + acceleration * dt;
+            predicted_velocity = current_velocity + acceleration * dt_sec;
             break;
         default: assert(false);
     }
@@ -124,18 +125,18 @@ void model_prediction::integrate_to_position(const double &acceleration,
                                              const double &current_position,
                                              double &predicted_position,
                                              const int method,
-                                             const double dt)
+                                             const double dt_sec)
 {
     switch(method) {
         case integration_method::SYMPLECTIC_EULER:
             //Integrate velocities to positions - Symplectic Euler method
-            predicted_position = current_position + predicted_velocity * dt;
+            predicted_position = current_position + predicted_velocity * dt_sec;
             break;
         
         case integration_method::PREDICTOR_CORRECTOR:
             //Integrate velocities to joint positions - Trapezoidal method
-            predicted_position = current_position + dt * \
-                                 (predicted_velocity - acceleration * dt / 2.0);
+            predicted_position = current_position + dt_sec * \
+                                 (predicted_velocity - acceleration * dt_sec / 2.0);
             break;
         default: assert(false);
     }
@@ -149,22 +150,31 @@ void model_prediction::integrate_to_position(const double &acceleration,
 void model_prediction::integrate_cartesian_space(
                             const state_specification &current_state,
                             state_specification &predicted_state,
-                            const double dt, const int number_of_steps)
+                            const double dt_sec, const int num_of_steps)
 {
-    assert(dt > 0.0);
-    assert(number_of_steps > 0);
+    assert(dt_sec > 0.0);
+    assert(num_of_steps >= 1);
     assert(NUMBER_OF_SEGMENTS_ == current_state.frame_velocity.size());
     assert(NUMBER_OF_SEGMENTS_ == predicted_state.frame_velocity.size()); 
-    
-    temp_pose_ = current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1];
 
-    for (int i = 0; i < number_of_steps; i++){
-        temp_pose_ = KDL::addDelta(temp_pose_, 
-                                   current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1],
-                                   dt);
-        // temp_pose_.Integrate(current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1],
-        //                      1.0 / dt);
+    current_twist_ = current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1];
+    
+    /** Justification found in: 
+     * "Practical Parameterization of Rotations Using the Exponential Map",
+     * by F. Sebastian Grassia
+     * If the following assert fails, delta time must be reduced and 
+     * if necessary number of steps needs to be increased.
+    */
+    assert(((dt_sec * current_twist_.rot).Norm() <= M_PI));
+   
+    temp_pose_ = current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1];
+    assert(("Current rotation matrix", is_rotation_matrix(temp_pose_.M)));
+    
+    for (int i = 0; i < num_of_steps; i++){
+        temp_pose_ = KDL::addDelta(temp_pose_, current_twist_, dt_sec);
+        // temp_pose_.Integrate(current_twist_, 1.0 / dt_sec);
         normalize_rot_matrix(temp_pose_.M);
+        assert(("Integrated rotation matrix", is_rotation_matrix(temp_pose_.M)));
     }
     
     #ifndef NDEBUG
@@ -184,8 +194,7 @@ void model_prediction::integrate_cartesian_space(
 
         twist_data_file_.open(TWIST_DATA_PATH_);
         save_twist_to_file(twist_data_file_,
-                           current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1] \
-                           * dt * number_of_steps);
+                           current_twist_* dt_sec * num_of_steps);
 
         current_pose_data_file_.open(CURRENT_POSE_DATA_PATH_);
         save_pose_to_file(current_pose_data_file_, 
@@ -256,4 +265,37 @@ void model_prediction::compute_FK(state_specification &predicted_state)
                   << predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]
                   << std::endl;
     #endif
+}
+
+/**
+* Method checks that the input is a pure rotation matrix 'm'.
+* The condition for this is:
+* R' * R = I
+* and
+* det(R) = 1
+* Source: http://www.euclideanspace.com/maths/algebra/matrix/orthogonal/rotation/
+*/
+bool model_prediction::is_rotation_matrix(const KDL::Rotation &m)
+{
+	if (abs(m(0, 0)*m(0, 1) + m(0, 1)*m(1, 1) + m(0, 2)*m(1, 2))     > EPSILON) return false;
+	if (abs(m(0, 0)*m(2, 0) + m(0, 1)*m(2, 1) + m(0, 2)*m(2, 2))     > EPSILON) return false;
+	if (abs(m(1, 0)*m(2, 0) + m(1, 1)*m(2, 1) + m(1, 2)*m(2, 2))     > EPSILON) return false;
+	if (abs(m(0, 0)*m(0, 0) + m(0, 1)*m(0, 1) + m(0, 2)*m(0, 2) - 1) > EPSILON) return false;
+	if (abs(m(1, 0)*m(1, 0) + m(1, 1)*m(1, 1) + m(1, 2)*m(1, 2) - 1) > EPSILON) return false;
+	if (abs(m(2, 0)*m(2, 0) + m(2, 1)*m(2, 1) + m(2, 2)*m(2, 2) - 1) > EPSILON) return false;
+	return (abs(determinant(m) - 1) < EPSILON);
+}
+
+/**
+ * code is defined here:
+ * https://www.euclideanspace.com/maths/algebra/matrix/functions/determinant/threeD/
+*/
+double model_prediction::determinant(const KDL::Rotation &m) 
+{
+    return m(0, 0) * m(1, 1) * m(2, 2) + \
+           m(0, 1) * m(1, 2) * m(2, 0) + \
+           m(0, 2) * m(1, 0) * m(2, 1) - \
+           m(0, 0) * m(1, 2) * m(2, 1) - \
+           m(0, 1) * m(1, 0) * m(2, 2) - \
+           m(0, 2) * m(1, 1) * m(2, 0);
 }
