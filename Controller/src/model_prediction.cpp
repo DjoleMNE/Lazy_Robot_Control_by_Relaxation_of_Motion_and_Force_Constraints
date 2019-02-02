@@ -59,7 +59,7 @@ void model_prediction::integrate_joint_space(
     // For each step in the future horizon
     for (int i = 0; i < number_of_steps; i++){   
         // For each robot's joint
-        for (int j = 0; j < NUMBER_OF_JOINTS_; j++){                         
+        for (int j = 0; j < NUMBER_OF_JOINTS_; j++){
             integrate_to_velocity(temp_state_.qdd(j), temp_state_.qd(j),
                                   predicted_states[i].qd(j), method, step_size);
 
@@ -143,49 +143,59 @@ void model_prediction::integrate_to_position(const double &acceleration,
 
 /*
     Used for predicting future deviation from the goal state.
-    The intermediate states computed throughout the itegration are not saved.
+    The intermediate states computed throughout the itegration are NOT saved.
     The function expects constant Pose twist (not screw twist).
 */
-KDL::Frame model_prediction::integrate_cartesian_space(
-                            const KDL::Frame &current_pose,
-                            const KDL::Twist &current_twist,
+void model_prediction::integrate_cartesian_space(
+                            const state_specification &current_state,
+                            state_specification &predicted_state,
                             const double dt, const int number_of_steps)
 {
     assert(dt > 0.0);
     assert(number_of_steps > 0);
+    assert(NUMBER_OF_SEGMENTS_ == current_state.frame_velocity.size());
+    assert(NUMBER_OF_SEGMENTS_ == predicted_state.frame_velocity.size()); 
     
-    temp_pose_ = current_pose;
+    temp_pose_ = current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1];
 
     for (int i = 0; i < number_of_steps; i++){
-        temp_pose_ = KDL::addDelta(temp_pose_, current_twist, dt);
-        // temp_pose_.Integrate(current_twist, 1.0 / dt);
+        temp_pose_ = KDL::addDelta(temp_pose_, 
+                                   current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1],
+                                   dt);
+        // temp_pose_.Integrate(current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1],
+        //                      1.0 / dt);
         normalize_rot_matrix(temp_pose_.M);
     }
     
     #ifndef NDEBUG
         std::cout << "Measured End-effector Position:\n" 
-                << current_pose.p  << std::endl;
+                  << current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p 
+                  << std::endl;
 
         std::cout << "Measured End-effector Orientation:\n" 
-                << current_pose.M  << std::endl;
+                  << current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M 
+                  << std::endl;
 
         std::cout << "Integrated End-effector Position 1:\n" 
-                << temp_pose_.p  << std::endl;
+                  << temp_pose_.p  << std::endl;
         
         std::cout << "Integrated End-effector Orientation 1:\n" 
-                << temp_pose_.M  << std::endl;
+                  << temp_pose_.M  << std::endl;
 
         twist_data_file_.open(TWIST_DATA_PATH_);
-        save_twist_to_file(twist_data_file_, current_twist * dt * number_of_steps);
+        save_twist_to_file(twist_data_file_,
+                           current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1] \
+                           * dt * number_of_steps);
 
         current_pose_data_file_.open(CURRENT_POSE_DATA_PATH_);
-        save_pose_to_file(current_pose_data_file_, current_pose);
+        save_pose_to_file(current_pose_data_file_, 
+                          current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
 
         predicted_pose_data_file_.open(PREDICTED_POSE_DATA_PATH_);
         save_pose_to_file(predicted_pose_data_file_, temp_pose_);
     #endif
     
-    return temp_pose_;
+    predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1] = temp_pose_;
 }
 
 void model_prediction::save_pose_to_file(std::ofstream &pose_data_file, 

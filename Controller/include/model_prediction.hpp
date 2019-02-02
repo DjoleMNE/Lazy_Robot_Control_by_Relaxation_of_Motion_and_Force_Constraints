@@ -57,8 +57,8 @@ class model_prediction
                             const bool recompute_acceleration);
 
 		// Used for predicting future deviation from the goal state
-		KDL::Frame integrate_cartesian_space(const KDL::Frame &current_pose,
-                            		   const KDL::Twist &current_twist,
+		void integrate_cartesian_space(const state_specification &current_state,
+                                       state_specification &predicted_state,
                                        const double dt, 
 									   const int number_of_steps);
 

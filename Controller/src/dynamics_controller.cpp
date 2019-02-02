@@ -218,7 +218,7 @@ int dynamics_controller::enforce_loop_frequency()
     Apply joint commands using safe control interface.
     If the computed commands are not safe, exit the program.
 */
-int dynamics_controller::apply_control_commands()
+int dynamics_controller::apply_joint_control_commands()
 { 
     /* 
         Safety controller checks if the commands are over the limits.
@@ -265,11 +265,7 @@ int dynamics_controller::apply_control_commands()
 */
 void dynamics_controller::make_predictions()
 {
-    predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1] = \
-        predictor_.integrate_cartesian_space(
-                        robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1], 
-                        robot_state_.frame_velocity[NUMBER_OF_SEGMENTS_ - 1], 
-                        1, 1);
+    predictor_.integrate_cartesian_space(robot_state_, predicted_state_, 1, 1);
 }
 
 /*  
@@ -282,7 +278,7 @@ void dynamics_controller::compute_error()
     // desired_state_ = robot_state_;
 
     // Linear motion (error) necessary to go from predicted to desired
-    // (positive direction of motion)
+    // (positive direction of translation)
     for(int i = 0; i < 3; i++)
     {
         error_vector_(i) = \
@@ -582,7 +578,7 @@ int dynamics_controller::control(const int desired_control_mode,
 
 
         // Apply joint commands using safe control interface.
-        if(apply_control_commands() != 0){
+        if(apply_joint_control_commands() != 0){
             if (store_control_data) log_file_.close();
             return -1;
         } 

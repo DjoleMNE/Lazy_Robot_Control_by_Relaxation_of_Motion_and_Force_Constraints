@@ -123,7 +123,7 @@ class dynamics_controller
     void update_current_state();
     void compute_error();
     void make_predictions();
-    int apply_control_commands();
+    int apply_joint_control_commands();
     int evaluate_dynamics();
     int enforce_loop_frequency();
 
