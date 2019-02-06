@@ -24,6 +24,7 @@ SOFTWARE.
 */
 #include <model_prediction.hpp>
 #define EPSILON 0.01  // margin to allow for rounding errors
+#define MIN_ANGLE 1e-7
 
 model_prediction::model_prediction(const KDL::Chain &robot_chain): 
     NUMBER_OF_JOINTS_(robot_chain.getNrOfJoints()),
@@ -31,10 +32,12 @@ model_prediction::model_prediction(const KDL::Chain &robot_chain):
     NUMBER_OF_FRAMES_(robot_chain.getNrOfSegments() + 1),
     NUMBER_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
     fk_solver_result_(0), fk_vereshchagin_(robot_chain), 
-    x_(0.0), y_(0.0), z_(0.0), w_(0.0), // Temp quaternion parameters
-    temp_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
-                NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
-    current_twist_(KDL::Twist::Zero()), temp_pose_(KDL::Frame::Identity()),
+    q_x_(0.0), q_y_(0.0), q_z_(0.0), q_w_(0.0), // Temp quaternion parameters
+    rot_norm_(0.0), temp_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
+                                NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
+    body_fixed_twist_(KDL::Twist::Zero()), temp_pose_(KDL::Frame::Identity()),
+    skew_rotation_sin_(KDL::Rotation::Identity()), 
+    skew_rotation_cos_(KDL::Rotation::Identity()),
     CURRENT_POSE_DATA_PATH_(prediction_parameter::CURRENT_POSE_DATA_PATH),
     PREDICTED_POSE_DATA_PATH_(prediction_parameter::PREDICTED_POSE_DATA_PATH),
     TWIST_DATA_PATH_(prediction_parameter::TWIST_DATA_PATH)
@@ -152,27 +155,45 @@ void model_prediction::integrate_cartesian_space(
                             state_specification &predicted_state,
                             const double dt_sec, const int num_of_steps)
 {
-    assert(dt_sec > 0.0);
+    assert(dt_sec > 0.0 && dt_sec <= 1.0);
     assert(num_of_steps >= 1);
     assert(NUMBER_OF_SEGMENTS_ == current_state.frame_velocity.size());
     assert(NUMBER_OF_SEGMENTS_ == predicted_state.frame_velocity.size()); 
 
-    current_twist_ = current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1];
-    
-    /** Justification found in: 
-     * "Practical Parameterization of Rotations Using the Exponential Map",
-     * by F. Sebastian Grassia
-     * If the following assert fails, delta time must be reduced and 
-     * if necessary number of steps needs to be increased.
-    */
-    assert(((dt_sec * current_twist_.rot).Norm() <= M_PI));
-   
     temp_pose_ = current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1];
+     
+    body_fixed_twist_(0) = 0.5;
+    body_fixed_twist_(1) = 0.0;
+    body_fixed_twist_(2) = 0.6;
+
+    body_fixed_twist_(3) = 0.9;
+    body_fixed_twist_(4) = 0.0;
+    body_fixed_twist_(5) = 0.0;
+
+    body_fixed_twist_ = temp_pose_.M.Inverse(body_fixed_twist_) * dt_sec;
+
+    // body_fixed_twist_ = \
+    //     temp_pose_.M.Inverse(current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]) * dt_sec;
+
+    /** 
+     * Justification for the following assertion found in: 
+     * "Practical Parameterization of Rotations Using the Exponential Map",
+     *  by F. Sebastian Grassia, page 7.
+     * If the following assert fails, delta time must be reduced and 
+     * if necessary number of steps needs to be increased. Basically the angle
+     * step is to high for exp map.
+     * Alternative is to "rephrase" the orientation step, before applying it via 
+     * the exponential map and avoid singularity which occurs in mapping from 
+     * R^3 to SO(3) if angle step is too high. 
+     * See the paper from above for more details. 
+    */
+    assert((body_fixed_twist_.rot.Norm() <= M_PI));
     assert(("Current rotation matrix", is_rotation_matrix(temp_pose_.M)));
     
     for (int i = 0; i < num_of_steps; i++){
-        temp_pose_ = KDL::addDelta(temp_pose_, current_twist_, dt_sec);
-        // temp_pose_.Integrate(current_twist_, 1.0 / dt_sec);
+        // temp_pose_ = KDL::addDelta(temp_pose_, body_fixed_twist_);
+        temp_pose_ = integrate_pose(temp_pose_, body_fixed_twist_);
+        // temp_pose_.Integrate(body_fixed_twist_, 1.0);
         normalize_rot_matrix(temp_pose_.M);
         assert(("Integrated rotation matrix", is_rotation_matrix(temp_pose_.M)));
     }
@@ -192,9 +213,9 @@ void model_prediction::integrate_cartesian_space(
         std::cout << "Integrated End-effector Orientation 1:\n" 
                   << temp_pose_.M  << std::endl;
 
+        std::cout << "Delta Angle: " << body_fixed_twist_.rot.Norm() << std::endl; 
         twist_data_file_.open(TWIST_DATA_PATH_);
-        save_twist_to_file(twist_data_file_,
-                           current_twist_* dt_sec * num_of_steps);
+        save_twist_to_file(twist_data_file_, body_fixed_twist_);
 
         current_pose_data_file_.open(CURRENT_POSE_DATA_PATH_);
         save_pose_to_file(current_pose_data_file_, 
@@ -206,6 +227,82 @@ void model_prediction::integrate_cartesian_space(
     
     predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1] = temp_pose_;
 }
+
+/**
+ * Code is based on formulas given in books:
+ * "Modern Robotics", F.C.Park
+ * "Robot Kinematics and Dynamics", Herman B.
+*/
+KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
+                                            const KDL::Twist &current_twist) 
+{
+    rot_norm_ = current_twist.rot.Norm();
+    if (rot_norm_ < MIN_ANGLE) {
+        return current_pose * KDL::Frame(KDL::Rotation::Identity(),
+                                         current_twist.vel);
+    } else {
+        return current_pose * KDL::Frame(angular_exp_map(current_twist, rot_norm_),
+                                         linear_exp_map(KDL::Twist(current_twist.vel,
+                                                                   current_twist.rot/current_twist.rot.Norm()
+                                                                  ),
+                                                        rot_norm_
+                                                       )
+                                        );
+    }
+}
+
+// Calculate  exponential map for angular part of the given screw twist
+// Angular part of the twist does NOT need to be normalized!
+KDL::Rotation model_prediction::angular_exp_map(const KDL::Twist &current_twist,
+                                                const double &rot_norm)
+{
+    return KDL::Rotation::Rot(current_twist.rot, rot_norm);
+}
+
+// Calculate exponential map for linear part of the given screw twist
+// Angular part of the twist must be normalized!
+KDL::Vector model_prediction::linear_exp_map(const KDL::Twist &current_twist,
+                                             const double &rot_norm)
+{
+    // Convert vector to a skew matrix 
+    skew_rotation_cos_ = skew_matrix( current_twist.rot );
+    skew_rotation_sin_ = skew_rotation_cos_ * skew_rotation_cos_;
+
+    return (matrix_addition(KDL::Rotation(rot_norm,      0.0,      0.0,
+                                               0.0, rot_norm,      0.0,
+                                               0.0,      0.0, rot_norm),
+                            matrix_addition(scale_matrix( skew_rotation_cos_, 1        - cos(rot_norm) ),
+                                            scale_matrix( skew_rotation_sin_, rot_norm - sin(rot_norm) )
+                                           )
+                           )
+           ) * current_twist.vel;
+}
+
+//Converts a 3D vector to an skew matrix representation
+KDL::Rotation model_prediction::skew_matrix(const KDL::Vector &vector)
+{
+    return KDL::Rotation( 0.0,       -vector(2),  vector(1),
+                          vector(2),        0.0, -vector(0),
+                         -vector(1),  vector(0),        0.0);
+}
+
+//Scale a 3x3 matrix with a scalar number
+KDL::Rotation model_prediction::scale_matrix(const KDL::Rotation &matrix,
+                                             const double &scale)
+{
+    return KDL::Rotation(matrix.data[0] * scale, matrix.data[1] * scale, matrix.data[2] * scale,
+                         matrix.data[3] * scale, matrix.data[4] * scale, matrix.data[5] * scale,
+                         matrix.data[6] * scale, matrix.data[7] * scale, matrix.data[8] * scale);
+}
+
+KDL::Rotation model_prediction::matrix_addition(const KDL::Rotation &matrix_1,
+                                                const KDL::Rotation &matrix_2)
+{
+    return KDL::Rotation(matrix_1.data[0] + matrix_2.data[0], matrix_1.data[1] + matrix_2.data[1], matrix_1.data[2] + matrix_2.data[2],
+                         matrix_1.data[3] + matrix_2.data[3], matrix_1.data[4] + matrix_2.data[4], matrix_1.data[5] + matrix_2.data[5],
+                         matrix_1.data[6] + matrix_2.data[6], matrix_1.data[7] + matrix_2.data[7], matrix_1.data[8] + matrix_2.data[8]);
+}
+
 
 void model_prediction::save_pose_to_file(std::ofstream &pose_data_file, 
                                          const KDL::Frame &pose)
@@ -238,8 +335,9 @@ void model_prediction::save_twist_to_file(std::ofstream &twist_data_file,
 void model_prediction::normalize_rot_matrix(KDL::Rotation &rot_martrix)
 {
     // Internally KDL normalizes the quaternion before return
-    rot_martrix.GetQuaternion(x_, y_, z_, w_);
-    rot_martrix = KDL::Rotation::Quaternion(x_, y_, z_, w_);
+    // Note that it is still not proven to be right way to do it!
+    rot_martrix.GetQuaternion(q_x_, q_y_, q_z_, q_w_);
+    rot_martrix = KDL::Rotation::Quaternion(q_x_, q_y_, q_z_, q_w_);
 }
 
 // Forward position and velocity kinematics, given the itegrated values

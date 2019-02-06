@@ -97,7 +97,7 @@ void go_navigation_1(youbot_mediator &arm){
 // Go to Navigation 2 configuration  
 void go_navigation_2(youbot_mediator &arm){
     KDL::JntArray desired_pose(JOINTS);
-    double navigation[] = {2.9496, 1.0, -1.53240, 2.85214, 2.93816};
+    double navigation[] = {2.9496, 1.0, -1.53240, 2.85214, 0.12};
     for (int i = 0; i < JOINTS; i++) desired_pose(i) = navigation[i];  
     arm.set_joint_positions(desired_pose);
     if(environment_ != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
@@ -169,15 +169,37 @@ int main(int argc, char **argv)
     controller.define_feadforward_torque(std::vector<double>{0.0, 0.0, 
                                                              0.0, 0.0, 
                                                                   0.0}); 
-    // Define desired robot pose. See hpp file for details 
+    /**
+     * Interface for defining desired robot pose.
+     * constraint_direction argument defines which of 6 DOF should be 
+     * controlled or not. Basically, some of DOFs can be left out to not be 
+     * controlled by this controller, but left out to be controlled by 
+     * natural dynamics of the system and environment.
+     * First 3 elements of cartesian_pose vector define x, y, z positions
+     * Last 3 elements define orientations around x, y, z axes (Roll, Pitch, Yaw) 
+     * All DOFs are specified w.r.t. fixed robot base reference frame
+     * 
+     * Orientation convention (last 3 elements of cartesian_pose vector):
+     * - First rotate around X with roll, then around the fixed Y with pitch, 
+     *   then around fixed Z with yaw.
+     * - Invariants:
+     *   - RPY(roll, pitch, yaw) == RPY( roll +/- PI, PI - pitch, yaw +/- PI )
+     *   - angles + 2*k*PI
+     */ 
+    /**
+     * 1. Is KDL limiting the legal range of motion for Euler angles? 
+     * Are we able to command any orientiation using KDL's RPY parameters???
+     * More specifically, does the limitation happens while converting RPY angles 
+     * to a rotation matrix which will further on be used in computations?
+     * Check IK solver for this problem, to see what is happening there with RPY.
+     * 
+    */
     controller.define_desired_ee_pose(std::vector<bool>{false, false, false, // Linear
                                                         false, false, false}, // Angular
                                       std::vector<double>{1.0, 5.0, -85.0, // Linear
-                                                          0.0, 1.0, 0.5}); // Angular (RPY fixed frame)
+                                                          0.0, 1.0,  0.5}); // Angular (RPY fixed frame)
 
-    controller.control(control_mode::VELOCITY, 
-                       task_interface::CART_POSE, 
-                       true);
+    controller.control(control_mode::VELOCITY, task_interface::CART_POSE, true);
 
     return 0;
 }

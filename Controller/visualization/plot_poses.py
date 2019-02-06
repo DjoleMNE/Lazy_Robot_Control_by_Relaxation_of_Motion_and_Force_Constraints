@@ -101,14 +101,32 @@ ax.plot([0., 0.],
         [0., 0.], 
         [0., axis_length], 'blue', label = "Base: Z axis")
 
-
-#Measured Pose of the end-effector
+#Current Pose of the end-effector
 position_origin_1 = np.array([np.float32(measured_pose[9][0]), np.float32(measured_pose[10][0]), np.float32(measured_pose[11][0])])
 
 R_1 = np.array([[np.float32(measured_pose[0][0]), np.float32(measured_pose[1][0]), np.float32(measured_pose[2][0])], 
                 [np.float32(measured_pose[3][0]), np.float32(measured_pose[4][0]), np.float32(measured_pose[5][0])], 
                 [np.float32(measured_pose[6][0]), np.float32(measured_pose[7][0]), np.float32(measured_pose[8][0])]])
 
+twist_vector[:3] = np.dot(R_1, twist_vector[:3])
+twist_vector[3:] = np.dot(R_1, twist_vector[3:])
+
+# Plot the vector of "commanded" twist
+#Linear part
+a2 = Arrow3D([position_origin_1[0], position_origin_1[0] + twist_vector[0][0]], 
+             [position_origin_1[1], position_origin_1[1] + twist_vector[1][0]], 
+             [position_origin_1[2], position_origin_1[2] + twist_vector[2][0]], 
+             mutation_scale=10, lw=1, arrowstyle="-|>", color="purple",label='Linear Twist')
+ax.add_artist(a2)
+
+#Angular part
+a3 = Arrow3D([position_origin_1[0], position_origin_1[0] + twist_vector[3][0]], 
+             [position_origin_1[1], position_origin_1[1] + twist_vector[4][0]], 
+             [position_origin_1[2], position_origin_1[2] + twist_vector[5][0]], 
+             mutation_scale=10, lw=1, arrowstyle="-|>", color="black",label='Angular Twist')
+ax.add_artist(a3)
+
+#plot of the current pose
 #X axis
 ax.plot([position_origin_1[0], position_origin_1[0] +  (axis_length * R_1[0, 0]) ], 
         [position_origin_1[1], position_origin_1[1] +  (axis_length * R_1[1, 0]) ], 
@@ -150,17 +168,10 @@ ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 2])
 
 #Plot the vector of "data estimated" twist
 a1 = Arrow3D([position_origin_1[0], position_origin_2[0]], 
-            [position_origin_1[1], position_origin_2[1]], 
-            [position_origin_1[2], position_origin_2[2]], 
+             [position_origin_1[1], position_origin_2[1]], 
+             [position_origin_1[2], position_origin_2[2]], 
             mutation_scale=10, lw=1, arrowstyle="-|>", color="orange")
 ax.add_artist(a1)
-
-#Plot the vector of "commanded" twist
-a2 = Arrow3D([0.0, twist_vector[0][0]], 
-            [0.0, twist_vector[1][0]], 
-            [0.0, twist_vector[2][0]], 
-            mutation_scale=10, lw=1, arrowstyle="-|>", color="purple",label='My label')
-ax.add_artist(a2)
 
 ax.legend(loc=3)
 ax.set_aspect('equal')

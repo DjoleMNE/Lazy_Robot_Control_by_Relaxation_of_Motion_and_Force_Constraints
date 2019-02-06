@@ -85,10 +85,13 @@ class model_prediction
 
 		// Temp varible required for saving intermediate state,
 		// if multi-step integration requirested
-		double x_, y_, z_, w_;
+		double q_x_, q_y_, q_z_, q_w_;
+		double rot_norm_;
 		state_specification temp_state_;
-		KDL::Twist current_twist_;
+		KDL::Twist body_fixed_twist_;
 		KDL::Frame temp_pose_;
+		KDL::Rotation skew_rotation_sin_;
+		KDL::Rotation skew_rotation_cos_;
 
 		// For saving prediction DATA, necessary for visualization
 		const std::string CURRENT_POSE_DATA_PATH_;
@@ -104,6 +107,33 @@ class model_prediction
                                const KDL::Frame &pose);
 		void save_twist_to_file(std::ofstream &twist_data_file, 
                                 const KDL::Twist &twist);
+
+		// Functions required for 3D pose itegration
+		/**
+		 * Calculates Exponential map for both translation and rotation
+		 * Takes: 
+		 * 		- body-fixed twist scaled with delta time
+		 * 		- current pose to be integrated
+		 * Returns tranformation of the integrated (predicted) pose
+		 * If rotation is too small, function will only integrate linear part
+		*/
+		KDL::Frame integrate_pose(const KDL::Frame &current_pose,
+								  const KDL::Twist &current_twist);
+		// Calculate  exponential map for angular part of the given screw twist
+		KDL::Rotation angular_exp_map(const KDL::Twist &current_twist,
+                                      const double &rot_norm);
+		// Calculate exponential map for linear part of the given screw twist
+		// Rotational part of the twist must be normalized!
+		KDL::Vector linear_exp_map(const KDL::Twist &current_twist,
+                                   const double &rot_norm);
+		//Converts a 3D vector to an skew matrix representation
+		KDL::Rotation skew_matrix(const KDL::Vector &vector);
+		//Scale a 3x3 matrix with a scalar number
+		KDL::Rotation scale_matrix(const KDL::Rotation &matrix,
+                                   const double &scale);
+		// Performs element-wise additions of two matrices
+		KDL::Rotation matrix_addition(const KDL::Rotation &matrix_1,
+                                      const KDL::Rotation &matrix_2);
 		void normalize_rot_matrix(KDL::Rotation &rot_martrix);
 		bool is_rotation_matrix(const KDL::Rotation &m);
 		double determinant(const KDL::Rotation &m);

@@ -101,6 +101,9 @@ void dynamics_controller::define_desired_ee_pose(
                             const std::vector<bool> &constraint_direction,
                             const std::vector<double> &cartesian_pose)
 {
+    assert(constraint_direction.size() == NUMBER_OF_CONSTRAINTS_);
+    assert(cartesian_pose.size() == NUMBER_OF_CONSTRAINTS_);
+    
     for(int i = 0; i < 3; i++)
     {
        desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i) = cartesian_pose[i];
@@ -294,7 +297,7 @@ void dynamics_controller::make_predictions()
 void dynamics_controller::compute_control_error()
 {
     make_predictions();
-    // desired_state_ = robot_state_;
+    desired_state_ = robot_state_;
 
     /**
      *  Linear motion (error) necessary to go from predicted to desired position
@@ -315,6 +318,8 @@ void dynamics_controller::compute_control_error()
     * [1] "Pose Control of Robot Manipulators Using Different Orientation
     *      Representations: A Comparative Review", Campa and de la Torre, 2009.
     * [2] "Resolved Acceleration Control Of Mechanical Manipulators", Luh et al. 1980
+    * [3] "Resolved-acceleration control of robot manipulators: A critical 
+    *      review with experiments", Caccavale et al., 1998 
     * Quote from the [2]: "...the orientation error e_o, of the hand 
     * will be corrected if [n,s,u] (measured rotation matrix) is rotated 
     * $\phi$ radians about axis r. Hence, to correct for the orientation error,
@@ -322,29 +327,27 @@ void dynamics_controller::compute_control_error()
     * as e_o."
     */
 
-    //My version of error matrix
+    // [3]'s version of error matrix (equation 24)
     // error_rot_matrix_ = \
     //     predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.Inverse() * \
     //     desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M;
 
-    //[1, 2]'s version of error matrix
+    //[1, 2]'s version of error matrix:
+    // describing the rotation needed to align R_p with R_d.
     error_rot_matrix_ = \
         desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * \
         predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.Inverse();
     
-    double roll, pitch, yaw;
-    std::cout << "Desired position: " << desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p << std::endl;
-    desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.GetRPY(roll, pitch, yaw);
-    std::cout << "RPY desired: " << roll << " "  << pitch << " " << yaw << std::endl;
-    predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.GetRPY(roll, pitch, yaw);
-    std::cout << "RPY predicted: " << roll << " "  << pitch << " " << yaw << std::endl;
-    std::cout << "Error Matrix:\n" << error_rot_matrix_ << std::endl;
-
+    // Rotation matrix based error calculation from [1, 2]
     error_vector_(3) = 0.5 * (error_rot_matrix_(2, 1) - error_rot_matrix_(1, 2));
     error_vector_(4) = 0.5 * (error_rot_matrix_(0, 2) - error_rot_matrix_(2, 0));
     error_vector_(5) = 0.5 * (error_rot_matrix_(1, 0) - error_rot_matrix_(0, 1));
+   
+    // Full pose error can be calulated using KDL's diff function, which for rotation 
+    // error returns a axis/angle error vector!
 
     #ifndef NDEBUG
+        std::cout << "Error Matrix:\n" << error_rot_matrix_ << std::endl;
         std::cout << "Error:\n" << error_vector_.transpose() << std::endl;
     #endif
 }
@@ -568,7 +571,7 @@ int dynamics_controller::control(const int desired_control_mode,
         //Get current robot state from the joint sensors, velocities and angles
         update_current_state();
 
-        if(loop_count_ == 92) {
+        if(loop_count_ == 1) {
             compute_control_error();
             return 0;
         }
