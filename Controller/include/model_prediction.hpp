@@ -89,6 +89,7 @@ class model_prediction
 		double rot_norm_;
 		state_specification temp_state_;
 		KDL::Twist body_fixed_twist_;
+		KDL::Twist normalized_twist_;
 		KDL::Frame temp_pose_;
 		KDL::Rotation skew_rotation_sin_;
 		KDL::Rotation skew_rotation_cos_;
@@ -120,10 +121,11 @@ class model_prediction
 		KDL::Frame integrate_pose(const KDL::Frame &current_pose,
 								  const KDL::Twist &current_twist);
 		// Calculate  exponential map for angular part of the given screw twist
+		// Given twist vector must be normalized!
 		KDL::Rotation angular_exp_map(const KDL::Twist &current_twist,
                                       const double &rot_norm);
 		// Calculate exponential map for linear part of the given screw twist
-		// Rotational part of the twist must be normalized!
+		// Given twist vector must be normalized!
 		KDL::Vector linear_exp_map(const KDL::Twist &current_twist,
                                    const double &rot_norm);
 		//Converts a 3D vector to an skew matrix representation

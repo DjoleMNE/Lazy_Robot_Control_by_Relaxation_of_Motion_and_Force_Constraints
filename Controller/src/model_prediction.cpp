@@ -24,7 +24,7 @@ SOFTWARE.
 */
 #include <model_prediction.hpp>
 #define EPSILON 0.01  // margin to allow for rounding errors
-#define MIN_ANGLE 1e-7
+#define MIN_ANGLE 1e-6
 
 model_prediction::model_prediction(const KDL::Chain &robot_chain): 
     NUMBER_OF_JOINTS_(robot_chain.getNrOfJoints()),
@@ -35,7 +35,8 @@ model_prediction::model_prediction(const KDL::Chain &robot_chain):
     q_x_(0.0), q_y_(0.0), q_z_(0.0), q_w_(0.0), // Temp quaternion parameters
     rot_norm_(0.0), temp_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
                                 NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
-    body_fixed_twist_(KDL::Twist::Zero()), temp_pose_(KDL::Frame::Identity()),
+    body_fixed_twist_(KDL::Twist::Zero()), normalized_twist_(KDL::Twist::Zero()), 
+    temp_pose_(KDL::Frame::Identity()),
     skew_rotation_sin_(KDL::Rotation::Identity()), 
     skew_rotation_cos_(KDL::Rotation::Identity()),
     CURRENT_POSE_DATA_PATH_(prediction_parameter::CURRENT_POSE_DATA_PATH),
@@ -166,7 +167,7 @@ void model_prediction::integrate_cartesian_space(
     body_fixed_twist_(1) = 0.0;
     body_fixed_twist_(2) = 0.6;
 
-    body_fixed_twist_(3) = 0.9;
+    body_fixed_twist_(3) = 0.001;
     body_fixed_twist_(4) = 0.0;
     body_fixed_twist_(5) = 0.0;
 
@@ -241,31 +242,29 @@ KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
         return current_pose * KDL::Frame(KDL::Rotation::Identity(),
                                          current_twist.vel);
     } else {
-        return current_pose * KDL::Frame(angular_exp_map(current_twist, rot_norm_),
-                                         linear_exp_map(KDL::Twist(current_twist.vel,
-                                                                   current_twist.rot/current_twist.rot.Norm()
-                                                                  ),
-                                                        rot_norm_
-                                                       )
-                                        );
+        normalized_twist_ = KDL::Twist(current_twist.vel,
+                                       current_twist.rot / rot_norm_);
+        return current_pose * KDL::Frame(angular_exp_map(normalized_twist_, rot_norm_),
+                                         linear_exp_map(normalized_twist_, rot_norm_));
     }
 }
 
 // Calculate  exponential map for angular part of the given screw twist
-// Angular part of the twist does NOT need to be normalized!
-KDL::Rotation model_prediction::angular_exp_map(const KDL::Twist &current_twist,
+// Given twist vector must be normalized!
+KDL::Rotation model_prediction::angular_exp_map(const KDL::Twist &normalized_twist_,
                                                 const double &rot_norm)
-{
-    return KDL::Rotation::Rot(current_twist.rot, rot_norm);
+{   
+    // Implement your own map...normalization in KDL's is not correct
+    return KDL::Rotation::Rot(normalized_twist_.rot, rot_norm);
 }
 
 // Calculate exponential map for linear part of the given screw twist
-// Angular part of the twist must be normalized!
-KDL::Vector model_prediction::linear_exp_map(const KDL::Twist &current_twist,
+// Given twist vector must be normalized!
+KDL::Vector model_prediction::linear_exp_map(const KDL::Twist &normalized_twist_,
                                              const double &rot_norm)
 {
-    // Convert vector to a skew matrix 
-    skew_rotation_cos_ = skew_matrix( current_twist.rot );
+    // Normalize and Convert rotation vector to a skew matrix 
+    skew_rotation_cos_ = skew_matrix( normalized_twist_.rot );
     skew_rotation_sin_ = skew_rotation_cos_ * skew_rotation_cos_;
 
     return (matrix_addition(KDL::Rotation(rot_norm,      0.0,      0.0,
@@ -275,7 +274,7 @@ KDL::Vector model_prediction::linear_exp_map(const KDL::Twist &current_twist,
                                             scale_matrix( skew_rotation_sin_, rot_norm - sin(rot_norm) )
                                            )
                            )
-           ) * current_twist.vel;
+           ) * normalized_twist_.vel;
 }
 
 //Converts a 3D vector to an skew matrix representation
