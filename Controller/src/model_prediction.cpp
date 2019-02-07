@@ -242,8 +242,8 @@ KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
         return current_pose * KDL::Frame(KDL::Rotation::Identity(),
                                          current_twist.vel);
     } else {
-        normalized_twist_ = KDL::Twist(current_twist.vel,
-                                       current_twist.rot / rot_norm_);
+        normalized_twist_.vel = current_twist.vel / rot_norm_;
+        normalized_twist_.rot = current_twist.rot / rot_norm_;
         return current_pose * KDL::Frame(angular_exp_map(normalized_twist_, rot_norm_),
                                          linear_exp_map(normalized_twist_, rot_norm_));
     }
@@ -254,8 +254,7 @@ KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
 KDL::Rotation model_prediction::angular_exp_map(const KDL::Twist &normalized_twist_,
                                                 const double &rot_norm)
 {   
-    // Implement your own map...normalization in KDL's is not correct
-    return KDL::Rotation::Rot(normalized_twist_.rot, rot_norm);
+    return KDL::Rotation::Rot2(normalized_twist_.rot, rot_norm);
 }
 
 // Calculate exponential map for linear part of the given screw twist
