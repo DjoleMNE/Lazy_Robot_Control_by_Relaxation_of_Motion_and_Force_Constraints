@@ -353,11 +353,37 @@ void model_prediction::save_twist_to_file(std::ofstream &twist_data_file,
 
 void model_prediction::normalize_rot_matrix(KDL::Rotation &rot_martrix)
 {
-    // Internally KDL normalizes the quaternion before return
-    // Note that it is still not proven to be right way to do it!
-    double q_x, q_y, q_z, q_w;
-    rot_martrix.GetQuaternion(q_x, q_y, q_z, q_w);
-    rot_martrix = KDL::Rotation::Quaternion(q_x, q_y, q_z, q_w);
+    Eigen::Matrix3d eigen_matrix;
+    eigen_matrix(0, 0) = rot_martrix.data[0];
+    eigen_matrix(0, 1) = rot_martrix.data[1];
+    eigen_matrix(0, 2) = rot_martrix.data[2];
+    eigen_matrix(1, 0) = rot_martrix.data[3];
+    eigen_matrix(1, 1) = rot_martrix.data[4];
+    eigen_matrix(1, 2) = rot_martrix.data[5];
+    eigen_matrix(2, 0) = rot_martrix.data[6];
+    eigen_matrix(2, 1) = rot_martrix.data[7];
+    eigen_matrix(2, 2) = rot_martrix.data[8];
+
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd(eigen_matrix, 
+                                          Eigen::ComputeFullU | Eigen::ComputeFullV);
+    std::cout << "Its singular values are:\n" <<svd.singularValues() << std::endl;
+    eigen_matrix = svd.matrixU() * svd.matrixV().transpose();
+
+    rot_martrix.data[0] = eigen_matrix(0, 0);
+    rot_martrix.data[1] = eigen_matrix(0, 1);
+    rot_martrix.data[2] = eigen_matrix(0, 2);
+    rot_martrix.data[3] = eigen_matrix(1, 0);
+    rot_martrix.data[4] = eigen_matrix(1, 1);
+    rot_martrix.data[5] = eigen_matrix(1, 2);
+    rot_martrix.data[6] = eigen_matrix(2, 0);
+    rot_martrix.data[7] = eigen_matrix(2, 1);
+    rot_martrix.data[8] = eigen_matrix(2, 2);
+
+    // // Internally KDL normalizes the quaternion before return
+    // // Note that it is still not proven to be right way to do it!
+    // double q_x, q_y, q_z, q_w;
+    // rot_martrix.GetQuaternion(q_x, q_y, q_z, q_w);
+    // rot_martrix = KDL::Rotation::Quaternion(q_x, q_y, q_z, q_w);
 }
 
 // Forward position and velocity kinematics, given the itegrated values
