@@ -86,7 +86,13 @@ figure = plt.figure(1, figsize=(10, 10))
 ax = figure.add_subplot(111, projection='3d')
 axis_length = 0.20
 plt.subplots_adjust(bottom=0.0, right=1.0, top=1.0, left = 0.0)
-
+plt.title('Body-Fixed Twist: {}'.format([twist_vector[0][0], 
+                                   twist_vector[1][0], 
+                                   twist_vector[2][0], 
+                                   twist_vector[3][0], 
+                                   twist_vector[4][0],
+                                   twist_vector[5][0]]))
+                                   
 # world frame (plot line from (0,0) to (1,0)) === Base Frame
 #plot X axis
 ax.plot([0., axis_length], 
@@ -117,6 +123,10 @@ a2 = Arrow3D([position_origin_1[0], position_origin_1[0] + twist_vector[0][0]],
              [position_origin_1[1], position_origin_1[1] + twist_vector[1][0]], 
              [position_origin_1[2], position_origin_1[2] + twist_vector[2][0]], 
              mutation_scale=10, lw=1, arrowstyle="-|>", color="purple",label='Linear Twist')
+ax.text((position_origin_1[0] + twist_vector[0][0]), 
+        (position_origin_1[1] + twist_vector[1][0]), 
+        (position_origin_1[2] + twist_vector[2][0]), 
+        '%s' % r"Linear Twist - $V$", size=7, zorder=1,  color='k') 
 ax.add_artist(a2)
 
 #Angular part
@@ -124,6 +134,10 @@ a3 = Arrow3D([position_origin_1[0], position_origin_1[0] + twist_vector[3][0]],
              [position_origin_1[1], position_origin_1[1] + twist_vector[4][0]], 
              [position_origin_1[2], position_origin_1[2] + twist_vector[5][0]], 
              mutation_scale=10, lw=1, arrowstyle="-|>", color="black",label='Angular Twist')
+ax.text((position_origin_1[0] + twist_vector[3][0]), 
+        (position_origin_1[1] + twist_vector[4][0]), 
+        (position_origin_1[2] + twist_vector[5][0]), 
+        '%s' % r"Angular Twist - $\omega$", size=7, zorder=1,  color='k') 
 ax.add_artist(a3)
 
 #plot of the current pose
@@ -171,18 +185,16 @@ a1 = Arrow3D([position_origin_1[0], position_origin_2[0]],
              [position_origin_1[1], position_origin_2[1]], 
              [position_origin_1[2], position_origin_2[2]], 
             mutation_scale=10, lw=1, arrowstyle="-|>", color="orange")
+ax.text((position_origin_2[0]), 
+        (position_origin_2[1]), 
+        (position_origin_2[2]), 
+        '%s' % "Data-estimated translation", size = 5, zorder = 1,  color='k') 
 ax.add_artist(a1)
 
 ax.legend(loc=3)
 ax.set_aspect('equal')
 plt.xlabel('x')
 plt.ylabel('y')
-plt.title('Twist test: {}'.format([twist_vector[0][0], 
-                                   twist_vector[1][0], 
-                                   twist_vector[2][0], 
-                                   twist_vector[3][0], 
-                                   twist_vector[4][0],
-                                   twist_vector[5][0]]))
 set_axes_equal(ax)             # important!
 
 # rotate the axes and update
