@@ -147,13 +147,18 @@ class model_prediction
 		 * Solving Generalized/constrained Procrustes problem i.e. 
 		 * bringing computed matrix back to the SO(3) manifold.
 		*/
-		void normalize_rot_matrix(KDL::Rotation &rot_martrix);
+		void orthonormalize_rot_matrix(KDL::Rotation &rot_matrix);
 		// Determine if a matrix is rotational or not
 		bool is_rotation_matrix(const KDL::Rotation &m);
 		// Compute determinant of a 3x3 matrix
 		double determinant(const KDL::Rotation &m);
 		// Compute distance of the matrix from the SO(3) manifold
 		double distance_to_so3(const Eigen::Matrix3d &matrix);
+		inline void rotation_to_eigen(const KDL::Rotation &kdl_matrix,
+                                      Eigen::Matrix3d &eigen_matrix);
+		inline void eigen_to_rotation(const Eigen::Matrix3d &eigen_matrix,
+                                      KDL::Rotation &kdl_matrix);
+		
 		// Forward position and velocity kinematics, from itegrated joint values
 		void compute_FK(state_specification &predicted_state);
 };

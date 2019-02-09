@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #include <model_prediction.hpp>
-#define EPSILON 0.1 // margin to allow for rounding errors
+#define EPSILON 0.07// margin to allow for rounding errors
 #define MIN_ANGLE 1e-6
 
 model_prediction::model_prediction(const KDL::Chain &robot_chain): 
@@ -173,12 +173,12 @@ void model_prediction::integrate_cartesian_space(
 
     // body_fixed_twist = \
     //     temp_pose_.M.Inverse(current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]) * dt_sec;
-    std::cout << "Current rotation Determinant: " << determinant(temp_pose_.M) << std::endl;
+    orthonormalize_rot_matrix(temp_pose_.M);
     assert(("Current rotation matrix", is_rotation_matrix(temp_pose_.M)));
     
     for (int i = 0; i < num_of_steps; i++){
         temp_pose_ = integrate_pose(temp_pose_, body_fixed_twist, true);
-        normalize_rot_matrix(temp_pose_.M);
+        orthonormalize_rot_matrix(temp_pose_.M);
         assert(("Integrated rotation matrix", is_rotation_matrix(temp_pose_.M)));
     }
     
@@ -356,22 +356,13 @@ void model_prediction::save_twist_to_file(std::ofstream &twist_data_file,
  * bringing computed matrix back to the SO(3) manifold: re-orthonormalization.
  * source: https://link.springer.com/article/10.1007%2Fs001380050048
 */
-void model_prediction::normalize_rot_matrix(KDL::Rotation &rot_martrix)
+void model_prediction::orthonormalize_rot_matrix(KDL::Rotation &rot_matrix)
 {
     Eigen::Matrix3d eigen_matrix;
-    eigen_matrix(0, 0) = rot_martrix.data[0];
-    eigen_matrix(0, 1) = rot_martrix.data[1];
-    eigen_matrix(0, 2) = rot_martrix.data[2];
-    eigen_matrix(1, 0) = rot_martrix.data[3];
-    eigen_matrix(1, 1) = rot_martrix.data[4];
-    eigen_matrix(1, 2) = rot_martrix.data[5];
-    eigen_matrix(2, 0) = rot_martrix.data[6];
-    eigen_matrix(2, 1) = rot_martrix.data[7];
-    eigen_matrix(2, 2) = rot_martrix.data[8];
+    rotation_to_eigen(rot_matrix, eigen_matrix);
 
     Eigen::JacobiSVD<Eigen::Matrix3d> svd(eigen_matrix, 
                                           Eigen::ComputeFullU | Eigen::ComputeFullV);
-    std::cout << "Singular values are:\n" <<svd.singularValues() << std::endl;
     
     eigen_matrix = svd.matrixU() * svd.matrixV().transpose();
 
@@ -380,18 +371,7 @@ void model_prediction::normalize_rot_matrix(KDL::Rotation &rot_martrix)
         singular_values(2, 2) = -1;
         eigen_matrix = svd.matrixU() * singular_values * svd.matrixV().transpose();
     } 
-
-    std::cout << "Distance to SO(3): " << distance_to_so3(eigen_matrix) << std::endl;
-    std::cout << "Determinant: " << eigen_matrix.determinant() << std::endl;
-    rot_martrix.data[0] = eigen_matrix(0, 0);
-    rot_martrix.data[1] = eigen_matrix(0, 1);
-    rot_martrix.data[2] = eigen_matrix(0, 2);
-    rot_martrix.data[3] = eigen_matrix(1, 0);
-    rot_martrix.data[4] = eigen_matrix(1, 1);
-    rot_martrix.data[5] = eigen_matrix(1, 2);
-    rot_martrix.data[6] = eigen_matrix(2, 0);
-    rot_martrix.data[7] = eigen_matrix(2, 1);
-    rot_martrix.data[8] = eigen_matrix(2, 2);
+    eigen_to_rotation(eigen_matrix, rot_matrix);
 }
 
 // Forward position and velocity kinematics, given the itegrated values
@@ -474,4 +454,32 @@ double model_prediction::distance_to_so3(const Eigen::Matrix3d &matrix)
     if (matrix.determinant() > 0)
         return (matrix.transpose() * matrix - Eigen::Matrix3d::Identity(3, 3)).norm();
     else return 1E+9;
+}
+
+inline void model_prediction::rotation_to_eigen(const KDL::Rotation &kdl_matrix,
+                                                Eigen::Matrix3d &eigen_matrix)
+{
+    eigen_matrix(0, 0) = kdl_matrix.data[0];
+    eigen_matrix(0, 1) = kdl_matrix.data[1];
+    eigen_matrix(0, 2) = kdl_matrix.data[2];
+    eigen_matrix(1, 0) = kdl_matrix.data[3];
+    eigen_matrix(1, 1) = kdl_matrix.data[4];
+    eigen_matrix(1, 2) = kdl_matrix.data[5];
+    eigen_matrix(2, 0) = kdl_matrix.data[6];
+    eigen_matrix(2, 1) = kdl_matrix.data[7];
+    eigen_matrix(2, 2) = kdl_matrix.data[8];
+}
+
+inline void model_prediction::eigen_to_rotation(const Eigen::Matrix3d &eigen_matrix,
+                                                KDL::Rotation &kdl_matrix)
+{
+    kdl_matrix.data[0] = eigen_matrix(0, 0);
+    kdl_matrix.data[1] = eigen_matrix(0, 1);
+    kdl_matrix.data[2] = eigen_matrix(0, 2);
+    kdl_matrix.data[3] = eigen_matrix(1, 0);
+    kdl_matrix.data[4] = eigen_matrix(1, 1);
+    kdl_matrix.data[5] = eigen_matrix(1, 2);
+    kdl_matrix.data[6] = eigen_matrix(2, 0);
+    kdl_matrix.data[7] = eigen_matrix(2, 1);
+    kdl_matrix.data[8] = eigen_matrix(2, 2);
 }
