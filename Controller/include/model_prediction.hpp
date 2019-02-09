@@ -114,7 +114,7 @@ class model_prediction
 		*/
 		KDL::Frame integrate_pose(const KDL::Frame &current_pose,
 								  KDL::Twist &current_twist,
-								  const bool rescale_twist);
+								  const bool rescale_rotation);
 		/** 
 		 * Perform parameterization of rot twist if the angle is > PI 
 		 * to avoid singularties in exponential maps.
@@ -143,10 +143,17 @@ class model_prediction
 		// Performs element-wise additions of two matrices
 		KDL::Rotation matrix_addition(const KDL::Rotation &matrix_1,
                                       const KDL::Rotation &matrix_2);
+		/** 
+		 * Solving Generalized/constrained Procrustes problem i.e. 
+		 * bringing computed matrix back to the SO(3) manifold.
+		*/
 		void normalize_rot_matrix(KDL::Rotation &rot_martrix);
+		// Determine if a matrix is rotational or not
 		bool is_rotation_matrix(const KDL::Rotation &m);
+		// Compute determinant of a 3x3 matrix
 		double determinant(const KDL::Rotation &m);
-
+		// Compute distance of the matrix from the SO(3) manifold
+		double distance_to_so3(const Eigen::Matrix3d &matrix);
 		// Forward position and velocity kinematics, from itegrated joint values
 		void compute_FK(state_specification &predicted_state);
 };

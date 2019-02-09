@@ -444,3 +444,26 @@ double model_prediction::determinant(const KDL::Rotation &m)
            m(0, 1) * m(1, 0) * m(2, 2) - \
            m(0, 2) * m(1, 1) * m(2, 0);
 }
+
+/**
+ * Compute distance of the matrix from the SO(3) manifold
+ * Source "Modern robotics" Book. Code is defined here:
+ * https://github.com/NxRLab/ModernRobotics/blob/master/packages/MATLAB/mr/DistanceToSO3.m
+*/
+double model_prediction::distance_to_so3(const Eigen::Matrix3d &matrix) 
+{
+    /**
+     * Returns the Frobenius norm to describe the distance of matrix from the
+     * SO(3) manifold
+        :param matrix: A 3x3 matrix
+        :return: A quantity describing the distance of mat from the SO(3)
+                manifold
+     * Computes the distance from matrix to the SO(3) manifold using the 
+     * following method:
+        If det(matrix) <= 0, return a large number.
+        If det(matrix) > 0, return norm(matrix^T.matrix - I).
+    */
+    if (matrix.determinant() > 0)
+        return (matrix.transpose() * matrix - Eigen::Matrix3d::Identity(3, 3)).norm();
+    else return 1E+9;
+}
