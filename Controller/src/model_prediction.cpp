@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #include <model_prediction.hpp>
-#define EPSILON 0.01  // margin to allow for rounding errors
+#define EPSILON 0.1 // margin to allow for rounding errors
 #define MIN_ANGLE 1e-6
 
 model_prediction::model_prediction(const KDL::Chain &robot_chain): 
@@ -166,14 +166,14 @@ void model_prediction::integrate_cartesian_space(
     body_fixed_twist(2) = 2.50;
 
     body_fixed_twist(3) = 0.;
-    body_fixed_twist(4) = M_PI-0.1;
+    body_fixed_twist(4) = M_PI - 0.1;
     body_fixed_twist(5) = 0.0;
 
     body_fixed_twist = temp_pose_.M.Inverse(body_fixed_twist) * dt_sec;
 
     // body_fixed_twist = \
     //     temp_pose_.M.Inverse(current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]) * dt_sec;
-
+    std::cout << "Current rotation Determinant: " << determinant(temp_pose_.M) << std::endl;
     assert(("Current rotation matrix", is_rotation_matrix(temp_pose_.M)));
     
     for (int i = 0; i < num_of_steps; i++){
@@ -220,10 +220,10 @@ void model_prediction::integrate_cartesian_space(
 */
 KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
                                             KDL::Twist &current_twist, 
-                                            const bool rescale_twist) 
+                                            const bool rescale_rotation) 
 {
     double rot_norm;
-    if(rescale_twist) rescale_angular_twist(current_twist.rot, rot_norm);
+    if(rescale_rotation) rescale_angular_twist(current_twist.rot, rot_norm);
     else rot_norm = current_twist.rot.Norm();
 
     if (rot_norm < MIN_ANGLE) {
@@ -351,6 +351,11 @@ void model_prediction::save_twist_to_file(std::ofstream &twist_data_file,
     twist_data_file.close();
 }
 
+/** 
+ * Solving Generalized/constrained Procrustes problem i.e. 
+ * bringing computed matrix back to the SO(3) manifold: re-orthonormalization.
+ * source: https://link.springer.com/article/10.1007%2Fs001380050048
+*/
 void model_prediction::normalize_rot_matrix(KDL::Rotation &rot_martrix)
 {
     Eigen::Matrix3d eigen_matrix;
@@ -367,8 +372,17 @@ void model_prediction::normalize_rot_matrix(KDL::Rotation &rot_martrix)
     Eigen::JacobiSVD<Eigen::Matrix3d> svd(eigen_matrix, 
                                           Eigen::ComputeFullU | Eigen::ComputeFullV);
     std::cout << "Singular values are:\n" <<svd.singularValues() << std::endl;
+    
     eigen_matrix = svd.matrixU() * svd.matrixV().transpose();
 
+    if(eigen_matrix.determinant() <= 0.0){
+        Eigen::Matrix3d singular_values = Eigen::Matrix3d::Identity(3, 3);
+        singular_values(2, 2) = -1;
+        eigen_matrix = svd.matrixU() * singular_values * svd.matrixV().transpose();
+    } 
+
+    std::cout << "Distance to SO(3): " << distance_to_so3(eigen_matrix) << std::endl;
+    std::cout << "Determinant: " << eigen_matrix.determinant() << std::endl;
     rot_martrix.data[0] = eigen_matrix(0, 0);
     rot_martrix.data[1] = eigen_matrix(0, 1);
     rot_martrix.data[2] = eigen_matrix(0, 2);
@@ -378,12 +392,6 @@ void model_prediction::normalize_rot_matrix(KDL::Rotation &rot_martrix)
     rot_martrix.data[6] = eigen_matrix(2, 0);
     rot_martrix.data[7] = eigen_matrix(2, 1);
     rot_martrix.data[8] = eigen_matrix(2, 2);
-
-    // // Internally KDL normalizes the quaternion before return
-    // // Note that it is still not proven to be right way to do it!
-    // double q_x, q_y, q_z, q_w;
-    // rot_martrix.GetQuaternion(q_x, q_y, q_z, q_w);
-    // rot_martrix = KDL::Rotation::Quaternion(q_x, q_y, q_z, q_w);
 }
 
 // Forward position and velocity kinematics, given the itegrated values
@@ -422,17 +430,17 @@ void model_prediction::compute_FK(state_specification &predicted_state)
 */
 bool model_prediction::is_rotation_matrix(const KDL::Rotation &m)
 {
-	if (abs(m(0, 0)*m(0, 1) + m(0, 1)*m(1, 1) + m(0, 2)*m(1, 2))     > EPSILON) return false;
-	if (abs(m(0, 0)*m(2, 0) + m(0, 1)*m(2, 1) + m(0, 2)*m(2, 2))     > EPSILON) return false;
-	if (abs(m(1, 0)*m(2, 0) + m(1, 1)*m(2, 1) + m(1, 2)*m(2, 2))     > EPSILON) return false;
-	if (abs(m(0, 0)*m(0, 0) + m(0, 1)*m(0, 1) + m(0, 2)*m(0, 2) - 1) > EPSILON) return false;
-	if (abs(m(1, 0)*m(1, 0) + m(1, 1)*m(1, 1) + m(1, 2)*m(1, 2) - 1) > EPSILON) return false;
-	if (abs(m(2, 0)*m(2, 0) + m(2, 1)*m(2, 1) + m(2, 2)*m(2, 2) - 1) > EPSILON) return false;
-	return (abs(determinant(m) - 1) < EPSILON);
+	if (std::fabs(m(0, 0)*m(0, 1) + m(0, 1)*m(1, 1) + m(0, 2)*m(1, 2)    ) > EPSILON) return false;
+	if (std::fabs(m(0, 0)*m(2, 0) + m(0, 1)*m(2, 1) + m(0, 2)*m(2, 2)    ) > EPSILON) return false;
+	if (std::fabs(m(1, 0)*m(2, 0) + m(1, 1)*m(2, 1) + m(1, 2)*m(2, 2)    ) > EPSILON) return false;
+	if (std::fabs(m(0, 0)*m(0, 0) + m(0, 1)*m(0, 1) + m(0, 2)*m(0, 2) - 1) > EPSILON) return false;
+	if (std::fabs(m(1, 0)*m(1, 0) + m(1, 1)*m(1, 1) + m(1, 2)*m(1, 2) - 1) > EPSILON) return false;
+	if (std::fabs(m(2, 0)*m(2, 0) + m(2, 1)*m(2, 1) + m(2, 2)*m(2, 2) - 1) > EPSILON) return false;
+	return (std::fabs(determinant(m) - 1) < EPSILON);
 }
 
 /**
- * code is defined here:
+ * Code is defined here:
  * https://www.euclideanspace.com/maths/algebra/matrix/functions/determinant/threeD/
 */
 double model_prediction::determinant(const KDL::Rotation &m) 
