@@ -80,7 +80,6 @@ class model_prediction
 	    const int NUMBER_OF_FRAMES_;
 	    const int NUMBER_OF_CONSTRAINTS_;
 
-		int fk_solver_result_;
 		KDL::FK_Vereshchagin fk_vereshchagin_;
 
 		// Temp varible required for saving intermediate state,
@@ -115,7 +114,7 @@ class model_prediction
 		*/
 		KDL::Frame integrate_pose(const KDL::Frame &current_pose,
 								  KDL::Twist &current_twist,
-								  const bool rescale_rotation);
+								  const bool rescale_twist);
 		/** 
 		 * Perform parameterization of rot twist if the angle is > PI 
 		 * to avoid singularties in exponential maps.
@@ -124,12 +123,16 @@ class model_prediction
 		 * Using the Exponential Map" paper.
 		*/
 		bool rescale_angular_twist(KDL::Vector &rot_twist, double &theta);
-		// Calculate  exponential map for angular part of the given screw twist
-		// Given twist vector must NOT be normalized!
+		/**
+		 * Calculate exponential map for angular part of the given screw twist. 
+		 * Given twist vector should NOT be normalized!
+		*/
 		KDL::Rotation angular_exp_map(const KDL::Twist &current_twist,
                                       const double rot_norm);
-		// Calculate exponential map for linear part of the given screw twist
-		// Given twist vector must NOT be normalized!
+		/**
+		 * Calculate exponential map for linear part of the given screw twist.
+		 * Given twist vector should NOT be normalized!
+		*/
 		KDL::Vector linear_exp_map(const KDL::Twist &current_twist,
                                    const double rot_norm);
 		//Converts a 3D vector to an skew matrix representation
@@ -146,6 +149,5 @@ class model_prediction
 
 		// Forward position and velocity kinematics, from itegrated joint values
 		void compute_FK(state_specification &predicted_state);
-
 };
 #endif /* MODEL_PREDICTION_HPP */

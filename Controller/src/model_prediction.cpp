@@ -31,7 +31,7 @@ model_prediction::model_prediction(const KDL::Chain &robot_chain):
     NUMBER_OF_SEGMENTS_(robot_chain.getNrOfSegments()),
     NUMBER_OF_FRAMES_(robot_chain.getNrOfSegments() + 1),
     NUMBER_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
-    fk_solver_result_(0), fk_vereshchagin_(robot_chain),
+    fk_vereshchagin_(robot_chain),
     temp_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
                 NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
     temp_pose_(KDL::Frame::Identity()),
@@ -220,10 +220,10 @@ void model_prediction::integrate_cartesian_space(
 */
 KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
                                             KDL::Twist &current_twist, 
-                                            const bool rescale_rotation) 
+                                            const bool rescale_twist) 
 {
     double rot_norm;
-    if(rescale_rotation) rescale_angular_twist(current_twist.rot, rot_norm);
+    if(rescale_twist) rescale_angular_twist(current_twist.rot, rot_norm);
     else rot_norm = current_twist.rot.Norm();
 
     if (rot_norm < MIN_ANGLE) {
@@ -366,7 +366,7 @@ void model_prediction::normalize_rot_matrix(KDL::Rotation &rot_martrix)
 
     Eigen::JacobiSVD<Eigen::Matrix3d> svd(eigen_matrix, 
                                           Eigen::ComputeFullU | Eigen::ComputeFullV);
-    std::cout << "Its singular values are:\n" <<svd.singularValues() << std::endl;
+    std::cout << "Singular values are:\n" <<svd.singularValues() << std::endl;
     eigen_matrix = svd.matrixU() * svd.matrixV().transpose();
 
     rot_martrix.data[0] = eigen_matrix(0, 0);
@@ -389,6 +389,7 @@ void model_prediction::normalize_rot_matrix(KDL::Rotation &rot_martrix)
 // Forward position and velocity kinematics, given the itegrated values
 void model_prediction::compute_FK(state_specification &predicted_state)
 {
+    int fk_solver_result_;
     // Compute angular and linear velocity of the end-effector
     // Compute position and orientation of the end-effector
     fk_solver_result_ = fk_vereshchagin_.JntToCart(predicted_state.q, 
