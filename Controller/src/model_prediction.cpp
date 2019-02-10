@@ -358,7 +358,7 @@ void model_prediction::save_twist_to_file(std::ofstream &twist_data_file,
 void model_prediction::orthonormalize_rot_matrix(KDL::Rotation &rot_matrix)
 {
     Eigen::Matrix3d eigen_matrix;
-    conversions::rotation_to_eigen(rot_matrix, eigen_matrix);
+    rotation_to_eigen(rot_matrix, eigen_matrix);
 
     Eigen::JacobiSVD<Eigen::Matrix3d> svd(eigen_matrix, 
                                           Eigen::ComputeFullU | Eigen::ComputeFullV);    
@@ -369,7 +369,7 @@ void model_prediction::orthonormalize_rot_matrix(KDL::Rotation &rot_matrix)
         singular_values(2, 2) = -1;
         eigen_matrix = svd.matrixU() * singular_values * svd.matrixV().transpose();
     } 
-    conversions::eigen_to_rotation(eigen_matrix, rot_matrix);
+    eigen_to_rotation(eigen_matrix, rot_matrix);
 }
 
 // Forward position and velocity kinematics, given the itegrated values
