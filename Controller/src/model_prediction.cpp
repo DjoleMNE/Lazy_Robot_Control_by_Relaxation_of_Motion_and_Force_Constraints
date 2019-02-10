@@ -213,6 +213,36 @@ void model_prediction::integrate_cartesian_space(
     predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1] = temp_pose_;
 }
 
+// Calculate  exponential map for angular part of the given screw twist
+KDL::Rotation model_prediction::angular_exp_map(const KDL::Twist &current_twist,
+                                                const double rot_norm)
+{   
+    // First normalize given twist vector!
+    return KDL::Rotation::Rot2(current_twist.rot / rot_norm, rot_norm);
+}
+
+// Calculate exponential map for linear part of the given screw twist
+// Given twist vector should NOT be normalized!
+KDL::Vector model_prediction::linear_exp_map(const KDL::Twist &current_twist,
+                                             const double rot_norm)
+{
+    // Convert rotation vector to a skew matrix 
+    KDL::Rotation skew_rotation = skew_matrix( current_twist.rot );
+    KDL::Rotation skew_rotation_square = skew_rotation * skew_rotation;
+    double rot_norm_square = rot_norm * rot_norm;
+
+    return (matrix_addition(KDL::Rotation::Identity(),
+                            matrix_addition(scale_matrix(skew_rotation, 
+                                                         (1 - cos(rot_norm)) / rot_norm_square
+                                                        ),
+                                            scale_matrix(skew_rotation_square, 
+                                                         (1 - sin(rot_norm) / rot_norm) / rot_norm_square
+                                                        )
+                                           )
+                           )
+           ) * current_twist.vel;
+}
+
 /**
  * Code is based on formulas given in books:
  * "Modern Robotics", F.C.Park
@@ -227,8 +257,7 @@ KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
     else rot_norm = current_twist.rot.Norm();
 
     if (rot_norm < MIN_ANGLE) {
-        return current_pose * KDL::Frame(KDL::Rotation::Identity(),
-                                         current_twist.vel);
+        return current_pose * KDL::Frame(KDL::Rotation::Identity(), current_twist.vel);
     } else {
         return current_pose * KDL::Frame(angular_exp_map(current_twist, rot_norm),
                                          linear_exp_map(current_twist, rot_norm));
@@ -265,36 +294,6 @@ bool model_prediction::rescale_angular_twist(KDL::Vector &rot_twist, double &the
         }
     }
     return is_parameterized;
-}
-
-// Calculate  exponential map for angular part of the given screw twist
-KDL::Rotation model_prediction::angular_exp_map(const KDL::Twist &current_twist,
-                                                const double rot_norm)
-{   
-    // First normalize given twist vector!
-    return KDL::Rotation::Rot2(current_twist.rot / rot_norm, rot_norm);
-}
-
-// Calculate exponential map for linear part of the given screw twist
-// Given twist vector must NOT be normalized!
-KDL::Vector model_prediction::linear_exp_map(const KDL::Twist &current_twist,
-                                             const double rot_norm)
-{
-    // Convert rotation vector to a skew matrix 
-    KDL::Rotation skew_rotation = skew_matrix( current_twist.rot );
-    KDL::Rotation skew_rotation_square = skew_rotation * skew_rotation;
-    double rot_norm_square = rot_norm * rot_norm;
-
-    return (matrix_addition(KDL::Rotation::Identity(),
-                            matrix_addition(scale_matrix(skew_rotation, 
-                                                         (1 - cos(rot_norm)) / rot_norm_square
-                                                        ),
-                                            scale_matrix(skew_rotation_square, 
-                                                         (1 - sin(rot_norm) / rot_norm) / rot_norm_square
-                                                        )
-                                           )
-                           )
-           ) * current_twist.vel;
 }
 
 //Converts a 3D vector to an skew matrix representation
