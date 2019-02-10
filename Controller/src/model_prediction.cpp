@@ -214,8 +214,8 @@ void model_prediction::integrate_cartesian_space(
 }
 
 // Calculate  exponential map for angular part of the given screw twist
-KDL::Rotation model_prediction::angular_exp_map(const KDL::Twist &current_twist,
-                                                const double rot_norm)
+KDL::Rotation model_prediction::exp_map_so3(const KDL::Twist &current_twist,
+                                            const double rot_norm)
 {   
     // First normalize given twist vector!
     return KDL::Rotation::Rot2(current_twist.rot / rot_norm, rot_norm);
@@ -223,7 +223,7 @@ KDL::Rotation model_prediction::angular_exp_map(const KDL::Twist &current_twist,
 
 // Calculate exponential map for linear part of the given screw twist
 // Given twist vector should NOT be normalized!
-KDL::Vector model_prediction::linear_exp_map(const KDL::Twist &current_twist,
+KDL::Vector model_prediction::exp_map_linear(const KDL::Twist &current_twist,
                                              const double rot_norm)
 {
     // Convert rotation vector to a skew matrix 
@@ -244,6 +244,17 @@ KDL::Vector model_prediction::linear_exp_map(const KDL::Twist &current_twist,
 }
 
 /**
+ * Calculate exponential map for both linear and angular parts 
+ * of the given screw twist
+*/
+KDL::Frame model_prediction::exp_map_se3(const KDL::Twist &current_twist,
+                                         const double rot_norm)
+{   
+    return KDL::Frame(exp_map_so3(current_twist, rot_norm),
+                      exp_map_linear(current_twist, rot_norm));
+}
+
+/**
  * Code is based on formulas given in books:
  * "Modern Robotics", F.C.Park
  * "Robot Kinematics and Dynamics", Herman B.
@@ -259,8 +270,7 @@ KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
     if (rot_norm < MIN_ANGLE) {
         return current_pose * KDL::Frame(KDL::Rotation::Identity(), current_twist.vel);
     } else {
-        return current_pose * KDL::Frame(angular_exp_map(current_twist, rot_norm),
-                                         linear_exp_map(current_twist, rot_norm));
+        return current_pose * exp_map_se3(current_twist, rot_norm);
     }
 }
 
