@@ -358,11 +358,10 @@ void model_prediction::save_twist_to_file(std::ofstream &twist_data_file,
 void model_prediction::orthonormalize_rot_matrix(KDL::Rotation &rot_matrix)
 {
     Eigen::Matrix3d eigen_matrix;
-    rotation_to_eigen(rot_matrix, eigen_matrix);
+    conversions::rotation_to_eigen(rot_matrix, eigen_matrix);
 
     Eigen::JacobiSVD<Eigen::Matrix3d> svd(eigen_matrix, 
-                                          Eigen::ComputeFullU | Eigen::ComputeFullV);
-    
+                                          Eigen::ComputeFullU | Eigen::ComputeFullV);    
     eigen_matrix = svd.matrixU() * svd.matrixV().transpose();
 
     if(eigen_matrix.determinant() <= 0.0){
@@ -370,7 +369,7 @@ void model_prediction::orthonormalize_rot_matrix(KDL::Rotation &rot_matrix)
         singular_values(2, 2) = -1;
         eigen_matrix = svd.matrixU() * singular_values * svd.matrixV().transpose();
     } 
-    eigen_to_rotation(eigen_matrix, rot_matrix);
+    conversions::eigen_to_rotation(eigen_matrix, rot_matrix);
 }
 
 // Forward position and velocity kinematics, given the itegrated values
@@ -453,32 +452,4 @@ double model_prediction::distance_to_so3(const Eigen::Matrix3d &matrix)
     if (matrix.determinant() > 0)
         return (matrix.transpose() * matrix - Eigen::Matrix3d::Identity(3, 3)).norm();
     else return 1E+9;
-}
-
-inline void model_prediction::rotation_to_eigen(const KDL::Rotation &kdl_matrix,
-                                                Eigen::Matrix3d &eigen_matrix)
-{
-    eigen_matrix(0, 0) = kdl_matrix.data[0];
-    eigen_matrix(0, 1) = kdl_matrix.data[1];
-    eigen_matrix(0, 2) = kdl_matrix.data[2];
-    eigen_matrix(1, 0) = kdl_matrix.data[3];
-    eigen_matrix(1, 1) = kdl_matrix.data[4];
-    eigen_matrix(1, 2) = kdl_matrix.data[5];
-    eigen_matrix(2, 0) = kdl_matrix.data[6];
-    eigen_matrix(2, 1) = kdl_matrix.data[7];
-    eigen_matrix(2, 2) = kdl_matrix.data[8];
-}
-
-inline void model_prediction::eigen_to_rotation(const Eigen::Matrix3d &eigen_matrix,
-                                                KDL::Rotation &kdl_matrix)
-{
-    kdl_matrix.data[0] = eigen_matrix(0, 0);
-    kdl_matrix.data[1] = eigen_matrix(0, 1);
-    kdl_matrix.data[2] = eigen_matrix(0, 2);
-    kdl_matrix.data[3] = eigen_matrix(1, 0);
-    kdl_matrix.data[4] = eigen_matrix(1, 1);
-    kdl_matrix.data[5] = eigen_matrix(1, 2);
-    kdl_matrix.data[6] = eigen_matrix(2, 0);
-    kdl_matrix.data[7] = eigen_matrix(2, 1);
-    kdl_matrix.data[8] = eigen_matrix(2, 2);
 }

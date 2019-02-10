@@ -155,10 +155,6 @@ class model_prediction
 		double determinant(const KDL::Rotation &m);
 		// Compute distance of the matrix from the SO(3) manifold
 		double distance_to_so3(const Eigen::Matrix3d &matrix);
-		inline void rotation_to_eigen(const KDL::Rotation &kdl_matrix,
-                                      Eigen::Matrix3d &eigen_matrix);
-		inline void eigen_to_rotation(const Eigen::Matrix3d &eigen_matrix,
-                                      KDL::Rotation &kdl_matrix);
 		
 		// Forward position and velocity kinematics, from itegrated joint values
 		void compute_FK(state_specification &predicted_state);
