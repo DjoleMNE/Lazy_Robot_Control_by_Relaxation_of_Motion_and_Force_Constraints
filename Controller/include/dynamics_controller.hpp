@@ -32,7 +32,7 @@ SOFTWARE.
 #include <safety_controller.hpp>
 #include <abag.hpp>
 #include <constants.hpp>
-#include <eigen_conversions/eigen_kdl.h>
+#include <kdl_eigen_conversions.hpp>
 #include <iostream>
 #include <sstream>
 #include <fstream>

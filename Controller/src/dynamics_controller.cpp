@@ -77,14 +77,6 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     abag_.set_gain_step(abag_parameter::GAIN_STEP);
 }
 
-template <typename Derived>
-inline void twist_to_eigen(const KDL::Twist &kdl_vector,
-                           Eigen::MatrixBase<Derived> &eigen_vector)
-{
-    assert(eigen_vector.rows() == 6);
-    for(int i = 0; i < eigen_vector.rows(); i++) eigen_vector(i) = kdl_vector(i);
-}
-
 // Set all values of desired state to 0 - public method
 void dynamics_controller::reset_desired_state()
 {
@@ -287,7 +279,7 @@ void dynamics_controller::make_predictions()
 {
     predictor_.integrate_cartesian_space(robot_state_, 
                                          predicted_state_, 
-                                         1, 1);
+                                         0.1, 1);
 }
 
 /*  

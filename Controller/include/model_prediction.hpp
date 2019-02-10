@@ -29,6 +29,7 @@ SOFTWARE.
 #include <constants.hpp>
 #include <fk_vereshchagin.hpp>
 #include <Eigen/Geometry>
+#include <kdl_eigen_conversions.hpp>
 #include <iostream>
 #include <sstream>
 #include <fstream>
