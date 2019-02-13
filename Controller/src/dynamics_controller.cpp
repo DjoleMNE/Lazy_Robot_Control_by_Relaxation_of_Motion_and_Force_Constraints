@@ -277,7 +277,7 @@ int dynamics_controller::apply_joint_control_commands()
 */
 void dynamics_controller::make_predictions()
 {
-    predictor_.integrate_cartesian_space(robot_state_, predicted_state_, 1, 1);
+    predictor_.integrate_cartesian_space(robot_state_, predicted_state_, 0.1, 1);
 }
 
 /*  
@@ -317,13 +317,24 @@ void dynamics_controller::compute_control_error()
     * as e_o."
     */
 
-    // [3]'s version of error matrix (equation 24)
+    /** 
+     * [3]'s version of error matrix (equation 24). Also in "Modern Robotics"
+     * book, pages 280 (error made for body Jac!) and 
+     * 437 (there is generalized to SE(3)).
+     * describing the rotation needed to align R_p with R_d.
+     * It represent relative rotation from predicted state to the desired state, 
+     * expressed in the End-Effector frame!
+     * /
     // error_rot_matrix_ = \
     //     predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.Inverse() * \
     //     desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M;
 
-    //[1, 2]'s version of error matrix:
-    // describing the rotation needed to align R_p with R_d.
+    /**
+     * [1, 2]'s version of error matrix:
+     * describing the rotation needed to align R_p with R_d.
+     * It represent relative rotation from predicted state to the desired state, 
+     * expressed in the BASE frame!
+    */
     error_rot_matrix_ = \
         desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * \
         predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.Inverse();

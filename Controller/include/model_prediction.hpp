@@ -142,6 +142,8 @@ class model_prediction
 		*/
 		KDL::Frame exp_map_se3(const KDL::Twist &current_twist, 
 							   const double rot_norm);
+		KDL::Vector log_map_so3(const KDL::Rotation &matrix);
+		
 		//Converts a 3D vector to an skew matrix representation
 		KDL::Rotation skew_matrix(const KDL::Vector &vector);
 		//Scale a 3x3 matrix with a scalar number
@@ -153,6 +155,7 @@ class model_prediction
 		/** 
 		 * Solving Generalized/constrained Procrustes problem i.e. 
 		 * bringing computed matrix back to the SO(3) manifold.
+		 * source: https://ieeexplore.ieee.org/document/88573
 		*/
 		void orthonormalize_rot_matrix(KDL::Rotation &rot_matrix);
 		// Determine if a matrix is rotational or not

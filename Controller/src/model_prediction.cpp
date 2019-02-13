@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #include <model_prediction.hpp>
-#define EPSILON 0.07// margin to allow for rounding errors
+#define EPSILON 0.2// margin to allow for rounding errors
 #define MIN_ANGLE 1e-6
 
 model_prediction::model_prediction(const KDL::Chain &robot_chain): 
@@ -363,23 +363,34 @@ void model_prediction::save_twist_to_file(std::ofstream &twist_data_file,
 /** 
  * Solving Generalized/constrained Procrustes problem i.e. 
  * bringing computed matrix back to the SO(3) manifold: re-orthonormalization.
- * source: https://link.springer.com/article/10.1007%2Fs001380050048
+ * source: https://ieeexplore.ieee.org/document/88573
 */
 void model_prediction::orthonormalize_rot_matrix(KDL::Rotation &rot_matrix)
 {
+    KDL::Vector axis =  log_map_so3(rot_matrix);
+    std::cout << "LOG: \n" << axis << " " << axis.Norm() << std::endl;
+
     Eigen::Matrix3d eigen_matrix;
     rotation_to_eigen(rot_matrix, eigen_matrix);
 
-    Eigen::JacobiSVD<Eigen::Matrix3d> svd(eigen_matrix, 
-                                          Eigen::ComputeFullU | Eigen::ComputeFullV);    
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd(eigen_matrix,
+                                          Eigen::ComputeFullU | Eigen::ComputeFullV);
     eigen_matrix = svd.matrixU() * svd.matrixV().transpose();
 
-    if(eigen_matrix.determinant() <= 0.0){
+    if(eigen_matrix.determinant() <= 0.0)
+    {
         Eigen::Matrix3d singular_values = Eigen::Matrix3d::Identity(3, 3);
         singular_values(2, 2) = -1;
         eigen_matrix = svd.matrixU() * singular_values * svd.matrixV().transpose();
-    } 
+    }
+
+    std::cout << "Singular values: " << svd.singularValues().transpose() << std::endl;
+    std::cout << "Determinant: " << eigen_matrix.determinant() << std::endl;
+    std::cout << "Distance to SO(3): " << distance_to_so3(eigen_matrix) << std::endl;
+
     eigen_to_rotation(eigen_matrix, rot_matrix);
+    axis = log_map_so3(rot_matrix);
+    std::cout << "LOG: \n" << axis << " " << axis.Norm() << std::endl;
 }
 
 // Forward position and velocity kinematics, given the itegrated values
@@ -462,4 +473,132 @@ double model_prediction::distance_to_so3(const Eigen::Matrix3d &matrix)
     if (matrix.determinant() > 0)
         return (matrix.transpose() * matrix - Eigen::Matrix3d::Identity(3, 3)).norm();
     else return 1E+9;
+}
+
+/**
+ * Calculate logarithmic map given rotation matrix
+ * Returns non-normalized axis, i.e. angle is the norm of the return vector
+ * Two singularities: 0 and PI angle rotations
+ * In 0 angle case, vector of zeros is returned 
+ * In case of PI angle, one of the 3 vector choices is returned. 
+ * More specifically, the vector corresponding to a scalar computation that
+ * involved the highest value of denominator, in order to avoid numerical issues
+ * occuring when a numerator is divided with a small number.
+*/
+KDL::Vector model_prediction::log_map_so3(const KDL::Rotation &matrix)
+{
+    double angle, x, y, z; // variables for result
+    double epsilon1 = 0.000001; // margin to allow for rounding errors
+    double epsilon2 = epsilon1 * 10; // margin to distinguish between 0 and 180 degrees
+
+    //Check first if one of two singularity cases has occurred  
+    if (   (std::fabs(matrix.data[1] - matrix.data[3]) < epsilon1)
+        && (std::fabs(matrix.data[2] - matrix.data[6]) < epsilon1)
+        && (std::fabs(matrix.data[5] - matrix.data[7]) < epsilon1))
+    {
+        // singularity found
+        // first check for identity matrix which must have +1 for all terms
+        // in leading diagonal and zero in other terms
+        if (   (std::fabs(matrix.data[1] + matrix.data[3])                      < epsilon2)
+            && (std::fabs(matrix.data[2] + matrix.data[6])                      < epsilon2)
+            && (std::fabs(matrix.data[5] + matrix.data[7])                      < epsilon2)
+            && (std::fabs(matrix.data[0] + matrix.data[4] + matrix.data[8] - 3) < epsilon2))
+        {
+            // this singularity is identity matrix so angle = 0, axis is arbitrary
+            // Because we use this for error calc, its best to return 0 vector
+            return KDL::Vector(0.0, 0.0, 0.0);
+        }
+
+        // otherwise this singularity is angle of 180
+        angle = M_PI;
+        double xx = (matrix.data[0] + 1) / 2;
+        double yy = (matrix.data[4] + 1) / 2;
+        double zz = (matrix.data[8] + 1) / 2;
+        double xy = (matrix.data[1] + matrix.data[3]) / 4;
+        double xz = (matrix.data[2] + matrix.data[6]) / 4;
+        double yz = (matrix.data[5] + matrix.data[7]) / 4;
+
+        if ((xx > yy) && (xx > zz))
+        {
+            // matrix.data[0] is the largest diagonal term
+            if(xx < epsilon1)
+            {
+                // Not sure about this part 
+                // How they know that in this case angle between y and z is always 45?
+                x = 0.0;
+                y = 0.7071;
+                z = 0.7071;
+            }
+            else
+            {
+                x = sqrt(xx);
+                y = xy/x;
+                z = xz/x;
+            }
+
+        }
+        else if (yy > zz)
+        {
+            // matrix.data[4] is the largest diagonal term
+            if(yy < epsilon1)
+            {
+                // Not sure about this part 
+                // How they know that in this case angle between z and x is always 45?
+                x = 0.7071;
+                y = 0.0;
+                z = 0.7071;
+            }
+            else 
+            {
+                y = sqrt(yy);
+                x = xy/y;
+                z = yz/y;
+            }
+        }
+        else
+        {
+            // matrix.data[8] is the largest diagonal term so base result on this
+            if(zz < epsilon1)
+            {
+                // Not sure about this part 
+                // How they know that in this case angle between y and x is always 45?
+                x = 0.7071;
+                y = 0.7071;
+                z = 0.0;
+            }
+            else
+            {
+                z = sqrt(zz);
+                x = xz/z;
+                y = yz/z;
+            }
+        }
+        return angle * KDL::Vector(x, y, z); // return 180 deg rotation
+    }
+
+    double f = (matrix.data[0] + matrix.data[4] + matrix.data[8] - 1) / 2;
+    assert(f < 1.0); assert(f > -1.0);
+
+    // If the matrix is slightly non-orthogonal, `f` may be out of the (-1, +1) range.
+    // Therefore, clamp it between those values to avoid NaNs.
+    // Btw, if out of range happens, the first two if statements in above code 
+    // are not properly doing what they are supposed to
+    // So I am not sure if this clamping is necessary here
+    angle = acos(std::max(-1.0, std::min(1.0, f)));
+
+#ifndef NDEBUG
+    // if this even happens, epsilon above should be increased
+    // or logic behind if_s to change
+    if (std::fabs(angle) < 0.001) std::cout << "Too small angle" << std::endl;
+#endif
+
+    // prevent divide by zero, should not happen if matrix is orthogonal and 
+    // should be caught by singularity test above, but I've left it in just in case
+	if (std::fabs(angle) < 0.001) return KDL::Vector(0.0, 0.0, 0.0);
+
+    x = (matrix.data[7] - matrix.data[5]);
+    y = (matrix.data[2] - matrix.data[6]);
+    z = (matrix.data[3] - matrix.data[1]);
+
+    return (angle / (2 * sin(angle))) * KDL::Vector(x, y, z);
 }
