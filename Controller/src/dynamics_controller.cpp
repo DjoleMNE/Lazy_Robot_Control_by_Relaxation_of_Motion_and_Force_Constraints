@@ -277,7 +277,7 @@ int dynamics_controller::apply_joint_control_commands()
 */
 void dynamics_controller::make_predictions()
 {
-    predictor_.integrate_cartesian_space(robot_state_, predicted_state_, 0.1, 1);
+    predictor_.integrate_cartesian_space(robot_state_, predicted_state_, 1, 1);
 }
 
 /*  
@@ -300,28 +300,8 @@ void dynamics_controller::compute_control_error()
             predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i);
     }
 
-    /*
-    * Rotation (error) necessary to go from predicted to desired orientation 
-    * (positive direction of rotation).
-    * Reference for computation of orientation error using 
-    * rotation matrix representation:
-    * [1] "Pose Control of Robot Manipulators Using Different Orientation
-    *      Representations: A Comparative Review", Campa and de la Torre, 2009.
-    * [2] "Resolved Acceleration Control Of Mechanical Manipulators", Luh et al. 1980
-    * [3] "Resolved-acceleration control of robot manipulators: A critical 
-    *      review with experiments", Caccavale et al., 1998 
-    * Quote from the [2]: "...the orientation error e_o, of the hand 
-    * will be corrected if [n,s,u] (measured rotation matrix) is rotated 
-    * $\phi$ radians about axis r. Hence, to correct for the orientation error,
-    * the actual angular velocity of the hand w should be in the same direction 
-    * as e_o."
-    */
-
-    /** 
-     * [3]'s version of error matrix (equation 24). Also in "Modern Robotics"
-     * book, pages 280 (error made for body Jac!) and 
-     * 437 (there is generalized to SE(3)).
-     * describing the rotation needed to align R_p with R_d.
+    /**
+     * Describes the rotation needed to align R_p with R_d.
      * It represent relative rotation from predicted state to the desired state, 
      * expressed in the End-Effector frame!
      * /
@@ -330,8 +310,7 @@ void dynamics_controller::compute_control_error()
     //     desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M;
 
     /**
-     * [1, 2]'s version of error matrix:
-     * describing the rotation needed to align R_p with R_d.
+     * Describes the rotation needed to align R_p with R_d.
      * It represent relative rotation from predicted state to the desired state, 
      * expressed in the BASE frame!
     */
@@ -339,17 +318,13 @@ void dynamics_controller::compute_control_error()
         desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * \
         predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.Inverse();
     
-    // Rotation matrix based error calculation from [1, 2]
-    error_vector_(3) = 0.5 * (error_rot_matrix_(2, 1) - error_rot_matrix_(1, 2));
-    error_vector_(4) = 0.5 * (error_rot_matrix_(0, 2) - error_rot_matrix_(2, 0));
-    error_vector_(5) = 0.5 * (error_rot_matrix_(1, 0) - error_rot_matrix_(0, 1));
-   
-    // Full pose error can be calulated using KDL's diff function, which for rotation 
-    // error returns a axis/angle error vector!
+    // Rotation matrix based error calculation, i.e. logarithmic map on SO(3)
+    error_vector_.tail(3) = predictor_.log_map_so3(error_rot_matrix_);
+    std::cout << "\nLOG norm: " << error_vector_.tail(3).norm() << std::endl;
 
     #ifndef NDEBUG
         std::cout << "Error Matrix:\n" << error_rot_matrix_ << std::endl;
-        std::cout << "Error:\n" << error_vector_.transpose() << std::endl;
+        std::cout << "Error: " << error_vector_.transpose() << std::endl;
     #endif
 }
 

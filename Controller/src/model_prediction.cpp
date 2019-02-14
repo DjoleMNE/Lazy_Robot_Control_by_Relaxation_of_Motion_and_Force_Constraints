@@ -162,11 +162,11 @@ void model_prediction::integrate_cartesian_space(
     KDL::Twist body_fixed_twist; 
     
     body_fixed_twist(0) = 0.0;
-    body_fixed_twist(1) = 1.0;
-    body_fixed_twist(2) = 2.50;
+    body_fixed_twist(1) = 0.0;
+    body_fixed_twist(2) = 0.0;
 
     body_fixed_twist(3) = 0.;
-    body_fixed_twist(4) = M_PI - 0.1;
+    body_fixed_twist(4) = 3*M_PI + 3.1399;
     body_fixed_twist(5) = 0.0;
 
     body_fixed_twist = temp_pose_.M.Inverse(body_fixed_twist) * dt_sec;
@@ -277,7 +277,7 @@ KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
 /** 
  * Perform parameterization of rot twist if the angle is > PI 
  * to avoid singularties in exponential maps.
- * Reparameterize to a rotation of (2PI - theta) about the opposite axis 
+ * Re-Parameterize to a rotation of (2PI - theta) about the opposite axis 
  * when angle gets too close to 2PI.
  * Code based on: F. Sebastian Grassia, "Practical Parameterization of Rotations 
  * Using the Exponential Map" paper.
@@ -367,9 +367,6 @@ void model_prediction::save_twist_to_file(std::ofstream &twist_data_file,
 */
 void model_prediction::orthonormalize_rot_matrix(KDL::Rotation &rot_matrix)
 {
-    KDL::Vector axis =  log_map_so3(rot_matrix);
-    std::cout << "\nLOG 1: \n" << axis << " " << axis.Norm() << std::endl;
-
     Eigen::Matrix3d eigen_matrix;
     rotation_to_eigen(rot_matrix, eigen_matrix);
 
@@ -384,13 +381,14 @@ void model_prediction::orthonormalize_rot_matrix(KDL::Rotation &rot_matrix)
         eigen_matrix = svd.matrixU() * singular_values * svd.matrixV().transpose();
     }
 
-    std::cout << "Singular values: " << svd.singularValues().transpose() << std::endl;
+#ifndef NDEBUG
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd1(eigen_matrix,
+                                          Eigen::ComputeFullU | Eigen::ComputeFullV);   
+    std::cout << "Singular values: " << svd1.singularValues().transpose() << std::endl;
     std::cout << "Determinant: " << eigen_matrix.determinant() << std::endl;
     std::cout << "Distance to SO(3): " << distance_to_so3(eigen_matrix) << std::endl;
-
+#endif
     eigen_to_rotation(eigen_matrix, rot_matrix);
-    axis = log_map_so3(rot_matrix);
-    std::cout << "\nLOG 2: \n" << axis << " " << axis.Norm() << std::endl;
 }
 
 // Forward position and velocity kinematics, given the itegrated values
@@ -425,17 +423,24 @@ void model_prediction::compute_FK(state_specification &predicted_state)
 * R' * R = I
 * and
 * det(R) = 1
-* Source: http://www.euclideanspace.com/maths/algebra/matrix/orthogonal/rotation/
+* Source: 
+*   1. "Modern Robotics" book code on Github
+*   2. http://www.euclideanspace.com/maths/algebra/matrix/orthogonal/rotation/
 */
 bool model_prediction::is_rotation_matrix(const KDL::Rotation &m)
 {
-	if (std::fabs(m(0, 0)*m(0, 1) + m(0, 1)*m(1, 1) + m(0, 2)*m(1, 2)    ) > EPSILON) return false;
-	if (std::fabs(m(0, 0)*m(2, 0) + m(0, 1)*m(2, 1) + m(0, 2)*m(2, 2)    ) > EPSILON) return false;
-	if (std::fabs(m(1, 0)*m(2, 0) + m(1, 1)*m(2, 1) + m(1, 2)*m(2, 2)    ) > EPSILON) return false;
-	if (std::fabs(m(0, 0)*m(0, 0) + m(0, 1)*m(0, 1) + m(0, 2)*m(0, 2) - 1) > EPSILON) return false;
-	if (std::fabs(m(1, 0)*m(1, 0) + m(1, 1)*m(1, 1) + m(1, 2)*m(1, 2) - 1) > EPSILON) return false;
-	if (std::fabs(m(2, 0)*m(2, 0) + m(2, 1)*m(2, 1) + m(2, 2)*m(2, 2) - 1) > EPSILON) return false;
-	return (std::fabs(determinant(m) - 1) < EPSILON);
+    Eigen::Matrix3d eigen_matrix;
+    rotation_to_eigen(m, eigen_matrix);
+    if(eigen_matrix.determinant() < (1 - MIN_ANGLE)) return false;
+    if(distance_to_so3(eigen_matrix) > MIN_ANGLE) return false;
+    return true;
+	// if (std::fabs(m(0, 0)*m(0, 1) + m(0, 1)*m(1, 1) + m(0, 2)*m(1, 2)    ) > EPSILON) return false;
+	// if (std::fabs(m(0, 0)*m(2, 0) + m(0, 1)*m(2, 1) + m(0, 2)*m(2, 2)    ) > EPSILON) return false;
+	// if (std::fabs(m(1, 0)*m(2, 0) + m(1, 1)*m(2, 1) + m(1, 2)*m(2, 2)    ) > EPSILON) return false;
+	// if (std::fabs(m(0, 0)*m(0, 0) + m(0, 1)*m(0, 1) + m(0, 2)*m(0, 2) - 1) > EPSILON) return false;
+	// if (std::fabs(m(1, 0)*m(1, 0) + m(1, 1)*m(1, 1) + m(1, 2)*m(1, 2) - 1) > EPSILON) return false;
+	// if (std::fabs(m(2, 0)*m(2, 0) + m(2, 1)*m(2, 1) + m(2, 2)*m(2, 2) - 1) > EPSILON) return false;
+	// return (std::fabs(determinant(m) - 1) < EPSILON);
 }
 
 /**
@@ -482,13 +487,13 @@ double model_prediction::distance_to_so3(const Eigen::Matrix3d &matrix)
  * In 0 angle case, vector of zeros is returned 
  * In case of PI angle, one of the 3 vector choices is returned. 
  * More specifically, the vector corresponding to a scalar computation that
- * involved the highest value of denominator, in order to avoid numerical issues
+ * involves the highest value of denominator, in order to avoid numerical issues
  * occuring when a numerator is divided with a small number.
  * Sources - Combined from: 
  * http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/index.htm
  * https://github.com/NxRLab/ModernRobotics/blob/master/packages/MATLAB/mr/MatrixLog3.m
 */
-KDL::Vector model_prediction::log_map_so3(const KDL::Rotation &matrix)
+Eigen::Vector3d model_prediction::log_map_so3(const KDL::Rotation &matrix)
 {
     double angle, x, y, z; // variables for result
     double epsilon1 = 0.00001; // margin to allow for rounding errors
@@ -509,10 +514,10 @@ KDL::Vector model_prediction::log_map_so3(const KDL::Rotation &matrix)
         {
             // this singularity is identity matrix so angle = 0, axis is arbitrary
             // Because we use this for error calc, its best to return 0 vector
-            return KDL::Vector(0.0, 0.0, 0.0);
+            return Eigen::Vector3d(0.0, 0.0, 0.0);
         }
 
-        // otherwise this singularity is angle of 180
+        // Otherwise this singularity is angle of 180
         angle = M_PI;
         double xx = (matrix.data[0] + 1) / 2;
         double yy = (matrix.data[4] + 1) / 2;
@@ -542,14 +547,14 @@ KDL::Vector model_prediction::log_map_so3(const KDL::Rotation &matrix)
             x = xz/z;
             y = yz/z;
         }
-        return angle * KDL::Vector(x, y, z); // return 180 deg rotation
+        return angle * Eigen::Vector3d(x, y, z); // return 180 deg rotation
     }
 
     double acos_input = (matrix.data[0] + matrix.data[4] + matrix.data[8] - 1) / 2;
     assert(acos_input < 1.0); assert(acos_input > -1.0);
 
     // If the matrix is slightly non-orthogonal, 
-    //`acos_input` maybe out of the (-1, +1) range.
+    // 'acos_input' maybe out of the (-1, +1) range.
     // Therefore, clamp it between those values to avoid NaNs.
     // Btw, if out of range happens, the first two if statements in above code 
     // are not properly doing what they are supposed to
@@ -563,13 +568,13 @@ KDL::Vector model_prediction::log_map_so3(const KDL::Rotation &matrix)
     else if (std::fabs(angle) > 3.14) std::cout << "Too big angle: " << angle << std::endl;
 #endif
 
-    // prevent divide by zero, should not happen if matrix is orthogonal and 
-    // should be caught by singularity test above, but I've left it in just in case
-	if (std::fabs(angle) < 0.001) return KDL::Vector(0.0, 0.0, 0.0);
-
     //If following assertions fail, above if statements are not working properly
     assert(std::fabs(angle) < 3.14);
     assert(angle > -epsilon1);
+
+    // prevent divide by zero, should not happen if matrix is orthogonal and 
+    // should be caught by singularity test above, but I've left it in just in case
+	if (std::fabs(angle) < epsilon1) return Eigen::Vector3d(0.0, 0.0, 0.0);
 
     x = (matrix.data[7] - matrix.data[5]);
     y = (matrix.data[2] - matrix.data[6]);
@@ -584,5 +589,5 @@ KDL::Vector model_prediction::log_map_so3(const KDL::Rotation &matrix)
      * input orientation, in one step of time! 
      * Bassically, logarithmic map on SO(3).
     */
-    return (angle / (2 * sin(angle))) * KDL::Vector(x, y, z);
+    return (angle / (2 * sin(angle))) * Eigen::Vector3d(x, y, z);
 }
