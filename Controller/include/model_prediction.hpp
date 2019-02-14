@@ -134,7 +134,7 @@ class model_prediction
 		 * Calculate exponential map for linear part of the given screw twist.
 		 * Given twist vector should NOT be normalized!
 		*/
-		KDL::Vector exp_map_linear(const KDL::Twist &current_twist,
+		KDL::Vector exp_map_r3(const KDL::Twist &current_twist,
                                    const double rot_norm);
 		/**
 		 * Calculate exponential map for both linear and angular parts 
@@ -142,8 +142,14 @@ class model_prediction
 		*/
 		KDL::Frame exp_map_se3(const KDL::Twist &current_twist, 
 							   const double rot_norm);
+		/**
+		 * Calculate logarithmic map given rotation matrix. 
+		 * Sources - Combined from: 
+		 * http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/index.htm
+		 * https://github.com/NxRLab/ModernRobotics/blob/master/packages/MATLAB/mr/MatrixLog3.m
+		*/					   
 		KDL::Vector log_map_so3(const KDL::Rotation &matrix);
-		
+
 		//Converts a 3D vector to an skew matrix representation
 		KDL::Rotation skew_matrix(const KDL::Vector &vector);
 		//Scale a 3x3 matrix with a scalar number

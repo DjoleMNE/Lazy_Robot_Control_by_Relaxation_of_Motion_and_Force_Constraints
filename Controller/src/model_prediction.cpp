@@ -223,8 +223,8 @@ KDL::Rotation model_prediction::exp_map_so3(const KDL::Twist &current_twist,
 
 // Calculate exponential map for linear part of the given screw twist
 // Given twist vector should NOT be normalized!
-KDL::Vector model_prediction::exp_map_linear(const KDL::Twist &current_twist,
-                                             const double rot_norm)
+KDL::Vector model_prediction::exp_map_r3(const KDL::Twist &current_twist,
+                                         const double rot_norm)
 {
     // Convert rotation vector to a skew matrix 
     KDL::Rotation skew_rotation = skew_matrix( current_twist.rot );
@@ -251,7 +251,7 @@ KDL::Frame model_prediction::exp_map_se3(const KDL::Twist &current_twist,
                                          const double rot_norm)
 {   
     return KDL::Frame(exp_map_so3(current_twist, rot_norm),
-                      exp_map_linear(current_twist, rot_norm));
+                      exp_map_r3(current_twist, rot_norm));
 }
 
 /**
@@ -368,7 +368,7 @@ void model_prediction::save_twist_to_file(std::ofstream &twist_data_file,
 void model_prediction::orthonormalize_rot_matrix(KDL::Rotation &rot_matrix)
 {
     KDL::Vector axis =  log_map_so3(rot_matrix);
-    std::cout << "LOG: \n" << axis << " " << axis.Norm() << std::endl;
+    std::cout << "\nLOG 1: \n" << axis << " " << axis.Norm() << std::endl;
 
     Eigen::Matrix3d eigen_matrix;
     rotation_to_eigen(rot_matrix, eigen_matrix);
@@ -390,7 +390,7 @@ void model_prediction::orthonormalize_rot_matrix(KDL::Rotation &rot_matrix)
 
     eigen_to_rotation(eigen_matrix, rot_matrix);
     axis = log_map_so3(rot_matrix);
-    std::cout << "LOG: \n" << axis << " " << axis.Norm() << std::endl;
+    std::cout << "\nLOG 2: \n" << axis << " " << axis.Norm() << std::endl;
 }
 
 // Forward position and velocity kinematics, given the itegrated values
@@ -484,11 +484,14 @@ double model_prediction::distance_to_so3(const Eigen::Matrix3d &matrix)
  * More specifically, the vector corresponding to a scalar computation that
  * involved the highest value of denominator, in order to avoid numerical issues
  * occuring when a numerator is divided with a small number.
+ * Sources - Combined from: 
+ * http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/index.htm
+ * https://github.com/NxRLab/ModernRobotics/blob/master/packages/MATLAB/mr/MatrixLog3.m
 */
 KDL::Vector model_prediction::log_map_so3(const KDL::Rotation &matrix)
 {
     double angle, x, y, z; // variables for result
-    double epsilon1 = 0.000001; // margin to allow for rounding errors
+    double epsilon1 = 0.00001; // margin to allow for rounding errors
     double epsilon2 = epsilon1 * 10; // margin to distinguish between 0 and 180 degrees
 
     //Check first if one of two singularity cases has occurred  
@@ -521,84 +524,65 @@ KDL::Vector model_prediction::log_map_so3(const KDL::Rotation &matrix)
         if ((xx > yy) && (xx > zz))
         {
             // matrix.data[0] is the largest diagonal term
-            if(xx < epsilon1)
-            {
-                // Not sure about this part 
-                // How they know that in this case angle between y and z is always 45?
-                x = 0.0;
-                y = 0.7071;
-                z = 0.7071;
-            }
-            else
-            {
-                x = sqrt(xx);
-                y = xy/x;
-                z = xz/x;
-            }
-
+            x = sqrt(xx);
+            y = xy/x;
+            z = xz/x;
         }
         else if (yy > zz)
         {
             // matrix.data[4] is the largest diagonal term
-            if(yy < epsilon1)
-            {
-                // Not sure about this part 
-                // How they know that in this case angle between z and x is always 45?
-                x = 0.7071;
-                y = 0.0;
-                z = 0.7071;
-            }
-            else 
-            {
-                y = sqrt(yy);
-                x = xy/y;
-                z = yz/y;
-            }
+            y = sqrt(yy);
+            x = xy/y;
+            z = yz/y;
         }
         else
         {
             // matrix.data[8] is the largest diagonal term so base result on this
-            if(zz < epsilon1)
-            {
-                // Not sure about this part 
-                // How they know that in this case angle between y and x is always 45?
-                x = 0.7071;
-                y = 0.7071;
-                z = 0.0;
-            }
-            else
-            {
-                z = sqrt(zz);
-                x = xz/z;
-                y = yz/z;
-            }
+            z = sqrt(zz);
+            x = xz/z;
+            y = yz/z;
         }
         return angle * KDL::Vector(x, y, z); // return 180 deg rotation
     }
 
-    double f = (matrix.data[0] + matrix.data[4] + matrix.data[8] - 1) / 2;
-    assert(f < 1.0); assert(f > -1.0);
+    double acos_input = (matrix.data[0] + matrix.data[4] + matrix.data[8] - 1) / 2;
+    assert(acos_input < 1.0); assert(acos_input > -1.0);
 
-    // If the matrix is slightly non-orthogonal, `f` may be out of the (-1, +1) range.
+    // If the matrix is slightly non-orthogonal, 
+    //`acos_input` maybe out of the (-1, +1) range.
     // Therefore, clamp it between those values to avoid NaNs.
     // Btw, if out of range happens, the first two if statements in above code 
     // are not properly doing what they are supposed to
     // So I am not sure if this clamping is necessary here
-    angle = acos(std::max(-1.0, std::min(1.0, f)));
+    angle = acos(std::max(-1.0, std::min(1.0, acos_input)));
 
 #ifndef NDEBUG
     // if this even happens, epsilon above should be increased
-    // or logic behind if_s to change
-    if (std::fabs(angle) < 0.001) std::cout << "Too small angle" << std::endl;
+    // or logic behind if_s to be changed
+    if (std::fabs(angle) < 0.001) std::cout << "Too small angle: " << angle << std::endl;
+    else if (std::fabs(angle) > 3.14) std::cout << "Too big angle: " << angle << std::endl;
 #endif
 
     // prevent divide by zero, should not happen if matrix is orthogonal and 
     // should be caught by singularity test above, but I've left it in just in case
 	if (std::fabs(angle) < 0.001) return KDL::Vector(0.0, 0.0, 0.0);
 
+    //If following assertions fail, above if statements are not working properly
+    assert(std::fabs(angle) < 3.14);
+    assert(angle > -epsilon1);
+
     x = (matrix.data[7] - matrix.data[5]);
     y = (matrix.data[2] - matrix.data[6]);
     z = (matrix.data[3] - matrix.data[1]);
 
+    /** 
+     * 1 / (2 * sin(Angle)) part is the normalizing factor. 
+     * Multiplying vector with this factor produces norm of 1, 
+     * but the vector is additionally multiplied with the angle, 
+     * such that, the finial vector that is results from this function 
+     * represent a rotation that gets a frame from indentity orientation to the 
+     * input orientation, in one step of time! 
+     * Bassically, logarithmic map on SO(3).
+    */
     return (angle / (2 * sin(angle))) * KDL::Vector(x, y, z);
 }
