@@ -275,9 +275,11 @@ int dynamics_controller::apply_joint_control_commands()
     Predict future robot Cartesian states given the current Cartesian state.
     I.e. Integrate Cartesian variables.
 */
-void dynamics_controller::make_predictions()
+void dynamics_controller::make_predictions(const double dt_sec, 
+                                           const int num_steps)
 {
-    predictor_.integrate_cartesian_space(robot_state_, predicted_state_, 1, 1);
+    predictor_.integrate_cartesian_space(robot_state_, predicted_state_, 
+                                         dt_sec, num_steps);
 }
 
 /*  
@@ -286,7 +288,7 @@ void dynamics_controller::make_predictions()
 */
 void dynamics_controller::compute_control_error()
 {
-    make_predictions();
+    make_predictions(1.0, 1);
     desired_state_ = robot_state_;
 
     /**
@@ -302,16 +304,7 @@ void dynamics_controller::compute_control_error()
 
     /**
      * Describes the rotation needed to align R_p with R_d.
-     * It represent relative rotation from predicted state to the desired state, 
-     * expressed in the End-Effector frame!
-     * /
-    // error_rot_matrix_ = \
-    //     predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.Inverse() * \
-    //     desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M;
-
-    /**
-     * Describes the rotation needed to align R_p with R_d.
-     * It represent relative rotation from predicted state to the desired state, 
+     * It represents relative rotation from predicted state to the desired state, 
      * expressed in the BASE frame!
     */
     error_rot_matrix_ = \

@@ -142,7 +142,7 @@ class dynamics_controller
     void update_task();
     void update_current_state();
     void compute_control_error();
-    void make_predictions();
+    void make_predictions(const double dt_sec, const int num_steps);
     int apply_joint_control_commands();
     int evaluate_dynamics();
     int enforce_loop_frequency();
