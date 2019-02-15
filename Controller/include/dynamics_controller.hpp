@@ -122,7 +122,6 @@ class dynamics_controller
     const int NUMBER_OF_CONSTRAINTS_;
     
     Eigen::VectorXd error_vector_;
-    KDL::Rotation error_rot_matrix_;
 
     KDL::Solver_Vereshchagin hd_solver_;
     KDL::FK_Vereshchagin fk_vereshchagin_;

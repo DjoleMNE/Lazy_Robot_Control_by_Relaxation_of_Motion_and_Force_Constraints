@@ -1,12 +1,17 @@
 #include <kdl_eigen_conversions.hpp>
 
-template <typename Derived>
-void kdl_twist_to_eigen(const KDL::Twist &kdl_vector, Eigen::MatrixBase<Derived> &eigen_vector)
+// Convert from KDL vector to a 3x1 eigen vector
+Eigen::Vector3d kdl_vector_to_eigen(const KDL::Vector &kdl_vector)
 {
-    assert(eigen_vector.rows() == 6);
-    for(int i = 0; i < eigen_vector.rows(); i++) eigen_vector(i) = kdl_vector(i);
+    return Eigen::Vector3d(kdl_vector(0), kdl_vector(1), kdl_vector(2));
 }
 
+// Convert from KDL twist to a 6x1 eigen vector/matrix
+void kdl_twist_to_eigen(const KDL::Twist &kdl_twist, Eigen::VectorXd &eigen_vector)
+{
+    assert(eigen_vector.rows() == 6);
+    for(int i = 0; i < 6; i++) eigen_vector(i) = kdl_twist(i);
+}
 
 void rotation_to_eigen(const KDL::Rotation &kdl_matrix, Eigen::Matrix3d &eigen_matrix)
 {

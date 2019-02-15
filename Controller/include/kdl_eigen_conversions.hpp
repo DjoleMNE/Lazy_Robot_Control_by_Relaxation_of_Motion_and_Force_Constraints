@@ -33,11 +33,15 @@ SOFTWARE.
 #include <Eigen/Geometry>
 
 
+// Convert from KDL vector to a 3x1 eigen vector
+Eigen::Vector3d kdl_vector_to_eigen(const KDL::Vector &kdl_vector);
+
 // Convert from KDL twist to a 6x1 eigen vector/matrix
-template <typename Derived>
-void kdl_twist_to_eigen(const KDL::Twist &kdl_vector, Eigen::MatrixBase<Derived> &eigen_vector);
+void kdl_twist_to_eigen(const KDL::Twist &kdl_twist, Eigen::VectorXd &eigen_vector);
+
 // Convert from KDL rotation matrix to a 3x3 eigen matrix
 void rotation_to_eigen(const KDL::Rotation &kdl_matrix, Eigen::Matrix3d &eigen_matrix);
+
 // Convert from 3x3 eigen matrix to a KDL rotation matrix
 void eigen_to_rotation(const Eigen::Matrix3d &eigen_matrix, KDL::Rotation &kdl_matrix);
 

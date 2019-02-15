@@ -120,7 +120,7 @@ void KDL::FK_Vereshchagin::upwards_sweep(const KDL::JntArray &q, const KDL::JntA
             s.v = vj;
         }
 
-        //Saves cartesian velocity of links in robot base coordinates
+        //Saves cartesian velocity of links.
         
         // Pose twist?
         cart_vel[i] = s.F_base.M * s.v; // Save link vel for the output 
