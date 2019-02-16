@@ -347,7 +347,7 @@ void dynamics_controller::compute_control_error()
                 predictor_.log_map_se3(error_tranformation);
 
         // Convert KDL twist to 6x1 Eigen vector. ABAG expects Eigen Vector!
-        kdl_twist_to_eigen(error_twist, error_vector_);
+        error_vector_ = kdl_twist_to_eigen(error_twist);
     }
     
     #ifndef NDEBUG

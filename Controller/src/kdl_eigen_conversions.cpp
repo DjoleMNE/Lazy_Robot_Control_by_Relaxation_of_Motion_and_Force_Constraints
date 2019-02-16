@@ -7,10 +7,14 @@ Eigen::Vector3d kdl_vector_to_eigen(const KDL::Vector &kdl_vector)
 }
 
 // Convert from KDL twist to a 6x1 eigen vector/matrix
-void kdl_twist_to_eigen(const KDL::Twist &kdl_twist, Eigen::VectorXd &eigen_vector)
+Eigen::VectorXd kdl_twist_to_eigen(const KDL::Twist &kdl_twist)
 {
-    assert(eigen_vector.rows() == 6);
-    for(int i = 0; i < 6; i++) eigen_vector(i) = kdl_twist(i);
+    return (Eigen::VectorXd(6) << kdl_twist(0),
+                                  kdl_twist(1),
+                                  kdl_twist(2),
+                                  kdl_twist(3),
+                                  kdl_twist(4),
+                                  kdl_twist(5)).finished();
 }
 
 void rotation_to_eigen(const KDL::Rotation &kdl_matrix, Eigen::Matrix3d &eigen_matrix)
