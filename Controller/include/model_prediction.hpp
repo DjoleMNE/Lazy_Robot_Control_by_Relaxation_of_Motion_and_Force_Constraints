@@ -29,6 +29,7 @@ SOFTWARE.
 #include <constants.hpp>
 #include <fk_vereshchagin.hpp>
 #include <Eigen/Geometry>
+#include <geometry_utils.hpp>
 #include <kdl_eigen_conversions.hpp>
 #include <iostream>
 #include <sstream>
@@ -75,54 +76,6 @@ class model_prediction
 								   double &predicted_position,
 								   const int method,
 								   const double dt_sec);
-		/**
-		 * Calculate logarithmic map given rotation matrix. 
-		 * Sources - Combined from: 
-		 * http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/index.htm
-		 * https://github.com/NxRLab/ModernRobotics/blob/master/packages/MATLAB/mr/MatrixLog3.m
-		*/					   
-		KDL::Vector log_map_so3(const KDL::Rotation &matrix);
-
-		/**
-		 * Calculate logarithmic map given translation vector and
-		 * angular twist as result of Log_SO(e). 
-		 * Sources - Combined from: 
-		 * S. Grazioso et al., "From Differential Geometry of Curves to Helical 
-		 * Kinematics of Continuum Robots Using Exponential Mapping"
-		 * https://github.com/NxRLab/ModernRobotics/blob/master/packages/MATLAB/mr/MatrixLog6.m
-		 * Function takes non-normalized vectors of angular twist and translation.
-		*/					   
-		KDL::Vector log_map_r3(const KDL::Vector &translation,
-                               const KDL::Vector &angular_twist);
-		
-		/**
-		 * Calculate logarithmic map given a transformation matrix.
-		 * Sources - Combined from: 
-		 * S. Grazioso et al., "From Differential Geometry of Curves to Helical 
-		 * Kinematics of Continuum Robots Using Exponential Mapping"
-		 * https://github.com/NxRLab/ModernRobotics/blob/master/packages/MATLAB/mr/MatrixLog6.m
-		*/					   
-		KDL::Twist log_map_se3(const KDL::Frame &pose);
-
-		/**
-		 * Calculate exponential map for angular part of the given screw twist. 
-		 * Given twist vector should NOT be normalized!
-		*/
-		KDL::Rotation exp_map_so3(const KDL::Twist &current_twist,
-                                  const double rot_norm);
-		/**
-		 * Calculate exponential map for linear part of the given screw twist.
-		 * Given twist vector should NOT be normalized!
-		*/
-		KDL::Vector exp_map_r3(const KDL::Twist &current_twist,
-                                   const double rot_norm);
-		/**
-		 * Calculate exponential map for both linear and angular parts 
-		 * of the given screw twist
-		*/
-		KDL::Frame exp_map_se3(const KDL::Twist &current_twist, 
-							   const double rot_norm);
-
     private:
 		const int NUMBER_OF_JOINTS_;
 		const int NUMBER_OF_SEGMENTS_;
@@ -164,35 +117,6 @@ class model_prediction
 		KDL::Frame integrate_pose(const KDL::Frame &current_pose,
 								  KDL::Twist &current_twist,
 								  const bool rescale_rotation);
-		/** 
-		 * Perform parameterization of rot twist if the angle is > PI 
-		 * to avoid singularties in exponential maps.
-		 * Code based on: 
-		 * F. Sebastian Grassia, "Practical Parameterization of Rotations 
-		 * Using the Exponential Map" paper.
-		*/
-		bool rescale_angular_twist(KDL::Vector &rot_twist, double &theta);
-
-		//Converts a 3D vector to an skew matrix representation
-		KDL::Rotation skew_matrix(const KDL::Vector &vector);
-		//Scale a 3x3 matrix with a scalar number
-		KDL::Rotation scale_matrix(const KDL::Rotation &matrix,
-                                   const double scale);
-		// Performs element-wise additions of two matrices
-		KDL::Rotation matrix_addition(const KDL::Rotation &matrix_1,
-                                      const KDL::Rotation &matrix_2);
-		/** 
-		 * Solving Generalized/constrained Procrustes problem i.e. 
-		 * bringing computed matrix back to the SO(3) manifold.
-		 * source: https://ieeexplore.ieee.org/document/88573
-		*/
-		void orthonormalize_rot_matrix(KDL::Rotation &rot_matrix);
-		// Determine if a matrix is rotational or not
-		bool is_rotation_matrix(const KDL::Rotation &m);
-		// Compute determinant of a 3x3 matrix
-		double determinant(const KDL::Rotation &m);
-		// Compute distance of the matrix from the SO(3) manifold
-		double distance_to_so3(const Eigen::Matrix3d &matrix);
 		
 		// Forward position and velocity kinematics, from integrated joint values
 		void compute_FK(state_specification &predicted_state);

@@ -320,7 +320,7 @@ void dynamics_controller::compute_control_error()
         /** 
          * Error calculation for angular part, i.e. logarithmic map on SO(3).
         */
-        error_vector_.tail(3) = kdl_vector_to_eigen(predictor_.log_map_so3(error_rot_matrix));
+        error_vector_.tail(3) = kdl_vector_to_eigen(geometry::log_map_so3(error_rot_matrix));
     }
 
     else
@@ -344,7 +344,7 @@ void dynamics_controller::compute_control_error()
         */
         KDL::Twist error_twist = \
                 predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * \
-                predictor_.log_map_se3(error_tranformation);
+                geometry::log_map_se3(error_tranformation);
 
         // Convert KDL twist to 6x1 Eigen vector. ABAG expects Eigen Vector!
         error_vector_ = kdl_twist_to_eigen(error_twist);
