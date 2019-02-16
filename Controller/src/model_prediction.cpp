@@ -390,7 +390,7 @@ void model_prediction::orthonormalize_rot_matrix(KDL::Rotation &rot_matrix)
     std::cout << "Determinant: " << eigen_matrix.determinant() << std::endl;
     std::cout << "Distance to SO(3): " << distance_to_so3(eigen_matrix) << std::endl;
 #endif
-    eigen_to_rotation(eigen_matrix, rot_matrix);
+    rot_matrix = eigen_to_rotation(eigen_matrix);
 }
 
 // Forward position and velocity kinematics, given the itegrated values
