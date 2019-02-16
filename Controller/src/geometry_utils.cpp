@@ -5,8 +5,12 @@ const double MIN_ANGLE = 1e-6;
 namespace geometry
 {
     // Calculate exponential map for angular part of the given screw twist
+    // If rotation is too small, rotation matrix will be set to identity
     KDL::Rotation exp_map_so3(const KDL::Twist &current_twist)
     {   
+        // If rotation is too small, just return identity matrix
+        if(current_twist.rot.Norm() < MIN_ANGLE) return KDL::Rotation::Identity();
+
         // First normalize given twist vector!
         return KDL::Rotation::Rot2(current_twist.rot / current_twist.rot.Norm(), 
                                    current_twist.rot.Norm());
@@ -16,6 +20,10 @@ namespace geometry
     // Given twist vector should NOT be normalized!
     KDL::Vector exp_map_r3(const KDL::Twist &current_twist)
     {
+        // If rotation is too small, just return translation step 
+        // to avoid divisions with 0
+        if(current_twist.rot.Norm() < MIN_ANGLE) return current_twist.vel;
+
         // Convert rotation vector to a skew matrix 
         KDL::Rotation skew_rotation = skew_matrix( current_twist.rot );
         KDL::Rotation skew_rotation_square = skew_rotation * skew_rotation;
@@ -37,16 +45,11 @@ namespace geometry
     /**
      * Calculate exponential map for both linear and angular parts 
      * of the given screw twist. Given Twist should NOT be normalized!
+     * If rotation is too small, rotation matrix will be set to identity
     */
     KDL::Frame exp_map_se3(const KDL::Twist &current_twist)
     {
-        if (current_twist.rot.Norm() < MIN_ANGLE) 
-        {
-            return KDL::Frame(KDL::Rotation::Identity(), current_twist.vel);
-        }
-
-        else return KDL::Frame(exp_map_so3(current_twist),
-                               exp_map_r3(current_twist));
+        return KDL::Frame(exp_map_so3(current_twist), exp_map_r3(current_twist));
     }
 
 

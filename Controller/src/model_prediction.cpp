@@ -142,7 +142,7 @@ void model_prediction::integrate_to_position(const double &acceleration,
 
 /*
     Used for predicting future deviation from the goal state.
-    The intermediate states computed throughout the itegration are NOT saved.
+    The intermediate states computed throughout the integration are NOT saved.
     The function expects constant Pose twist (not screw twist).
 */
 void model_prediction::integrate_cartesian_space(
@@ -159,15 +159,16 @@ void model_prediction::integrate_cartesian_space(
     
     KDL::Twist body_fixed_twist; 
     
-    body_fixed_twist(0) = 0.5;
+    body_fixed_twist(0) = 1.0;
     body_fixed_twist(1) = 0.0;
     body_fixed_twist(2) = 0.0;
 
     body_fixed_twist(3) = 0.0;
-    body_fixed_twist(4) = M_PI/2;
+    body_fixed_twist(4) = M_PI / 2;
     body_fixed_twist(5) = 0.0;
 
-    body_fixed_twist = temp_pose_.M.Inverse(body_fixed_twist) * dt_sec;
+    body_fixed_twist = body_fixed_twist * dt_sec;
+    // body_fixed_twist = temp_pose_.M.Inverse(body_fixed_twist);
     // body_fixed_twist = \
     //     temp_pose_.M.Inverse(current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]) * dt_sec;
 
@@ -189,13 +190,13 @@ void model_prediction::integrate_cartesian_space(
     
     for (int i = 0; i < num_of_steps; i++)
     {
-        temp_pose_ = integrate_pose(temp_pose_, body_fixed_twist, true);
+        temp_pose_ = integrate_pose(temp_pose_, body_fixed_twist, true, false);
         geometry::orthonormalize_rot_matrix(temp_pose_.M);
         assert(("Integrated rotation matrix", geometry::is_rotation_matrix(temp_pose_.M)));
 
-#ifndef NDEBUG
+    #ifndef NDEBUG
         save_pose_to_file(predicted_pose_data_file_, temp_pose_);
-#endif
+    #endif
     }
     
 #ifndef NDEBUG
@@ -223,14 +224,22 @@ void model_prediction::integrate_cartesian_space(
 
 /**
  * Code is based on formulas given in books:
- * "Modern Robotics", F.C.Park
- * "Robot Kinematics and Dynamics", Herman Bruyninckx.
+ * "Modern Robotics", 2017, F.C.Park
+ * "Robot Kinematics and Dynamics", 2010, Herman Bruyninckx.
 */
 KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
                                             KDL::Twist &current_twist, 
-                                            const bool rescale_rotation) 
+                                            const bool rescale_rotation,
+								            const bool decouple_dimensions) 
 {
     if(rescale_rotation) geometry::rescale_angular_twist(current_twist.rot);
+
+    if(decouple_dimensions)
+    {   
+        return KDL::Frame(current_pose.M * geometry::exp_map_so3(current_twist), 
+                          current_pose.p + current_pose.M * current_twist.vel);
+    }
+    
     return current_pose * geometry::exp_map_se3(current_twist);
 }
 

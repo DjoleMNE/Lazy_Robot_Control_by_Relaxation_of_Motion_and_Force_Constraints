@@ -66,6 +66,7 @@ namespace geometry
     /**
      * Calculate exponential map for angular part of the given screw twist. 
      * Given twist vector should NOT be normalized!
+     * If rotation is too small, rotation matrix will be set to identity
     */
     KDL::Rotation exp_map_so3(const KDL::Twist &current_twist);
     /**
@@ -76,6 +77,7 @@ namespace geometry
     /**
      * Calculate exponential map for both linear and angular parts 
      * of the given screw twist. Given Twist should NOT be normalized!
+     * If rotation is too small, rotation matrix will be set to identity
     */
     KDL::Frame exp_map_se3(const KDL::Twist &current_twist);
 

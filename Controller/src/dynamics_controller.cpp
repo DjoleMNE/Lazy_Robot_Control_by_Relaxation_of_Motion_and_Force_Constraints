@@ -290,13 +290,14 @@ void dynamics_controller::compute_control_error()
 {
     make_predictions(0.1, 10);
     desired_state_ = robot_state_;
-    bool use_decoupled_error = false;
+    bool use_decoupled_error = true;
+    // bool use_decoupled_error = false;
 
     if(use_decoupled_error)
     {
         /**
-         * Linear motion (error) necessary to go from predicted to 
-         * desired position (positive direction of translation).
+         * This error part represents linear motion necessary to go from 
+         * predicted to desired position (positive direction of translation).
         */
         for(int i = 0; i < 3; i++)
         {
@@ -315,11 +316,8 @@ void dynamics_controller::compute_control_error()
         KDL::Rotation error_rot_matrix = \
                 desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * \
                 predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.Inverse();
-        std::cout << "Error Matrix:\n" << error_rot_matrix << std::endl;
 
-        /** 
-         * Error calculation for angular part, i.e. logarithmic map on SO(3).
-        */
+        // Error calculation for angular part, i.e. logarithmic map on SO(3).
         error_vector_.tail(3) = kdl_vector_to_eigen(geometry::log_map_so3(error_rot_matrix));
     }
 
@@ -343,7 +341,7 @@ void dynamics_controller::compute_control_error()
          * expressed w.r.t. base frame!   
         */
         KDL::Twist error_twist = \
-                predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * \
+                predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * 
                 geometry::log_map_se3(error_tranformation);
 
         // Convert KDL twist to 6x1 Eigen vector. ABAG expects Eigen Vector!
@@ -351,9 +349,9 @@ void dynamics_controller::compute_control_error()
     }
     
     #ifndef NDEBUG
-        std::cout << "\nLOG norm: " << error_vector_.tail(3).norm() << std::endl;
+        std::cout << "\nLinear Error: " << error_vector_.head(3).transpose() << std::endl;
         std::cout << "Angular Error: " << error_vector_.tail(3).transpose() << std::endl;
-        std::cout << "Linear Error: " << error_vector_.head(3).transpose() << std::endl;
+        std::cout << "Angular norm: " << error_vector_.tail(3).norm() << std::endl;
     #endif
 }
 

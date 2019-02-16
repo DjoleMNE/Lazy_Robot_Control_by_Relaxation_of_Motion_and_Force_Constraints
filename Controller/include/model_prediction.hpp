@@ -107,16 +107,17 @@ class model_prediction
 		// Functions required for 3D pose integration
 		/**
 		 * Calculates Exponential map for both translation and rotation
-		 * Takes: 
+		 * Input: 
 		 * 		- current pose to be integrated
-		 * 		- body-fixed twist scaled with delta time
-		 * 		- flag for rescaling rotation if its out of 0 - PI range 
+		 * 		- "body-fixed" twist scaled with delta time
+		 * 		- flag for rescaling rotation if its out of 0 - PI range
+		 * 		- flag for decoupling integration of linear and angular parts  
 		 * Returns tranformation of the integrated (predicted) pose
-		 * If rotation is too small, function will only integrate linear part
 		*/
 		KDL::Frame integrate_pose(const KDL::Frame &current_pose,
 								  KDL::Twist &current_twist,
-								  const bool rescale_rotation);
+								  const bool rescale_rotation,
+								  const bool decouple_dimensions);
 		
 		// Forward position and velocity kinematics, from integrated joint values
 		void compute_FK(state_specification &predicted_state);
