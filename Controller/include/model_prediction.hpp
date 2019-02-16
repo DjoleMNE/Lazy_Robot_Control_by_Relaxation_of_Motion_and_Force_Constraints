@@ -2,7 +2,7 @@
 Author(s): Djordje Vukcevic, Sven Schneider
 Institute: Hochschule Bonn-Rhein-Sieg
 
-Copyright (c) [2018]
+Copyright (c) [2019]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -151,12 +151,13 @@ class model_prediction
 		void save_twist_to_file(std::ofstream &twist_data_file, 
                                 const KDL::Twist &twist);
 
-		// Functions required for 3D pose itegration
+		// Functions required for 3D pose integration
 		/**
 		 * Calculates Exponential map for both translation and rotation
 		 * Takes: 
-		 * 		- body-fixed twist scaled with delta time
 		 * 		- current pose to be integrated
+		 * 		- body-fixed twist scaled with delta time
+		 * 		- flag for rescaling rotation if its out of 0 - PI range 
 		 * Returns tranformation of the integrated (predicted) pose
 		 * If rotation is too small, function will only integrate linear part
 		*/
@@ -193,7 +194,7 @@ class model_prediction
 		// Compute distance of the matrix from the SO(3) manifold
 		double distance_to_so3(const Eigen::Matrix3d &matrix);
 		
-		// Forward position and velocity kinematics, from itegrated joint values
+		// Forward position and velocity kinematics, from integrated joint values
 		void compute_FK(state_specification &predicted_state);
 };
 #endif /* MODEL_PREDICTION_HPP */
