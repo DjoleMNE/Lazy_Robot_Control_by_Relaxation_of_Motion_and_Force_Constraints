@@ -5,19 +5,21 @@ const double MIN_ANGLE = 1e-6;
 namespace geometry
 {
     // Calculate exponential map for angular part of the given screw twist
-    KDL::Rotation exp_map_so3(const KDL::Twist &current_twist, const double rot_norm)
+    KDL::Rotation exp_map_so3(const KDL::Twist &current_twist)
     {   
         // First normalize given twist vector!
-        return KDL::Rotation::Rot2(current_twist.rot / rot_norm, rot_norm);
+        return KDL::Rotation::Rot2(current_twist.rot / current_twist.rot.Norm(), 
+                                   current_twist.rot.Norm());
     }
 
     // Calculate exponential map for linear part of the given screw twist
     // Given twist vector should NOT be normalized!
-    KDL::Vector exp_map_r3(const KDL::Twist &current_twist, const double rot_norm)
+    KDL::Vector exp_map_r3(const KDL::Twist &current_twist)
     {
         // Convert rotation vector to a skew matrix 
         KDL::Rotation skew_rotation = skew_matrix( current_twist.rot );
         KDL::Rotation skew_rotation_square = skew_rotation * skew_rotation;
+        double rot_norm = current_twist.rot.Norm();
         double rot_norm_square = rot_norm * rot_norm;
 
         return (matrix_addition(KDL::Rotation::Identity(),
@@ -36,13 +38,15 @@ namespace geometry
      * Calculate exponential map for both linear and angular parts 
      * of the given screw twist. Given Twist should NOT be normalized!
     */
-    KDL::Frame exp_map_se3(const KDL::Twist &current_twist, const double rot_norm)
-    {   
-        if (rot_norm < MIN_ANGLE) return KDL::Frame(KDL::Rotation::Identity(), 
-                                                    current_twist.vel);
+    KDL::Frame exp_map_se3(const KDL::Twist &current_twist)
+    {
+        if (current_twist.rot.Norm() < MIN_ANGLE) 
+        {
+            return KDL::Frame(KDL::Rotation::Identity(), current_twist.vel);
+        }
 
-        else return KDL::Frame(exp_map_so3(current_twist, rot_norm),
-                               exp_map_r3(current_twist, rot_norm));
+        else return KDL::Frame(exp_map_so3(current_twist),
+                               exp_map_r3(current_twist));
     }
 
 
@@ -54,10 +58,10 @@ namespace geometry
      * Code based on: F. Sebastian Grassia, "Practical Parameterization of Rotations 
      * Using the Exponential Map" paper.
     */
-    bool rescale_angular_twist(KDL::Vector &rot_twist, double &theta)
+    bool rescale_angular_twist(KDL::Vector &rot_twist)
     {
         bool is_parameterized = false;
-        theta = rot_twist.Norm();
+        double theta = rot_twist.Norm();
 
         if (theta > M_PI){
             double scale = theta;

@@ -217,17 +217,14 @@ void model_prediction::integrate_cartesian_space(
 /**
  * Code is based on formulas given in books:
  * "Modern Robotics", F.C.Park
- * "Robot Kinematics and Dynamics", Herman B.
+ * "Robot Kinematics and Dynamics", Herman Bruyninckx.
 */
 KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
                                             KDL::Twist &current_twist, 
                                             const bool rescale_rotation) 
 {
-    double rot_norm;
-    if(rescale_rotation) geometry::rescale_angular_twist(current_twist.rot, rot_norm);
-    else rot_norm = current_twist.rot.Norm();
-
-    return current_pose * geometry::exp_map_se3(current_twist, rot_norm);
+    if(rescale_rotation) geometry::rescale_angular_twist(current_twist.rot);
+    return current_pose * geometry::exp_map_se3(current_twist);
 }
 
 void model_prediction::save_pose_to_file(std::ofstream &pose_data_file, 

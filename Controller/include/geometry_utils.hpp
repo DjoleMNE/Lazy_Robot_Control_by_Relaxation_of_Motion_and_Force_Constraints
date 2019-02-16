@@ -67,20 +67,17 @@ namespace geometry
      * Calculate exponential map for angular part of the given screw twist. 
      * Given twist vector should NOT be normalized!
     */
-    KDL::Rotation exp_map_so3(const KDL::Twist &current_twist,
-                                const double rot_norm);
+    KDL::Rotation exp_map_so3(const KDL::Twist &current_twist);
     /**
      * Calculate exponential map for linear part of the given screw twist.
      * Given twist vector should NOT be normalized!
     */
-    KDL::Vector exp_map_r3(const KDL::Twist &current_twist,
-                           const double rot_norm);
+    KDL::Vector exp_map_r3(const KDL::Twist &current_twist);
     /**
      * Calculate exponential map for both linear and angular parts 
      * of the given screw twist. Given Twist should NOT be normalized!
     */
-    KDL::Frame exp_map_se3(const KDL::Twist &current_twist, 
-                           const double rot_norm);
+    KDL::Frame exp_map_se3(const KDL::Twist &current_twist);
 
 
     //Converts a 3D vector to an skew matrix representation
@@ -100,7 +97,7 @@ namespace geometry
      * F. Sebastian Grassia, "Practical Parameterization of Rotations 
      * Using the Exponential Map" paper.
     */
-    bool rescale_angular_twist(KDL::Vector &rot_twist, double &theta);
+    bool rescale_angular_twist(KDL::Vector &rot_twist);
 
     /** 
      * Solving Generalized/constrained Procrustes problem i.e. 
