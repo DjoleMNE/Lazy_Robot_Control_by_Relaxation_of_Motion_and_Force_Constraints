@@ -53,7 +53,7 @@ namespace geometry
     */					   
     KDL::Vector log_map_r3(const KDL::Vector &translation,
                            const KDL::Vector &angular_twist);
-                               
+
     /**
      * Calculate logarithmic map given a transformation matrix.
      * Sources - Combined from: 
@@ -77,7 +77,7 @@ namespace geometry
                            const double rot_norm);
     /**
      * Calculate exponential map for both linear and angular parts 
-     * of the given screw twist
+     * of the given screw twist. Given Twist should NOT be normalized!
     */
     KDL::Frame exp_map_se3(const KDL::Twist &current_twist, 
                            const double rot_norm);

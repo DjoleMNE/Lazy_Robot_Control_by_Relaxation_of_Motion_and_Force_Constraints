@@ -23,8 +23,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #include <model_prediction.hpp>
-#define EPSILON 0.2// margin to allow for rounding errors
-#define MIN_ANGLE 1e-6
 
 model_prediction::model_prediction(const KDL::Chain &robot_chain): 
     NUMBER_OF_JOINTS_(robot_chain.getNrOfJoints()),
@@ -170,9 +168,9 @@ void model_prediction::integrate_cartesian_space(
     body_fixed_twist(5) = 0.0;
 
     body_fixed_twist = temp_pose_.M.Inverse(body_fixed_twist) * dt_sec;
-
     // body_fixed_twist = \
     //     temp_pose_.M.Inverse(current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]) * dt_sec;
+   
     geometry::orthonormalize_rot_matrix(temp_pose_.M);
     assert(("Current rotation matrix", geometry::is_rotation_matrix(temp_pose_.M)));
     
@@ -229,11 +227,7 @@ KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
     if(rescale_rotation) geometry::rescale_angular_twist(current_twist.rot, rot_norm);
     else rot_norm = current_twist.rot.Norm();
 
-    if (rot_norm < MIN_ANGLE) {
-        return current_pose * KDL::Frame(KDL::Rotation::Identity(), current_twist.vel);
-    } else {
-        return current_pose * geometry::exp_map_se3(current_twist, rot_norm);
-    }
+    return current_pose * geometry::exp_map_se3(current_twist, rot_norm);
 }
 
 void model_prediction::save_pose_to_file(std::ofstream &pose_data_file, 

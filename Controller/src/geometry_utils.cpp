@@ -1,13 +1,11 @@
 #include <geometry_utils.hpp>
 
-const double EPSILON = 0.2; // margin to allow for rounding errors
 const double MIN_ANGLE = 1e-6;
 
 namespace geometry
 {
-    // Calculate  exponential map for angular part of the given screw twist
-    KDL::Rotation exp_map_so3(const KDL::Twist &current_twist,
-                                                const double rot_norm)
+    // Calculate exponential map for angular part of the given screw twist
+    KDL::Rotation exp_map_so3(const KDL::Twist &current_twist, const double rot_norm)
     {   
         // First normalize given twist vector!
         return KDL::Rotation::Rot2(current_twist.rot / rot_norm, rot_norm);
@@ -15,8 +13,7 @@ namespace geometry
 
     // Calculate exponential map for linear part of the given screw twist
     // Given twist vector should NOT be normalized!
-    KDL::Vector exp_map_r3(const KDL::Twist &current_twist,
-                                            const double rot_norm)
+    KDL::Vector exp_map_r3(const KDL::Twist &current_twist, const double rot_norm)
     {
         // Convert rotation vector to a skew matrix 
         KDL::Rotation skew_rotation = skew_matrix( current_twist.rot );
@@ -37,13 +34,15 @@ namespace geometry
 
     /**
      * Calculate exponential map for both linear and angular parts 
-     * of the given screw twist
+     * of the given screw twist. Given Twist should NOT be normalized!
     */
-    KDL::Frame exp_map_se3(const KDL::Twist &current_twist,
-                                            const double rot_norm)
+    KDL::Frame exp_map_se3(const KDL::Twist &current_twist, const double rot_norm)
     {   
-        return KDL::Frame(exp_map_so3(current_twist, rot_norm),
-                          exp_map_r3(current_twist, rot_norm));
+        if (rot_norm < MIN_ANGLE) return KDL::Frame(KDL::Rotation::Identity(), 
+                                                    current_twist.vel);
+
+        else return KDL::Frame(exp_map_so3(current_twist, rot_norm),
+                               exp_map_r3(current_twist, rot_norm));
     }
 
 
@@ -152,6 +151,8 @@ namespace geometry
         if(eigen_matrix.determinant() < (1 - MIN_ANGLE)) return false;
         if(distance_to_so3(eigen_matrix) > MIN_ANGLE) return false;
         return true;
+
+        // const double EPSILON = 0.2; // margin to allow for rounding errors
         // if (std::fabs(m(0, 0)*m(0, 1) + m(0, 1)*m(1, 1) + m(0, 2)*m(1, 2)    ) > EPSILON) return false;
         // if (std::fabs(m(0, 0)*m(2, 0) + m(0, 1)*m(2, 1) + m(0, 2)*m(2, 2)    ) > EPSILON) return false;
         // if (std::fabs(m(1, 0)*m(2, 0) + m(1, 1)*m(2, 1) + m(1, 2)*m(2, 2)    ) > EPSILON) return false;
