@@ -282,42 +282,78 @@ void dynamics_controller::make_predictions(const double dt_sec,
                                          dt_sec, num_steps);
 }
 
-/*  
-    Compute the error between current (measured) Cartesian state and 
-    predicted (integrated) Cartesian state.
+/**
+ * Compute the error between current (measured) or desired Cartesian state 
+ * and predicted (integrated) Cartesian state.
 */
 void dynamics_controller::compute_control_error()
 {
     make_predictions(1.0, 1);
     desired_state_ = robot_state_;
+    bool use_decoupled_error = false;
 
-    /**
-     *  Linear motion (error) necessary to go from predicted to desired position
-     *  (positive direction of translation).
-    */
-    for(int i = 0; i < 3; i++)
+    if(use_decoupled_error)
     {
-        error_vector_(i) = \
-            desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i) - \
-            predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i);
+        /**
+         * Linear motion (error) necessary to go from predicted to 
+         * desired position (positive direction of translation).
+        */
+        for(int i = 0; i < 3; i++)
+        {
+            error_vector_(i) = \
+                    desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i) - \
+                    predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i);
+        }
+
+        /**
+         * Describes rotation required to align R_p with R_d.
+         * It represents relative rotation from predicted state to 
+         * desired state, expressed in the BASE frame!
+         * Source: Luh et al. "Resolved-acceleration control of 
+         * mechanical manipulators".
+        */
+        KDL::Rotation error_rot_matrix = \
+                desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * \
+                predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.Inverse();
+        std::cout << "Error Matrix:\n" << error_rot_matrix << std::endl;
+
+        /** 
+         * Error calculation for angular part, i.e. logarithmic map on SO(3).
+        */
+        error_vector_.tail(3) = kdl_vector_to_eigen(predictor_.log_map_so3(error_rot_matrix));
     }
 
-    /**
-     * Describes the rotation needed to align R_p with R_d.
-     * It represents relative rotation from predicted state to the desired state, 
-     * expressed in the BASE frame!
-    */
-    error_rot_matrix_ = \
-        desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * \
-        predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.Inverse();
-    
-    // Rotation matrix based error calculation, i.e. logarithmic map on SO(3)
-    error_vector_.tail(3) = predictor_.log_map_so3(error_rot_matrix_);
-    std::cout << "\nLOG norm: " << error_vector_.tail(3).norm() << std::endl;
+    else
+    {
+        /**
+         * Describes tranformation required to align T_p with T_d.
+         * It represents relative tranformation from predicted state to 
+         * desired state, expressed in the End-Effector frame!
+         * Required for calculation of error twist, using log map on SE(3).
+         * Source: Book "Modern Robotics" 2017 version.
+        */
+        KDL::Frame error_tranformation = \
+            predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].Inverse() * \
+            desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1];
 
+        /**
+         * Compute "body-fixed" error twist and transfrom it to the "pose" error
+         * twist in order to be usable for dynamics computations. 
+         * Reason is that the solver is expecting external forces to be 
+         * expressed w.r.t. base frame!   
+        */
+        KDL::Twist error_twist = \
+                predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * \
+                predictor_.log_map_se3(error_tranformation);
+
+        // Convert KDL twist to 6x1 Eigen vector. ABAG expects Eigen Vector!
+        kdl_twist_to_eigen(error_twist, error_vector_);
+    }
+    
     #ifndef NDEBUG
-        std::cout << "Error Matrix:\n" << error_rot_matrix_ << std::endl;
-        std::cout << "Error: " << error_vector_.transpose() << std::endl;
+        std::cout << "\nLOG norm: " << error_vector_.tail(3).norm() << std::endl;
+        std::cout << "Angular Error: " << error_vector_.tail(3).transpose() << std::endl;
+        std::cout << "Linear Error: " << error_vector_.head(3).transpose() << std::endl;
     #endif
 }
 
