@@ -81,8 +81,29 @@ class model_prediction
 		 * http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/index.htm
 		 * https://github.com/NxRLab/ModernRobotics/blob/master/packages/MATLAB/mr/MatrixLog3.m
 		*/					   
-		Eigen::Vector3d log_map_so3(const KDL::Rotation &matrix);
+		KDL::Vector log_map_so3(const KDL::Rotation &matrix);
+
+		/**
+		 * Calculate logarithmic map given translation vector and
+		 * angular twist as result of Log_SO(e). 
+		 * Sources - Combined from: 
+		 * S. Grazioso et al., "From Differential Geometry of Curves to Helical 
+		 * Kinematics of Continuum Robots Using Exponential Mapping"
+		 * https://github.com/NxRLab/ModernRobotics/blob/master/packages/MATLAB/mr/MatrixLog6.m
+		 * Function takes non-normalized vectors of angular twist and translation.
+		*/					   
+		KDL::Vector log_map_r3(const KDL::Vector &translation,
+                               const KDL::Vector &angular_twist);
 		
+		/**
+		 * Calculate logarithmic map given a transformation matrix.
+		 * Sources - Combined from: 
+		 * S. Grazioso et al., "From Differential Geometry of Curves to Helical 
+		 * Kinematics of Continuum Robots Using Exponential Mapping"
+		 * https://github.com/NxRLab/ModernRobotics/blob/master/packages/MATLAB/mr/MatrixLog6.m
+		*/					   
+		KDL::Twist log_map_se3(const KDL::Frame &pose);
+
 		/**
 		 * Calculate exponential map for angular part of the given screw twist. 
 		 * Given twist vector should NOT be normalized!

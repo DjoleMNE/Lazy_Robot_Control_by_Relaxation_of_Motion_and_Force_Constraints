@@ -161,12 +161,12 @@ void model_prediction::integrate_cartesian_space(
     
     KDL::Twist body_fixed_twist; 
     
-    body_fixed_twist(0) = 0.0;
+    body_fixed_twist(0) = 0.5;
     body_fixed_twist(1) = 0.0;
     body_fixed_twist(2) = 0.0;
 
-    body_fixed_twist(3) = 0.;
-    body_fixed_twist(4) = 3*M_PI + 3.1399;
+    body_fixed_twist(3) = 0.0;
+    body_fixed_twist(4) = M_PI/2;
     body_fixed_twist(5) = 0.0;
 
     body_fixed_twist = temp_pose_.M.Inverse(body_fixed_twist) * dt_sec;
@@ -176,7 +176,8 @@ void model_prediction::integrate_cartesian_space(
     orthonormalize_rot_matrix(temp_pose_.M);
     assert(("Current rotation matrix", is_rotation_matrix(temp_pose_.M)));
     
-    for (int i = 0; i < num_of_steps; i++){
+    for (int i = 0; i < num_of_steps; i++)
+    {
         temp_pose_ = integrate_pose(temp_pose_, body_fixed_twist, true);
         orthonormalize_rot_matrix(temp_pose_.M);
         assert(("Integrated rotation matrix", is_rotation_matrix(temp_pose_.M)));
@@ -191,6 +192,8 @@ void model_prediction::integrate_cartesian_space(
                   << current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M 
                   << std::endl;
 
+        std::cout << std::endl;
+        
         std::cout << "Integrated End-effector Position 1:\n" 
                   << temp_pose_.p  << std::endl;
         
@@ -493,7 +496,7 @@ double model_prediction::distance_to_so3(const Eigen::Matrix3d &matrix)
  * http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/index.htm
  * https://github.com/NxRLab/ModernRobotics/blob/master/packages/MATLAB/mr/MatrixLog3.m
 */
-Eigen::Vector3d model_prediction::log_map_so3(const KDL::Rotation &matrix)
+KDL::Vector model_prediction::log_map_so3(const KDL::Rotation &matrix)
 {
     double angle, x, y, z; // variables for result
     double epsilon1 = 0.00001; // margin to allow for rounding errors
@@ -514,7 +517,7 @@ Eigen::Vector3d model_prediction::log_map_so3(const KDL::Rotation &matrix)
         {
             // this singularity is identity matrix so angle = 0, axis is arbitrary
             // Because we use this for error calc, its best to return 0 vector
-            return Eigen::Vector3d(0.0, 0.0, 0.0);
+            return KDL::Vector(0.0, 0.0, 0.0);
         }
 
         // Otherwise this singularity is angle of 180
@@ -547,7 +550,7 @@ Eigen::Vector3d model_prediction::log_map_so3(const KDL::Rotation &matrix)
             x = xz/z;
             y = yz/z;
         }
-        return angle * Eigen::Vector3d(x, y, z); // return 180 deg rotation
+        return angle * KDL::Vector(x, y, z); // return 180 deg rotation
     }
 
     double acos_input = (matrix.data[0] + matrix.data[4] + matrix.data[8] - 1) / 2;
@@ -565,16 +568,16 @@ Eigen::Vector3d model_prediction::log_map_so3(const KDL::Rotation &matrix)
     // if this even happens, epsilon above should be increased
     // or logic behind if_s to be changed
     if (std::fabs(angle) < 0.001) std::cout << "Too small angle: " << angle << std::endl;
-    else if (std::fabs(angle) > 3.14) std::cout << "Too big angle: " << angle << std::endl;
+    else if (std::fabs(angle) > M_PI - MIN_ANGLE) std::cout << "Too big angle: " << angle << std::endl;
 #endif
 
     //If following assertions fail, above if statements are not working properly
-    assert(std::fabs(angle) < 3.14);
+    assert(std::fabs(angle) <  M_PI - MIN_ANGLE);
     assert(angle > -epsilon1);
 
     // prevent divide by zero, should not happen if matrix is orthogonal and 
     // should be caught by singularity test above, but I've left it in just in case
-	if (std::fabs(angle) < epsilon1) return Eigen::Vector3d(0.0, 0.0, 0.0);
+	if (std::fabs(angle) < epsilon1) return KDL::Vector(0.0, 0.0, 0.0);
 
     x = (matrix.data[7] - matrix.data[5]);
     y = (matrix.data[2] - matrix.data[6]);
@@ -589,5 +592,56 @@ Eigen::Vector3d model_prediction::log_map_so3(const KDL::Rotation &matrix)
      * input orientation, in one step of time! 
      * Bassically, logarithmic map on SO(3).
     */
-    return (angle / (2 * sin(angle))) * Eigen::Vector3d(x, y, z);
+    return (angle / (2 * sin(angle))) * KDL::Vector(x, y, z);
+}
+
+/**
+ * Calculate logarithmic map given translation vector and
+ * angular twist as result of Log_SO(e). 
+ * Sources - Combined from: 
+ * S. Grazioso et al., "From Differential Geometry of Curves to Helical 
+ * Kinematics of Continuum Robots Using Exponential Mapping"
+ * https://github.com/NxRLab/ModernRobotics/blob/master/packages/MATLAB/mr/MatrixLog6.m
+ * Function takes non-normalized vectors of angular twist and translation.
+*/					   
+KDL::Vector model_prediction::log_map_r3(const KDL::Vector &translation,
+                                         const KDL::Vector &angular_twist)
+{
+    // Convert rotation vector to a skew matrix 
+    KDL::Rotation skew_rotation = skew_matrix( angular_twist );
+    KDL::Rotation skew_rotation_square = skew_rotation * skew_rotation;
+    //Compute norm of angular twist, i.e. theta angle of rotation
+    double theta = angular_twist.Norm();
+    double theta_square = theta * theta;
+     
+    return matrix_addition(KDL::Rotation::Identity(), 
+                           matrix_addition(scale_matrix(skew_rotation, -0.5),
+                                           scale_matrix(skew_rotation_square,
+                                                        (1 - (theta * cos(theta/2)) / (2 * sin(theta/2))) / theta_square)
+                                          )
+                           ) * translation;
+}
+
+/**
+ * Calculate logarithmic map given transformation matrix.
+ * Sources - Combined from: 
+ * S. Grazioso et al., "From Differential Geometry of Curves to Helical 
+ * Kinematics of Continuum Robots Using Exponential Mapping"
+ * https://github.com/NxRLab/ModernRobotics/blob/master/packages/MATLAB/mr/MatrixLog6.m
+*/					   
+KDL::Twist model_prediction::log_map_se3(const KDL::Frame &pose)
+{
+    // First compute log on SO(3), and get norm of the angular vector
+    KDL::Vector angular_twist = log_map_so3(pose.M);  
+    
+    // If rotation is too small, return zero angular twist and 
+    // linear twist equal to translational vector of the pose
+    if(angular_twist.Norm() < MIN_ANGLE)
+    {
+        return KDL::Twist(pose.p, KDL::Vector(0.0, 0.0, 0.0));
+    }
+
+    // Else, additionally compute log map on R3 and its result return together 
+    // with already computed log on SO(3) 
+    return KDL::Twist(log_map_r3(pose.p, angular_twist), angular_twist);
 }
