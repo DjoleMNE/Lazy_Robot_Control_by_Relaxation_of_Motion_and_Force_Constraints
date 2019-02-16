@@ -370,8 +370,7 @@ void model_prediction::save_twist_to_file(std::ofstream &twist_data_file,
 */
 void model_prediction::orthonormalize_rot_matrix(KDL::Rotation &rot_matrix)
 {
-    Eigen::Matrix3d eigen_matrix;
-    rotation_to_eigen(rot_matrix, eigen_matrix);
+    Eigen::Matrix3d eigen_matrix = rotation_to_eigen(rot_matrix);
 
     Eigen::JacobiSVD<Eigen::Matrix3d> svd(eigen_matrix,
                                           Eigen::ComputeFullU | Eigen::ComputeFullV);
@@ -432,8 +431,7 @@ void model_prediction::compute_FK(state_specification &predicted_state)
 */
 bool model_prediction::is_rotation_matrix(const KDL::Rotation &m)
 {
-    Eigen::Matrix3d eigen_matrix;
-    rotation_to_eigen(m, eigen_matrix);
+    Eigen::Matrix3d eigen_matrix = rotation_to_eigen(m);
     if(eigen_matrix.determinant() < (1 - MIN_ANGLE)) return false;
     if(distance_to_so3(eigen_matrix) > MIN_ANGLE) return false;
     return true;

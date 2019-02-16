@@ -40,7 +40,7 @@ Eigen::Vector3d kdl_vector_to_eigen(const KDL::Vector &kdl_vector);
 Eigen::VectorXd kdl_twist_to_eigen(const KDL::Twist &kdl_twist);
 
 // Convert from KDL rotation matrix to a 3x3 eigen matrix
-void rotation_to_eigen(const KDL::Rotation &kdl_matrix, Eigen::Matrix3d &eigen_matrix);
+Eigen::Matrix3d rotation_to_eigen(const KDL::Rotation &kdl_matrix);
 
 // Convert from 3x3 eigen matrix to a KDL rotation matrix
 void eigen_to_rotation(const Eigen::Matrix3d &eigen_matrix, KDL::Rotation &kdl_matrix);
