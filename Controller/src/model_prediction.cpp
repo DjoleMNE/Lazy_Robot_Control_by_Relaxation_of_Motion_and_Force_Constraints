@@ -170,7 +170,20 @@ void model_prediction::integrate_cartesian_space(
     body_fixed_twist = temp_pose_.M.Inverse(body_fixed_twist) * dt_sec;
     // body_fixed_twist = \
     //     temp_pose_.M.Inverse(current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]) * dt_sec;
-   
+
+#ifndef NDEBUG
+        twist_data_file_.open(TWIST_DATA_PATH_);
+        save_twist_to_file(twist_data_file_, body_fixed_twist);
+        twist_data_file_.close();
+
+        current_pose_data_file_.open(CURRENT_POSE_DATA_PATH_);
+        save_pose_to_file(current_pose_data_file_, 
+                          current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
+        current_pose_data_file_.close();
+        
+        predicted_pose_data_file_.open(PREDICTED_POSE_DATA_PATH_);
+#endif
+
     geometry::orthonormalize_rot_matrix(temp_pose_.M);
     assert(("Current rotation matrix", geometry::is_rotation_matrix(temp_pose_.M)));
     
@@ -179,9 +192,13 @@ void model_prediction::integrate_cartesian_space(
         temp_pose_ = integrate_pose(temp_pose_, body_fixed_twist, true);
         geometry::orthonormalize_rot_matrix(temp_pose_.M);
         assert(("Integrated rotation matrix", geometry::is_rotation_matrix(temp_pose_.M)));
+
+#ifndef NDEBUG
+        save_pose_to_file(predicted_pose_data_file_, temp_pose_);
+#endif
     }
     
-    #ifndef NDEBUG
+#ifndef NDEBUG
         std::cout << "Measured End-effector Position:\n" 
                   << current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p 
                   << std::endl;
@@ -190,9 +207,7 @@ void model_prediction::integrate_cartesian_space(
                   << current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M 
                   << std::endl;
 
-        std::cout << std::endl;
-        
-        std::cout << "Integrated End-effector Position 1:\n" 
+        std::cout << "\nIntegrated End-effector Position 1:\n" 
                   << temp_pose_.p  << std::endl;
         
         std::cout << "Integrated End-effector Orientation 1:\n" 
@@ -200,16 +215,8 @@ void model_prediction::integrate_cartesian_space(
 
         std::cout << "Delta Angle: " << body_fixed_twist.rot.Norm() << std::endl; 
 
-        twist_data_file_.open(TWIST_DATA_PATH_);
-        save_twist_to_file(twist_data_file_, body_fixed_twist);
-
-        current_pose_data_file_.open(CURRENT_POSE_DATA_PATH_);
-        save_pose_to_file(current_pose_data_file_, 
-                          current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
-
-        predicted_pose_data_file_.open(PREDICTED_POSE_DATA_PATH_);
-        save_pose_to_file(predicted_pose_data_file_, temp_pose_);
-    #endif
+        predicted_pose_data_file_.close();
+#endif
     
     predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1] = temp_pose_;
 }
@@ -230,29 +237,23 @@ KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
 void model_prediction::save_pose_to_file(std::ofstream &pose_data_file, 
                                          const KDL::Frame &pose)
 {
-    if (!pose_data_file.is_open()) {
-        std::cout << "Unable to open the pose file"<< std::endl;
+    if (!pose_data_file.is_open()) 
+    {
+        std::cout << "Unable to open the pose file" << std::endl;
     }
     
-    for(int i = 0; i < 3; i++){
-        for (int j = 0; j < 3; j++)
-            pose_data_file << pose.M(i, j) << std::endl;
-    }
-
-    for (int j = 0; j < 3; j++)
-        pose_data_file << pose.p(j)<< std::endl;
-
-    pose_data_file.close();
+    for(int i = 0; i < 9; i++) pose_data_file << pose.M.data[i] << std::endl;
+    for(int j = 0; j < 3; j++) pose_data_file << pose.p(j) << std::endl;
 }
 
 void model_prediction::save_twist_to_file(std::ofstream &twist_data_file, 
                                          const KDL::Twist &twist)
 {
-    if (!twist_data_file.is_open()) {
-        std::cout << "Unable to open the twist file"<< std::endl;
+    if (!twist_data_file.is_open())
+    {
+        std::cout << "Unable to open the twist file" << std::endl;
     }
-    for (int j = 0; j < 6; j++) twist_data_file << twist(j)<< std::endl;
-    twist_data_file.close();
+    for (int j = 0; j < 6; j++) twist_data_file << twist(j) << std::endl;
 }
 
 // Forward position and velocity kinematics, given the itegrated values
@@ -266,7 +267,9 @@ void model_prediction::compute_FK(state_specification &predicted_state)
                                                    predicted_state.frame_pose, 
                                                    predicted_state.frame_velocity);
     if(fk_solver_result_ != 0) 
+    {
         std::cout << "Warning: FK solver returned an error! " << fk_solver_result_ << std::endl;
+    }
     
     #ifndef NDEBUG // Print Cartesian state in Debug mode only
         std::cout << "Predicted End-effector Position: \n" 

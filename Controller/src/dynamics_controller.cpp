@@ -288,7 +288,7 @@ void dynamics_controller::make_predictions(const double dt_sec,
 */
 void dynamics_controller::compute_control_error()
 {
-    make_predictions(1.0, 1);
+    make_predictions(0.1, 10);
     desired_state_ = robot_state_;
     bool use_decoupled_error = false;
 

@@ -84,7 +84,7 @@ class model_prediction
 
 		KDL::FK_Vereshchagin fk_vereshchagin_;
 
-		// Temp varible required for saving intermediate state,
+		// Temp variable required for saving intermediate state,
 		// if multi-step integration requirested
 		state_specification temp_state_;
 		KDL::Frame temp_pose_;
