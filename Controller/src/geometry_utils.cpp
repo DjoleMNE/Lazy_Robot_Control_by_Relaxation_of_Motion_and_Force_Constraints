@@ -118,7 +118,7 @@ namespace geometry
     */
     void orthonormalize_rot_matrix(KDL::Rotation &rot_matrix)
     {
-        Eigen::Matrix3d eigen_matrix = rotation_to_eigen(rot_matrix);
+        Eigen::Matrix3d eigen_matrix = conversions::rotation_to_eigen(rot_matrix);
 
         Eigen::JacobiSVD<Eigen::Matrix3d> svd(eigen_matrix,
                                               Eigen::ComputeFullU | Eigen::ComputeFullV);
@@ -139,7 +139,7 @@ namespace geometry
         std::cout << "Distance to SO(3): " << distance_to_so3(eigen_matrix) << std::endl;
     #endif
 
-        rot_matrix = eigen_to_rotation(eigen_matrix);
+        rot_matrix = conversions::eigen_to_rotation(eigen_matrix);
     }
 
     /**
@@ -154,7 +154,7 @@ namespace geometry
     */
     bool is_rotation_matrix(const KDL::Rotation &m)
     {
-        Eigen::Matrix3d eigen_matrix = rotation_to_eigen(m);
+        Eigen::Matrix3d eigen_matrix = conversions::rotation_to_eigen(m);
         if(eigen_matrix.determinant() < (1 - MIN_ANGLE)) return false;
         if(distance_to_so3(eigen_matrix) > MIN_ANGLE) return false;
         return true;
