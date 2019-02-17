@@ -217,7 +217,7 @@ void model_prediction::integrate_cartesian_space(
         std::cout << "Integrated End-effector Orientation 1:\n" 
                   << temp_pose_.M  << std::endl;
 
-        std::cout << "Delta Angle: " << body_fixed_twist.rot.Norm() << std::endl; 
+        std::cout << "Delta Angle: " << pose_twist.rot.Norm() << std::endl; 
 
         predicted_pose_data_file_.close();
 #endif
