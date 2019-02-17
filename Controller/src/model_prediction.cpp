@@ -246,8 +246,8 @@ KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
 
     if(decouple_dimensions)
     {   
-        return KDL::Frame(current_pose.M * geometry::exp_map_so3(current_twist), 
-                          current_pose.p + current_pose.M * current_twist.vel);
+        return current_pose * KDL::Frame(geometry::exp_map_so3(current_twist), 
+                                         current_twist.vel);
     }
     
     return current_pose * geometry::exp_map_se3(current_twist);
