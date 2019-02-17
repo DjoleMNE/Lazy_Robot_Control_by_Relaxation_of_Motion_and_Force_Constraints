@@ -104,7 +104,6 @@ class model_prediction
 		void save_twist_to_file(std::ofstream &twist_data_file, 
                                 const KDL::Twist &twist);
 
-		// Functions required for 3D pose integration
 		/**
 		 * Calculates Exponential map for both translation and rotation
 		 * Input: 

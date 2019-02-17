@@ -288,7 +288,9 @@ void dynamics_controller::make_predictions(const double dt_sec,
 */
 void dynamics_controller::compute_control_error()
 {
+    // make_predictions(1, 1);
     make_predictions(0.1, 10);
+
     desired_state_ = robot_state_;
     bool use_decoupled_error = true;
     // bool use_decoupled_error = false;
@@ -349,9 +351,8 @@ void dynamics_controller::compute_control_error()
     }
     
     #ifndef NDEBUG
-        std::cout << "\nLinear Error: " << error_vector_.head(3).transpose() << std::endl;
-        std::cout << "Angular Error: " << error_vector_.tail(3).transpose() << std::endl;
-        std::cout << "Angular norm: " << error_vector_.tail(3).norm() << std::endl;
+        std::cout << "\nLinear Error: " << error_vector_.head(3).transpose() << "  Linear norm: " << error_vector_.head(3).norm() << std::endl;
+        std::cout << "Angular Error: " << error_vector_.tail(3).transpose() << "  Angular norm: " << error_vector_.tail(3).norm() << std::endl;
     #endif
 }
 

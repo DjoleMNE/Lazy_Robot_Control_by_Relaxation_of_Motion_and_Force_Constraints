@@ -75,7 +75,7 @@ Solver_Vereshchagin::Solver_Vereshchagin(const Chain& chain_,
  * Input parameters;
  * \param q The current joint positions
  * \param q_dot The current joint velocities
- * \param f_ext The external forces (no gravity, it is given in root acceleration) on the segments (from environment!).
+ * \param f_ext The external forces (no gravity, it is given in root frame) on the segments (from environment!).
  * Output parameters:
  * \param q_dotdot The joint accelerations
  * \param torques the resulting constraint torques for the joints

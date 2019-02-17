@@ -156,25 +156,27 @@ void model_prediction::integrate_cartesian_space(
     assert(NUMBER_OF_SEGMENTS_ == predicted_state.frame_velocity.size()); 
 
     temp_pose_ = current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1];
-    
+
+    KDL::Twist pose_twist; 
     KDL::Twist body_fixed_twist; 
     
-    body_fixed_twist(0) = 1.0;
-    body_fixed_twist(1) = 0.0;
-    body_fixed_twist(2) = 0.0;
+    pose_twist(0) = 1.0;
+    pose_twist(1) = 0.0;
+    pose_twist(2) = 0.0;
 
-    body_fixed_twist(3) = 0.0;
-    body_fixed_twist(4) = M_PI / 2;
-    body_fixed_twist(5) = 0.0;
+    pose_twist(3) = 0.0;
+    pose_twist(4) = M_PI / 2;
+    pose_twist(5) = M_PI / 4;
 
-    body_fixed_twist = body_fixed_twist * dt_sec;
-    // body_fixed_twist = temp_pose_.M.Inverse(body_fixed_twist);
+    pose_twist = pose_twist * dt_sec;
+    // body_fixed_twist = temp_pose_.M.Inverse(pose_twist);
     // body_fixed_twist = \
     //     temp_pose_.M.Inverse(current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]) * dt_sec;
 
+// Save constant data to a file for visualization purposes.
 #ifndef NDEBUG
         twist_data_file_.open(TWIST_DATA_PATH_);
-        save_twist_to_file(twist_data_file_, body_fixed_twist);
+        save_twist_to_file(twist_data_file_, pose_twist);
         twist_data_file_.close();
 
         current_pose_data_file_.open(CURRENT_POSE_DATA_PATH_);
@@ -190,7 +192,8 @@ void model_prediction::integrate_cartesian_space(
     
     for (int i = 0; i < num_of_steps; i++)
     {
-        temp_pose_ = integrate_pose(temp_pose_, body_fixed_twist, true, false);
+        body_fixed_twist = temp_pose_.M.Inverse(pose_twist);
+        temp_pose_ = integrate_pose(temp_pose_, body_fixed_twist, true, true);
         geometry::orthonormalize_rot_matrix(temp_pose_.M);
         assert(("Integrated rotation matrix", geometry::is_rotation_matrix(temp_pose_.M)));
 
@@ -223,6 +226,13 @@ void model_prediction::integrate_cartesian_space(
 }
 
 /**
+ * Calculates Exponential map for both translation and rotation
+ * Input: 
+ * 		- current pose to be integrated
+ * 		- current "body-fixed" twist scaled with delta time
+ * 		- flag for rescaling rotation if its out of 0 - PI range
+ * 		- flag for decoupling integration of linear and angular parts  
+ * Output: tranformation (KDL::Frame) of the integrated (predicted) pose
  * Code is based on formulas given in books:
  * "Modern Robotics", 2017, F.C.Park
  * "Robot Kinematics and Dynamics", 2010, Herman Bruyninckx.
