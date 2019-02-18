@@ -132,11 +132,11 @@ namespace geometry
         }
 
     #ifndef NDEBUG
-        Eigen::JacobiSVD<Eigen::Matrix3d> svd1(eigen_matrix,
-                                               Eigen::ComputeFullU | Eigen::ComputeFullV);   
-        std::cout << "Singular values: " << svd1.singularValues().transpose() << std::endl;
-        std::cout << "Determinant: " << eigen_matrix.determinant() << std::endl;
-        std::cout << "Distance to SO(3): " << distance_to_so3(eigen_matrix) << std::endl;
+        // Eigen::JacobiSVD<Eigen::Matrix3d> svd1(eigen_matrix,
+        //                                        Eigen::ComputeFullU | Eigen::ComputeFullV);   
+        // std::cout << "Singular values: " << svd1.singularValues().transpose() << std::endl;
+        // std::cout << "Determinant: " << eigen_matrix.determinant() << std::endl;
+        // std::cout << "Distance to SO(3): " << distance_to_so3(eigen_matrix) << std::endl;
     #endif
 
         rot_matrix = conversions::eigen_to_rotation(eigen_matrix);

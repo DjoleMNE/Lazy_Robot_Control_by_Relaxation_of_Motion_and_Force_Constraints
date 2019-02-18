@@ -289,11 +289,12 @@ void dynamics_controller::make_predictions(const double dt_sec,
 void dynamics_controller::compute_control_error()
 {
     // make_predictions(1, 1);
-    make_predictions(0.1, 10);
+    // make_predictions(0.1, 10);
+    make_predictions(0.0001, 10000);
 
     desired_state_ = robot_state_;
-    bool use_decoupled_error = true;
-    // bool use_decoupled_error = false;
+    // bool use_decoupled_error = true;
+    bool use_decoupled_error = false;
 
     if(use_decoupled_error)
     {
@@ -320,7 +321,8 @@ void dynamics_controller::compute_control_error()
                 predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.Inverse();
 
         // Error calculation for angular part, i.e. logarithmic map on SO(3).
-        error_vector_.tail(3) = conversions::kdl_vector_to_eigen(geometry::log_map_so3(error_rot_matrix));
+        error_vector_.tail(3) = \
+            conversions::kdl_vector_to_eigen(geometry::log_map_so3(error_rot_matrix));
     }
 
     else
@@ -343,7 +345,7 @@ void dynamics_controller::compute_control_error()
          * expressed w.r.t. base frame!   
         */
         KDL::Twist error_twist = \
-                predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * 
+                predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * \
                 geometry::log_map_se3(error_tranformation);
 
         // Convert KDL twist to 6x1 Eigen vector. ABAG expects Eigen Vector!

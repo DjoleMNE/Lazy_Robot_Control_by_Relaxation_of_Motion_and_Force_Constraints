@@ -193,7 +193,7 @@ void model_prediction::integrate_cartesian_space(
     for (int i = 0; i < num_of_steps; i++)
     {
         body_fixed_twist = temp_pose_.M.Inverse(pose_twist);
-        temp_pose_ = integrate_pose(temp_pose_, body_fixed_twist, true, true);
+        temp_pose_ = integrate_pose(temp_pose_, body_fixed_twist, true, false);
         geometry::orthonormalize_rot_matrix(temp_pose_.M);
         assert(("Integrated rotation matrix", geometry::is_rotation_matrix(temp_pose_.M)));
 
@@ -207,17 +207,15 @@ void model_prediction::integrate_cartesian_space(
                   << current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p 
                   << std::endl;
 
-        std::cout << "Measured End-effector Orientation:\n" 
-                  << current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M 
-                  << std::endl;
+        // std::cout << "Measured End-effector Orientation:\n" 
+        //           << current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M 
+        //           << std::endl;
 
         std::cout << "\nIntegrated End-effector Position 1:\n" 
                   << temp_pose_.p  << std::endl;
         
-        std::cout << "Integrated End-effector Orientation 1:\n" 
-                  << temp_pose_.M  << std::endl;
-
-        std::cout << "Delta Angle: " << pose_twist.rot.Norm() << std::endl; 
+        // std::cout << "Integrated End-effector Orientation 1:\n" 
+        //           << temp_pose_.M  << std::endl;
 
         predicted_pose_data_file_.close();
 #endif
