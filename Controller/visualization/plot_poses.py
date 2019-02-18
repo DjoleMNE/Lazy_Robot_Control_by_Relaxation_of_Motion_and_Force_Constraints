@@ -11,6 +11,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pyinotify
 
+plot_intermediate_poses = np.int(sys.argv[1])
+print("Plot intermediate poses:  ", plot_intermediate_poses)
+
 plt.rcParams['interactive'] 
 plt.rcParams['figure.dpi'] = 150 
 label_size = 8
@@ -162,48 +165,75 @@ ax.plot([position_origin_1[0], position_origin_1[0] +  (axis_length * R_1[0, 2])
         [position_origin_1[2], position_origin_1[2] +  (axis_length * R_1[2, 2]) ],  '--b', label='Current: Z axis')
 
 #Predicted Pose of the end-effector
-for i in range(prediction_length):
+if(plot_intermediate_poses is 1):
+        for i in range(prediction_length):
+                predicted_pose_temp = np.array(predicted_pose[i * 12 : (i * 12) + 12])
+
+                position_origin_2 = np.array([np.float32(predicted_pose_temp[9][0]), 
+                                        np.float32(predicted_pose_temp[10][0]), 
+                                        np.float32(predicted_pose_temp[11][0])])
+
+                R_2 = np.array([[np.float32(predicted_pose_temp[0][0]), np.float32(predicted_pose_temp[1][0]), np.float32(predicted_pose_temp[2][0])], 
+                                [np.float32(predicted_pose_temp[3][0]), np.float32(predicted_pose_temp[4][0]), np.float32(predicted_pose_temp[5][0])], 
+                                [np.float32(predicted_pose_temp[6][0]), np.float32(predicted_pose_temp[7][0]), np.float32(predicted_pose_temp[8][0])]])
+                
+                if(i is prediction_length - 1):
+                        #X axis
+                        ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 0]) ], 
+                                [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 0]) ], 
+                                [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 0]) ], 'r:', label='Predicted: X axis')
+
+                        #Y axix
+                        ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 1]) ], 
+                                [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 1]) ], 
+                                [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 1]) ],  ':g', label='Predicted: Y axis')
+
+                        #Y axix
+                        ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 2]) ], 
+                                [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 2]) ], 
+                                [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 2]) ],  ':b', label='Predicted: Z axis')
+                
+                else:
+                        #X axis
+                        ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 0]) ], 
+                                [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 0]) ], 
+                                [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 0]) ])
+
+                        #Y axix
+                        ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 1]) ], 
+                                [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 1]) ], 
+                                [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 1]) ])
+
+                        #Y axix
+                        ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 2]) ], 
+                                [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 2]) ], 
+                                [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 2]) ])
+
+else:
+        i = prediction_length - 1
         predicted_pose_temp = np.array(predicted_pose[i * 12 : (i * 12) + 12])
 
         position_origin_2 = np.array([np.float32(predicted_pose_temp[9][0]), 
-                                      np.float32(predicted_pose_temp[10][0]), 
-                                      np.float32(predicted_pose_temp[11][0])])
+                                np.float32(predicted_pose_temp[10][0]), 
+                                np.float32(predicted_pose_temp[11][0])])
 
         R_2 = np.array([[np.float32(predicted_pose_temp[0][0]), np.float32(predicted_pose_temp[1][0]), np.float32(predicted_pose_temp[2][0])], 
                         [np.float32(predicted_pose_temp[3][0]), np.float32(predicted_pose_temp[4][0]), np.float32(predicted_pose_temp[5][0])], 
                         [np.float32(predicted_pose_temp[6][0]), np.float32(predicted_pose_temp[7][0]), np.float32(predicted_pose_temp[8][0])]])
-        
-        if(i is prediction_length - 1):
-                #X axis
-                ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 0]) ], 
-                        [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 0]) ], 
-                        [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 0]) ], 'r:', label='Predicted: X axis')
+        #X axis
+        ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 0]) ], 
+                [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 0]) ], 
+                [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 0]) ], 'r:', label='Predicted: X axis')
 
-                #Y axix
-                ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 1]) ], 
-                        [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 1]) ], 
-                        [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 1]) ],  ':g', label='Predicted: Y axis')
+        #Y axix
+        ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 1]) ], 
+                [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 1]) ], 
+                [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 1]) ],  ':g', label='Predicted: Y axis')
 
-                #Y axix
-                ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 2]) ], 
-                        [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 2]) ], 
+        #Y axix
+        ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 2]) ], 
+                [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 2]) ], 
                         [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 2]) ],  ':b', label='Predicted: Z axis')
-        
-        else:
-                #X axis
-                ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 0]) ], 
-                        [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 0]) ], 
-                        [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 0]) ])
-
-                #Y axix
-                ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 1]) ], 
-                        [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 1]) ], 
-                        [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 1]) ])
-
-                #Y axix
-                ax.plot([position_origin_2[0], position_origin_2[0] +  (axis_length * R_2[0, 2]) ], 
-                        [position_origin_2[1], position_origin_2[1] +  (axis_length * R_2[1, 2]) ], 
-                        [position_origin_2[2], position_origin_2[2] +  (axis_length * R_2[2, 2]) ])
 
 #Plot the vector of "data estimated" twist
 a1 = Arrow3D([position_origin_1[0], position_origin_2[0]], 
