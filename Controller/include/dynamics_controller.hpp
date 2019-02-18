@@ -89,7 +89,7 @@ class dynamics_controller
     void define_ee_acc_constraint(const std::vector<bool> &constraint_direction,
                                   const std::vector<double> &cartesian_acceleration);
     void define_ee_external_force(const std::vector<double> &external_force);
-    void define_feadforward_torque(const std::vector<double> &ff_torque);
+    void define_feedforward_torque(const std::vector<double> &ff_torque);
 
   private:
     const int RATE_HZ_;
@@ -123,6 +123,7 @@ class dynamics_controller
     const int NUMBER_OF_CONSTRAINTS_;
     
     Eigen::VectorXd error_vector_;
+    Eigen::VectorXd abag_command_;
 
     KDL::Solver_Vereshchagin hd_solver_;
     KDL::FK_Vereshchagin fk_vereshchagin_;
@@ -136,13 +137,14 @@ class dynamics_controller
     state_specification predicted_state_;
 
     void print_settings_info();
-    void write_to_file(const Eigen::VectorXd &measured, const Eigen::VectorXd &desired);
+    void write_to_file();
     void reset_state(state_specification &state);
     void stop_robot_motion();
     void update_task();
     void update_current_state();
     void compute_control_error();
     void make_predictions(const double dt_sec, const int num_steps);
+    void compute_cart_control_commands(const bool store_control_data);
     int apply_joint_control_commands();
     int evaluate_dynamics();
     int enforce_loop_frequency();
@@ -152,7 +154,7 @@ class dynamics_controller
                                 const std::vector<double> &cartesian_acceleration);
     void set_external_forces(state_specification &state, 
                              const std::vector<double> &external_force);
-    void set_feadforward_torque(state_specification &state,
+    void set_feedforward_torque(state_specification &state,
                                 const std::vector<double> &ff_torque);    
 };
 #endif /* DYNAMICS_CONTROLLER_HPP_*/

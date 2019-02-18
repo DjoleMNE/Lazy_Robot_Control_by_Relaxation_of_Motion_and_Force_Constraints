@@ -193,7 +193,7 @@ void model_prediction::integrate_cartesian_space(
     for (int i = 0; i < num_of_steps; i++)
     {
         body_fixed_twist = temp_pose_.M.Inverse(pose_twist);
-        temp_pose_ = integrate_pose(temp_pose_, body_fixed_twist, true, false);
+        temp_pose_ = integrate_pose(temp_pose_, body_fixed_twist, true, true);
         geometry::orthonormalize_rot_matrix(temp_pose_.M);
         assert(("Integrated rotation matrix", geometry::is_rotation_matrix(temp_pose_.M)));
 

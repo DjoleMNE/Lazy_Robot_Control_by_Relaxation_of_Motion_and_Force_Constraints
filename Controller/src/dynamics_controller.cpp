@@ -41,7 +41,8 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     NUMBER_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
     NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
     NUMBER_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
-    error_vector_(NUMBER_OF_CONSTRAINTS_),
+    error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
+    abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     hd_solver_(robot_chain_, robot_driver.get_joint_inertia(),
                robot_driver.get_root_acceleration(), NUMBER_OF_CONSTRAINTS_),
     fk_vereshchagin_(robot_chain_),
@@ -190,17 +191,15 @@ void dynamics_controller::set_external_forces(
 }
 
 // Define FeedForward joint torques task - Public Method
-void dynamics_controller::define_feadforward_torque(
-                                        const std::vector<double> &ff_torque)
+void dynamics_controller::define_feedforward_torque(const std::vector<double> &ff_torque)
 {
     //Call private method for this state
-    set_feadforward_torque(desired_state_, ff_torque);
+    set_feedforward_torque(desired_state_, ff_torque);
 }
 
 // Define FeedForward joint torques task - Private Method
-void dynamics_controller::set_feadforward_torque(
-                                            state_specification &state, 
-                                            const std::vector<double> &ff_torque)
+void dynamics_controller::set_feedforward_torque(state_specification &state, 
+                                                 const std::vector<double> &ff_torque)
 {
     assert(ff_torque.size() == NUMBER_OF_JOINTS_);
 
@@ -292,8 +291,7 @@ void dynamics_controller::compute_control_error()
     // make_predictions(0.1, 10);
     // make_predictions(0.0001, 10000);
 
-    // bool use_decoupled_error = true;
-    bool use_decoupled_error = false;
+    bool use_decoupled_error = true;
 
     if(use_decoupled_error)
     {
@@ -337,8 +335,6 @@ void dynamics_controller::compute_control_error()
             predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].Inverse() * \
             desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1];
 
-        std::cout << " \n "<< predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * error_tranformation.p << std::endl;
-        
         /**
          * Compute "body-fixed" error twist and transfrom it to the "pose" error
          * twist in order to be usable for dynamics computations. 
@@ -352,11 +348,23 @@ void dynamics_controller::compute_control_error()
         // Convert KDL twist to 6x1 Eigen vector. ABAG expects Eigen Vector!
         error_vector_ = conversions::kdl_twist_to_eigen(error_twist);
     }
-    
+
     #ifndef NDEBUG
         std::cout << "\nLinear Error: " << error_vector_.head(3).transpose() << "  Linear norm: " << error_vector_.head(3).norm() << std::endl;
         std::cout << "Angular Error: " << error_vector_.tail(3).transpose() << "  Angular norm: " << error_vector_.tail(3).norm() << std::endl;
     #endif
+}
+
+void dynamics_controller::compute_cart_control_commands(const bool store_control_data)
+{   
+    // abag_command_ = abag_.update_state(error_vector_).transpose();
+    if (store_control_data) write_to_file();
+
+    // robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(1) = abag_command(4) * max_ang_force;
+    // robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(2) = abag_command(2) * max_lin_force;
+
+    // std::cout << "\n" << robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque  << std::endl;
+    // std::cout << robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force  << std::endl;
 }
 
 //Calculate robot dynamics - Resolve the motion using the Vereshchagin HD solver
@@ -502,12 +510,18 @@ void dynamics_controller::stop_robot_motion()
 }
 
 // Write control data to a file
-void dynamics_controller::write_to_file(const Eigen::VectorXd &measured,
-                                        const Eigen::VectorXd &desired)
+void dynamics_controller::write_to_file()
 {   
-    log_file_ << measured.transpose().format(WRITE_FORMAT_);
-    log_file_ << desired.transpose().format(WRITE_FORMAT_);
-    log_file_ << abag_.get_error().transpose().format(WRITE_FORMAT_);
+    for(int i = 0; i < 3; i++)
+        log_file_ << robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i) << " ";
+    
+    log_file_ << std::endl;
+
+    for(int i = 0; i < 3; i++)
+        log_file_ << desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i) << " ";
+
+    log_file_ << std::endl;
+    log_file_ << error_vector_.transpose().format(WRITE_FORMAT_);
     log_file_ << abag_.get_bias().transpose().format(WRITE_FORMAT_);
     log_file_ << abag_.get_gain().transpose().format(WRITE_FORMAT_);
     log_file_ << abag_.get_command().transpose().format(WRITE_FORMAT_);
@@ -531,19 +545,6 @@ int dynamics_controller::control(const int desired_control_mode,
         std::cout << "Stop Motion mode selected. Exiting the program" << std::endl;
         return -1;
     } 
-
-    int desired_dim = 0;
-    Eigen::VectorXd abag_command(abag_parameter::DIMENSIONS);
-    abag_command = Eigen::VectorXd::Constant(abag_parameter::DIMENSIONS, 0.0);
-    
-    Eigen::VectorXd measured_cart(abag_parameter::DIMENSIONS);
-    measured_cart = Eigen::VectorXd::Constant(abag_parameter::DIMENSIONS, 0.0);
-
-    Eigen::VectorXd desired_cart(abag_parameter::DIMENSIONS);
-    desired_cart = Eigen::VectorXd::Constant(abag_parameter::DIMENSIONS, 0.0);
-    desired_cart(4) = 0.0;
-    desired_cart(2) = 0.01 + robot_state_.frame_pose[4].p(2);
-    // desired_cart(0) = 0.1;
 
     double max_lin_force = 60.0;
     double max_ang_force = 20.0;
@@ -574,31 +575,16 @@ int dynamics_controller::control(const int desired_control_mode,
 
         // Check if the task specification has changed. Update accordingly.
         update_task();
-        desired_state_ = robot_state_;
 
         //Get current robot state from the joint sensors, velocities and angles
         update_current_state();
+        desired_state_ = robot_state_;
 
-        if(loop_count_ == 1) {
-            compute_control_error();
-            return 0;
-        }
+        compute_control_error();
+        
+        compute_cart_control_commands(store_control_data);
 
-        // measured_cart(0) = robot_state_.frame_velocity[4].vel(0);
-        measured_cart(4) = robot_state_.frame_velocity[4].rot(1);
-        measured_cart(2) = robot_state_.frame_pose[4].p(2);
-
-
-        abag_command = abag_.update_state(measured_cart, \
-                                          desired_cart).transpose();
-
-        // robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(1) = abag_command(4) * max_ang_force;
-        // robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(2) = abag_command(2) * max_lin_force;
-
-        // std::cout << "\n" << robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque  << std::endl;
-        // std::cout << robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force  << std::endl;
-
-        if (store_control_data) write_to_file(measured_cart, desired_cart);
+        if(loop_count_ == 1) return 0;
 
         // Calculate robot dynamics using the Vereshchagin HD solver
         if(evaluate_dynamics() != 0)

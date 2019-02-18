@@ -166,34 +166,10 @@ int main(int argc, char **argv)
     controller.define_ee_external_force(std::vector<double>{0.0, 0.0, 0.0, // Linear
                                                             0.0, 0.0, 0.0}); // Angular
     //Create Feedforward torques task 
-    controller.define_feadforward_torque(std::vector<double>{0.0, 0.0, 
+    controller.define_feedforward_torque(std::vector<double>{0.0, 0.0, 
                                                              0.0, 0.0, 
                                                                   0.0}); 
-    /**
-     * Interface for defining desired robot pose.
-     * constraint_direction argument defines which of 6 DOF should be 
-     * controlled or not. Basically, some of DOFs can be left out to not be 
-     * controlled by this controller, but left out to be controlled by 
-     * natural dynamics of the system and environment.
-     * First 3 elements of cartesian_pose vector define x, y, z positions
-     * Last 3 elements define orientations around x, y, z axes (Roll, Pitch, Yaw) 
-     * All DOFs are specified w.r.t. fixed robot base reference frame
-     * 
-     * Orientation convention (last 3 elements of cartesian_pose vector):
-     * - First rotate around X with roll, then around the fixed Y with pitch, 
-     *   then around fixed Z with yaw.
-     * - Invariants:
-     *   - RPY(roll, pitch, yaw) == RPY( roll +/- PI, PI - pitch, yaw +/- PI )
-     *   - angles + 2*k*PI
-     */ 
-    /**
-     * 1. Is KDL limiting the legal range of motion for Euler angles? 
-     * Are we able to command any orientiation using KDL's RPY parameters???
-     * More specifically, does the limitation happens while converting RPY angles 
-     * to a rotation matrix which will further on be used in computations?
-     * Check IK solver for this problem, to see what is happening there with RPY.
-     * 
-    */
+
     controller.define_desired_ee_pose(std::vector<bool>{false, false, false, // Linear
                                                         false, false, false}, // Angular
                                       std::vector<double>{1.0, 5.0, -85.0, // Linear
