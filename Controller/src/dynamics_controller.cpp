@@ -288,11 +288,10 @@ void dynamics_controller::make_predictions(const double dt_sec,
 */
 void dynamics_controller::compute_control_error()
 {
-    // make_predictions(1, 1);
+    make_predictions(1, 1);
     // make_predictions(0.1, 10);
-    make_predictions(0.0001, 10000);
+    // make_predictions(0.0001, 10000);
 
-    desired_state_ = robot_state_;
     // bool use_decoupled_error = true;
     bool use_decoupled_error = false;
 
@@ -338,11 +337,13 @@ void dynamics_controller::compute_control_error()
             predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].Inverse() * \
             desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1];
 
+        std::cout << " \n "<< predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * error_tranformation.p << std::endl;
+        
         /**
          * Compute "body-fixed" error twist and transfrom it to the "pose" error
          * twist in order to be usable for dynamics computations. 
-         * Reason is that the solver is expecting external forces to be 
-         * expressed w.r.t. base frame!   
+         * Reason is that the solver is expecting external forces acting on the 
+         * end-effector to be expressed w.r.t. base frame!   
         */
         KDL::Twist error_twist = \
                 predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * \
@@ -573,6 +574,7 @@ int dynamics_controller::control(const int desired_control_mode,
 
         // Check if the task specification has changed. Update accordingly.
         update_task();
+        desired_state_ = robot_state_;
 
         //Get current robot state from the joint sensors, velocities and angles
         update_current_state();

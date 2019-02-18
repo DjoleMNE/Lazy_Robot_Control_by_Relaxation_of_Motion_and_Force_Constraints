@@ -328,19 +328,20 @@ namespace geometry
      * Function takes non-normalized vectors of angular twist and translation.
     */					   
     KDL::Vector log_map_r3(const KDL::Vector &translation,
-                                            const KDL::Vector &angular_twist)
+                           const KDL::Vector &angular_twist)
     {
         // Convert rotation vector to a skew matrix 
         KDL::Rotation skew_rotation = skew_matrix( angular_twist );
         KDL::Rotation skew_rotation_square = skew_rotation * skew_rotation;
+
         //Compute norm of angular twist, i.e. theta angle of rotation
         double theta = angular_twist.Norm();
         double theta_square = theta * theta;
         
         return matrix_addition(KDL::Rotation::Identity(), 
-                               matrix_addition(scale_matrix(skew_rotation, -0.5),
+                               matrix_addition(scale_matrix(skew_rotation, 0.5),
                                                scale_matrix(skew_rotation_square,
-                                                            (1 - (theta * cos(theta/2)) / (2 * sin(theta/2))) / theta_square)
+                                                            ( 1 - ( (theta * cos(theta/2)) / (2 * sin(theta/2)) ) ) / theta_square)
                                               )
                               ) * translation;
     }
