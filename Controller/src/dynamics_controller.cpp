@@ -536,7 +536,8 @@ int dynamics_controller::control(const int desired_control_mode,
     std::cout << "Control Loop Started"<< std::endl;
     while(1)
     {   
-        loop_count++; std::cout << "Loop Count: "<< loop_count << std::endl;
+        // loop_count++; 
+        // printf("Loop Count: %d \n", loop_count);
 
         // Save current time point
         loop_start_time_ = std::chrono::steady_clock::now();
@@ -556,8 +557,7 @@ int dynamics_controller::control(const int desired_control_mode,
         {
             stop_robot_motion();
             if (store_control_data) log_file_.close();
-            std::cerr << "WARNING: Dynamics Solver returned error. "
-                      << "Stopping the robot!" << std::endl;
+            printf("WARNING: Dynamics Solver returned error. Stopping the robot!");
             return -1;
         }
 
@@ -569,13 +569,13 @@ int dynamics_controller::control(const int desired_control_mode,
 
         // Make sure that the loop is always running with the same frequency
         if(!enforce_loop_frequency() == 0)
-            std::cerr << "WARNING: Control loop runs too slow \n" << std::endl;
+            printf("WARNING: Control loop runs too slow \n");
 
         // loop_time += std::chrono::duration<double, std::micro>\
         //             (std::chrono::steady_clock::now() -\
         //                                          loop_start_time_).count();
-        // if(loop_count == 1) {
-        //     std::cout << loop_time / 1.0 <<std::endl;
+        // if(loop_count == 40) {
+        //     std::cout << loop_time / 40.0 <<std::endl;
         //     return 0;
         // }
     }

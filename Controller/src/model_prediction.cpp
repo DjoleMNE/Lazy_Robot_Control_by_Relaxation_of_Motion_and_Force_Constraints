@@ -2,7 +2,7 @@
 Author(s): Djordje Vukcevic, Sven Schneider
 Institute: Hochschule Bonn-Rhein-Sieg
 
-Copyright (c) [2018]
+Copyright (c) [2019]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -76,17 +76,16 @@ void model_prediction::integrate_joint_space(
     #ifndef NDEBUG // Print joint state in Debug mode only
         std::cout << "\nIntegrated Joint Vel: " << predicted_states[0].qd << std::endl;
         std::cout << "Integrated Joint Pos: " << predicted_states[0].q << std::endl;
-        std::cout << std::endl;
     #endif
 
     #ifdef NDEBUG // Print joint state in Release mode only
         std::cout << "Computed Joint Torque: " << current_state.control_torque << std::endl;
-        std::cout << "Computed Joint Acc:    " << current_state.qdd << "\n" << std::endl;
-        std::cout << "Current Joint Vel:     " << current_state.qd << std::endl;
+        // std::cout << "Computed Joint Acc:    " << current_state.qdd << "\n" << std::endl;
+        // std::cout << "Current Joint Vel:     " << current_state.qd << std::endl;
         std::cout << "Integrated Joint Vel:  " << predicted_states[0].qd << std::endl;
-        std::cout << "Current Joint Pos:     " << current_state.q << std::endl;
-        std::cout << "Integrated Joint Pos:  " << predicted_states[0].q << std::endl;
-        std::cout << "\n" << std::endl;
+        // std::cout << "Current Joint Pos:     " << current_state.q << std::endl;
+        // std::cout << "Integrated Joint Pos:  " << predicted_states[0].q << std::endl;
+        printf("\n");
     #endif
 
     if(fk_required) compute_FK(predicted_states[0]);
@@ -154,17 +153,6 @@ void model_prediction::integrate_cartesian_space(
     temp_pose_ = current_state.frame_pose[NUM_OF_SEGMENTS_ - 1];
     KDL::Twist pose_twist = current_state.frame_velocity[NUM_OF_SEGMENTS_ - 1] * dt_sec;
     KDL::Twist body_fixed_twist; 
-    
-    // pose_twist(0) = 1.0;
-    // pose_twist(1) = 0.0;
-    // pose_twist(2) = 0.0;
-
-    // pose_twist(3) = 0.0;
-    // pose_twist(4) = M_PI / 2;
-    // pose_twist(5) = M_PI / 4;
-
-    // pose_twist = pose_twist * dt_sec;
-    // body_fixed_twist = temp_pose_.M.Inverse(pose_twist);
 
 // Save constant data to a file for visualization purposes.
 #ifndef NDEBUG
@@ -204,10 +192,10 @@ void model_prediction::integrate_cartesian_space(
         //           << current_state.frame_pose[NUM_OF_SEGMENTS_ - 1].M 
         //           << std::endl;
 
-        std::cout << "\nIntegrated End-effector Position 1:\n" 
+        std::cout << "Integrated End-effector Position:\n" 
                   << temp_pose_.p  << std::endl;
         
-        // std::cout << "Integrated End-effector Orientation 1:\n" 
+        // std::cout << "Integrated End-effector Orientation:\n" 
         //           << temp_pose_.M  << std::endl;
 
         predicted_pose_data_file_.close();
