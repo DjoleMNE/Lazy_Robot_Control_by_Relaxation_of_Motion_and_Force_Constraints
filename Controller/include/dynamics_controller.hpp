@@ -59,29 +59,9 @@ class dynamics_controller
     dynamics_controller(youbot_mediator &robot_driver, const int rate_hz);
     ~dynamics_controller(){};
 
-    int control(const int desired_control_mode, 
-                const int desired_task_interface,
-                const bool store_control_data);
+    int control(const int desired_control_mode, const bool store_control_data);
 
     void reset_desired_state();
-
-    /**
-     * Method for defining desired robot pose. Interface exposed by this controller.
-     * constraint_direction argument defines which of 6 DOF should be controlled.
-     * Basically, some of DOFs can be left out to not be controlled by this 
-     * controller, but left out to be controlled by natural dynamics of the 
-     * system and environment.
-     * First 3 elements of cartesian_pose vector define x, y, z positions
-     * Last 3 elements define orientations around x, y, z axes - Roll, Pitch, Yaw 
-     * All DOF are specified w.r.t. fixed (non-moving) robot base reference frame
-     * 
-     * Orientation convention (last 3 elements of cartesian_pose vector):
-     * - First rotate around X with roll, then around the fixed Y with pitch, 
-     *   then around fixed Z with yaw.
-     * - Invariants:
-     *   - RPY(roll, pitch, yaw) == RPY( roll +/- PI, PI - pitch, yaw +/- PI )
-     *   - angles + 2*k*PI
-     */
     void define_desired_ee_pose(const std::vector<bool> &constraint_direction,
                                 const std::vector<double> &cartesian_pose);
 
@@ -121,6 +101,7 @@ class dynamics_controller
     const int NUMBER_OF_SEGMENTS_;
     const int NUMBER_OF_FRAMES_;
     const int NUMBER_OF_CONSTRAINTS_;
+    const std::vector<double> MAX_FORCE_;
     
     Eigen::VectorXd error_vector_;
     Eigen::VectorXd abag_command_;

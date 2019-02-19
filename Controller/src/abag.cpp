@@ -112,7 +112,7 @@ void ABAG::update_error(const Eigen::VectorXd &raw_error)
     *   the error calculation should be the same as in the original pseudo code.
     */
     
-    error_sign_ = (raw_error).cwiseSign();
+    error_sign_ = raw_error.cwiseSign();
     
     // Using error magnitude here instead of sign is an experimental feature!
     // Be carefull with setting "USE_ERROR_MAGNITUDE_" flag!

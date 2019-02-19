@@ -175,7 +175,7 @@ int main(int argc, char **argv)
                                       std::vector<double>{1.0, 5.0, -85.0, // Linear
                                                           0.0, 1.0,  0.5}); // Angular (RPY fixed frame)
 
-    controller.control(control_mode::VELOCITY, task_interface::CART_POSE, true);
+    controller.control(control_mode::VELOCITY, true);
 
     return 0;
 }

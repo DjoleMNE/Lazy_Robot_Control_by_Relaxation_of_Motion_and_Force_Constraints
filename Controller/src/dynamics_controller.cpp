@@ -77,6 +77,71 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     abag_.set_gain_step(abag_parameter::GAIN_STEP);
 }
 
+//Print information about controller settings
+void dynamics_controller::print_settings_info()
+{   
+    #ifdef NDEBUG
+        std::cout << "The program is build in RELEASE mode." << std::endl;
+    #endif
+    #ifndef NDEBUG
+        std::cout << "The program is build in DEBUG mode." << std::endl;
+    #endif
+    
+    std::cout << "Selected controller settings:" << std::endl;
+    std::cout << "Control Loop Frequency: " << RATE_HZ_ << " Hz" << std::endl;
+    std::cout << "Control Mode: ";
+
+    switch(desired_control_mode_.interface) 
+    {
+        case control_mode::STOP_MOTION:
+            std::cout << "STOP MOTION \n" << "Stopping the robot!" << std::endl;
+            break;
+
+        case control_mode::VELOCITY:
+            std::cout << "Joint Velocity Control" << std::endl;
+            break;
+
+        case control_mode::POSITION:
+            std::cout << "Joint Position Control" << std::endl;
+            break;
+
+        case control_mode::TORQUE:
+            std::cout << "Joint Torque Control" << std::endl;
+            break;
+    }
+
+    /* 
+        Get sensor data from the robot driver or if simulation is on, 
+        replace current state with the integrated joint velocities and positions
+    */
+    update_current_state();
+    
+    std::cout<<"\nInitial joint state: "<< std::endl;
+    std::cout<< "Joint positions: "<< robot_state_.q << std::endl;
+    std::cout<< "Joint velocities:"<< robot_state_.qd << "\n" << std::endl;
+}
+
+// Write control data to a file
+void dynamics_controller::write_to_file()
+{   
+    for(int i = 0; i < 3; i++)
+        log_file_ << robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i) << " ";
+
+    for(int i = 3; i < 6; i++) log_file_ << error_vector_(i) << " ";
+    log_file_ << std::endl;
+
+    for(int i = 0; i < 3; i++)
+        log_file_ << desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i) << " ";
+
+    for(int i = 3; i < 6; i++) log_file_ << 0.0 << " ";
+    log_file_ << std::endl;
+
+    log_file_ << abag_.get_error().transpose().format(WRITE_FORMAT_);
+    log_file_ << abag_.get_bias().transpose().format(WRITE_FORMAT_);
+    log_file_ << abag_.get_gain().transpose().format(WRITE_FORMAT_);
+    log_file_ << abag_.get_command().transpose().format(WRITE_FORMAT_);
+}
+
 // Set all values of desired state to 0 - public method
 void dynamics_controller::reset_desired_state()
 {
@@ -87,6 +152,12 @@ void dynamics_controller::reset_desired_state()
 void dynamics_controller::reset_state(state_specification &state)
 {
     desired_state_.reset_values();
+}
+
+//Send 0 joints velocities to the robot driver
+void dynamics_controller::stop_robot_motion()
+{   
+    safety_control_.stop_robot_motion();
 }
 
 void dynamics_controller::define_desired_ee_pose(
