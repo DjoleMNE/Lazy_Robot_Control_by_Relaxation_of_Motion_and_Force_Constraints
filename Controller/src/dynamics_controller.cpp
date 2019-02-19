@@ -394,12 +394,9 @@ void dynamics_controller::compute_control_error()
      * This error part represents linear motion necessary to go from 
      * predicted to desired position (positive direction of translation).
     */
-    for(int i = 0; i < 3; i++)
-    {
-        error_vector_(i) = desired_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].p(i) - \
-                           predicted_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].p(i);
-    }
-
+    error_vector_.head(3) = \
+        conversions::kdl_vector_to_eigen(desired_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].p - \
+                                         predicted_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].p);
     /**
      * Describes rotation required to align R_p with R_d.
      * It represents relative rotation from predicted state to 
