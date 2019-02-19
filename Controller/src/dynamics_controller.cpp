@@ -31,8 +31,6 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     RATE_HZ_(rate_hz),
     // Time period defined in microseconds: 1s = 1 000 000us
     DT_MICRO_(SECOND / RATE_HZ_),  DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
-    loop_count_(0), loop_time_(0.0),
-    hd_solver_result_(0), fk_solver_result_(0), safe_control_mode_(-1),
     LOG_FILE_PATH_(dynamics_parameter::LOG_FILE_PATH),
     WRITE_FORMAT_(dynamics_parameter::WRITE_FORMAT),
     loop_start_time_(), loop_end_time_(), //Not sure if required to init
@@ -65,7 +63,7 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     // Control loop frequency must be lower than or equal to 1000 Hz
     assert(("Selected frequency is too high", RATE_HZ_<= 10000));
     
-    // Set default command interface to velocity mode and initialize it as safe
+    // Set default command interface to stop motion mode and initialize it as not safe
     desired_control_mode_.interface = control_mode::STOP_MOTION;
     desired_control_mode_.is_safe = false;
     reset_desired_state();
@@ -305,18 +303,18 @@ int dynamics_controller::apply_joint_control_commands()
         If no: use desired control mode
         Else: stop the robot motion 
     */
-    safe_control_mode_ = \
-        safety_control_.set_control_commands(robot_state_, DT_SEC_, 
-                                             desired_control_mode_.interface,
-                                             integration_method::SYMPLECTIC_EULER);
+    int safe_control_mode = safety_control_.set_control_commands(robot_state_, 
+                                                                  DT_SEC_, 
+                                                                  desired_control_mode_.interface,
+                                                                  integration_method::SYMPLECTIC_EULER);
    
     // Check if the safety controller has changed the control mode
     // Save the current decision if desired control mode is safe or not.
     desired_control_mode_.is_safe =\
-        (desired_control_mode_.interface == safe_control_mode_)? true : false; 
+        (desired_control_mode_.interface == safe_control_mode)? true : false; 
 
     // Notify if the safety controller has changed the control mode
-    switch(safe_control_mode_) {
+    switch(safe_control_mode) {
         case control_mode::TORQUE:
             assert(desired_control_mode_.is_safe);
             return 0;
@@ -394,14 +392,14 @@ void dynamics_controller::compute_control_error()
 void dynamics_controller::compute_cart_control_commands()
 {   
     abag_command_ = abag_.update_state(error_vector_).transpose();
-
     
     // First reset to initial values of these interfaces
     update_dynamics_interfaces();
+
     // Add additional force required from ABAG controller
-    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(0) =+ abag_command_(0) * MAX_FORCE_[0];
-    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(1) =+ abag_command_(1) * MAX_FORCE_[1];
-    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(2) =+ abag_command_(2) * MAX_FORCE_[2];
+    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(0)  =+ abag_command_(0) * MAX_FORCE_[0];
+    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(1)  =+ abag_command_(1) * MAX_FORCE_[1];
+    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(2)  =+ abag_command_(2) * MAX_FORCE_[2];
     robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(0) =+ abag_command_(3) * MAX_FORCE_[3];
     robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(1) =+ abag_command_(4) * MAX_FORCE_[4];
     robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(2) =+ abag_command_(5) * MAX_FORCE_[5];
@@ -419,16 +417,16 @@ void dynamics_controller::update_dynamics_interfaces()
 //Calculate robot dynamics - Resolve the motion using the Vereshchagin HD solver
 int dynamics_controller::evaluate_dynamics()
 {
-    hd_solver_result_= hd_solver_.CartToJnt(
-                                        robot_state_.q,
-                                        robot_state_.qd,
-                                        robot_state_.qdd,
-                                        robot_state_.ee_unit_constraint_force,
-                                        robot_state_.ee_acceleration_energy,
-                                        robot_state_.external_force,
-                                        robot_state_.feedforward_torque);
+    int hd_solver_result = hd_solver_.CartToJnt(
+                                            robot_state_.q,
+                                            robot_state_.qd,
+                                            robot_state_.qdd,
+                                            robot_state_.ee_unit_constraint_force,
+                                            robot_state_.ee_acceleration_energy,
+                                            robot_state_.external_force,
+                                            robot_state_.feedforward_torque);
 
-    if(hd_solver_result_ != 0) return hd_solver_result_;
+    if(hd_solver_result != 0) return hd_solver_result;
 
     hd_solver_.get_transformed_link_acceleration(robot_state_.frame_acceleration);
     hd_solver_.get_control_torque(robot_state_.control_torque);
@@ -453,7 +451,7 @@ int dynamics_controller::evaluate_dynamics()
         std::cout << "Joint torque:  " << robot_state_.control_torque << std::endl;
     #endif
 
-    return hd_solver_result_;
+    return hd_solver_result;
 }
 
 /* 
@@ -465,12 +463,12 @@ void dynamics_controller::update_current_state()
 {
     safety_control_.get_current_state(robot_state_);
     
-    fk_solver_result_ = fk_vereshchagin_.JntToCart(robot_state_.q, 
+    int fk_solver_result = fk_vereshchagin_.JntToCart(robot_state_.q, 
                                                    robot_state_.qd, 
                                                    robot_state_.frame_pose, 
                                                    robot_state_.frame_velocity);
-    if(fk_solver_result_ != 0) 
-        std::cout << "Warning: FK solver returned an error! " << fk_solver_result_ << std::endl;
+    if(fk_solver_result != 0) 
+        std::cout << "Warning: FK solver returned an error! " << fk_solver_result << std::endl;
 
     // Print Current robot state in Debug mode
     #ifndef NDEBUG
@@ -498,6 +496,7 @@ int dynamics_controller::control(const int desired_control_mode,
     // Save current selection of desire control mode
     desired_control_mode_.interface = desired_control_mode;
     
+    // First make sure that the robot is not moving
     stop_robot_motion();
 
     //Print information about controller settings
@@ -509,8 +508,8 @@ int dynamics_controller::control(const int desired_control_mode,
         return -1;
     } 
 
-    loop_time_ = 0.0;
-    loop_count_ = 0;
+    double loop_time = 0.0;
+    int loop_count = 0;
 
     if (store_control_data) 
     {
@@ -521,18 +520,15 @@ int dynamics_controller::control(const int desired_control_mode,
         }
     }
 
-    safe_control_mode_ = desired_control_mode_.interface;
     std::cout << "Control Loop Started"<< std::endl;
-
     while(1)
     {   
-        loop_count_++;
-        std::cout << "Loop Count: "<< loop_count_ << std::endl;
+        loop_count++; std::cout << "Loop Count: "<< loop_count << std::endl;
 
         // Save current time point
         loop_start_time_ = std::chrono::steady_clock::now();
 
-        //Get current robot state from the joint sensors, velocities and angles
+        //Get current robot state from the joint sensors: velocities and angles
         update_current_state();
 
         compute_control_error();
@@ -540,7 +536,7 @@ int dynamics_controller::control(const int desired_control_mode,
         compute_cart_control_commands();
         if (store_control_data) write_to_file();
         
-        if(loop_count_ == 1) return 0;
+        if(loop_count == 1) return 0;
 
         // Calculate robot dynamics using the Vereshchagin HD solver
         if(evaluate_dynamics() != 0)
@@ -562,14 +558,14 @@ int dynamics_controller::control(const int desired_control_mode,
         if(!enforce_loop_frequency() == 0)
             std::cerr << "WARNING: Control loop runs too slow \n" << std::endl;
 
-        // loop_time_ += std::chrono::duration<double, std::micro>\
+        // loop_time += std::chrono::duration<double, std::micro>\
         //             (std::chrono::steady_clock::now() -\
         //                                          loop_start_time_).count();
-        // if(loop_count_ == 1000) {
-        //     std::cout << loop_time_ / 1000.0 <<std::endl;
+        // if(loop_count == 1000) {
+        //     std::cout << loop_time / 1000.0 <<std::endl;
         //     return 0;
         // }
-        // if(loop_count_ == 100) return 0;
+        // if(loop_count == 100) return 0;
     }
     if (store_control_data) log_file_.close();
     return 0;
