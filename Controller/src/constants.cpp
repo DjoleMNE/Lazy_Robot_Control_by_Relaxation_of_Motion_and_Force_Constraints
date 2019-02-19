@@ -36,7 +36,7 @@ namespace youbot_constants
     // const std::vector<double> joint_velocity_limits {1.5707, 0.8, 1.0, 1.5707, 1.5707};
 
     // YouBot Store velocity limits
-    const std::vector<double> joint_velocity_limits {1.5707, 01.5707, 1.5707, 1.5707, 1.5707};
+    const std::vector<double> joint_velocity_limits {1.5707, 1.5707, 1.5707, 1.5707, 1.5707};
 
     // JP's max torques
    //  const std::vector<double> joint_torque_limits {12.9012, 12.9012, 8.2700, 4.1748, 1.7550};

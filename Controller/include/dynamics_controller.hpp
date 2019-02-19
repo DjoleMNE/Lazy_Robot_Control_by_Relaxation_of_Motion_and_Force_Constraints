@@ -77,8 +77,6 @@ class dynamics_controller
     const long DT_MICRO_;
     const double DT_SEC_;
 
-    const std::string LOG_FILE_PATH_;
-    const Eigen::IOFormat WRITE_FORMAT_;
     std::ofstream log_file_;
 
     struct desired_control_mode
@@ -97,6 +95,7 @@ class dynamics_controller
     const int NUMBER_OF_FRAMES_;
     const int NUMBER_OF_CONSTRAINTS_;
     const std::vector<double> MAX_FORCE_;
+    std::vector<bool> CTRL_DIM_;
     
     Eigen::VectorXd error_vector_;
     Eigen::VectorXd abag_command_;
