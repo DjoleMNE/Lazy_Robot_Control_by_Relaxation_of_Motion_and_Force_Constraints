@@ -395,14 +395,15 @@ void dynamics_controller::compute_control_error()
 
 void dynamics_controller::compute_cart_control_commands(const bool store_control_data)
 {   
-    // abag_command_ = abag_.update_state(error_vector_).transpose();
+    abag_command_ = abag_.update_state(error_vector_).transpose();
     if (store_control_data) write_to_file();
 
-    // robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(1) = abag_command(4) * max_ang_force;
-    // robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(2) = abag_command(2) * max_lin_force;
-
-    // std::cout << "\n" << robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque  << std::endl;
-    // std::cout << robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force  << std::endl;
+    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(0) = abag_command_(0) * MAX_FORCE_[0];
+    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(1) = abag_command_(1) * MAX_FORCE_[1];
+    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(2) = abag_command_(2) * MAX_FORCE_[2];
+    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(0) = abag_command_(3) * MAX_FORCE_[3];
+    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(1) = abag_command_(4) * MAX_FORCE_[4];
+    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(2) = abag_command_(5) * MAX_FORCE_[5];
 }
 
 //Calculate robot dynamics - Resolve the motion using the Vereshchagin HD solver
