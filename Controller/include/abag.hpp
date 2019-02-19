@@ -52,8 +52,7 @@ class ABAG
 
     ~ABAG(){};
 
-    Eigen::VectorXd update_state(const Eigen::VectorXd &measured, 
-                                 const Eigen::VectorXd &desired);
+    Eigen::VectorXd update_state(const Eigen::VectorXd &error);
 
     Eigen::VectorXd get_command();
     double get_command(const int dimension);
@@ -87,7 +86,6 @@ class ABAG
 
   private:
     const int DIMENSIONS_;
-    const bool REVERSE_ERROR_;
     const bool USE_ERROR_MAGNITUDE_;
     const Eigen::VectorXd ONES_;
     
@@ -166,8 +164,7 @@ class ABAG
         Eigen::VectorXd MAX_COMMAND_SAT_LIMIT;
     } parameter;
 
-    void update_error(const Eigen::VectorXd &measured, 
-                      const Eigen::VectorXd &desired);
+    void update_error(const Eigen::VectorXd &error);
     void update_bias();
     void update_gain();
     void update_command();

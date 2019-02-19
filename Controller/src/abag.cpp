@@ -29,8 +29,7 @@ SOFTWARE.
 ABAG::ABAG(const int num_of_dimensions, 
            const bool reverse_error, 
            const bool use_error_magnitude):
-    DIMENSIONS_(num_of_dimensions), 
-    REVERSE_ERROR_(reverse_error), USE_ERROR_MAGNITUDE_(use_error_magnitude),
+    DIMENSIONS_(num_of_dimensions), USE_ERROR_MAGNITUDE_(use_error_magnitude),
     error_sign_(Eigen::VectorXd::Zero(num_of_dimensions)),
     error_magnitude_(Eigen::VectorXd::Zero(num_of_dimensions)), 
     ONES_(Eigen::VectorXd::Ones(num_of_dimensions)), 
@@ -47,8 +46,7 @@ ABAG::ABAG(const int num_of_dimensions, const bool reverse_error,
            const Eigen::VectorXd min_bias_sat_limit, const Eigen::VectorXd max_bias_sat_limit,
            const Eigen::VectorXd min_gain_sat_limit, const Eigen::VectorXd max_gain_sat_limit,
            const Eigen::VectorXd min_command_sat_limit, const Eigen::VectorXd max_command_sat_limit):
-    DIMENSIONS_(num_of_dimensions), 
-    REVERSE_ERROR_(reverse_error), USE_ERROR_MAGNITUDE_(use_error_magnitude),
+    DIMENSIONS_(num_of_dimensions), USE_ERROR_MAGNITUDE_(use_error_magnitude),
     error_sign_(Eigen::VectorXd::Zero(num_of_dimensions)),
     error_magnitude_(Eigen::VectorXd::Zero(num_of_dimensions)), 
     ONES_(Eigen::VectorXd::Ones(num_of_dimensions)), 
@@ -85,13 +83,11 @@ ABAG::ABAG(const int num_of_dimensions, const bool reverse_error,
 }
 
 // Update state values for all dimensions and return the command singal - public method
-Eigen::VectorXd ABAG::update_state(const Eigen::VectorXd &measured, 
-                                   const Eigen::VectorXd &desired)
+Eigen::VectorXd ABAG::update_state(const Eigen::VectorXd &error)
 {   
-    assert(DIMENSIONS_ == measured.rows());
-    assert(DIMENSIONS_ == desired.rows());
+    assert(DIMENSIONS_ == error.rows());
 
-    update_error(measured, desired);
+    update_error(error);
     // std::cout << "Error: \n" << signal.error_.transpose() << std::endl;
 
     update_bias();
@@ -108,25 +104,22 @@ Eigen::VectorXd ABAG::update_state(const Eigen::VectorXd &measured,
 
 
 // - private method
-void ABAG::update_error(const Eigen::VectorXd &measured, 
-                        const Eigen::VectorXd &desired)
+void ABAG::update_error(const Eigen::VectorXd &raw_error)
 {
     /*
     *   Reversing error is important due to possibility of different controller inputs.
     *   If e.g. velocity is given in Hz or m/s, the error should be reversed w.r.t. 
     *   pseudo code error explained in the original publication. 
     *   Else if, e.g. the velocity is given as a period of rotation, 
-    *   the error calculation should be the same as in the orginal pseudo code.
+    *   the error calculation should be the same as in the original pseudo code.
     */
-    if (REVERSE_ERROR_) error_magnitude_ = desired - measured;
-    else                error_magnitude_ = measured - desired;
     
-    error_sign_ = (error_magnitude_).cwiseSign();
+    error_sign_ = (raw_error).cwiseSign();
     
     // Using error magnitude here instead of sign is an experimental feature!
     // Be carefull with setting "USE_ERROR_MAGNITUDE_" flag!
     signal.error_ = parameter.ERROR_ALPHA.cwiseProduct( signal.error_ ) + \
-                    (ONES_ - parameter.ERROR_ALPHA).cwiseProduct( USE_ERROR_MAGNITUDE_? error_magnitude_ : error_sign_ );
+                    (ONES_ - parameter.ERROR_ALPHA).cwiseProduct( USE_ERROR_MAGNITUDE_? raw_error : error_sign_ );
 }
 
 // - private method
