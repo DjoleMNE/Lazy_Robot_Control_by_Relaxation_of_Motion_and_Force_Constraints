@@ -38,17 +38,15 @@ SOFTWARE.
 class ABAG
 {
   public:
-    ABAG(const int num_of_dimensions, 
-         const bool reverse_error, 
-         const bool use_error_magnitude);
+    ABAG(const int num_of_dimensions, const bool use_error_magnitude);
 
-    ABAG(const int num_of_dimensions, const bool reverse_error,
-         const bool use_error_magnitude, const Eigen::VectorXd error_alpha,
-         const Eigen::VectorXd bias_threshold, const Eigen::VectorXd bias_step, 
-         const Eigen::VectorXd gain_threshold, const Eigen::VectorXd gain_step,
-         const Eigen::VectorXd min_bias_sat_limit, const Eigen::VectorXd max_bias_sat_limit,
-         const Eigen::VectorXd min_gain_sat_limit, const Eigen::VectorXd max_gain_sat_limit,
-         const Eigen::VectorXd min_command_sat_limit, const Eigen::VectorXd max_command_sat_limit);
+    ABAG(const int num_of_dimensions, const bool use_error_magnitude, 
+         const Eigen::VectorXd &error_alpha,
+         const Eigen::VectorXd &bias_threshold, const Eigen::VectorXd &bias_step, 
+         const Eigen::VectorXd &gain_threshold, const Eigen::VectorXd &gain_step,
+         const Eigen::VectorXd &min_bias_sat_limit, const Eigen::VectorXd &max_bias_sat_limit,
+         const Eigen::VectorXd &min_gain_sat_limit, const Eigen::VectorXd &max_gain_sat_limit,
+         const Eigen::VectorXd &min_command_sat_limit, const Eigen::VectorXd &max_command_sat_limit);
 
     ~ABAG(){};
 
@@ -126,17 +124,17 @@ class ABAG
             // MIN_COMMAND_SAT_LIMIT(Eigen::VectorXd::Zero(num_of_dimensions)),
             MAX_COMMAND_SAT_LIMIT(Eigen::VectorXd::Ones(num_of_dimensions))   {};
 
-        abag_parameter(const Eigen::VectorXd error_alpha, 
-                       const Eigen::VectorXd bias_threshold, 
-                       const Eigen::VectorXd bias_step,
-                       const Eigen::VectorXd gain_threshold, 
-                       const Eigen::VectorXd gain_step,
-                       const Eigen::VectorXd min_bias_sat_limit, 
-                       const Eigen::VectorXd max_bias_sat_limit,
-                       const Eigen::VectorXd min_gain_sat_limit, 
-                       const Eigen::VectorXd max_gain_sat_limit,
-                       const Eigen::VectorXd min_command_sat_limit, 
-                       const Eigen::VectorXd max_command_sat_limit):
+        abag_parameter(const Eigen::VectorXd &error_alpha, 
+                       const Eigen::VectorXd &bias_threshold, 
+                       const Eigen::VectorXd &bias_step,
+                       const Eigen::VectorXd &gain_threshold, 
+                       const Eigen::VectorXd &gain_step,
+                       const Eigen::VectorXd &min_bias_sat_limit, 
+                       const Eigen::VectorXd &max_bias_sat_limit,
+                       const Eigen::VectorXd &min_gain_sat_limit, 
+                       const Eigen::VectorXd &max_gain_sat_limit,
+                       const Eigen::VectorXd &min_command_sat_limit, 
+                       const Eigen::VectorXd &max_command_sat_limit):
             ERROR_ALPHA(error_alpha),
             BIAS_THRESHOLD(bias_threshold),
             BIAS_STEP(bias_step),
