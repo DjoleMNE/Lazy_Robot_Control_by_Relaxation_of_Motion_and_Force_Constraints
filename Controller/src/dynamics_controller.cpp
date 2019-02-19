@@ -132,7 +132,7 @@ void dynamics_controller::update_current_state()
                                                       robot_state_.frame_pose, 
                                                       robot_state_.frame_velocity);
     if(fk_solver_result != 0) 
-        std::cout << "Warning: FK solver returned an error! " << fk_solver_result << std::endl;
+        printf("Warning: FK solver returned an error! %d \n", fk_solver_result);
 
     // Print Current robot state in Debug mode
     #ifndef NDEBUG
@@ -354,18 +354,17 @@ int dynamics_controller::apply_joint_control_commands()
 
         case control_mode::VELOCITY:
             if(!desired_control_mode_.is_safe) 
-                std::cout << "WARNING: Control switched to velocity mode \n" << std::endl;
+                printf("WARNING: Control switched to velocity mode \n");
             return 0;
 
         case control_mode::POSITION:
             if(!desired_control_mode_.is_safe) 
-                std::cout << "WARNING: Control switched to position mode \n" << std::endl;
+                printf("WARNING: Control switched to position mode \n");
             return 0;
 
         default: 
             stop_robot_motion();
-            std::cout << "WARNING: Computed commands are not safe. " 
-                      << "Stopping the robot!" << std::endl;
+            printf("WARNING: Computed commands are not safe. Stopping the robot!");
             return -1;
     }
 }
