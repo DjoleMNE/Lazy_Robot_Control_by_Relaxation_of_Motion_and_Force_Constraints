@@ -79,10 +79,10 @@ class model_prediction
 								   const int method,
 								   const double dt_sec);
     private:
-		const int NUMBER_OF_JOINTS_;
-		const int NUMBER_OF_SEGMENTS_;
-	    const int NUMBER_OF_FRAMES_;
-	    const int NUMBER_OF_CONSTRAINTS_;
+		const int NUM_OF_JOINTS_;
+		const int NUM_OF_SEGMENTS_;
+	    const int NUM_OF_FRAMES_;
+	    const int NUM_OF_CONSTRAINTS_;
 
 		KDL::FK_Vereshchagin fk_vereshchagin_;
 
@@ -90,11 +90,6 @@ class model_prediction
 		// if multi-step integration requirested
 		state_specification temp_state_;
 		KDL::Frame temp_pose_;
-
-		// For saving prediction DATA, necessary for visualization
-		const std::string CURRENT_POSE_DATA_PATH_;
-		const std::string TWIST_DATA_PATH_;
-		const std::string PREDICTED_POSE_DATA_PATH_;
 
 		std::ofstream current_pose_data_file_;
 		std::ofstream predicted_pose_data_file_;

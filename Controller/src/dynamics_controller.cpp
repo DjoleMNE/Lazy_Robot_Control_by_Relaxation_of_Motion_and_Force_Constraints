@@ -304,8 +304,7 @@ void dynamics_controller::set_feedforward_torque(state_specification &state,
 {
     assert(ff_torque.size() == NUM_OF_JOINTS_);
 
-    for (int i = 0; i < NUM_OF_JOINTS_; i++)
-        state.feedforward_torque(i) = ff_torque[i];
+    for (int i = 0; i < NUM_OF_JOINTS_; i++) state.feedforward_torque(i) = ff_torque[i];
 }
 
 //Make sure that the control loop runs exactly with specified frequency
@@ -398,9 +397,8 @@ void dynamics_controller::compute_control_error()
     */
     for(int i = 0; i < 3; i++)
     {
-        error_vector_(i) = \
-                desired_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].p(i) - \
-                predicted_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].p(i);
+        error_vector_(i) = desired_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].p(i) - \
+                           predicted_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].p(i);
     }
 
     /**

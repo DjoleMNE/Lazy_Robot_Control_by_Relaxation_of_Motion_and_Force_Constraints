@@ -25,17 +25,14 @@ SOFTWARE.
 #include <model_prediction.hpp>
 
 model_prediction::model_prediction(const KDL::Chain &robot_chain): 
-    NUMBER_OF_JOINTS_(robot_chain.getNrOfJoints()),
-    NUMBER_OF_SEGMENTS_(robot_chain.getNrOfSegments()),
-    NUMBER_OF_FRAMES_(robot_chain.getNrOfSegments() + 1),
-    NUMBER_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
+    NUM_OF_JOINTS_(robot_chain.getNrOfJoints()),
+    NUM_OF_SEGMENTS_(robot_chain.getNrOfSegments()),
+    NUM_OF_FRAMES_(robot_chain.getNrOfSegments() + 1),
+    NUM_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
     fk_vereshchagin_(robot_chain),
-    temp_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
-                NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
-    temp_pose_(KDL::Frame::Identity()),
-    CURRENT_POSE_DATA_PATH_(prediction_parameter::CURRENT_POSE_DATA_PATH),
-    PREDICTED_POSE_DATA_PATH_(prediction_parameter::PREDICTED_POSE_DATA_PATH),
-    TWIST_DATA_PATH_(prediction_parameter::TWIST_DATA_PATH)
+    temp_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, 
+                NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
+    temp_pose_(KDL::Frame::Identity())
 {
 
 }
@@ -50,8 +47,8 @@ void model_prediction::integrate_joint_space(
 {
     assert(("Number of steps higher than the size of provided vector of states", 
             num_of_steps <= predicted_states.size()));  
-    assert(NUMBER_OF_JOINTS_ == predicted_states[0].qd.rows()); 
-    assert(NUMBER_OF_JOINTS_ == current_state.qd.rows());
+    assert(NUM_OF_JOINTS_ == predicted_states[0].qd.rows()); 
+    assert(NUM_OF_JOINTS_ == current_state.qd.rows());
 
     temp_state_ = current_state;
 
@@ -151,11 +148,11 @@ void model_prediction::integrate_cartesian_space(
 {
     assert(dt_sec > 0.0);
     assert(num_of_steps >= 1);
-    assert(NUMBER_OF_SEGMENTS_ == current_state.frame_velocity.size());
-    assert(NUMBER_OF_SEGMENTS_ == predicted_state.frame_velocity.size()); 
+    assert(NUM_OF_SEGMENTS_ == current_state.frame_velocity.size());
+    assert(NUM_OF_SEGMENTS_ == predicted_state.frame_velocity.size()); 
 
-    temp_pose_ = current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1];
-    KDL::Twist pose_twist = current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1] * dt_sec;
+    temp_pose_ = current_state.frame_pose[NUM_OF_SEGMENTS_ - 1];
+    KDL::Twist pose_twist = current_state.frame_velocity[NUM_OF_SEGMENTS_ - 1] * dt_sec;
     KDL::Twist body_fixed_twist; 
     
     // pose_twist(0) = 1.0;
@@ -171,16 +168,16 @@ void model_prediction::integrate_cartesian_space(
 
 // Save constant data to a file for visualization purposes.
 #ifndef NDEBUG
-        twist_data_file_.open(TWIST_DATA_PATH_);
+        twist_data_file_.open(prediction_parameter::TWIST_DATA_PATH);
         save_twist_to_file(twist_data_file_, pose_twist);
         twist_data_file_.close();
 
-        current_pose_data_file_.open(CURRENT_POSE_DATA_PATH_);
+        current_pose_data_file_.open(prediction_parameter::CURRENT_POSE_DATA_PATH);
         save_pose_to_file(current_pose_data_file_, 
-                          current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1]);
+                          current_state.frame_pose[NUM_OF_SEGMENTS_ - 1]);
         current_pose_data_file_.close();
         
-        predicted_pose_data_file_.open(PREDICTED_POSE_DATA_PATH_);
+        predicted_pose_data_file_.open(prediction_parameter::PREDICTED_POSE_DATA_PATH);
 #endif
 
     geometry::orthonormalize_rot_matrix(temp_pose_.M);
@@ -200,11 +197,11 @@ void model_prediction::integrate_cartesian_space(
     
 #ifndef NDEBUG
         std::cout << "Measured End-effector Position:\n" 
-                  << current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p 
+                  << current_state.frame_pose[NUM_OF_SEGMENTS_ - 1].p 
                   << std::endl;
 
         // std::cout << "Measured End-effector Orientation:\n" 
-        //           << current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M 
+        //           << current_state.frame_pose[NUM_OF_SEGMENTS_ - 1].M 
         //           << std::endl;
 
         std::cout << "\nIntegrated End-effector Position 1:\n" 
@@ -216,7 +213,7 @@ void model_prediction::integrate_cartesian_space(
         predicted_pose_data_file_.close();
 #endif
     
-    predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1] = temp_pose_;
+    predicted_state.frame_pose[NUM_OF_SEGMENTS_ - 1] = temp_pose_;
 }
 
 /**
@@ -286,13 +283,13 @@ void model_prediction::compute_FK(state_specification &predicted_state)
     
     #ifndef NDEBUG // Print Cartesian state in Debug mode only
         std::cout << "Predicted End-effector Position: \n" 
-                  << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p
+                  << predicted_state.frame_pose[NUM_OF_SEGMENTS_ - 1].p
                   << std::endl;
         std::cout << "Predicted End-effector Orientation: \n" 
-                  << predicted_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M
+                  << predicted_state.frame_pose[NUM_OF_SEGMENTS_ - 1].M
                   << "\n" << std::endl;
         std::cout << "Predicted End-effector Velocity: \n" 
-                  << predicted_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]
+                  << predicted_state.frame_velocity[NUM_OF_SEGMENTS_ - 1]
                   << std::endl;
     #endif
 }
