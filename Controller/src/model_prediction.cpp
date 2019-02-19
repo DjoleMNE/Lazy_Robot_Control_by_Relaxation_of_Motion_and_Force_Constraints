@@ -170,7 +170,10 @@ void model_prediction::integrate_cartesian_space(
 
     geometry::orthonormalize_rot_matrix(temp_pose_.M);
     assert(("Current rotation matrix", geometry::is_rotation_matrix(temp_pose_.M)));
-    
+#ifdef NDEBUG
+    if(!geometry::is_rotation_matrix(temp_pose_.M)) printf("Current Matrix is not rotation!");
+#endif 
+
     for (int i = 0; i < num_of_steps; i++)
     {
         body_fixed_twist = temp_pose_.M.Inverse(pose_twist);
@@ -178,6 +181,9 @@ void model_prediction::integrate_cartesian_space(
         geometry::orthonormalize_rot_matrix(temp_pose_.M);
         assert(("Integrated rotation matrix", geometry::is_rotation_matrix(temp_pose_.M)));
 
+    #ifdef NDEBUG
+        if(!geometry::is_rotation_matrix(temp_pose_.M)) printf("Integrated Matrix is not rotation!");
+    #endif
     #ifndef NDEBUG
         save_pose_to_file(predicted_pose_data_file_, temp_pose_);
     #endif

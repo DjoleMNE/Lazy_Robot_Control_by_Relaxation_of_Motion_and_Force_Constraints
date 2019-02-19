@@ -277,8 +277,6 @@ namespace geometry
         }
 
         double acos_input = (matrix.data[0] + matrix.data[4] + matrix.data[8] - 1) / 2;
-        //If following assertions fail, above if statements are not working properly
-        assert(acos_input < 1.0); assert(acos_input > -1.0);
 
         // If the matrix is slightly non-orthogonal, 
         // 'acos_input' maybe out of the (-1, +1) range.
@@ -288,15 +286,16 @@ namespace geometry
         // So I am not sure if this clamping is necessary here
         angle = acos(std::max(-1.0, std::min(1.0, acos_input)));
 
-    #ifndef NDEBUG
-        // if this even happens, epsilon above should be increased
+        //If following assertions fail, above if statements are not working properly
+        assert(acos_input < 1.0); assert(acos_input > -1.0);
+
+        // If this even happens, epsilon above should be increased
         // or logic behind if_s to be changed
-        if (std::fabs(angle) < 0.001) std::cout << "Too small angle: " << angle << std::endl;
-        else if (std::fabs(angle) > M_PI - MIN_ANGLE) std::cout << "Too big angle: " << angle << std::endl;
-    #endif
+        if (std::fabs(angle) < epsilon1) printf("LOG: Too small angle: %f", angle);
+        else if (std::fabs(angle) > M_PI - epsilon1) printf("LOG: Too big angle: %f", angle);
 
         //If following assertions fail, above if statements are not working properly
-        assert(std::fabs(angle) <  M_PI - MIN_ANGLE);
+        assert(std::fabs(angle) <  M_PI - epsilon1);
         assert(angle > -epsilon1);
 
         // prevent divide by zero, should not happen if matrix is orthogonal and 
