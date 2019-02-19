@@ -57,15 +57,13 @@ void model_prediction::integrate_joint_space(
 
     // For each step in the future horizon
     for (int i = 0; i < num_of_steps; i++){   
-        // For each robot's joint
-        for (int j = 0; j < NUMBER_OF_JOINTS_; j++){
-            integrate_to_velocity(temp_state_.qdd(j), temp_state_.qd(j),
-                                  predicted_states[i].qd(j), method, dt_sec);
 
-            integrate_to_position(temp_state_.qdd(j), predicted_states[i].qd(j),
-                                  temp_state_.q(j), predicted_states[i].q(j), 
-                                  method, dt_sec);
-        }
+        integrate_to_velocity(temp_state_.qdd, temp_state_.qd,
+                              predicted_states[i].qd, method, dt_sec);
+
+        integrate_to_position(temp_state_.qdd, predicted_states[i].qd,
+                              temp_state_.q, predicted_states[i].q, 
+                              method, dt_sec);
 
         // TODO (Abstract description):
         // if(recompute_acceleration){
@@ -90,51 +88,52 @@ void model_prediction::integrate_joint_space(
         std::cout << "Current Joint Vel:     " << current_state.qd << std::endl;
         std::cout << "Integrated Joint Vel:  " << predicted_states[0].qd << std::endl;
         std::cout << "Current Joint Pos:     " << current_state.q << std::endl;
+        std::cout << "Integrated Joint Pos:  " << predicted_states[0].q << std::endl;
         std::cout << "\n" << std::endl;
     #endif
 
     if(fk_required) compute_FK(predicted_states[0]);
 }
 
-// Scalar integration from one acceleration to one velocity
-void model_prediction::integrate_to_velocity(const double &acceleration, 
-                                             const double &current_velocity,
-                                             double &predicted_velocity,
+// Vector integration from joint acceleration to joint velocity
+void model_prediction::integrate_to_velocity(const KDL::JntArray &acceleration, 
+                                             const KDL::JntArray &current_velocity,
+                                             KDL::JntArray &predicted_velocity,
                                              const int method,
                                              const double dt_sec)
 {
     switch(method) {
         case integration_method::SYMPLECTIC_EULER:
             //Integrate accelerations to velocities - Classical Euler method
-            predicted_velocity = current_velocity + acceleration * dt_sec;
+            predicted_velocity.data = current_velocity.data + acceleration.data * dt_sec;
             break;
         
         case integration_method::PREDICTOR_CORRECTOR:
             //Integrate accelerations to velocities - Classical Euler method
-            predicted_velocity = current_velocity + acceleration * dt_sec;
+            predicted_velocity.data = current_velocity.data + acceleration.data * dt_sec;
             break;
         default: assert(false);
     }
 }
 
-// Scalar integration from one velocity to one position/angle
-void model_prediction::integrate_to_position(const double &acceleration,
-                                             const double &predicted_velocity, 
-                                             const double &current_position,
-                                             double &predicted_position,
+// Vector integration from joint velocity to joint position/angle
+void model_prediction::integrate_to_position(const KDL::JntArray &acceleration,
+                                             const KDL::JntArray &predicted_velocity, 
+                                             const KDL::JntArray &current_position,
+                                             KDL::JntArray &predicted_position,
                                              const int method,
                                              const double dt_sec)
 {
     switch(method) {
         case integration_method::SYMPLECTIC_EULER:
             //Integrate velocities to positions - Symplectic Euler method
-            predicted_position = current_position + predicted_velocity * dt_sec;
+            predicted_position.data = current_position.data + predicted_velocity.data * dt_sec;
             break;
         
         case integration_method::PREDICTOR_CORRECTOR:
             //Integrate velocities to joint positions - Trapezoidal method
-            predicted_position = current_position + dt_sec * \
-                                 (predicted_velocity - acceleration * dt_sec / 2.0);
+            predicted_position.data = current_position.data + dt_sec * \
+                                 (predicted_velocity.data - acceleration.data * dt_sec / 2.0);
             break;
         default: assert(false);
     }

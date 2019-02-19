@@ -155,8 +155,8 @@ namespace geometry
     bool is_rotation_matrix(const KDL::Rotation &m)
     {
         Eigen::Matrix3d eigen_matrix = conversions::rotation_to_eigen(m);
-        if(eigen_matrix.determinant() < (1 - MIN_ANGLE)) return false;
         if(distance_to_so3(eigen_matrix) > MIN_ANGLE) return false;
+        if(eigen_matrix.determinant() < (1 - MIN_ANGLE)) return false;
         return true;
 
         // const double EPSILON = 0.2; // margin to allow for rounding errors
@@ -277,6 +277,7 @@ namespace geometry
         }
 
         double acos_input = (matrix.data[0] + matrix.data[4] + matrix.data[8] - 1) / 2;
+        //If following assertions fail, above if statements are not working properly
         assert(acos_input < 1.0); assert(acos_input > -1.0);
 
         // If the matrix is slightly non-orthogonal, 

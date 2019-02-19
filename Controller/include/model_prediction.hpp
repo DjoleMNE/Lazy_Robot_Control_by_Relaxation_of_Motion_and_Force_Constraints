@@ -50,6 +50,12 @@ class model_prediction
 		model_prediction(const KDL::Chain &robot_chain);
 		~model_prediction(){};
 		
+		// Used for predicting future deviation from the goal state
+		void integrate_cartesian_space(const state_specification &current_state,
+                                       state_specification &predicted_state,
+                                       const double dt_sec, 
+									   const int num_of_steps);
+
 		// Used for checking joint limits
 		void integrate_joint_space(
 							const state_specification &current_state,
@@ -58,22 +64,18 @@ class model_prediction
 							const int method, const bool fk_required,
                             const bool recompute_acceleration);
 
-		// Used for predicting future deviation from the goal state
-		void integrate_cartesian_space(const state_specification &current_state,
-                                       state_specification &predicted_state,
-                                       const double dt_sec, 
-									   const int num_of_steps);
-
-		void integrate_to_velocity(const double &acceleration, 
-								   const double &current_velocity,
-								   double &predicted_velocity,
+		// Vector integration from joint acceleration to joint velocity
+		void integrate_to_velocity(const KDL::JntArray &acceleration, 
+								   const KDL::JntArray &current_velocity,
+								   KDL::JntArray &predicted_velocity,
 								   const int method,
-							       const double dt_sec);
+								   const double dt_sec);
 
-		void integrate_to_position(const double &acceleration,
-								   const double &predicted_velocity, 
-								   const double &current_position,
-								   double &predicted_position,
+		// Vector integration from joint velocity to joint position/angle
+		void integrate_to_position(const KDL::JntArray &acceleration,
+								   const KDL::JntArray &predicted_velocity, 
+								   const KDL::JntArray &current_position,
+								   KDL::JntArray &predicted_position,
 								   const int method,
 								   const double dt_sec);
     private:
