@@ -361,63 +361,31 @@ void dynamics_controller::compute_control_error()
     // make_predictions(0.1, 10);
     // make_predictions(0.0001, 10000);
 
-    bool use_decoupled_error = true;
-
-    if(use_decoupled_error)
+    /**
+     * This error part represents linear motion necessary to go from 
+     * predicted to desired position (positive direction of translation).
+    */
+    for(int i = 0; i < 3; i++)
     {
-        /**
-         * This error part represents linear motion necessary to go from 
-         * predicted to desired position (positive direction of translation).
-        */
-        for(int i = 0; i < 3; i++)
-        {
-            error_vector_(i) = \
-                    desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i) - \
-                    predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i);
-        }
-
-        /**
-         * Describes rotation required to align R_p with R_d.
-         * It represents relative rotation from predicted state to 
-         * desired state, expressed in the BASE frame!
-         * Source: Luh et al. "Resolved-acceleration control of 
-         * mechanical manipulators".
-        */
-        KDL::Rotation error_rot_matrix = \
-                desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * \
-                predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.Inverse();
-
-        // Error calculation for angular part, i.e. logarithmic map on SO(3).
-        error_vector_.tail(3) = \
-            conversions::kdl_vector_to_eigen(geometry::log_map_so3(error_rot_matrix));
+        error_vector_(i) = \
+                desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i) - \
+                predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i);
     }
 
-    else
-    {
-        /**
-         * Describes tranformation required to align T_p with T_d.
-         * It represents relative tranformation from predicted state to 
-         * desired state, expressed in the End-Effector frame!
-         * Required for calculation of error twist, using log map on SE(3).
-         * Source: Book "Modern Robotics" 2017 version.
-        */
-        KDL::Frame error_tranformation = \
-            predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].Inverse() * \
-            desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1];
+    /**
+     * Describes rotation required to align R_p with R_d.
+     * It represents relative rotation from predicted state to 
+     * desired state, expressed in the BASE frame!
+     * Source: Luh et al. "Resolved-acceleration control of 
+     * mechanical manipulators".
+    */
+    KDL::Rotation error_rot_matrix = \
+            desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * \
+            predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.Inverse();
 
-        /**
-         * Compute "body-fixed" error twist and transfrom it to the "pose" error
-         * twist in order to be usable for dynamics computations. 
-         * Reason is that the solver is expecting external forces acting on the 
-         * end-effector to be expressed w.r.t. base frame!   
-        */
-        KDL::Twist error_twist = \
-                predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * \
-                geometry::log_map_se3(error_tranformation);
-
-        // Convert KDL twist to 6x1 Eigen vector. ABAG expects Eigen Vector!
-        error_vector_ = conversions::kdl_twist_to_eigen(error_twist);
-    }
+    // Error calculation for angular part, i.e. logarithmic map on SO(3).
+    error_vector_.tail(3) = \
+        conversions::kdl_vector_to_eigen(geometry::log_map_so3(error_rot_matrix));
 
     #ifndef NDEBUG
         std::cout << "\nLinear Error: " << error_vector_.head(3).transpose() << "  Linear norm: " << error_vector_.head(3).norm() << std::endl;
