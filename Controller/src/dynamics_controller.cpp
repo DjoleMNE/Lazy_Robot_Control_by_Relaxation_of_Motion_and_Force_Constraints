@@ -510,20 +510,17 @@ int dynamics_controller::control(const int desired_control_mode,
     // Save current selection of desire control mode
     desired_control_mode_.interface = desired_control_mode;
     
-    // First make sure that the robot is not moving
-    stop_robot_motion();
-
-    //Print information about controller settings
-    print_settings_info();
-
     //Exit the program if the "Stop Motion" mode is selected
     if(desired_control_mode_.interface == control_mode::STOP_MOTION){
         std::cout << "Stop Motion mode selected. Exiting the program" << std::endl;
         return -1;
     } 
+    
+    // First make sure that the robot is not moving
+    stop_robot_motion();
 
-    double loop_time = 0.0;
-    int loop_count = 0;
+    //Print information about controller settings
+    print_settings_info();
 
     if (store_control_data) 
     {
@@ -533,6 +530,9 @@ int dynamics_controller::control(const int desired_control_mode,
             return -1;
         }
     }
+
+    double loop_time = 0.0;
+    int loop_count = 0;
 
     update_dynamics_interfaces();
     std::cout << "Control Loop Started"<< std::endl;

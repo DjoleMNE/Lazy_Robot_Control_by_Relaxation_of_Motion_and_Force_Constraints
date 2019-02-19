@@ -98,7 +98,7 @@ void go_navigation_1(youbot_mediator &arm){
 // Go to Navigation 2 configuration  
 void go_navigation_2(youbot_mediator &arm){
     KDL::JntArray desired_pose(JOINTS);
-    double navigation[] = {2.9496, 1.0, -1.53240, 2.85214, 0.12};
+    double navigation[] = {2.9496, 1.0, -1.53240, 2.85214, 2.93816};
     for (int i = 0; i < JOINTS; i++) desired_pose(i) = navigation[i];  
     arm.set_joint_positions(desired_pose);
     if(environment_ != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
@@ -149,9 +149,8 @@ int main(int argc, char **argv)
     // robot_driver.get_joint_velocities(motion_.qd);
     // return 0;
 
-
-    robot_model_ = youbot_model::URDF;
     // Extract robot model and if not simulation, establish connection with motor drivers
+    robot_model_ = youbot_model::URDF;
     robot_driver.initialize(robot_model_, environment_);
     
     //loop rate in Hz
@@ -171,12 +170,12 @@ int main(int argc, char **argv)
                                                              0.0, 0.0, 
                                                                   0.0}); 
 
-    controller.define_desired_ee_pose(std::vector<bool>{false, false, false, // Linear
+    controller.define_desired_ee_pose(std::vector<bool>{true, true, true, // Linear
                                                         false, false, false}, // Angular
                                       std::vector<double>{0.262105,  0.004157,  0.308883, // Linear: Vector
-                                                          0.338541,  0.137563,  0.930842,
+                                                          0.338541,  0.137563,  0.930842, // Angular: Rotation Matrix
                                                           0.337720, -0.941106,  0.016253,
-                                                          0.878257,  0.308861, -0.365061}); // Angular: Rotation Matrix
+                                                          0.878257,  0.308861, -0.365061});
 
     controller.control(control_mode::VELOCITY, true);
 
