@@ -122,11 +122,11 @@ class dynamics_controller
     void write_to_file();
     void reset_state(state_specification &state);
     void stop_robot_motion();
-    void update_task();
+    void update_dynamics_interfaces();
     void update_current_state();
     void compute_control_error();
     void make_predictions(const double dt_sec, const int num_steps);
-    void compute_cart_control_commands(const bool store_control_data);
+    void compute_cart_control_commands();
     int apply_joint_control_commands();
     int evaluate_dynamics();
     int enforce_loop_frequency();

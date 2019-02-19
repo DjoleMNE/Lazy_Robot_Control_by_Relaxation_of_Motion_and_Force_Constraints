@@ -68,6 +68,7 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     // Set default command interface to velocity mode and initialize it as safe
     desired_control_mode_.interface = control_mode::STOP_MOTION;
     desired_control_mode_.is_safe = false;
+    reset_desired_state();
 
     // Setting parameters of the ABAG Controller
     abag_.set_error_alpha(abag_parameter::ERROR_ALPHA);    
@@ -235,17 +236,15 @@ void dynamics_controller::set_ee_acc_constraints(
 }
 
 // Define External force task - Public Method
-void dynamics_controller::define_ee_external_force(
-                                    const std::vector<double> &external_force)
+void dynamics_controller::define_ee_external_force(const std::vector<double> &external_force)
 {
     //Call private method for this state
     set_external_forces(desired_state_, external_force);
 }
 
 // Define External force task - Private Method
-void dynamics_controller::set_external_forces(
-                                    state_specification &state, 
-                                    const std::vector<double> &external_force)
+void dynamics_controller::set_external_forces(state_specification &state, 
+                                              const std::vector<double> &external_force)
 {
     //For now it is only updating forces on the end-effector
     //TODO: add forces on other segments as well
@@ -344,8 +343,7 @@ int dynamics_controller::apply_joint_control_commands()
     Predict future robot Cartesian states given the current Cartesian state.
     I.e. Integrate Cartesian variables.
 */
-void dynamics_controller::make_predictions(const double dt_sec, 
-                                           const int num_steps)
+void dynamics_controller::make_predictions(const double dt_sec, const int num_steps)
 {
     predictor_.integrate_cartesian_space(robot_state_, predicted_state_, 
                                          dt_sec, num_steps);
@@ -393,17 +391,29 @@ void dynamics_controller::compute_control_error()
     #endif
 }
 
-void dynamics_controller::compute_cart_control_commands(const bool store_control_data)
+void dynamics_controller::compute_cart_control_commands()
 {   
     abag_command_ = abag_.update_state(error_vector_).transpose();
-    if (store_control_data) write_to_file();
 
-    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(0) = abag_command_(0) * MAX_FORCE_[0];
-    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(1) = abag_command_(1) * MAX_FORCE_[1];
-    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(2) = abag_command_(2) * MAX_FORCE_[2];
-    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(0) = abag_command_(3) * MAX_FORCE_[3];
-    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(1) = abag_command_(4) * MAX_FORCE_[4];
-    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(2) = abag_command_(5) * MAX_FORCE_[5];
+    
+    // First reset to initial values of these interfaces
+    update_dynamics_interfaces();
+    // Add additional force required from ABAG controller
+    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(0) =+ abag_command_(0) * MAX_FORCE_[0];
+    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(1) =+ abag_command_(1) * MAX_FORCE_[1];
+    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(2) =+ abag_command_(2) * MAX_FORCE_[2];
+    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(0) =+ abag_command_(3) * MAX_FORCE_[3];
+    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(1) =+ abag_command_(4) * MAX_FORCE_[4];
+    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(2) =+ abag_command_(5) * MAX_FORCE_[5];
+}
+
+// Update current dynamics intefaces using desired robot state specifications 
+void dynamics_controller::update_dynamics_interfaces()
+{ 
+    robot_state_.ee_unit_constraint_force = desired_state_.ee_unit_constraint_force;
+    robot_state_.ee_acceleration_energy   = desired_state_.ee_acceleration_energy;
+    robot_state_.feedforward_torque       = desired_state_.feedforward_torque;
+    robot_state_.external_force           = desired_state_.external_force;
 }
 
 //Calculate robot dynamics - Resolve the motion using the Vereshchagin HD solver
@@ -444,20 +454,6 @@ int dynamics_controller::evaluate_dynamics()
     #endif
 
     return hd_solver_result_;
-}
-
-// Update the desired robot state 
-void dynamics_controller::update_task()
-{ 
-    /* 
-        TODO: This component should update desired state in case of a user 
-        changing task specification in parallel (while control loop in this 
-        component is running). Maybe something like a callback function.
-    */
-    robot_state_.ee_unit_constraint_force = desired_state_.ee_unit_constraint_force;
-    robot_state_.ee_acceleration_energy = desired_state_.ee_acceleration_energy;
-    robot_state_.external_force = desired_state_.external_force;
-    robot_state_.feedforward_torque = desired_state_.feedforward_torque;
 }
 
 /* 
@@ -536,17 +532,14 @@ int dynamics_controller::control(const int desired_control_mode,
         // Save current time point
         loop_start_time_ = std::chrono::steady_clock::now();
 
-        // Check if the task specification has changed. Update accordingly.
-        update_task();
-
         //Get current robot state from the joint sensors, velocities and angles
         update_current_state();
-        desired_state_ = robot_state_;
 
         compute_control_error();
         
-        compute_cart_control_commands(store_control_data);
-
+        compute_cart_control_commands();
+        if (store_control_data) write_to_file();
+        
         if(loop_count_ == 1) return 0;
 
         // Calculate robot dynamics using the Vereshchagin HD solver
