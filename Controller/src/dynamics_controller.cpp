@@ -377,7 +377,8 @@ int dynamics_controller::apply_joint_control_commands()
 */
 void dynamics_controller::make_predictions(const double dt_sec, const int num_steps)
 {
-    predictor_.integrate_cartesian_space(robot_state_, predicted_state_, 
+    predictor_.integrate_cartesian_space(robot_state_, 
+                                         predicted_state_, 
                                          dt_sec, num_steps);
 }
 
@@ -466,14 +467,13 @@ void dynamics_controller::update_dynamics_interfaces()
 //Calculate robot dynamics - Resolve the motion using the Vereshchagin HD solver
 int dynamics_controller::evaluate_dynamics()
 {
-    int hd_solver_result = hd_solver_.CartToJnt(
-                                            robot_state_.q,
-                                            robot_state_.qd,
-                                            robot_state_.qdd,
-                                            robot_state_.ee_unit_constraint_force,
-                                            robot_state_.ee_acceleration_energy,
-                                            robot_state_.external_force,
-                                            robot_state_.feedforward_torque);
+    int hd_solver_result = hd_solver_.CartToJnt(robot_state_.q,
+                                                robot_state_.qd,
+                                                robot_state_.qdd,
+                                                robot_state_.ee_unit_constraint_force,
+                                                robot_state_.ee_acceleration_energy,
+                                                robot_state_.external_force,
+                                                robot_state_.feedforward_torque);
 
     if(hd_solver_result != 0) return hd_solver_result;
 
