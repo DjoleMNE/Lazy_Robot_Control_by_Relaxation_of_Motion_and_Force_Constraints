@@ -420,8 +420,6 @@ int dynamics_controller::evaluate_dynamics()
 
     if(hd_solver_result_ != 0) return hd_solver_result_;
 
-    // hd_solver_.get_transformed_link_pose(robot_state_.frame_pose);
-    // hd_solver_.get_transformed_link_velocity(robot_state_.frame_velocity);
     hd_solver_.get_transformed_link_acceleration(robot_state_.frame_acceleration);
     hd_solver_.get_control_torque(robot_state_.control_torque);
     
@@ -462,51 +460,6 @@ void dynamics_controller::update_task()
     robot_state_.feedforward_torque = desired_state_.feedforward_torque;
 }
 
-//Print information about controller settings
-void dynamics_controller::print_settings_info()
-{   
-    #ifdef NDEBUG
-        std::cout << "The program is build in RELEASE mode." << std::endl;
-    #endif
-    #ifndef NDEBUG
-        std::cout << "The program is build in DEBUG mode." << std::endl;
-    #endif
-    
-    std::cout << "Selected controller settings:" << std::endl;
-    std::cout << "Control Loop Frequency: " << RATE_HZ_ << " Hz" << std::endl;
-    std::cout << "Control Mode: ";
-
-    switch(desired_control_mode_.interface) 
-    {
-        case control_mode::STOP_MOTION:
-            std::cout << "STOP MOTION \n" << "Stopping the robot!" << std::endl;
-            break;
-
-        case control_mode::VELOCITY:
-            std::cout << "Joint Velocity Control" << std::endl;
-            break;
-
-        case control_mode::POSITION:
-            std::cout << "Joint Position Control" << std::endl;
-            break;
-
-        case control_mode::TORQUE:
-            std::cout << "Joint Torque Control" << std::endl;
-            break;
-    }
-
-    /* 
-        Get sensor data from the robot driver or if simulation is on, 
-        replace current state with the integrated joint velocities and positions
-    */
-    update_current_state();
-    
-    std::cout<<"\nInitial joint state: "<< std::endl;
-    std::cout<< "Joint positions: "<< robot_state_.q << std::endl;
-    std::cout<< "Joint velocities:"<< robot_state_.qd << "\n" << std::endl;
-}
-
-
 /* 
     If it is working on the real robot get sensor data from the driver 
     or if simulation is on, replace current state with 
@@ -542,33 +495,8 @@ void dynamics_controller::update_current_state()
     #endif
 }
 
-//Send 0 joints velocities to the robot driver
-void dynamics_controller::stop_robot_motion()
-{   
-    safety_control_.stop_robot_motion();
-}
-
-// Write control data to a file
-void dynamics_controller::write_to_file()
-{   
-    for(int i = 0; i < 3; i++)
-        log_file_ << robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i) << " ";
-    
-    log_file_ << std::endl;
-
-    for(int i = 0; i < 3; i++)
-        log_file_ << desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i) << " ";
-
-    log_file_ << std::endl;
-    log_file_ << error_vector_.transpose().format(WRITE_FORMAT_);
-    log_file_ << abag_.get_bias().transpose().format(WRITE_FORMAT_);
-    log_file_ << abag_.get_gain().transpose().format(WRITE_FORMAT_);
-    log_file_ << abag_.get_command().transpose().format(WRITE_FORMAT_);
-}
-
 //Main control loop
-int dynamics_controller::control(const int desired_control_mode, 
-                                 const int desired_task_interface,
+int dynamics_controller::control(const int desired_control_mode,
                                  const bool store_control_data)
 {   
     // Save current selection of desire control mode
@@ -584,10 +512,6 @@ int dynamics_controller::control(const int desired_control_mode,
         std::cout << "Stop Motion mode selected. Exiting the program" << std::endl;
         return -1;
     } 
-
-    double max_lin_force = 60.0;
-    double max_ang_force = 20.0;
-    if (desired_control_mode == control_mode::TORQUE) max_lin_force = 40.0;
 
     loop_time_ = 0.0;
     loop_count_ = 0;
@@ -634,7 +558,6 @@ int dynamics_controller::control(const int desired_control_mode,
                       << "Stopping the robot!" << std::endl;
             return -1;
         }
-
 
         // Apply joint commands using safe control interface.
         if(apply_joint_control_commands() != 0){
