@@ -155,22 +155,19 @@ void model_prediction::integrate_cartesian_space(
     assert(NUMBER_OF_SEGMENTS_ == predicted_state.frame_velocity.size()); 
 
     temp_pose_ = current_state.frame_pose[NUMBER_OF_SEGMENTS_ - 1];
-
-    KDL::Twist pose_twist; 
+    KDL::Twist pose_twist = current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1] * dt_sec;
     KDL::Twist body_fixed_twist; 
     
-    pose_twist(0) = 1.0;
-    pose_twist(1) = 0.0;
-    pose_twist(2) = 0.0;
+    // pose_twist(0) = 1.0;
+    // pose_twist(1) = 0.0;
+    // pose_twist(2) = 0.0;
 
-    pose_twist(3) = 0.0;
-    pose_twist(4) = M_PI / 2;
-    pose_twist(5) = M_PI / 4;
+    // pose_twist(3) = 0.0;
+    // pose_twist(4) = M_PI / 2;
+    // pose_twist(5) = M_PI / 4;
 
-    pose_twist = pose_twist * dt_sec;
+    // pose_twist = pose_twist * dt_sec;
     // body_fixed_twist = temp_pose_.M.Inverse(pose_twist);
-    // body_fixed_twist = \
-    //     temp_pose_.M.Inverse(current_state.frame_velocity[NUMBER_OF_SEGMENTS_ - 1]) * dt_sec;
 
 // Save constant data to a file for visualization purposes.
 #ifndef NDEBUG
