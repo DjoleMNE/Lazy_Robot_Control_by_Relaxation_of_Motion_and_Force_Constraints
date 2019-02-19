@@ -165,7 +165,7 @@ void dynamics_controller::define_desired_ee_pose(
                             const std::vector<double> &cartesian_pose)
 {
     assert(constraint_direction.size() == NUMBER_OF_CONSTRAINTS_);
-    assert(cartesian_pose.size() == NUMBER_OF_CONSTRAINTS_);
+    assert(cartesian_pose.size() == NUMBER_OF_CONSTRAINTS_ * 2);
     
     for(int i = 0; i < 3; i++)
     {
@@ -173,9 +173,9 @@ void dynamics_controller::define_desired_ee_pose(
     }
 
     desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M = \
-                                        KDL::Rotation::RPY(cartesian_pose[3],
-                                                           cartesian_pose[4],
-                                                           cartesian_pose[5]);
+                                    KDL::Rotation(cartesian_pose[3], cartesian_pose[4], cartesian_pose[5],
+                                                  cartesian_pose[6], cartesian_pose[7], cartesian_pose[8],
+                                                  cartesian_pose[9], cartesian_pose[10], cartesian_pose[11]);
 }
 
 // Define Cartesian Acceleration task on the end-effector - Public Method

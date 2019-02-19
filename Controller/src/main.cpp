@@ -24,6 +24,7 @@ SOFTWARE.
 #include <state_specification.hpp>
 #include <dynamics_controller.hpp>
 #include <iostream>
+#include <utility> 
 #include <sstream>
 #include <fstream>
 #include <chrono>
@@ -172,8 +173,10 @@ int main(int argc, char **argv)
 
     controller.define_desired_ee_pose(std::vector<bool>{false, false, false, // Linear
                                                         false, false, false}, // Angular
-                                      std::vector<double>{1.0, 5.0, -85.0, // Linear
-                                                          0.0, 1.0,  0.5}); // Angular (RPY fixed frame)
+                                      std::vector<double>{0.262105,  0.004157,  0.308883, // Linear: Vector
+                                                          0.338541,  0.137563,  0.930842,
+                                                          0.337720, -0.941106,  0.016253,
+                                                          0.878257,  0.308861, -0.365061}); // Angular: Rotation Matrix
 
     controller.control(control_mode::VELOCITY, true);
 
