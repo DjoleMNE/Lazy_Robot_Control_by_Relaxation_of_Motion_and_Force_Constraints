@@ -33,28 +33,28 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     DT_MICRO_(SECOND / RATE_HZ_),  DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
     loop_start_time_(), loop_end_time_(), //Not sure if required to init
     robot_chain_(robot_driver.get_robot_model()),
-    NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
-    NUMBER_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
-    NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
-    NUMBER_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
+    NUM_OF_JOINTS_(robot_chain_.getNrOfJoints()),
+    NUM_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
+    NUM_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
+    NUM_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
     MAX_FORCE_(dynamics_parameter::MAX_FORCE),
     error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     hd_solver_(robot_chain_, robot_driver.get_joint_inertia(),
-               robot_driver.get_root_acceleration(), NUMBER_OF_CONSTRAINTS_),
+               robot_driver.get_root_acceleration(), NUM_OF_CONSTRAINTS_),
     fk_vereshchagin_(robot_chain_),
     safety_control_(robot_driver, true), 
     abag_(abag_parameter::DIMENSIONS, abag_parameter::USE_ERROR_MAGNITUDE),
     predictor_(robot_chain_),
-    robot_state_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_,
-                 NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
+    robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_,
+                 NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     commands_(robot_state_),
     desired_state_(robot_state_),
     predicted_state_(robot_state_)
 {
     assert(("Robot is not initialized", robot_driver.is_initialized));
     // KDL Solver constraint  
-    assert(NUMBER_OF_JOINTS_ == NUMBER_OF_SEGMENTS_);
+    assert(NUM_OF_JOINTS_ == NUM_OF_SEGMENTS_);
 
     // Control loop frequency must be higher than or equal to 1 Hz
     assert(("Selected frequency is too low", 1 <= RATE_HZ_));
@@ -142,14 +142,14 @@ void dynamics_controller::update_current_state()
         
         // std::cout << "\nCurrent Cartesian state:                 " << std::endl;
         // std::cout << "End-effector Position:   " 
-        //           << robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p  << std::endl;
+        //           << robot_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].p  << std::endl;
         // std::cout << "End-effector Velocity:                \n" 
-        //           << robot_state_.frame_velocity[NUMBER_OF_SEGMENTS_ - 1] << std::endl;
+        //           << robot_state_.frame_velocity[NUM_OF_SEGMENTS_ - 1] << std::endl;
     #endif 
 
     #ifdef NDEBUG
         // std::cout << "End-effector Velocity:   \n" 
-        //           << robot_state_.frame_velocity[NUMBER_OF_SEGMENTS_ - 1] << std::endl;
+        //           << robot_state_.frame_velocity[NUM_OF_SEGMENTS_ - 1] << std::endl;
     #endif
 }
 
@@ -157,13 +157,13 @@ void dynamics_controller::update_current_state()
 void dynamics_controller::write_to_file()
 {   
     for(int i = 0; i < 3; i++)
-        log_file_ << robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i) << " ";
+        log_file_ << robot_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].p(i) << " ";
 
     for(int i = 3; i < 6; i++) log_file_ << error_vector_(i) << " ";
     log_file_ << std::endl;
 
     for(int i = 0; i < 3; i++)
-        log_file_ << desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i) << " ";
+        log_file_ << desired_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].p(i) << " ";
 
     for(int i = 3; i < 6; i++) log_file_ << 0.0 << " ";
     log_file_ << std::endl;
@@ -196,16 +196,16 @@ void dynamics_controller::define_desired_ee_pose(
                             const std::vector<bool> &constraint_direction,
                             const std::vector<double> &cartesian_pose)
 {
-    assert(constraint_direction.size() == NUMBER_OF_CONSTRAINTS_);
-    assert(cartesian_pose.size() == NUMBER_OF_CONSTRAINTS_ * 2);
+    assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
+    assert(cartesian_pose.size() == NUM_OF_CONSTRAINTS_ * 2);
     
     CTRL_DIM_ = constraint_direction;
     
-    desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(0) = cartesian_pose[0];
-    desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(1) = cartesian_pose[1];
-    desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(2) = cartesian_pose[2];
+    desired_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].p(0) = cartesian_pose[0];
+    desired_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].p(1) = cartesian_pose[1];
+    desired_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].p(2) = cartesian_pose[2];
 
-    desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M = \
+    desired_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].M = \
         KDL::Rotation(cartesian_pose[3], cartesian_pose[4], cartesian_pose[5],
                       cartesian_pose[6], cartesian_pose[7], cartesian_pose[8],
                       cartesian_pose[9], cartesian_pose[10], cartesian_pose[11]);
@@ -228,8 +228,8 @@ void dynamics_controller::set_ee_acc_constraints(
                                 const std::vector<bool> &constraint_direction, 
                                 const std::vector<double> &cartesian_acceleration)
 {    
-    assert(constraint_direction.size() == NUMBER_OF_CONSTRAINTS_);
-    assert(cartesian_acceleration.size() == NUMBER_OF_CONSTRAINTS_);
+    assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
+    assert(cartesian_acceleration.size() == NUM_OF_CONSTRAINTS_);
 
     // Set directions in which constraint force should work 
     KDL::Twist unit_force_x_l(
@@ -263,7 +263,7 @@ void dynamics_controller::set_ee_acc_constraints(
     state.ee_unit_constraint_force.setColumn(5, unit_force_z_a);
 
     // Set desired acceleration on the end-effector
-    for (int i = 0; i < NUMBER_OF_CONSTRAINTS_; i++)
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
         state.ee_acceleration_energy(i) = cartesian_acceleration[i];
 }
 
@@ -280,9 +280,9 @@ void dynamics_controller::set_external_forces(state_specification &state,
 {
     //For now it is only updating forces on the end-effector
     //TODO: add forces on other segments as well
-    assert(external_force.size() == NUMBER_OF_CONSTRAINTS_);
+    assert(external_force.size() == NUM_OF_CONSTRAINTS_);
 
-    state.external_force[NUMBER_OF_SEGMENTS_ - 1] = \
+    state.external_force[NUM_OF_SEGMENTS_ - 1] = \
                                 KDL::Wrench (KDL::Vector(external_force[0],
                                                          external_force[1],
                                                          external_force[2]),
@@ -302,9 +302,9 @@ void dynamics_controller::define_feedforward_torque(const std::vector<double> &f
 void dynamics_controller::set_feedforward_torque(state_specification &state, 
                                                  const std::vector<double> &ff_torque)
 {
-    assert(ff_torque.size() == NUMBER_OF_JOINTS_);
+    assert(ff_torque.size() == NUM_OF_JOINTS_);
 
-    for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
+    for (int i = 0; i < NUM_OF_JOINTS_; i++)
         state.feedforward_torque(i) = ff_torque[i];
 }
 
@@ -399,8 +399,8 @@ void dynamics_controller::compute_control_error()
     for(int i = 0; i < 3; i++)
     {
         error_vector_(i) = \
-                desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i) - \
-                predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p(i);
+                desired_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].p(i) - \
+                predicted_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].p(i);
     }
 
     /**
@@ -411,8 +411,8 @@ void dynamics_controller::compute_control_error()
      * mechanical manipulators".
     */
     KDL::Rotation error_rot_matrix = \
-            desired_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M * \
-            predicted_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].M.Inverse();
+            desired_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].M * \
+            predicted_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].M.Inverse();
 
     // Error calculation for angular part, i.e. logarithmic map on SO(3).
     error_vector_.tail(3) = \
@@ -436,22 +436,22 @@ void dynamics_controller::compute_cart_control_commands()
     robot_state_.external_force = desired_state_.external_force;
 
     // Add additional force required from ABAG controller
-    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(0)  =+ \
+    robot_state_.external_force[NUM_OF_SEGMENTS_ - 1].force(0)  =+ \
         CTRL_DIM_[0]? abag_command_(0) * MAX_FORCE_[0] : 0.0;
     
-    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(1)  =+ \
+    robot_state_.external_force[NUM_OF_SEGMENTS_ - 1].force(1)  =+ \
         CTRL_DIM_[1]? abag_command_(1) * MAX_FORCE_[1] : 0.0;
     
-    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].force(2)  =+ \
+    robot_state_.external_force[NUM_OF_SEGMENTS_ - 1].force(2)  =+ \
         CTRL_DIM_[2]? abag_command_(2) * MAX_FORCE_[2] : 0.0;  
     
-    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(0) =+ \
+    robot_state_.external_force[NUM_OF_SEGMENTS_ - 1].torque(0) =+ \
         CTRL_DIM_[3]? abag_command_(3) * MAX_FORCE_[3] : 0.0;
 
-    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(1) =+ \
+    robot_state_.external_force[NUM_OF_SEGMENTS_ - 1].torque(1) =+ \
         CTRL_DIM_[4]? abag_command_(4) * MAX_FORCE_[4] : 0.0;
     
-    robot_state_.external_force[NUMBER_OF_SEGMENTS_ - 1].torque(2) =+ \
+    robot_state_.external_force[NUM_OF_SEGMENTS_ - 1].torque(2) =+ \
         CTRL_DIM_[5]? abag_command_(5) * MAX_FORCE_[5] : 0.0;
 }
 
@@ -485,11 +485,11 @@ int dynamics_controller::evaluate_dynamics()
         // std::cout << "\nComputed Cartesian state:" << std::endl;
 
         // std::cout << "Frame ACC" << '\n';
-        // for (size_t i = 0; i < NUMBER_OF_SEGMENTS_ + 1; i++)
+        // for (size_t i = 0; i < NUM_OF_SEGMENTS_ + 1; i++)
         //     std::cout << robot_state_.frame_acceleration[i] << '\n';
 
         // std::cout << "End-effector Position:   " 
-        //       << robot_state_.frame_pose[NUMBER_OF_SEGMENTS_ - 1].p  << std::endl;
+        //       << robot_state_.frame_pose[NUM_OF_SEGMENTS_ - 1].p  << std::endl;
 
         // std::cout << "\nComputed Joint state:          " << std::endl;
         // std::cout << "Joint torque:  " << robot_state_.control_torque << std::endl;

@@ -90,10 +90,10 @@ class dynamics_controller
     std::chrono::duration <double, std::micro> loop_interval_{};
 
     const KDL::Chain robot_chain_;
-    const int NUMBER_OF_JOINTS_;
-    const int NUMBER_OF_SEGMENTS_;
-    const int NUMBER_OF_FRAMES_;
-    const int NUMBER_OF_CONSTRAINTS_;
+    const int NUM_OF_JOINTS_;
+    const int NUM_OF_SEGMENTS_;
+    const int NUM_OF_FRAMES_;
+    const int NUM_OF_CONSTRAINTS_;
     const std::vector<double> MAX_FORCE_;
     std::vector<bool> CTRL_DIM_;
     
