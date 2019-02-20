@@ -94,6 +94,7 @@ class dynamics_controller
     const int NUM_OF_SEGMENTS_;
     const int NUM_OF_FRAMES_;
     const int NUM_OF_CONSTRAINTS_;
+    const int END_EFF_;
     const std::vector<double> MAX_FORCE_;
     std::vector<bool> CTRL_DIM_;
     
@@ -107,7 +108,7 @@ class dynamics_controller
     model_prediction predictor_;
 
     state_specification robot_state_;
-    state_specification commands_;
+    state_specification robot_commands_;
     state_specification desired_state_;
     state_specification predicted_state_;
 

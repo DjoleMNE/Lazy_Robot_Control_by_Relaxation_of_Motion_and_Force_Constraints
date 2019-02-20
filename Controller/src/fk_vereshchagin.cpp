@@ -81,7 +81,7 @@ int KDL::FK_Vereshchagin::JntToCart(const KDL::JntArray &q, const KDL::JntArray 
 }
 
 /**
- *  This method calculates all cartesian space poses, twists, bias accelerations.
+ *  This method calculates all cartesian space poses and twists
  */
 void KDL::FK_Vereshchagin::upwards_sweep(const KDL::JntArray &q, const KDL::JntArray &qdot, 
                                          Frames& cart_pose, Twists& cart_vel)

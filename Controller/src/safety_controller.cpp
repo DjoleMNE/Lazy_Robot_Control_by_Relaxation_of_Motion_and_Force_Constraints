@@ -35,14 +35,13 @@ safety_controller::safety_controller(youbot_mediator &robot_driver,
     joint_position_thresholds_(robot_driver_.get_joint_position_thresholds()),
     joint_velocity_limits_(robot_driver_.get_joint_velocity_limits()),
     joint_torque_limits_(robot_driver_.get_joint_torque_limits()),
-    NUMBER_OF_JOINTS_(robot_chain_.getNrOfJoints()),
-    NUMBER_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
-    NUMBER_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
-    NUMBER_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
+    NUM_OF_JOINTS_(robot_chain_.getNrOfJoints()),
+    NUM_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
+    NUM_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
+    NUM_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
     PRINT_LOGS_(print_logs),
-    zero_joint_velocities_(NUMBER_OF_JOINTS_),
-    commands_(NUMBER_OF_JOINTS_, NUMBER_OF_SEGMENTS_, 
-                NUMBER_OF_FRAMES_, NUMBER_OF_CONSTRAINTS_),
+    zero_joint_velocities_(NUM_OF_JOINTS_),
+    commands_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     predicted_states_(3, commands_) 
 {
 
@@ -53,7 +52,7 @@ int safety_controller::set_control_commands(const state_specification &current_s
                                             const int desired_control_mode,
                                             const int prediction_method)
 {
-    assert(NUMBER_OF_JOINTS_ == current_state.qd.rows());
+    assert(NUM_OF_JOINTS_ == current_state.qd.rows());
     /* 
         First Safety Level: Is the Current State Safe?
         I.e. Check for NaN and infinite values in the commands variables.
@@ -103,16 +102,15 @@ bool safety_controller::is_current_state_safe(const state_specification &current
                         do you have a choice?
                         e.g. gravity compenzation
     */
-    for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
+    for (int i = 0; i < NUM_OF_JOINTS_; i++)
     {
         if(!is_state_finite(current_state, i) || \
            velocity_limit_reached(current_state, i) || \
            position_limit_reached(current_state, i) || \
            reaching_position_limits(current_state, i))
            {
-                if (PRINT_LOGS_) 
-                    std::cout << "Current robot state is not safe" << std::endl;
-               return false;
+                if (PRINT_LOGS_) printf("Current robot state is not safe \n");
+                return false;
            } 
     }
     return true;
@@ -246,14 +244,14 @@ int safety_controller::check_future_state(const int desired_control_mode)
 */
 int safety_controller::check_torques()
 {
-    for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
+    for (int i = 0; i < NUM_OF_JOINTS_; i++)
     {
         if(torque_limit_reached(commands_, i) || \
            position_limit_reached(predicted_states_[0], i) || \
            position_limit_reached(predicted_states_[1], i))
         {
             stop_robot_motion();
-            if (PRINT_LOGS_) std::cout << "Torque commands not safe" << std::endl;
+            if (PRINT_LOGS_) printf("Torque commands not safe \n");
             return control_mode::STOP_MOTION;
         }
     }
@@ -273,14 +271,14 @@ int safety_controller::check_torques()
 */
 int safety_controller::check_velocities()
 {
-    for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
+    for (int i = 0; i < NUM_OF_JOINTS_; i++)
     {
         if (velocity_limit_reached(commands_, i) || \
             position_limit_reached(predicted_states_[0], i) || \
             position_limit_reached(predicted_states_[1], i))
         {
             stop_robot_motion();
-            if (PRINT_LOGS_) std::cout << "Velocity commands not safe" << std::endl;
+            if (PRINT_LOGS_) printf("Velocity commands not safe \n");
             return control_mode::STOP_MOTION;
         }
     }
@@ -299,12 +297,12 @@ int safety_controller::check_velocities()
 int safety_controller::check_positions()
 {
     //If a position limit reached, stop the program
-    for (int i = 0; i < NUMBER_OF_JOINTS_; i++)
+    for (int i = 0; i < NUM_OF_JOINTS_; i++)
     {
         if (position_limit_reached(commands_, i))
         {
             stop_robot_motion();
-            if (PRINT_LOGS_) std::cout << "Position commands not safe" << std::endl;
+            if (PRINT_LOGS_) printf("Position commands not safe \n");
             return control_mode::STOP_MOTION;
         }
     }

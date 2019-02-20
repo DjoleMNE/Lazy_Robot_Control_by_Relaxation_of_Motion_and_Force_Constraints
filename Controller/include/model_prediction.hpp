@@ -83,7 +83,8 @@ class model_prediction
 		const int NUM_OF_SEGMENTS_;
 	    const int NUM_OF_FRAMES_;
 	    const int NUM_OF_CONSTRAINTS_;
-
+		const int END_EFF_;
+		
 		KDL::FK_Vereshchagin fk_vereshchagin_;
 
 		// Temp variable required for saving intermediate state,

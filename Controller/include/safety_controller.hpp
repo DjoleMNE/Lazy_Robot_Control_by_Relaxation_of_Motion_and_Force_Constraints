@@ -63,10 +63,10 @@ class safety_controller
     const std::vector<double> joint_velocity_limits_;
     const std::vector<double> joint_torque_limits_;
     
-    const int NUMBER_OF_JOINTS_;
-    const int NUMBER_OF_SEGMENTS_;
-    const int NUMBER_OF_FRAMES_;
-    const int NUMBER_OF_CONSTRAINTS_;
+    const int NUM_OF_JOINTS_;
+    const int NUM_OF_SEGMENTS_;
+    const int NUM_OF_FRAMES_;
+    const int NUM_OF_CONSTRAINTS_;
     const bool PRINT_LOGS_;
     
     const KDL::JntArray zero_joint_velocities_;
