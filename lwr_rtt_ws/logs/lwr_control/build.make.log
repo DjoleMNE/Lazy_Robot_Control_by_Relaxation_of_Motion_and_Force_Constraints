@@ -1,3 +1,0 @@
-[ 50%] [32mBuilding CXX object CMakeFiles/lwr_control.dir/src/lwr_control.cpp.o[0m
-[100%] [32m[1mLinking CXX shared library /home/djole/Master/Thesis/GIT/MT_testing/lwr_rtt_ws/devel/.private/lwr_control/lib/orocos/gnulinux/lwr_control/liblwr_control-gnulinux.so[0m
-[100%] Built target lwr_control

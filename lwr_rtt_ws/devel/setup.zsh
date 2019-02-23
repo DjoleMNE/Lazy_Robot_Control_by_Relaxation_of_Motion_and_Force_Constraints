@@ -1,1 +1,0 @@
-/home/djole/Master/Thesis/GIT/MT_testing/lwr_rtt_ws/devel/.private/catkin_tools_prebuild/setup.zsh

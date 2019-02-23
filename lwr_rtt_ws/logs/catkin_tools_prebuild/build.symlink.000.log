@@ -1,8 +1,0 @@
-Symlinking /home/djole/Master/Thesis/GIT/MT_testing/lwr_rtt_ws/devel/./env.sh
-Symlinking /home/djole/Master/Thesis/GIT/MT_testing/lwr_rtt_ws/devel/./setup.bash
-Symlinking /home/djole/Master/Thesis/GIT/MT_testing/lwr_rtt_ws/devel/./setup.sh
-Symlinking /home/djole/Master/Thesis/GIT/MT_testing/lwr_rtt_ws/devel/./setup.zsh
-Symlinking /home/djole/Master/Thesis/GIT/MT_testing/lwr_rtt_ws/devel/./_setup_util.py
-Symlinking /home/djole/Master/Thesis/GIT/MT_testing/lwr_rtt_ws/devel/share/catkin_tools_prebuild/cmake/catkin_tools_prebuildConfig.cmake
-Symlinking /home/djole/Master/Thesis/GIT/MT_testing/lwr_rtt_ws/devel/share/catkin_tools_prebuild/cmake/catkin_tools_prebuildConfig-version.cmake
-Symlinking /home/djole/Master/Thesis/GIT/MT_testing/lwr_rtt_ws/devel/lib/pkgconfig/catkin_tools_prebuild.pc

@@ -1,8 +1,0 @@
-prefix=/home/djole/Master/Thesis/GIT/MT_testing/lwr_rtt_ws/install
-
-Name: lwr_control
-Description: Description of lwr_control
-Version: 1.0.0
-Cflags: 
-Libs: -L/home/djole/Master/Thesis/GIT/MT_testing/lwr_rtt_ws/install/lib 
-Requires: 
