@@ -15,8 +15,8 @@ if (isSim()) then
 
 # On the real robot, you have to set the mode manually
 # In simulation, JointImpedance is selected by default at the end of the loadRobot()
-setJointPositionControlMode()
-#setJointTorqueControlMode()
+#setJointPositionControlMode()
+setJointTorqueControlMode()
 #setJointImpedanceControlMode()
 
 # Load and start the controller
@@ -31,7 +31,6 @@ setActivity("lwr_rtt_control", 0.001, 60, ORO_SCHED_RT)
 connectPeers("lwr_rtt_control", getRobotName())
 
 # Connects corresponding ports from your controller to the robot component
-#connectStandardPorts("lwr_rtt_control",getRobotName(),ConnPolicy())
 connectStandardPorts(getRobotName(), "lwr_rtt_control", ConnPolicy())
 
 configureComponent("lwr_rtt_control")

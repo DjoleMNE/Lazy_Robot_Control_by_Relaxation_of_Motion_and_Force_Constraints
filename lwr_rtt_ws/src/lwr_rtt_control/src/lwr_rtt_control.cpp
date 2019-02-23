@@ -38,6 +38,19 @@ bool LwrRttControl::configureHook()
     port_joint_velocity_cmd_out.setDataSample(jnt_vel_cmd_out);
     port_joint_torque_cmd_out.setDataSample(jnt_trq_cmd_out);
 
+    // Check validity of (all) Ports:
+    if ( !port_joint_position_in.connected() || 
+         !port_joint_velocity_in.connected() ||
+         !port_joint_torque_in.connected() ) 
+    {
+        RTT::log(RTT::Fatal) << "No input connection!"<< RTT::endlog();
+        return false;
+    }
+    if ( !port_joint_position_cmd_out.connected() ||
+         !port_joint_torque_cmd_out.connected()) 
+    {
+           RTT::log(RTT::Warning) << "No output connection!"<< RTT::endlog();  
+    }
     return true;
 }
 
@@ -48,24 +61,32 @@ void LwrRttControl::updateHook()
     port_joint_velocity_in.read(jnt_vel_in);
     // std::cout << jnt_pos_in.transpose() << std::endl;
     // std::cout << jnt_vel_in.transpose() << std::endl;
+    if(!port_joint_position_cmd_out.connected())
+    {
+        RTT::log(RTT::Warning) << "No position output connection!"<< RTT::endlog();  
+    }
 
-    jnt_pos_cmd_out(0) = 0.3813;
-    jnt_pos_cmd_out(1) = -1.9312;
-    jnt_pos_cmd_out(2) = -1.7251;
-    jnt_pos_cmd_out(3) = -1.4565;
-    jnt_pos_cmd_out(4) = 0.7169;
-    jnt_pos_cmd_out(5) = 1.056;
-    jnt_pos_cmd_out(6) = -2.123; 
-    port_joint_position_cmd_out.write(jnt_pos_cmd_out);
+    if (!port_joint_torque_cmd_out.connected()) 
+    {
+           RTT::log(RTT::Warning) << "No torque output connection!"<< RTT::endlog();  
+    }
+    // jnt_pos_cmd_out(0) = 0.3813;
+    // jnt_pos_cmd_out(1) = -1.9312;
+    // jnt_pos_cmd_out(2) = -1.7251;
+    // jnt_pos_cmd_out(3) = -1.4565;
+    // jnt_pos_cmd_out(4) = 0.7169;
+    // jnt_pos_cmd_out(5) = 1.056;
+    // jnt_pos_cmd_out(6) = -2.123; 
+    // port_joint_position_cmd_out.write(jnt_pos_cmd_out);
 
-    // jnt_trq_cmd_out(0) = 0.3813;
-    // jnt_trq_cmd_out(1) = 0.0;
-    // jnt_trq_cmd_out(2) =  0.0;
-    // jnt_trq_cmd_out(3) =  0.0;
-    // jnt_trq_cmd_out(4) =  0.0;
-    // jnt_trq_cmd_out(5) =  0.0;
-    // jnt_trq_cmd_out(6) =  0.0; 
-    // port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
+    jnt_trq_cmd_out(0) = 1.03813;
+    jnt_trq_cmd_out(1) = 0.0;
+    jnt_trq_cmd_out(2) = 0.0;
+    jnt_trq_cmd_out(3) = 0.0;
+    jnt_trq_cmd_out(4) = 0.0;
+    jnt_trq_cmd_out(5) = 0.0;
+    jnt_trq_cmd_out(6) = 0.0; 
+    port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
 }
 
 // Let orocos know how to create the component
