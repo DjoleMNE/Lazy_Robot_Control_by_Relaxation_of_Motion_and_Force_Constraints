@@ -1,11 +1,11 @@
-lwr_control
+lwr_rtt_control
 ============
 
 # Launch in Simulation
 
 ```bash
 # Start Gazebo + your controller
-roslaunch lwr_control run.launch sim:=true
+roslaunch lwr_rtt_control run.launch sim:=true
 ```
 
 # Launch on Hardware
@@ -14,5 +14,5 @@ roslaunch lwr_control run.launch sim:=true
 # Start RTnet connection
 rosrun lwr_scrits rtnet start
 # Start your controller
-roslaunch lwr_control run.launch
+roslaunch lwr_rtt_control run.launch
 ```

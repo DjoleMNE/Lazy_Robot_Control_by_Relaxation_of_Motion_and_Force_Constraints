@@ -12,19 +12,19 @@ loadStatePublisher(true)
 import("rtt_ros")
 
 # This will load all the dependencies in packages.xml <export><rtt_ros>
-ros.import("lwr_control")
+ros.import("lwr_rtt_control")
 
-loadComponent("lwr_control","LWRControl")
-setActivity("lwr_control",0.001,LowestPriority,ORO_SCHED_RT)
+loadComponent("lwr_rtt_control","LwrRttControl")
+setActivity("lwr_rtt_control",0.001,LowestPriority,ORO_SCHED_RT)
 
-connectPeers("lwr_control",getRobotName())
+connectPeers("lwr_rtt_control",getRobotName())
 
-configureComponent("lwr_control")
+configureComponent("lwr_rtt_control")
 
 # Connects corresponding ports from your controller to the robot component
-connectStandardPorts(getRobotName(),"lwr_control",ConnPolicy())
+connectStandardPorts(getRobotName(),"lwr_rtt_control",ConnPolicy())
 
-startComponent("lwr_control")
+startComponent("lwr_rtt_control")
 
 print.ln("\n\n\x1B[32mYou can change the robot control modes using the krl_tool\x1B[0m\n")
 

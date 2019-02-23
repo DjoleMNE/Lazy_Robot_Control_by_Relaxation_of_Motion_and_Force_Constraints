@@ -1,10 +1,10 @@
-#include "lwr_control/lwr_control.hpp"
+#include "lwr_rtt_control/lwr_rtt_control.hpp"
 
-LWRControl::LWRControl(const std::string& name):
+LwrRttControl::LwrRttControl(const std::string& name):
 RTT::TaskContext(name)
 {
     // Here you can add your ports, properties and operations
-    // ex : this->addOperation("my_super_function",&LWRControl::MyFunction,this,RTT::OwnThread);
+    // ex : this->addOperation("my_super_function",&LwrRttControl::MyFunction,this,RTT::OwnThread);
     this->addPort("JointPosition",port_joint_position_in).doc("Current joint positions");
     this->addPort("JointVelocity",port_joint_velocity_in).doc("Current joint velocities");
     this->addPort("JointTorque",port_joint_torque_in).doc("Current joint torques");
@@ -15,7 +15,7 @@ RTT::TaskContext(name)
 
 }
 
-bool LWRControl::configureHook()
+bool LwrRttControl::configureHook()
 {
     // Initialize the arm object
     if(!this->arm.init())
@@ -41,7 +41,7 @@ bool LWRControl::configureHook()
     return true;
 }
 
-void LWRControl::updateHook()
+void LwrRttControl::updateHook()
 {
     // Read status from robot
     port_joint_position_in.read(jnt_pos_in);
@@ -56,4 +56,4 @@ void LWRControl::updateHook()
 }
 
 // Let orocos know how to create the component
-ORO_CREATE_COMPONENT(LWRControl)
+ORO_CREATE_COMPONENT(LwrRttControl)

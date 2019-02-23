@@ -19,13 +19,13 @@
 
     <!-- Gazebo -->
     <arg name="gazebo_gui" default="$(arg sim)"/>
-<!--============ LWRControl Params ============-->
+<!--============ LwrRttControl Params ============-->
 
-    <!-- Set some parameters for LWRControl
+    <!-- Set some parameters for LwrRttControl
     You can get them using rtt_ros_kdl_tools::getAllPropertiesFromROSParam(this)
     in your component's configureHook() -->
 
-    <!--rosparam ns="LWRControl" subst_value="true">
+    <!--rosparam ns="LwrRttControl" subst_value="true">
         damping: 1.0
         max_vels: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
     </rosparam-->
@@ -34,7 +34,7 @@
 
     <include file="$(find lwr_utils)/launch/run.launch">
         <arg name="sim" value="$(arg sim)" />
-        <arg name="ops_script" value="$(find lwr_control)/scripts/run.ops"/>
+        <arg name="ops_script" value="$(find lwr_rtt_control)/scripts/run.ops"/>
         <arg name="debug" value="$(arg debug)" />
         <arg name="rviz" value="$(arg rviz)" />
         <arg name="log_level" value="$(arg log_level)" />

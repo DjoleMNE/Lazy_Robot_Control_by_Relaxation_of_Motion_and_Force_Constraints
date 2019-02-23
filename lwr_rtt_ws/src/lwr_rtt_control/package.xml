@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>lwr_control</name>
+  <name>lwr_rtt_control</name>
   <version>1.0.0</version>
-  <description>The lwr_control package</description>
+  <description>The lwr_rtt_control package</description>
 
   <maintainer email="hoarau.robotics@gmail.com">Djordje Vukcevic</maintainer>
 

@@ -1,4 +1,4 @@
-// lwr_control - ISIR Sat Feb 23 14:02:06 2019
+// lwr_rtt_control - ISIR Sat Feb 23 14:45:06 2019
 // Copyright (c) Djordje Vukcevic, All rights reserved.
 //
 // This library is free software; you can redistribute it and/or
@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public
 // License along with this library.
 
-#ifndef __LWR_CONTROL_HPP__
-#define __LWR_CONTROL_HPP__
+#ifndef __LWR_RTT_CONTROL_HPP__
+#define __LWR_RTT_CONTROL_HPP__
 
 // Orocos
 #include <rtt/RTT.hpp>
@@ -29,10 +29,10 @@
 #include <rtt_ros_kdl_tools/chain_utils.hpp>
 
 
-class LWRControl : public RTT::TaskContext{
+class LwrRttControl : public RTT::TaskContext{
     public:
-        LWRControl(const std::string& name);
-        virtual ~LWRControl(){};
+        LwrRttControl(const std::string& name);
+        virtual ~LwrRttControl(){};
         void updateHook();
         bool configureHook();
     protected:
