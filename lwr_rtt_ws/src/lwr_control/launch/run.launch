@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<launch>
+<!--============ Runner script Params ========-->
+
+    <!-- The end effector frame (you'll be able to use frames <= tip_link for cartesian position, jacobians etc.) -->
+    <arg name="tip_link" default="ati_link"/>
+    <!-- Run Simulated robot -->
+    <arg name="sim" default="false" />
+    <!-- Run in GDB -->
+    <arg name="debug" default="false" />
+    <!-- Launch rviz -->
+    <arg name="rviz" default="true" />
+    <!-- The level of verbose (never, fatal, critical, error, warning, info, debug, realtime) -->
+    <arg name="log_level" default="warning" />
+    <!-- Tools -->
+    <arg name="load_base" default="true" />
+    <arg name="load_ati_sensor" default="true" />
+    <arg name="load_handle" default="true" />
+
+    <!-- Gazebo -->
+    <arg name="gazebo_gui" default="$(arg sim)"/>
+<!--============ LWRControl Params ============-->
+
+    <!-- Set some parameters for LWRControl
+    You can get them using rtt_ros_kdl_tools::getAllPropertiesFromROSParam(this)
+    in your component's configureHook() -->
+
+    <!--rosparam ns="LWRControl" subst_value="true">
+        damping: 1.0
+        max_vels: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+    </rosparam-->
+
+<!--============ Runner script ===============-->
+
+    <include file="$(find lwr_utils)/launch/run.launch">
+        <arg name="sim" value="$(arg sim)" />
+        <arg name="ops_script" value="$(find lwr_control)/scripts/run.ops"/>
+        <arg name="debug" value="$(arg debug)" />
+        <arg name="rviz" value="$(arg rviz)" />
+        <arg name="log_level" value="$(arg log_level)" />
+        <arg name="tip_link" default="$(arg tip_link)"/>
+        <arg name="load_base" value="$(arg load_base)" />
+        <arg name="load_ati_sensor" value="$(arg load_ati_sensor)" />
+        <arg name="load_handle" value="$(arg load_handle)" />
+        <arg name="gazebo_gui" value="$(arg gazebo_gui)"/>
+    </include>
+
+</launch>

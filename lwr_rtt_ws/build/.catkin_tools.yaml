@@ -1,0 +1,6 @@
+devel_space: /home/djole/Master/Thesis/GIT/MT_testing/lwr_rtt_ws/devel
+install: false
+install_space: /home/djole/Master/Thesis/GIT/MT_testing/lwr_rtt_ws/install
+profile: default
+source_space: /home/djole/Master/Thesis/GIT/MT_testing/lwr_rtt_ws/src
+workspace: /home/djole/Master/Thesis/GIT/MT_testing/lwr_rtt_ws

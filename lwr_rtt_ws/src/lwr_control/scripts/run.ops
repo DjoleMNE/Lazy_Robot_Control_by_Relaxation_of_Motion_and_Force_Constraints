@@ -1,0 +1,36 @@
+import("rtt_rospack")
+# The magic utility script
+runScript(ros.find("lwr_utils")+"/scripts/utils.ops")
+
+# Load the robot (<name>, <is sim> ,<start component>)
+loadRobot(getRobotName(),isSim(),true)
+
+# Start the state publisher (<start component>)
+loadStatePublisher(true)
+
+# Load and start the controller
+import("rtt_ros")
+
+# This will load all the dependencies in packages.xml <export><rtt_ros>
+ros.import("lwr_control")
+
+loadComponent("lwr_control","LWRControl")
+setActivity("lwr_control",0.001,LowestPriority,ORO_SCHED_RT)
+
+connectPeers("lwr_control",getRobotName())
+
+configureComponent("lwr_control")
+
+# Connects corresponding ports from your controller to the robot component
+connectStandardPorts(getRobotName(),"lwr_control",ConnPolicy())
+
+startComponent("lwr_control")
+
+print.ln("\n\n\x1B[32mYou can change the robot control modes using the krl_tool\x1B[0m\n")
+
+# On the real robot, you have to set the mode manually
+# In simulation, JointImpedance is selected by default at the end of the loadRobot()
+
+#setJointImpedanceControlMode()
+#setJointTorqueControlMode()
+#setJointPositionControlMode()
