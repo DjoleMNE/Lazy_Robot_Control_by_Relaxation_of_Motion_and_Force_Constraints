@@ -2,6 +2,10 @@ youbot_driver/
 KDL/
 Controller/build/*
 Controller/release_build/*
+lwr_rtt_ws/build/*
+lwr_rtt_ws/devel/*
+lwr_rtt_ws/logs/*
+lwr_rtt_ws/.catkin_tools/*
 
 \.ipynb_checkpoints/*
 
