@@ -15,7 +15,7 @@
     <!-- Tools -->
     <arg name="load_base" default="true" />
     <arg name="load_ati_sensor" default="true" />
-    <arg name="load_handle" default="true" />
+    <arg name="load_handle" default="false" />
 
     <!-- Gazebo -->
     <arg name="gazebo_gui" default="false"/>
