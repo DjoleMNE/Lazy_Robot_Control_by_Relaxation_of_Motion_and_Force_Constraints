@@ -11,14 +11,15 @@
     <!-- Launch rviz -->
     <arg name="rviz" default="true" />
     <!-- The level of verbose (never, fatal, critical, error, warning, info, debug, realtime) -->
-    <arg name="log_level" default="warning" />
+    <arg name="log_level" default="debug" />
     <!-- Tools -->
     <arg name="load_base" default="true" />
     <arg name="load_ati_sensor" default="true" />
     <arg name="load_handle" default="true" />
 
     <!-- Gazebo -->
-    <arg name="gazebo_gui" default="$(arg sim)"/>
+    <arg name="gazebo_gui" default="false"/>
+    
 <!--============ LwrRttControl Params ============-->
 
     <!-- Set some parameters for LwrRttControl

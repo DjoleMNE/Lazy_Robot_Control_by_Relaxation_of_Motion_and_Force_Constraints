@@ -46,13 +46,26 @@ void LwrRttControl::updateHook()
     // Read status from robot
     port_joint_position_in.read(jnt_pos_in);
     port_joint_velocity_in.read(jnt_vel_in);
+    // std::cout << jnt_pos_in.transpose() << std::endl;
+    // std::cout << jnt_vel_in.transpose() << std::endl;
 
-    // Update Internal model
-    this->arm.setState(jnt_pos_in,jnt_vel_in);
-    this->arm.updateModel(); // Computes fk, jacobian etc.
-    // Get Jacobian in Base
-    this->arm.getJacobian();
+    jnt_pos_cmd_out(0) = 0.3813;
+    jnt_pos_cmd_out(1) = -1.9312;
+    jnt_pos_cmd_out(2) = -1.7251;
+    jnt_pos_cmd_out(3) = -1.4565;
+    jnt_pos_cmd_out(4) = 0.7169;
+    jnt_pos_cmd_out(5) = 1.056;
+    jnt_pos_cmd_out(6) = -2.123; 
+    port_joint_position_cmd_out.write(jnt_pos_cmd_out);
 
+    // jnt_trq_cmd_out(0) = 0.3813;
+    // jnt_trq_cmd_out(1) = 0.0;
+    // jnt_trq_cmd_out(2) =  0.0;
+    // jnt_trq_cmd_out(3) =  0.0;
+    // jnt_trq_cmd_out(4) =  0.0;
+    // jnt_trq_cmd_out(5) =  0.0;
+    // jnt_trq_cmd_out(6) =  0.0; 
+    // port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
 }
 
 // Let orocos know how to create the component
