@@ -12,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
     cmake_modules
 )
 
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(orocos_kdl REQUIRED)
 
 include_directories(
@@ -21,7 +21,11 @@ include_directories(
     ${Eigen_INCLUDE_DIRS}
     ${orocos_kdl_INCLUDE_DIRS}
     ${USE_OROCOS_INCLUDE_DIRS}
+    /home/djole/Master/Thesis/GIT/MT_testing/Controller/include
 )
+
+add_library(vereshchagin /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/solver_vereshchagin.cpp)
+target_link_libraries(vereshchagin ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 orocos_component(${PROJECT_NAME} src/${PROJECT_NAME}.cpp)
 set_property(TARGET ${PROJECT_NAME} APPEND PROPERTY COMPILE_DEFINITIONS RTT_COMPONENT)
@@ -30,6 +34,7 @@ target_link_libraries(${PROJECT_NAME}
     ${catkin_LIBRARIES}
     ${USE_OROCOS_LIBRARIES}
     ${orocos_kdl_LIBRARIES}
+    vereshchagin
 )
 
 file(GLOB headers include/${PROJECT_NAME}/*.h include/${PROJECT_NAME}/*.hpp )
@@ -43,4 +48,3 @@ install(DIRECTORY scripts/
 install(DIRECTORY launch/
  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
  PATTERN ".svn" EXCLUDE)
-

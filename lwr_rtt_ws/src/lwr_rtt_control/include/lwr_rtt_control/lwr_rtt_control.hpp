@@ -28,6 +28,17 @@
 #include <rtt_ros_kdl_tools/tools.hpp>
 #include <rtt_ros_kdl_tools/chain_utils.hpp>
 
+// Custom Controller code
+#include <state_specification.hpp>
+#include <solver_vereshchagin.hpp>
+#include <fk_vereshchagin.hpp>
+#include <geometry_utils.hpp>
+#include <model_prediction.hpp>
+// #include <dynamics_controller.hpp>
+#include <utility> 
+#include <abag.hpp>
+#include <constants.hpp>
+#include <kdl_eigen_conversions.hpp>
 
 class LwrRttControl : public RTT::TaskContext{
     public:
@@ -38,6 +49,9 @@ class LwrRttControl : public RTT::TaskContext{
     protected:
         // Generic Model that uses ROS param
         rtt_ros_kdl_tools::ChainUtils arm;
+        std::shared_ptr<KDL::Solver_Vereshchagin> hd_solver_;
+        std::shared_ptr<state_specification> robot_state_;
+
         // Input ports
         RTT::InputPort<Eigen::VectorXd>  port_joint_position_in,
                                          port_joint_velocity_in,

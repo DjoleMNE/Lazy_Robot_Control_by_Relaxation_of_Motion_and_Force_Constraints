@@ -3,7 +3,11 @@
 <!--============ Runner script Params ========-->
 
     <!-- The end effector frame (you'll be able to use frames <= tip_link for cartesian position, jacobians etc.) -->
-    <arg name="tip_link" default="ati_link"/>
+    <!-- 7 joints, 7 links, 8 frames. frames from link 0 to link 7-->
+    <arg name="tip_link" default="link_7"/>
+    <!-- arm as usual: 7 joints & 7 links, ati sensor additional 2 (fixed-not counted in kdl)joints and 2 links  -->
+    <!-- <arg name="tip_link" default="ati_link"/> -->
+
     <!-- Run Simulated robot -->
     <arg name="sim" default="false" />
     <!-- Run in GDB -->
@@ -11,10 +15,10 @@
     <!-- Launch rviz -->
     <arg name="rviz" default="true" />
     <!-- The level of verbose (never, fatal, critical, error, warning, info, debug, realtime) -->
-    <arg name="log_level" default="debug" />
+    <arg name="log_level" default="warning" />
     <!-- Tools -->
-    <arg name="load_base" default="true" />
-    <arg name="load_ati_sensor" default="true" />
+    <arg name="load_base" default="false" />
+    <arg name="load_ati_sensor" default="false" />
     <arg name="load_handle" default="false" />
 
     <!-- Gazebo -->
