@@ -333,6 +333,7 @@ void Solver_Vereshchagin::constraint_calculation(const JntArray& beta)
 
     int result  = svd_eigen_HH(results[0].M, Um, Sm, Vm, tmpm);
     // std::cout << "Constraint::SVD: " << result << '\n';
+    // std::cout << Sm.transpose() << std::endl;
 
     assert(result == 0);
 
@@ -387,13 +388,13 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
         }
 
         //The contribution of the constraint forces at segment i
-        Vector6d tmp = s.E*nu;
+        Vector6d tmp = s.E * nu;
         Wrench constraint_force = Wrench(Vector(tmp(3), tmp(4), tmp(5)),
                                          Vector(tmp(0), tmp(1), tmp(2)));
 
         //acceleration components are also computed
         //Contribution of the acceleration of the parent (i-1)
-        Wrench parent_force = s.P*a_p;
+        Wrench parent_force = s.P * a_p;
         double parent_forceProjection = -dot(s.Z, parent_force);
         double parentAccComp = parent_forceProjection / s.D;
 
@@ -401,13 +402,14 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
         double constraint_torque = -dot(s.Z, constraint_force);
         //The result should be the torque at this joint.
 
-
-        /*Code line bellow commented by Djordje Vukcevic ->
+        /* Code line bellow commented by Djordje Vukcevic ->
             -> to avoid overwriting ff_torques ->
             -> Required for extension with friction.
-            -> See getter for this torque. */
+            -> See getter for this torque. 
+        */
+
         // torques(j) = constraint_torque;
-        constraintTorque(j) = dot(s.Z, constraint_force);
+        constraintTorque(j) = constraint_torque;
 
         //Summing all 3 contributions for true (resulting) torque:
         controlTorque(j) = s.u + constraint_torque + parent_forceProjection;
