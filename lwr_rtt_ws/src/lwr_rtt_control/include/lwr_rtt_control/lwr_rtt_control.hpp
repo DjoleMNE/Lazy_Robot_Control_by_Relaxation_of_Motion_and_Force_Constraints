@@ -49,8 +49,8 @@ class LwrRttControl : public RTT::TaskContext{
     protected:
         // Generic Model that uses ROS param
         rtt_ros_kdl_tools::ChainUtils arm;
-        std::shared_ptr<KDL::Solver_Vereshchagin> hd_solver_;
         std::shared_ptr<state_specification> robot_state_;
+        std::shared_ptr<KDL::Solver_Vereshchagin> hd_solver_;
 
         // Input ports
         RTT::InputPort<Eigen::VectorXd>  port_joint_position_in,
