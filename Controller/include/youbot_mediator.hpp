@@ -108,7 +108,7 @@ class youbot_mediator
 
 		// Handles for the youbot manipulator and kdl urdf parsel
 	    std::shared_ptr<youbot::YouBotManipulator> youbot_arm_;
-		KDL::Chain robot_chain_;		
+		KDL::Chain yb_chain_;		
 		KDL::Tree yb_tree_;
     	urdf::Model yb_urdf_model_;
 

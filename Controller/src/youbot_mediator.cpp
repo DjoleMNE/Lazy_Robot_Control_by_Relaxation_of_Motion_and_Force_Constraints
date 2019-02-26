@@ -38,7 +38,7 @@ youbot_mediator::youbot_mediator():
                         youbot_constants::root_acceleration[4],
                         youbot_constants::root_acceleration[5]),
     root_acc_(linear_root_acc_, angular_root_acc_), 
-    robot_chain_(), yb_tree_(), yb_urdf_model_()
+    yb_chain_(), yb_tree_(), yb_urdf_model_()
 {   
     //Resize measurement variables
     q_measured_.resize(youbot_constants::NUMBER_OF_JOINTS);
@@ -267,7 +267,7 @@ KDL::Twist youbot_mediator::get_root_acceleration()
 
 KDL::Chain youbot_mediator::get_robot_model() 
 {
-    return robot_chain_; 
+    return yb_chain_; 
 }
 
 //Extract youBot model from URDF file
@@ -289,7 +289,7 @@ int youbot_mediator::get_model_from_urdf()
     //Extract KDL chain from KDL tree
     yb_tree_.getChain(youbot_constants::root_name, 
                       youbot_constants::tooltip_name, 
-                      robot_chain_);
+                      yb_chain_);
     return 0;
 }
 
@@ -309,7 +309,7 @@ void youbot_mediator::initialize(const int robot_model,
 {
     youbot_model_ = robot_model;
     youbot_environment_ = robot_environment;
-    robot_chain_ = KDL::Chain();
+    yb_chain_ = KDL::Chain();
     
     // Reset Flags
     is_initialized_ = false;
@@ -319,7 +319,7 @@ void youbot_mediator::initialize(const int robot_model,
     if(youbot_model_ == youbot_model::YB_STORE)
     {
         //Extract model from custom file 
-        youbot_custom_model yb_store_model(robot_chain_);
+        youbot_custom_model yb_store_model(yb_chain_);
         
         // Add offsets to match real robot and the youBot store model
         if(youbot_environment_ != youbot_environment::SIMULATION) 
