@@ -64,22 +64,22 @@ bool LwrRttControl::configureHook()
 
     robot_state_->q.data << 1.0, 0.0, 0.0, -1.57, 0.0, 1.57, 0.0;
     KDL::Twist unit_constraint_force_x(
-            KDL::Vector(1.0, 0.0, 0.0),     // linear
+            KDL::Vector(0.0, 0.0, 0.0),     // linear
             KDL::Vector(0.0, 0.0, 0.0));    // angular
     robot_state_->ee_unit_constraint_force.setColumn(0, unit_constraint_force_x);
     robot_state_->ee_acceleration_energy(0) = 0.0;
 
     KDL::Twist unit_constraint_force_y(
-            KDL::Vector(0.0, 1.0, 0.0),     // linear
+            KDL::Vector(0.0, 0.0, 0.0),     // linear
             KDL::Vector(0.0, 0.0, 0.0));    // angular
     robot_state_->ee_unit_constraint_force.setColumn(1, unit_constraint_force_y);
     robot_state_->ee_acceleration_energy(1) = 0.0;
 
     KDL::Twist unit_constraint_force_z(
-            KDL::Vector(0.0, 0.0, 1.0),     // linear
+            KDL::Vector(0.0, 0.0, 0.0),     // linear
             KDL::Vector(0.0, 0.0, 0.0));    // angular
     robot_state_->ee_unit_constraint_force.setColumn(2, unit_constraint_force_z);
-    robot_state_->ee_acceleration_energy(2) = 1.7;
+    robot_state_->ee_acceleration_energy(2) = 0.0;
 
     KDL::Twist unit_constraint_force_x1(
             KDL::Vector(0.0, 0.0, 0.0),     // linear
@@ -158,40 +158,43 @@ void LwrRttControl::updateHook()
     // RTT::log(RTT::Warning) << "RNE:  "<< control_torque_RNE.data.transpose() << RTT::endlog();
     // assert(result_RNE == 0);
 
-    KDL::ChainDynParam gravity_solver(arm.Chain(), linearAcc_RNE);
-    KDL::JntArray gravity_torque(arm.getNrOfJoints());
-    gravity_solver.JntToGravity(robot_state_->q,gravity_torque);
+    // KDL::ChainDynParam gravity_solver(arm.Chain(), linearAcc_RNE);
+    // KDL::JntArray gravity_torque(arm.getNrOfJoints());
+    // gravity_solver.JntToGravity(robot_state_->q, gravity_torque);
     
-    KDL::JntArray coriol_torque(arm.getNrOfJoints());
-    gravity_solver.JntToCoriolis(robot_state_->q,robot_state_->qd, coriol_torque);
-    // exit(0);
-    // std::cout << jnt_pos_in.transpose() << std::endl;
-    // std::cout << jnt_vel_in.transpose() << std::endl;
-    // jnt_pos_cmd_out(0) = 0.3813;
-    // jnt_pos_cmd_out(1) = -1.9312;
-    // jnt_pos_cmd_out(2) = -1.7251;
-    // jnt_pos_cmd_out(3) = -1.4565;
-    // jnt_pos_cmd_out(4) = 0.7169;
-    // jnt_pos_cmd_out(5) = 1.056;
-    // jnt_pos_cmd_out(6) = -2.123; 
-    // port_joint_position_cmd_out.write(jnt_pos_cmd_out);
-
-    // jnt_trq_cmd_out(0) = 1.03813;
-    // jnt_trq_cmd_out(1) = 0.0;
-    // jnt_trq_cmd_out(2) = 0.0;
-    // jnt_trq_cmd_out(3) = 0.0;
-    // jnt_trq_cmd_out(4) = 0.0;
-    // jnt_trq_cmd_out(5) = 0.0;
-    // jnt_trq_cmd_out(6) = 0.0; 
-
+    // KDL::JntArray coriol_torque(arm.getNrOfJoints());
+    // gravity_solver.JntToCoriolis(robot_state_->q,robot_state_->qd, coriol_torque);
+ 
     // RTT::log(RTT::Warning) << "G     "<< gravity_torque.data.transpose() << RTT::endlog();
     // RTT::log(RTT::Warning) << "C     "<< coriol_torque.data.transpose() << RTT::endlog();
     // RTT::log(RTT::Warning) << "IN    "<< jnt_trq_in.transpose() << RTT::endlog();
+ 
+    KDL::Wrench wrench(KDL::Vector(0.0, 0.0, 0.50),
+                        KDL::Vector(0.0, 0.0, 0.0));
+
+    KDL::ChainJntToJacSolver chainjacsolver_(arm.Chain());
+    KDL::Jacobian jacob(arm.getNrOfJoints());
+    int jac_result = chainjacsolver_.JntToJac(robot_state_->q, jacob);
+
+    Eigen::Matrix<double, 6, 1> w;
+    // w << (Eigen::Map<Eigen::Vector3d>(wrench_.force.data), 
+    //       Eigen::Map<Eigen::Vector3d>(wrench_.torque.data));
+
+    w(0) = wrench.force(0);
+    w(1) = wrench.force(1);
+    w(2) = wrench.force(2);
+    w(3) = wrench.torque(0);
+    w(4) = wrench.torque(1);
+    w(5) = wrench.torque(2);
+
+    robot_state_->control_torque.data = jacob.data.transpose() * w;
+
+  
     // jnt_trq_cmd_out = -control_torque_RNE.data;
-    jnt_trq_cmd_out = -gravity_torque.data;
+    // jnt_trq_cmd_out = -gravity_torque.data;
     // jnt_trq_cmd_out += robot_state_->control_torque.data;
 
-    // jnt_trq_cmd_out = robot_state_->control_torque.data;
+    jnt_trq_cmd_out = robot_state_->control_torque.data;
     port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
 }
 
