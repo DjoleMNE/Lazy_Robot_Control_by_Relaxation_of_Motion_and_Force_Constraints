@@ -4,7 +4,7 @@ Description: Mediator component for enabling conversion of data types.
 Acknowledgment: This sofware component is based on Jeyaprakash Rajagopal's 
 master thesis code.
 
-Copyright (c) [2018]
+Copyright (c) [2019]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,7 @@ SOFTWARE.
 #include "youbot_mediator.hpp"
 
 youbot_mediator::youbot_mediator(): 
-    is_initialized(false), ROBOT_ID(youbot_constants::ID), add_offsets_(false),
+    is_initialized_(false), ROBOT_ID_(youbot_constants::ID), add_offsets_(false),
     parser_result_(0), connection_established_(false), 
     youbot_model_(youbot_model::URDF),
     youbot_environment_(youbot_environment::SIMULATION),
@@ -293,6 +293,16 @@ int youbot_mediator::get_model_from_urdf()
     return 0;
 }
 
+std::string youbot_mediator::get_robot_ID()
+{
+    return ROBOT_ID_;
+}
+
+bool youbot_mediator::is_initialized()
+{
+    return is_initialized_;
+}
+
 // Initialize varibles and calibrate the manipulator: 
 void youbot_mediator::initialize(const int robot_model,
                                  const int robot_environment)
@@ -302,7 +312,7 @@ void youbot_mediator::initialize(const int robot_model,
     robot_chain_ = KDL::Chain();
     
     // Reset Flags
-    is_initialized = false;
+    is_initialized_ = false;
     add_offsets_ = false;
     parser_result_ = 0;
 
@@ -335,7 +345,7 @@ void youbot_mediator::initialize(const int robot_model,
     if(parser_result_ != 0){
         std::cout << "Cannot create the youBot model!" << std::endl;
     } else{
-        is_initialized = true;
+        is_initialized_ = true;
 	    std::cout << "youBot initialized successfully! " << std::endl;
     } 
 }

@@ -28,6 +28,7 @@ SOFTWARE.
 #include <solver_vereshchagin.hpp>
 #include <fk_vereshchagin.hpp>
 #include <state_specification.hpp>
+#include <robot_mediator.hpp>
 #include <geometry_utils.hpp>
 #include <model_prediction.hpp>
 #include <safety_controller.hpp>

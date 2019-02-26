@@ -140,7 +140,7 @@ int main(int argc, char **argv)
                                 NUMBER_OF_CONSTRAINTS);
                                 
 
-    assert(("Robot is not initialized", robot_driver.is_initialized));
+    assert(("Robot is not initialized", robot_driver.is_initialized()));
     stop_robot_motion(robot_driver, motion_);
     go_navigation_2(robot_driver);
     // go_folded_2(robot_driver);

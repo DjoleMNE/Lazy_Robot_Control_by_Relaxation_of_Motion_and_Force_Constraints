@@ -27,6 +27,7 @@ SOFTWARE.
 #define SAFETY_CONTROLLER_HPP_
 #include <solver_vereshchagin.hpp>
 #include <state_specification.hpp>
+#include <robot_mediator.hpp>
 #include <model_prediction.hpp>
 #include <youbot_mediator.hpp>
 #include <constants.hpp>

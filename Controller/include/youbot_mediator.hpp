@@ -28,6 +28,7 @@ SOFTWARE.
 
 #ifndef YOUBOT_MEDIATOR_HPP
 #define YOUBOT_MEDIATOR_HPP
+#include <robot_mediator.hpp>
 #include <youbot_driver/youbot/YouBotManipulator.hpp>
 #include <kdl_parser/kdl_parser.hpp>
 #include <urdf/model.h>
@@ -47,26 +48,17 @@ enum youbot_environment
     SIMULATION = 1   
 };
 
-enum control_mode 
-{
-    TORQUE = 0,
-    VELOCITY = 1,
-    POSITION = 2, 
-    STOP_MOTION = -1   
-};
-
 class youbot_mediator
 {
 	public:
-		bool is_initialized;
-		const std::string ROBOT_ID;
-
 		youbot_mediator();
 		~youbot_mediator(){}
 
 		// Initializes variables and calibrates the manipulator
 		void initialize(const int robot_model,
 						const int robot_environment);
+		
+		bool is_initialized();
 
 		// Set desired joint commands to move robot and save them for sake of simulation
 		void set_joint_command(const KDL::JntArray &joint_positions,
@@ -95,11 +87,14 @@ class youbot_mediator
 		std::vector<double> get_joint_torque_limits();
 		std::vector<double> get_joint_inertia();
 		std::vector<double> get_joint_offsets();
+		std::string get_robot_ID();
 		
 		KDL::Twist get_root_acceleration();
 		KDL::Chain get_robot_model();
 
 	private:
+		bool is_initialized_;
+		const std::string ROBOT_ID_;
 		int parser_result_;
 		int youbot_model_;
 		int youbot_environment_;
@@ -113,9 +108,9 @@ class youbot_mediator
 
 		// Handles for the youbot manipulator and kdl urdf parsel
 	    std::shared_ptr<youbot::YouBotManipulator> youbot_arm_;
+		KDL::Chain robot_chain_;		
 		KDL::Tree yb_tree_;
     	urdf::Model yb_urdf_model_;
-		KDL::Chain robot_chain_;		
 
 		//Arm's root acceleration
 		const KDL::Vector linear_root_acc_;

@@ -53,7 +53,7 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     desired_state_(robot_state_),
     predicted_state_(robot_state_)
 {
-    assert(("Robot is not initialized", robot_driver.is_initialized));
+    assert(("Robot is not initialized", robot_driver.is_initialized()));
     // KDL Solver constraint  
     assert(NUM_OF_JOINTS_ == NUM_OF_SEGMENTS_);
 
@@ -535,7 +535,7 @@ int dynamics_controller::control(const int desired_control_mode,
     std::cout << "Control Loop Started"<< std::endl;
     while(1)
     {   
-        // loop_count++; 
+        loop_count++; 
         // printf("Loop Count: %d \n", loop_count);
 
         // Save current time point
@@ -549,7 +549,6 @@ int dynamics_controller::control(const int desired_control_mode,
         compute_cart_control_commands();
         if (store_control_data) write_to_file();
         
-        // if(loop_count == 1) return 0;
 
         // Calculate robot dynamics using the Vereshchagin HD solver
         if(evaluate_dynamics() != 0)
@@ -559,6 +558,7 @@ int dynamics_controller::control(const int desired_control_mode,
             printf("WARNING: Dynamics Solver returned error. Stopping the robot!");
             return -1;
         }
+        if(loop_count == 1) return 0;
 
         // Apply joint commands using safe control interface.
         if(apply_joint_control_commands() != 0){
