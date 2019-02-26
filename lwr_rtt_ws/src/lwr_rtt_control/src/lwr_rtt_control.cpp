@@ -33,7 +33,7 @@ bool LwrRttControl::configureHook()
     this->robot_state_= std::make_shared<state_specification>(arm.getNrOfJoints(), arm.getNrOfSegments(), arm.getNrOfSegments() + 1, 6);
     this->hd_solver_ = std::make_shared<KDL::Solver_Vereshchagin>(this->arm.Chain(), 
                                                                   std::vector<double> {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-                                                                  KDL::Twist(KDL::Vector(0.0, 0.0, 0.0), KDL::Vector(0.0, 0.0, 0.0)), 
+                                                                  KDL::Twist(KDL::Vector(0.0, 0.0, 9.81289), KDL::Vector(0.0, 0.0, 0.0)), 
                                                                   6);
 
     jnt_pos_in.setZero(arm.getNrOfJoints());
@@ -121,35 +121,32 @@ void LwrRttControl::updateHook()
     robot_state_->q.data = jnt_pos_in;
     robot_state_->qd.data = jnt_vel_in;
 
-    // KDL::Vector linearAcc_RNE(0.0, 0.0, -9.81);
+    // int hd_solver_result = hd_solver_->CartToJnt(robot_state_->q,
+    //                                              robot_state_->qd,
+    //                                              robot_state_->qdd,
+    //                                              robot_state_->ee_unit_constraint_force,
+    //                                              robot_state_->ee_acceleration_energy,
+    //                                              robot_state_->external_force,
+    //                                              robot_state_->feedforward_torque);
+
+    // if(hd_solver_result != 0) printf("ERROR");
+    // exit(0);
+    // hd_solver_->get_control_torque(robot_state_->control_torque);
+    // hd_solver_->get_constraint_torque(robot_state_->control_torque);
+    // hd_solver_->get_transformed_link_acceleration(robot_state_->frame_acceleration);
+
+    // std::cout << "Frame ACC" << '\n';
+    // for (size_t i = 0; i < 8; i++)
+    //     RTT::log(RTT::Warning) << robot_state_->frame_acceleration[i] << RTT::endlog();
+
+
+    KDL::Vector linearAcc_RNE(0.0, 0.0, -9.81289);
     // KDL::ChainIdSolver_RNE RNE_idsolver(arm.Chain(), linearAcc_RNE);
     // KDL::JntArray control_torque_RNE(arm.getNrOfJoints());
     // KDL::JntArray input_qdd(arm.getNrOfJoints());
 
     // control_torque_RNE.data = Eigen::VectorXd::Zero(arm.getNrOfJoints());
     // input_qdd.data = Eigen::VectorXd::Zero(arm.getNrOfJoints());
-
-
-    int hd_solver_result = hd_solver_->CartToJnt(robot_state_->q,
-                                                 robot_state_->qd,
-                                                 robot_state_->qdd,
-                                                 robot_state_->ee_unit_constraint_force,
-                                                 robot_state_->ee_acceleration_energy,
-                                                 robot_state_->external_force,
-                                                 robot_state_->feedforward_torque);
-
-    if(hd_solver_result != 0) printf("ERROR");
-
-    // hd_solver_->get_control_torque(robot_state_->control_torque);
-    hd_solver_->get_constraint_torque(robot_state_->control_torque);
-    // hd_solver_->get_transformed_link_acceleration(robot_state_->frame_acceleration);
-
-    // RTT::log(RTT::Warning) << "IN    "<< jnt_trq_in.transpose() << RTT::endlog();
-    // RTT::log(RTT::Warning) << "OUT  "<< robot_state_->control_torque.data.transpose() << RTT::endlog();
-
-    // std::cout << "Frame ACC" << '\n';
-    // for (size_t i = 0; i < 8; i++)
-    //     RTT::log(RTT::Warning) << robot_state_->frame_acceleration[i] << RTT::endlog();
 
     // int result_RNE = RNE_idsolver.CartToJnt(robot_state_->q,
     //                                         robot_state_->qd,
@@ -158,9 +155,16 @@ void LwrRttControl::updateHook()
     //                                         control_torque_RNE);
 
     // std::cout <<"\n" <<"Recursive Newton Euler solver" << '\n';
-    // std::cout << "Joint torques:        "<< control_torque_RNE << '\n';
+    // RTT::log(RTT::Warning) << "RNE:  "<< control_torque_RNE.data.transpose() << RTT::endlog();
     // assert(result_RNE == 0);
 
+    KDL::ChainDynParam gravity_solver(arm.Chain(), linearAcc_RNE);
+    KDL::JntArray gravity_torque(arm.getNrOfJoints());
+    gravity_solver.JntToGravity(robot_state_->q,gravity_torque);
+    
+    KDL::JntArray coriol_torque(arm.getNrOfJoints());
+    gravity_solver.JntToCoriolis(robot_state_->q,robot_state_->qd, coriol_torque);
+    // exit(0);
     // std::cout << jnt_pos_in.transpose() << std::endl;
     // std::cout << jnt_vel_in.transpose() << std::endl;
     // jnt_pos_cmd_out(0) = 0.3813;
@@ -180,10 +184,14 @@ void LwrRttControl::updateHook()
     // jnt_trq_cmd_out(5) = 0.0;
     // jnt_trq_cmd_out(6) = 0.0; 
 
+    // RTT::log(RTT::Warning) << "G     "<< gravity_torque.data.transpose() << RTT::endlog();
+    // RTT::log(RTT::Warning) << "C     "<< coriol_torque.data.transpose() << RTT::endlog();
+    // RTT::log(RTT::Warning) << "IN    "<< jnt_trq_in.transpose() << RTT::endlog();
     // jnt_trq_cmd_out = -control_torque_RNE.data;
+    jnt_trq_cmd_out = -gravity_torque.data;
     // jnt_trq_cmd_out += robot_state_->control_torque.data;
 
-    jnt_trq_cmd_out = robot_state_->control_torque.data;
+    // jnt_trq_cmd_out = robot_state_->control_torque.data;
     port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
 }
 

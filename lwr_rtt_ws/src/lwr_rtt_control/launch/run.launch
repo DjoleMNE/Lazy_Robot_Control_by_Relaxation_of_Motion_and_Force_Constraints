@@ -15,7 +15,7 @@
     <!-- Launch rviz -->
     <arg name="rviz" default="true" />
     <!-- The level of verbose (never, fatal, critical, error, warning, info, debug, realtime) -->
-    <arg name="log_level" default="warning" />
+    <arg name="log_level" default="debug" />
     <!-- Tools -->
     <arg name="load_base" default="false" />
     <arg name="load_ati_sensor" default="false" />

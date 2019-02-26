@@ -37,5 +37,5 @@ configureComponent("lwr_rtt_control")
 
 startComponent("lwr_rtt_control")
 
-print.ln("\n\n\x1B[32mYou can change the robot control modes using the krl_tool\x1B[0m\n")
+#print.ln("\n\n\x1B[32mYou can change the robot control modes using the krl_tool\x1B[0m\n")
 
