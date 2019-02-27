@@ -450,6 +450,9 @@ void dynamics_controller::compute_cart_control_commands()
     
     robot_state_.external_force[END_EFF_].torque(2) =+ \
         CTRL_DIM_[5]? abag_command_(5) * MAX_FORCE_[5] : 0.0;
+
+    KDL::Jacobian jacob (NUM_OF_JOINTS_);
+    std::cout << geometry::ik_force(jacob, robot_state_.external_force[END_EFF_]).transpose() << std::endl;
 }
 
 // Update current dynamics intefaces using desired robot state specifications 

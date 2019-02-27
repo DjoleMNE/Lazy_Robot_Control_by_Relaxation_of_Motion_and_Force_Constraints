@@ -33,7 +33,7 @@ SOFTWARE.
 #include <stdlib.h>     /* abs */
 
 namespace geometry
-{        
+{   
     /**
      * Calculate logarithmic map given rotation matrix. 
      * Sources - Combined from: 
@@ -116,5 +116,11 @@ namespace geometry
 
     // Compute distance of the matrix from the SO(3) manifold
     double distance_to_so3(const Eigen::Matrix3d &matrix);
+
+    /**
+     * Multiply jacobian transpose with a wrench to get resulting joint torques
+     * Inverse Force Kinematics
+     */
+    Eigen::VectorXd ik_force(const KDL::Jacobian &jac, const KDL::Wrench &wrench);
 } 
 #endif /* GEOMETRY_UTILS_HPP */

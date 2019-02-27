@@ -58,6 +58,8 @@ enum task_interface
 class dynamics_controller
 {
   public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    
     dynamics_controller(youbot_mediator &robot_driver, const int rate_hz);
     ~dynamics_controller(){};
 

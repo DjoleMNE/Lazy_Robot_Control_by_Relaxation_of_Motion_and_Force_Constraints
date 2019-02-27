@@ -370,4 +370,21 @@ namespace geometry
         return KDL::Twist(log_map_r3(pose.p, angular_twist), angular_twist);
     }
 
+    /**
+     * Multiply jacobian transpose with a wrench to get resulting joint torques
+     * Inverse Force Kinematics
+     */
+    Eigen::VectorXd ik_force(const KDL::Jacobian &jac, const KDL::Wrench &wrench)
+    {
+        Eigen::Matrix<double, 6, 1> w;
+        w(0) = wrench.force(0);
+        w(1) = wrench.force(1);
+        w(2) = wrench.force(2);
+        w(3) = wrench.torque(0);
+        w(4) = wrench.torque(1);
+        w(5) = wrench.torque(2);
+
+        return jac.data.transpose() * w;
+    }
+
 }
