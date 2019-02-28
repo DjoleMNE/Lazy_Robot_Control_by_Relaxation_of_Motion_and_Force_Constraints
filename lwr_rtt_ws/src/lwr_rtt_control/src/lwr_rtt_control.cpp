@@ -82,7 +82,7 @@ bool LwrRttControl::configureHook()
            RTT::log(RTT::Warning) << "No output connection!"<< RTT::endlog();  
     }
 
-    robot_state_->q.data << 1.0, 0.0, 0.0, -1.57, 0.0, 1.57, 0.0;
+    // robot_state_->q.data << 1.0, 0.0, 0.0, -1.57, 0.0, 1.57, 0.0;
     KDL::Twist unit_constraint_force_x(
             KDL::Vector(0.0, 0.0, 0.0),     // linear
             KDL::Vector(0.0, 0.0, 0.0));    // angular
@@ -96,10 +96,10 @@ bool LwrRttControl::configureHook()
     robot_state_->ee_acceleration_energy(1) = 0.0;
 
     KDL::Twist unit_constraint_force_z(
-            KDL::Vector(0.0, 0.0, 1.0),     // linear
+            KDL::Vector(0.0, 0.0, 0.0),     // linear
             KDL::Vector(0.0, 0.0, 0.0));    // angular
     robot_state_->ee_unit_constraint_force.setColumn(2, unit_constraint_force_z);
-    robot_state_->ee_acceleration_energy(2) = 20.0;
+    robot_state_->ee_acceleration_energy(2) = 0.0;
 
     KDL::Twist unit_constraint_force_x1(
             KDL::Vector(0.0, 0.0, 0.0),     // linear
@@ -119,7 +119,7 @@ bool LwrRttControl::configureHook()
     robot_state_->ee_unit_constraint_force.setColumn(5, unit_constraint_force_z1);
     robot_state_->ee_acceleration_energy(5) = 0.0;
 
-    KDL::Wrench wrench(KDL::Vector(0.0, 0.0, 50.0),
+    KDL::Wrench wrench(KDL::Vector(0.0, 0.0, -2.0),
                        KDL::Vector(0.0, 0.0, 0.0));
     robot_state_->external_force[arm.getNrOfSegments() - 1] = wrench;
     return true;
@@ -183,7 +183,7 @@ void LwrRttControl::updateHook()
     // std::cout<< jacob.data.transpose() * w << std::endl;
 
     // jnt_trq_cmd_out = -gravity_torque.data;
-    jnt_trq_cmd_out = robot_state_->control_torque.data - gravity_torque.data;
+    jnt_trq_cmd_out = robot_state_->control_torque.data;// - gravity_torque.data;
 
     // jnt_trq_cmd_out = robot_state_->control_torque.data;
     port_joint_torque_cmd_out.write(jnt_trq_cmd_out);

@@ -60,6 +60,7 @@ Solver_Vereshchagin::Solver_Vereshchagin(const Chain& chain_,
     //A user can change task in run-time...
     //In this way it would require to call Constructor each time!
     nu_sum.resize(nc);
+    ext_torque.resize(nj);
     controlTorque.resize(nj);
     constraintTorque.resize(nj);
     M_0_inverse.resize(nc, nc);
@@ -172,6 +173,9 @@ void Solver_Vereshchagin::initial_upwards_sweep(const JntArray &q, const JntArra
         Wrench FextLocal = F_total.M.Inverse() * f_ext[i];
         s.U = s.v * (s.H * s.v) - FextLocal; //f_ext[i];
 
+        // Save external forces on end_eff for next sweep. Expressed in end_eff tip frame.
+        if(i == (int)ns - 1) f_ext_ee = -FextLocal;
+
         if (segment.getJoint().getType() != Joint::None)
             j++;
     }
@@ -196,6 +200,7 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
         //without tilde is at the joint root (the childs tip!!!)
         //P_tilde is the articulated body inertia
         //R_tilde is the sum of external and coriolis/centrifugal forces
+        //F_ext_ee_tilde are external forces acting on the end-effector segment
         //M is the (unit) acceleration energy already generated at link i (L)
         //G is the (unit) magnitude of the constraint forces at link i (U)
         //E are the (unit) constraint forces due to the constraints (A or alpha here)
@@ -203,6 +208,7 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
         {
             s.P_tilde = s.H;
             s.R_tilde = s.U;
+            s.F_ext_ee_tilde = f_ext_ee;
             s.M.setZero();
             s.G.setZero();
 
@@ -243,6 +249,10 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
             //equation b) (see Vereshchagin89)
             //Azamat: bias force as in Featherstone (7.20)
             s.R_tilde = s.U + child.R + child.PC + (child.PZ / child.D) * child.u;
+            
+            //Djordje: External force on end-effector. Required for control torque output
+            s.F_ext_ee_tilde = child.F_ext_ee - (child.PZ / child.D) * dot(s.Z, child.F_ext_ee);
+
             //equation c) (see Vereshchagin89)
             s.E_tilde = child.E;
 
@@ -261,6 +271,8 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
             vCiZDu << Vector3d::Map(CiZDu.rot.data), Vector3d::Map(CiZDu.vel.data);
             s.G.noalias() += child.E.transpose() * vCiZDu;
         }
+
+
         if (i != 0)
         {
             //Transform all results to joint root coordinates of segment i (== body coordinates segment i-1)
@@ -268,6 +280,9 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
             s.P = s.F * s.P_tilde;
             //equation b)
             s.R = s.F * s.R_tilde;
+            // Djordje: Tranformation of the external force acting on end-effector 
+            s.F_ext_ee = s.F * s.F_ext_ee_tilde;
+
             //equation c), in matrix: torques above forces, so switch and switch back
             for (unsigned int c = 0; c < nc; c++)
             {
@@ -398,21 +413,20 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
         double parent_forceProjection = -dot(s.Z, parent_force);
         double parentAccComp = parent_forceProjection / s.D;
 
+        // Compute torques felt in joints due to ext force acting on end effector
+        // I.e. projection of ext force into joint subspace (0 0 Z)
+        ext_torque(j) = -dot(s.Z, s.F_ext_ee);
+
         //The constraint force and acceleration force projected on the joint axes -> axis torque/force
         double constraint_torque = -dot(s.Z, constraint_force);
         //The result should be the torque at this joint.
 
-        /* Code line bellow commented by Djordje Vukcevic ->
-            -> to avoid overwriting ff_torques ->
-            -> Required for extension with friction.
-            -> See getter for this torque. 
-        */
-
         // torques(j) = constraint_torque;
         constraintTorque(j) = constraint_torque;
 
-        //Summing all 3 contributions for true (resulting) torque:
-        controlTorque(j) = s.u + constraint_torque + parent_forceProjection;
+        //Summing all 2 contributions for true control torque:
+        controlTorque(j) = constraintTorque(j) + ext_torque(j);
+        // controlTorque(j) = ext_torque(j);
 
         s.constAccComp = constraint_torque / s.D;
         s.nullspaceAccComp = s.u / s.D;

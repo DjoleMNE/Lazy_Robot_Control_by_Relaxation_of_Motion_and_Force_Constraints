@@ -123,6 +123,7 @@ private:
     Eigen::MatrixXd Um;
     Eigen::MatrixXd Vm;
     JntArray beta_N;
+    JntArray ext_torque;
     JntArray controlTorque;
     JntArray constraintTorque;
     Eigen::VectorXd nu;
@@ -130,6 +131,7 @@ private:
     Eigen::VectorXd Sm;
     Eigen::VectorXd tmpm;
     Eigen::VectorXd d; // Joint (rotor + gear) inertia: equation a) (see Vereshchagin89)
+    Wrench f_ext_ee;
     Wrench qdotdot_sum;
     Frame F_total;
 
@@ -143,6 +145,8 @@ private:
         Wrench U; //wrench p of the bias forces (in cartesian space)
         Wrench R; //wrench p of the bias forces
         Wrench R_tilde; //vector of wrench p of the bias forces (new) in matrix form
+        Wrench F_ext_ee; //wrench of forces acting on end_eff. without tilde means expressed at the joint root (the childs tip!!!)
+        Wrench F_ext_ee_tilde; //wrench of forces acting on end_eff. tilde is in the segment refframe (tip, not joint root)
         Twist C; //constraint
         Twist A; //constraint
         ArticulatedBodyInertia H; //I (expressed in 6*6 matrix)
@@ -155,7 +159,7 @@ private:
         Matrix6Xd E_tilde;
         Eigen::MatrixXd M; //acceleration energy already generated at link i
         Eigen::VectorXd G; //magnitude of the constraint forces already generated at link i
-        Eigen::VectorXd EZ; //K[i] = Etiltde'*Z
+        Eigen::VectorXd EZ; //K[i] = E^T'*Z
         double nullspaceAccComp; //Azamat: constribution of joint space u[i] forces to joint space acceleration
         double constAccComp; //Azamat: constribution of joint space constraint forces to joint space acceleration
         double biasAccComp; //Azamat: constribution of joint space bias forces to joint space acceleration

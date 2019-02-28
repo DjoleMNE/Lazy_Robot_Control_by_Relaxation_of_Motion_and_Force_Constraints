@@ -11,7 +11,7 @@ loadStatePublisher(true)
 
 // Set initial robot configuration
 if (isSim()) then
-  setRobotInitialJointConfiguration(1.0, 0.0, 0.0, -1.57, 0.0, 1.57, 0.0)
+  #setRobotInitialJointConfiguration(1.0, 0.0, 0.0, -1.57, 0.0, 1.57, 0.0)
 
 # On the real robot, you have to set the mode manually
 # In simulation, JointImpedance is selected by default at the end of the loadRobot()
@@ -26,7 +26,7 @@ import("rtt_ros")
 ros.import("lwr_rtt_control")
 
 loadComponent("lwr_rtt_control", "LwrRttControl")
-setActivity("lwr_rtt_control", 0.001, 60, ORO_SCHED_RT)
+setActivity("lwr_rtt_control", 0.0011, 50, ORO_SCHED_RT)
 
 connectPeers("lwr_rtt_control", getRobotName())
 
