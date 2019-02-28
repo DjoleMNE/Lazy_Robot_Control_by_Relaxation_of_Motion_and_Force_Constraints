@@ -230,6 +230,17 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
                 col = base_to_end*col;
                 s.E_tilde.col(c) << Vector3d::Map(col.torque.data), Vector3d::Map(col.force.data);
             }
+            
+            // Gravity acceleration expressed in end-effector frame. First linear than angular part.
+            Twist gravity_acc = base_to_end * acc_root;
+
+            // Gravity acceleration expressed in end-effector frame. First angular than linear part.
+            Vector6d gravity_acc_swap;
+            gravity_acc_swap << Vector3d::Map(gravity_acc.rot.data), Vector3d::Map(gravity_acc.vel.data);
+
+            // Djordje: Initializing G matrix with gravitational effects. Compensation for gravity forces on end-effector
+            // See Popov and Vereshchagin book from 1978, Moscow 
+            s.G.noalias() = s.E_tilde * gravity_acc_swap;
         }
         else
         {
