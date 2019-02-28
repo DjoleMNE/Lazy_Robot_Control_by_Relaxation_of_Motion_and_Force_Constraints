@@ -119,7 +119,7 @@ bool LwrRttControl::configureHook()
     robot_state_->ee_unit_constraint_force.setColumn(5, unit_constraint_force_z1);
     robot_state_->ee_acceleration_energy(5) = 0.0;
 
-    KDL::Wrench wrench(KDL::Vector(0.0, 0.0, -2.0),
+    KDL::Wrench wrench(KDL::Vector(20.0, 0.0, 0.0),
                        KDL::Vector(0.0, 0.0, 0.0));
     robot_state_->external_force[arm.getNrOfSegments() - 1] = wrench;
     return true;
@@ -157,30 +157,7 @@ void LwrRttControl::updateHook()
     KDL::JntArray gravity_torque(arm.getNrOfJoints());
     gravity_torque.data.setZero();
     gravity_solver.JntToGravity(robot_state_->q, gravity_torque);
-
-    // KDL::JntArray input_qdd(arm.getNrOfJoints());
-    // input_qdd.data = Eigen::VectorXd::Zero(arm.getNrOfJoints());
-    // KDL::ChainIdSolver_RNE RNE_idsolver(arm.Chain(), linearAcc_RNE);
-    // int result_RNE = RNE_idsolver.CartToJnt(robot_state_->q,
-    //                                         robot_state_->qd,
-    //                                         input_qdd,
-    //                                         robot_state_->external_force,
-    //                                         gravity_torque); assert(result_RNE == 0);
-
-
-    // KDL::ChainJntToJacSolver chainjacsolver_(arm.Chain());
-    // KDL::Jacobian jacob(arm.getNrOfJoints());
-    // int jac_result = chainjacsolver_.JntToJac(robot_state_->q, jacob);
-
-    // Eigen::Matrix<double, 6, 1> w;
-    // w(0) = wrench.force(0);
-    // w(1) = wrench.force(1);
-    // w(2) = wrench.force(2);
-    // w(3) = wrench.torque(0);
-    // w(4) = wrench.torque(1);
-    // w(5) = wrench.torque(2);
-
-    // std::cout<< jacob.data.transpose() * w << std::endl;
+    // std::cout << "Gravity\n" <<gravity_torque.data.transpose() << std::endl;
 
     // jnt_trq_cmd_out = -gravity_torque.data;
     jnt_trq_cmd_out = robot_state_->control_torque.data;// - gravity_torque.data;

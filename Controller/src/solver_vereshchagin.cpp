@@ -306,7 +306,7 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
             //needed for next recursion
             s.PZ = s.P * s.Z;
 
-            // Additionally adding joint (rotor + gear) inertia: equation a) (see Vereshchagin89)
+            // Djordje: Additionally adding joint (rotor + gear) inertia: equation a) (see Vereshchagin89)
             s.D = d(j) + dot(s.Z, s.PZ);
             // s.D = dot(s.Z, s.PZ);
 
@@ -431,8 +431,6 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
         //The constraint force and acceleration force projected on the joint axes -> axis torque/force
         double constraint_torque = -dot(s.Z, constraint_force);
         //The result should be the torque at this joint.
-
-        // torques(j) = constraint_torque;
         constraintTorque(j) = constraint_torque;
 
         //Summing all 2 contributions for true control torque:
