@@ -84,7 +84,12 @@ Solver_Vereshchagin::Solver_Vereshchagin(const Chain& chain_,
  * @return error/success code
  */
 
-int Solver_Vereshchagin::CartToJnt(const JntArray &q, const JntArray &q_dot, JntArray &q_dotdot, const Jacobian& alfa, const JntArray& beta, const Wrenches& f_ext, JntArray &torques)
+int Solver_Vereshchagin::CartToJnt(const JntArray &q, const JntArray &q_dot, 
+                                   JntArray &q_dotdot, const Jacobian& alfa, 
+                                   const JntArray& beta, 
+                                   const Wrenches& f_ext_natural, 
+                                   const Wrenches& f_ext_virtual, 
+                                   JntArray &torques)
 {
     if (nj != chain.getNrOfJoints())
         return (error = -3);
@@ -93,7 +98,7 @@ int Solver_Vereshchagin::CartToJnt(const JntArray &q, const JntArray &q_dot, Jnt
         return (error = -3);
 
     //Check sizes always
-    if (q.rows() != nj || q_dot.rows() != nj || q_dotdot.rows() != nj || torques.rows() != nj || f_ext.size() != ns){
+    if (q.rows() != nj || q_dot.rows() != nj || q_dotdot.rows() != nj || torques.rows() != nj || f_ext_natural.size() != ns || f_ext_virtual.size() != ns){
         return (error = -4);
     }
 
@@ -102,7 +107,7 @@ int Solver_Vereshchagin::CartToJnt(const JntArray &q, const JntArray &q_dot, Jnt
     }
 
     //do an upward recursion for position(X) and velocities(X_dot)
-    this->initial_upwards_sweep(q, q_dot, q_dotdot, f_ext);
+    this->initial_upwards_sweep(q, q_dot, q_dotdot, f_ext_natural, f_ext_virtual);
     //do an inward recursion for inertia(H), forces(F) and constraints (U and L)
     this->downwards_sweep(alfa, torques);
     //Solve for the constraint forces(b_N-> beta = ...)
@@ -117,7 +122,11 @@ int Solver_Vereshchagin::CartToJnt(const JntArray &q, const JntArray &q_dot, Jnt
  *  This method calculates all cartesian space poses, twists, bias accelerations.
  *  External forces are also taken into account in this outward sweep.
  */
-void Solver_Vereshchagin::initial_upwards_sweep(const JntArray &q, const JntArray &qdot, const JntArray &qdotdot, const Wrenches& f_ext)
+void Solver_Vereshchagin::initial_upwards_sweep(const JntArray &q, 
+                                                const JntArray &qdot, 
+                                                const JntArray &qdotdot, 
+                                                const Wrenches& f_ext_natural, 
+                                                const Wrenches& f_ext_virtual)
 {
     //if (q.rows() != nj || qdot.rows() != nj || qdotdot.rows() != nj || f_ext.size() != ns)
     //        return -1;
@@ -170,11 +179,11 @@ void Solver_Vereshchagin::initial_upwards_sweep(const JntArray &q, const JntArra
 
         //wrench of the rigid body bias forces and the external forces on the segment (in body coordinates, tip)
         //external forces are taken into account through s.U.
-        Wrench FextLocal = F_total.M.Inverse() * f_ext[i];
+        Wrench FextLocal = F_total.M.Inverse() * (f_ext_natural[i] + f_ext_virtual[i]);
         s.U = s.v * (s.H * s.v) - FextLocal; //f_ext[i];
 
         // Save external forces on end_eff for next sweep. Expressed in end_eff tip frame.
-        if(i == (int)ns - 1) f_ext_ee = -FextLocal;
+        if(i == (int)ns - 1) f_ext_ee = -(F_total.M.Inverse() * f_ext_virtual[i]);
 
         if (segment.getJoint().getType() != Joint::None)
             j++;
