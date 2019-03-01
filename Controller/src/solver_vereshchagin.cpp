@@ -292,7 +292,6 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
             s.G.noalias() += child.E.transpose() * vCiZDu;
         }
 
-
         if (i != 0)
         {
             //Transform all results to joint root coordinates of segment i (== body coordinates segment i-1)

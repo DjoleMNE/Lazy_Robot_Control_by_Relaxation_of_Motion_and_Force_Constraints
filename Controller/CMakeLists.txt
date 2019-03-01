@@ -12,6 +12,8 @@ else()
         message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++14 support. Please use a different C++ compiler.")
 endif()
 
+set(ROBOT youBot CACHE STRING "Robot ID")
+message("Selected Robot: ${ROBOT}")
 
 find_package(orocos_kdl)
 find_package(kdl_parser)
@@ -34,21 +36,37 @@ link_directories(
   "/home/djole/Master/Thesis/GIT/MT_testing/KDL/KDL_install_dir/lib/"
 )
 
-
-add_executable(main
-  src/main.cpp
-  src/constants.cpp
-  src/kdl_eigen_conversions.cpp
-  src/geometry_utils.cpp
-  src/model_prediction.cpp
-  src/solver_vereshchagin.cpp
-  src/fk_vereshchagin.cpp
-  src/youbot_mediator.cpp
-  src/youbot_custom_model.cpp
-  src/safety_controller.cpp
-  src/abag.cpp
-  src/dynamics_controller.cpp
-)
+if("${ROBOT}" STREQUAL "lwr")
+  add_executable(main
+    src/main_lwr.cpp
+    src/constants.cpp
+    src/kdl_eigen_conversions.cpp
+    src/geometry_utils.cpp
+    src/model_prediction.cpp
+    src/solver_vereshchagin.cpp
+    src/fk_vereshchagin.cpp
+    src/lwr_mediator.cpp
+    #src/lwr_custom_model.cpp
+    src/safety_controller.cpp
+    src/abag.cpp
+    src/dynamics_controller.cpp
+  )
+else()
+  add_executable(main
+    src/main_youbot.cpp
+    src/constants.cpp
+    src/kdl_eigen_conversions.cpp
+    src/geometry_utils.cpp
+    src/model_prediction.cpp
+    src/solver_vereshchagin.cpp
+    src/fk_vereshchagin.cpp
+    src/youbot_mediator.cpp
+    src/youbot_custom_model.cpp
+    src/safety_controller.cpp
+    src/abag.cpp
+    src/dynamics_controller.cpp
+  )
+endif()
 
 target_link_libraries(main
     ${orocos_kdl_LIBRARIES}
