@@ -119,9 +119,6 @@ bool LwrRttControl::configureHook()
     robot_state_->ee_unit_constraint_force.setColumn(5, unit_constraint_force_z1);
     robot_state_->ee_acceleration_energy(5) = 0.0;
 
-    KDL::Wrench wrench(KDL::Vector(20.0, 0.0, 0.0),
-                       KDL::Vector(0.0, 0.0, 0.0));
-    robot_state_->external_force[arm.getNrOfSegments() - 1] = wrench;
     return true;
 }
 
@@ -135,12 +132,19 @@ void LwrRttControl::updateHook()
     robot_state_->q.data = jnt_pos_in;
     robot_state_->qd.data = jnt_vel_in;
 
+
+    KDL::Wrench wrench(KDL::Vector(4.0, 4.0, 0.0),
+                       KDL::Vector(0.0, 0.0, 0.0));
+    KDL::Wrenches virtual_wrenches(arm.getNrOfSegments());
+    virtual_wrenches[arm.getNrOfSegments() - 1] = wrench;
+
     int hd_solver_result = hd_solver_->CartToJnt(robot_state_->q,
                                                  robot_state_->qd,
                                                  robot_state_->qdd,
                                                  robot_state_->ee_unit_constraint_force,
                                                  robot_state_->ee_acceleration_energy,
                                                  robot_state_->external_force,
+                                                 virtual_wrenches,
                                                  robot_state_->feedforward_torque);
     if(hd_solver_result != 0) printf("ERROR");
 
