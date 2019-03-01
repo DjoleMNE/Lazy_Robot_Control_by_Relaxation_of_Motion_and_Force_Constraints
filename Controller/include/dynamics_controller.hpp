@@ -111,9 +111,9 @@ class dynamics_controller
     model_prediction predictor_;
 
     state_specification robot_state_;
-    state_specification robot_commands_;
     state_specification desired_state_;
     state_specification predicted_state_;
+    KDL::Wrenches force_command_;
 
     void print_settings_info();
     void write_to_file();

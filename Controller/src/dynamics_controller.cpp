@@ -47,11 +47,10 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     safety_control_(robot_driver, true), 
     abag_(abag_parameter::DIMENSIONS, abag_parameter::USE_ERROR_MAGNITUDE),
     predictor_(robot_chain_),
-    robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_,
-                 NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
-    robot_commands_(robot_state_),
+    robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     desired_state_(robot_state_),
-    predicted_state_(robot_state_)
+    predicted_state_(robot_state_),
+    force_command_(NUM_OF_SEGMENTS_)
 {
     assert(("Robot is not initialized", robot_driver.is_initialized()));
     // KDL Solver constraint  
@@ -107,17 +106,11 @@ void dynamics_controller::print_settings_info()
             break;
     }
 
-    /* 
-        Get sensor data from the robot driver or if simulation is on, 
-        replace current state with the integrated joint velocities and positions
-    */
-    update_current_state();
-    
-    std::cout<<"\nInitial joint state: "<< std::endl;
+    std::cout<< "\nInitial joint state: "<< std::endl;
     std::cout<< "Joint positions: "<< robot_state_.q << std::endl;
     std::cout<< "Joint velocities:"<< robot_state_.qd << "\n" << std::endl;
 
-    std::cout<<"Initial Cartesian state: "<< std::endl;
+    std::cout<< "Initial Cartesian state: "<< std::endl;
     std::cout<< "End-effector position: "<< robot_state_.frame_pose[END_EFF_].p << std::endl;
     std::cout<< "End-effector orientation: \n"<< robot_state_.frame_pose[END_EFF_].M << std::endl;
     std::cout<< "End-effector velocity:"<< robot_state_.frame_velocity[END_EFF_] << "\n" << std::endl;
@@ -130,14 +123,19 @@ void dynamics_controller::print_settings_info()
 */
 void dynamics_controller::update_current_state()
 {
+    // Get joint angles and velocities
     safety_control_.get_current_state(robot_state_);
-    
+
+    // Get Cart poses and velocities
     int fk_solver_result = fk_vereshchagin_.JntToCart(robot_state_.q, 
                                                       robot_state_.qd, 
                                                       robot_state_.frame_pose, 
                                                       robot_state_.frame_velocity);
     if(fk_solver_result != 0) 
         printf("Warning: FK solver returned an error! %d \n", fk_solver_result);
+
+    // Update current constraints, external forces, and feedforward torques
+    // update_dynamics_interfaces();
 
     // Print Current robot state in Debug mode
     #ifndef NDEBUG
@@ -156,6 +154,15 @@ void dynamics_controller::update_current_state()
         // std::cout << "End-effector Velocity:   \n" 
         //           << robot_state_.frame_velocity[END_EFF_] << std::endl;
     #endif
+}
+
+// Update current dynamics intefaces using desired robot state specifications 
+void dynamics_controller::update_dynamics_interfaces()
+{ 
+    robot_state_.ee_unit_constraint_force = desired_state_.ee_unit_constraint_force;
+    robot_state_.ee_acceleration_energy   = desired_state_.ee_acceleration_energy;
+    robot_state_.feedforward_torque       = desired_state_.feedforward_torque;
+    robot_state_.external_force           = desired_state_.external_force;
 }
 
 // Write control data to a file
@@ -429,42 +436,21 @@ void dynamics_controller::compute_cart_control_commands()
     std::cout << "ABAG Commands: "<< abag_command_.transpose() << std::endl;
 #endif
 
-    // First reset old robot external forces to initial values
-    robot_state_.external_force = desired_state_.external_force;
+    // // Set additional (virtual) force computed by the ABAG controller
+    // force_command_[END_EFF_].force(0) = CTRL_DIM_[0]? abag_command_(0) * MAX_FORCE_[0] : 0.0;
+    
+    // force_command_[END_EFF_].force(1) = CTRL_DIM_[1]? abag_command_(1) * MAX_FORCE_[1] : 0.0;
+    
+    // force_command_[END_EFF_].force(2) = CTRL_DIM_[2]? abag_command_(2) * MAX_FORCE_[2] : 0.0;  
+    
+    // force_command_[END_EFF_].torque(0) = CTRL_DIM_[3]? abag_command_(3) * MAX_FORCE_[3] : 0.0;
 
-    // Add additional force computed by the ABAG controller
-    robot_state_.external_force[END_EFF_].force(0)  =+ \
-        CTRL_DIM_[0]? abag_command_(0) * MAX_FORCE_[0] : 0.0;
+    // force_command_[END_EFF_].torque(1) = CTRL_DIM_[4]? abag_command_(4) * MAX_FORCE_[4] : 0.0;
     
-    robot_state_.external_force[END_EFF_].force(1)  =+ \
-        CTRL_DIM_[1]? abag_command_(1) * MAX_FORCE_[1] : 0.0;
-    
-    robot_state_.external_force[END_EFF_].force(2)  =+ \
-        CTRL_DIM_[2]? abag_command_(2) * MAX_FORCE_[2] : 0.0;  
-    
-    robot_state_.external_force[END_EFF_].torque(0) =+ \
-        CTRL_DIM_[3]? abag_command_(3) * MAX_FORCE_[3] : 0.0;
-
-    robot_state_.external_force[END_EFF_].torque(1) =+ \
-        CTRL_DIM_[4]? abag_command_(4) * MAX_FORCE_[4] : 0.0;
-    
-    robot_state_.external_force[END_EFF_].torque(2) =+ \
-        CTRL_DIM_[5]? abag_command_(5) * MAX_FORCE_[5] : 0.0;
-
-    KDL::Jacobian jacob (NUM_OF_JOINTS_);
-    std::cout << geometry::ik_force(jacob, robot_state_.external_force[END_EFF_]).transpose() << std::endl;
+    // force_command_[END_EFF_].torque(2) = CTRL_DIM_[5]? abag_command_(5) * MAX_FORCE_[5] : 0.0;
 }
 
-// Update current dynamics intefaces using desired robot state specifications 
-void dynamics_controller::update_dynamics_interfaces()
-{ 
-    robot_state_.ee_unit_constraint_force = desired_state_.ee_unit_constraint_force;
-    robot_state_.ee_acceleration_energy   = desired_state_.ee_acceleration_energy;
-    robot_state_.feedforward_torque       = desired_state_.feedforward_torque;
-    robot_state_.external_force           = desired_state_.external_force;
-}
-
-//Calculate robot dynamics - Resolve the motion using the Vereshchagin HD solver
+//Calculate robot dynamics - Resolve motion and forces using the Vereshchagin HD solver
 int dynamics_controller::evaluate_dynamics()
 {
     int hd_solver_result = hd_solver_.CartToJnt(robot_state_.q,
@@ -473,20 +459,21 @@ int dynamics_controller::evaluate_dynamics()
                                                 robot_state_.ee_unit_constraint_force,
                                                 robot_state_.ee_acceleration_energy,
                                                 robot_state_.external_force,
+                                                force_command_,
                                                 robot_state_.feedforward_torque);
 
     if(hd_solver_result != 0) return hd_solver_result;
 
     hd_solver_.get_control_torque(robot_state_.control_torque);
-    // hd_solver_.get_transformed_link_acceleration(robot_state_.frame_acceleration);
+    hd_solver_.get_transformed_link_acceleration(robot_state_.frame_acceleration);
     
     // Print computed state in Debug mode
     #ifndef NDEBUG
         // std::cout << "\nComputed Cartesian state:" << std::endl;
 
-        // std::cout << "Frame ACC" << '\n';
-        // for (size_t i = 0; i < NUM_OF_SEGMENTS_ + 1; i++)
-        //     std::cout << robot_state_.frame_acceleration[i] << '\n';
+        std::cout << "Frame ACC" << '\n';
+        for (size_t i = 0; i < NUM_OF_SEGMENTS_ + 1; i++)
+            std::cout << robot_state_.frame_acceleration[i] << '\n';
 
         // std::cout << "End-effector Position:   " 
         //       << robot_state_.frame_pose[END_EFF_].p  << std::endl;
@@ -519,6 +506,13 @@ int dynamics_controller::control(const int desired_control_mode,
     // First make sure that the robot is not moving
     stop_robot_motion();
 
+    /* 
+        Get sensor data from the robot driver or if simulation is on, 
+        replace current state with the integrated joint velocities and positions.
+        Additionally, update dynamics intefaces.
+    */
+    update_current_state();  update_dynamics_interfaces();
+
     //Print information about controller settings
     print_settings_info();
 
@@ -534,7 +528,6 @@ int dynamics_controller::control(const int desired_control_mode,
     double loop_time = 0.0;
     int loop_count = 0;
 
-    update_dynamics_interfaces();
     std::cout << "Control Loop Started"<< std::endl;
     while(1)
     {   
@@ -550,8 +543,7 @@ int dynamics_controller::control(const int desired_control_mode,
         compute_control_error();
         
         compute_cart_control_commands();
-        if (store_control_data) write_to_file();
-        
+        if (store_control_data) write_to_file();        
 
         // Calculate robot dynamics using the Vereshchagin HD solver
         if(evaluate_dynamics() != 0)
