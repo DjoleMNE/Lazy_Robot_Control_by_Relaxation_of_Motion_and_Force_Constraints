@@ -27,7 +27,7 @@ SOFTWARE.
 #include "youbot_mediator.hpp"
 
 youbot_mediator::youbot_mediator(): 
-    is_initialized_(false), ROBOT_ID_(youbot_constants::ID), parser_result_(0),
+    is_initialized_(false), ROBOT_ID_(youbot_constants::ID),
     youbot_model_(youbot_model::URDF),
     youbot_environment_(youbot_environment::SIMULATION),
     add_offsets_(false), connection_established_(false),
@@ -275,14 +275,14 @@ int youbot_mediator::get_model_from_urdf()
 {
     if (!yb_urdf_model_.initFile(youbot_constants::urdf_path))
     {
-        std::cout << "ERROR: Failed to parse urdf robot model" << '\n';
+        printf("ERROR: Failed to parse urdf robot model \n");
         return -1;
     }
 
     //Extract KDL tree from the URDF file
     if (!kdl_parser::treeFromUrdfModel(yb_urdf_model_, yb_tree_))
     {
-        std::cout << "ERROR: Failed to construct kdl tree" << '\n';
+        printf("ERROR: Failed to construct kdl tree \n");
         return -1;
     }
 
@@ -314,7 +314,7 @@ void youbot_mediator::initialize(const int robot_model,
     // Reset Flags
     is_initialized_ = false;
     add_offsets_ = false;
-    parser_result_ = 0;
+    int parser_result = 0;
 
     if(youbot_model_ == youbot_model::YB_STORE)
     {
@@ -327,7 +327,7 @@ void youbot_mediator::initialize(const int robot_model,
     }
     
     //Extract youBot model from the URDF file
-    else parser_result_ = get_model_from_urdf();
+    else parser_result = get_model_from_urdf();
     
     if (youbot_environment_ != youbot_environment::SIMULATION \
         && !connection_established_)
@@ -342,10 +342,10 @@ void youbot_mediator::initialize(const int robot_model,
         connection_established_ = true;
     }
     
-    if(parser_result_ != 0){
-        std::cout << "Cannot create the youBot model!" << std::endl;
-    } else{
+    if(parser_result != 0)  printf("Cannot create youBot model! \n");
+    else
+    {
         is_initialized_ = true;
-	    std::cout << "youBot initialized successfully! " << std::endl;
+	    printf("youBot initialized successfully! \n");
     } 
 }

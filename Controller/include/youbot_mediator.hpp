@@ -95,7 +95,6 @@ class youbot_mediator: public robot_mediator
 	private:
 		bool is_initialized_;
 		const std::string ROBOT_ID_;
-		int parser_result_;
 		int youbot_model_;
 		int youbot_environment_;
 
