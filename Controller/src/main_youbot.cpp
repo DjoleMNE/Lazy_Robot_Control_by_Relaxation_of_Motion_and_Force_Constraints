@@ -155,7 +155,7 @@ int main(int argc, char **argv)
     
     //loop rate in Hz
     int rate_hz = 999;
-    dynamics_controller controller(robot_driver, rate_hz);
+    dynamics_controller controller(&robot_driver, rate_hz);
     
     //Create End_effector Cartesian Acceleration task 
     controller.define_ee_acc_constraint(std::vector<bool>{false, false, false, // Linear

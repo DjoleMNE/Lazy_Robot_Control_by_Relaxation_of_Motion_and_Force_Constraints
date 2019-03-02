@@ -26,13 +26,13 @@ SOFTWARE.
 #include <dynamics_controller.hpp>
 #define SECOND 1000000
 
-dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
+dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
                                          const int rate_hz):
     RATE_HZ_(rate_hz),
     // Time period defined in microseconds: 1s = 1 000 000us
     DT_MICRO_(SECOND / RATE_HZ_),  DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
     loop_start_time_(), loop_end_time_(), //Not sure if required to init
-    robot_chain_(robot_driver.get_robot_model()),
+    robot_chain_(robot_driver->get_robot_model()),
     NUM_OF_JOINTS_(robot_chain_.getNrOfJoints()),
     NUM_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
     NUM_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
@@ -41,8 +41,8 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     MAX_FORCE_(dynamics_parameter::MAX_FORCE),
     error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
-    hd_solver_(robot_chain_, robot_driver.get_joint_inertia(),
-               robot_driver.get_root_acceleration(), NUM_OF_CONSTRAINTS_),
+    hd_solver_(robot_chain_, robot_driver->get_joint_inertia(),
+               robot_driver->get_root_acceleration(), NUM_OF_CONSTRAINTS_),
     fk_vereshchagin_(robot_chain_),
     safety_control_(robot_driver, true), 
     abag_(abag_parameter::DIMENSIONS, abag_parameter::USE_ERROR_MAGNITUDE),
@@ -52,7 +52,7 @@ dynamics_controller::dynamics_controller(youbot_mediator &robot_driver,
     predicted_state_(robot_state_),
     force_command_(NUM_OF_SEGMENTS_)
 {
-    assert(("Robot is not initialized", robot_driver.is_initialized()));
+    assert(("Robot is not initialized", robot_driver->is_initialized()));
     // KDL Solver constraint  
     assert(NUM_OF_JOINTS_ == NUM_OF_SEGMENTS_);
 

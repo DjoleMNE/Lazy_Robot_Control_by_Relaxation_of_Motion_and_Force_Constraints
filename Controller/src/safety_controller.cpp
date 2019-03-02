@@ -25,16 +25,16 @@ SOFTWARE.
 
 #include <safety_controller.hpp>
 
-safety_controller::safety_controller(youbot_mediator &robot_driver,
-                                     const bool print_logs):
+safety_controller::safety_controller(robot_mediator *robot_driver,
+                                     const bool print_logs): 
     robot_driver_(robot_driver),
-    robot_chain_(robot_driver_.get_robot_model()),
+    robot_chain_(robot_driver_->get_robot_model()),
     predictor_(robot_chain_),
-    joint_position_limits_max_(robot_driver_.get_maximum_joint_pos_limits()),
-    joint_position_limits_min_(robot_driver_.get_minimum_joint_pos_limits()),
-    joint_position_thresholds_(robot_driver_.get_joint_position_thresholds()),
-    joint_velocity_limits_(robot_driver_.get_joint_velocity_limits()),
-    joint_torque_limits_(robot_driver_.get_joint_torque_limits()),
+    joint_position_limits_max_(robot_driver_->get_maximum_joint_pos_limits()),
+    joint_position_limits_min_(robot_driver_->get_minimum_joint_pos_limits()),
+    joint_position_thresholds_(robot_driver_->get_joint_position_thresholds()),
+    joint_velocity_limits_(robot_driver_->get_joint_velocity_limits()),
+    joint_torque_limits_(robot_driver_->get_joint_torque_limits()),
     NUM_OF_JOINTS_(robot_chain_.getNrOfJoints()),
     NUM_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
     NUM_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
@@ -42,7 +42,7 @@ safety_controller::safety_controller(youbot_mediator &robot_driver,
     PRINT_LOGS_(print_logs),
     zero_joint_velocities_(NUM_OF_JOINTS_),
     commands_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
-    predicted_states_(3, commands_) 
+    predicted_states_(3, commands_)
 {
 
 }
@@ -257,7 +257,7 @@ int safety_controller::check_torques()
     }
 
     // Commands are valid. Send them to the robot driver
-    robot_driver_.set_joint_command(commands_.q, commands_.qd,
+    robot_driver_->set_joint_command(commands_.q, commands_.qd,
                                     commands_.control_torque,
                                     control_mode::TORQUE);
     return control_mode::TORQUE;
@@ -284,7 +284,7 @@ int safety_controller::check_velocities()
     }
 
     // Commands are valid. Send them to the robot driver
-    robot_driver_.set_joint_command(commands_.q, commands_.qd,
+    robot_driver_->set_joint_command(commands_.q, commands_.qd,
                                     commands_.control_torque, 
                                     control_mode::VELOCITY);
     return control_mode::VELOCITY;
@@ -308,7 +308,7 @@ int safety_controller::check_positions()
     }
 
     // Commands are valid. Send them to the robot driver
-    robot_driver_.set_joint_command(commands_.q, commands_.qd,
+    robot_driver_->set_joint_command(commands_.q, commands_.qd,
                                     commands_.control_torque,
                                     control_mode::POSITION);
     return control_mode::POSITION;
@@ -331,14 +331,14 @@ void safety_controller::get_control_commands(state_specification &commands)
 //Set velocities of arm's joints to 0 and send commands to the robot driver
 void safety_controller::stop_robot_motion()
 {   
-    robot_driver_.set_joint_velocities(zero_joint_velocities_);
+    robot_driver_->set_joint_velocities(zero_joint_velocities_);
 }
 
 //Get current robot state from the joint sensors
 void safety_controller::get_current_state(state_specification &current_state)
 {
-    robot_driver_.get_joint_positions(current_state.q);
-    robot_driver_.get_joint_velocities(current_state.qd);
+    robot_driver_->get_joint_positions(current_state.q);
+    robot_driver_->get_joint_velocities(current_state.qd);
 }
 
 /*

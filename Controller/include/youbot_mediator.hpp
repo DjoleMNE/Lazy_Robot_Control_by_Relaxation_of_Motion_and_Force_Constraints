@@ -48,49 +48,49 @@ enum youbot_environment
     SIMULATION = 1   
 };
 
-class youbot_mediator
+class youbot_mediator: public robot_mediator
 {
 	public:
 		youbot_mediator();
 		~youbot_mediator(){}
 
 		// Initializes variables and calibrates the manipulator
-		void initialize(const int robot_model,
+		virtual void initialize(const int robot_model,
 						const int robot_environment);
 		
-		bool is_initialized();
+		virtual bool is_initialized();
 
 		// Set desired joint commands to move robot and save them for sake of simulation
-		void set_joint_command(const KDL::JntArray &joint_positions,
+		virtual void set_joint_command(const KDL::JntArray &joint_positions,
 							   const KDL::JntArray &joint_velocities,
 							   const KDL::JntArray &joint_torques,
 							   const int desired_control_mode);
 
 		// Get current joint positions
-		void get_joint_positions(KDL::JntArray &joint_positions);
+		virtual void get_joint_positions(KDL::JntArray &joint_positions);
 		// Get current joint velocities 
-		void get_joint_velocities(KDL::JntArray &joint_velocities);
+		virtual void get_joint_velocities(KDL::JntArray &joint_velocities);
 		// Get current joint torques
-		void get_joint_torques(KDL::JntArray &joint_torques);
+		virtual void get_joint_torques(KDL::JntArray &joint_torques);
 
 		// Set joint position command
-		void set_joint_positions(const KDL::JntArray &joint_positions);
+		virtual void set_joint_positions(const KDL::JntArray &joint_positions);
 		// Set joint velocity command
-		void set_joint_velocities(const KDL::JntArray &joint_velocities);
+		virtual void set_joint_velocities(const KDL::JntArray &joint_velocities);
 		// Set joint torque command
-		void set_joint_torques(const KDL::JntArray &joint_torques); 
+		virtual void set_joint_torques(const KDL::JntArray &joint_torques); 
 
-		std::vector<double> get_maximum_joint_pos_limits();
-		std::vector<double> get_minimum_joint_pos_limits();
-		std::vector<double> get_joint_position_thresholds();
-		std::vector<double> get_joint_velocity_limits();
-		std::vector<double> get_joint_torque_limits();
-		std::vector<double> get_joint_inertia();
-		std::vector<double> get_joint_offsets();
-		std::string get_robot_ID();
+		virtual std::vector<double> get_maximum_joint_pos_limits();
+		virtual std::vector<double> get_minimum_joint_pos_limits();
+		virtual std::vector<double> get_joint_position_thresholds();
+		virtual std::vector<double> get_joint_velocity_limits();
+		virtual std::vector<double> get_joint_torque_limits();
+		virtual std::vector<double> get_joint_inertia();
+		virtual std::vector<double> get_joint_offsets();
+		virtual std::string get_robot_ID();
 		
-		KDL::Twist get_root_acceleration();
-		KDL::Chain get_robot_model();
+		virtual KDL::Twist get_root_acceleration();
+		virtual KDL::Chain get_robot_model();
 
 	private:
 		bool is_initialized_;

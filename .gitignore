@@ -1,7 +1,9 @@
 youbot_driver/
 KDL/
-Controller/build/*
-Controller/release_build/*
+Controller/build_youbot/*
+Controller/build_lwr/*
+Controller/release_build_lwr/*
+Controller/release_build_youbot/*
 lwr_rtt_ws/build/*
 lwr_rtt_ws/devel/*
 lwr_rtt_ws/logs/*

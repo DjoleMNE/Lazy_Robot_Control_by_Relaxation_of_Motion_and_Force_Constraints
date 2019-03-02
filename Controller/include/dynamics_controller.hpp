@@ -60,7 +60,7 @@ class dynamics_controller
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     
-    dynamics_controller(youbot_mediator &robot_driver, const int rate_hz);
+    dynamics_controller(robot_mediator *robot_driver, const int rate_hz);
     ~dynamics_controller(){};
 
     int control(const int desired_control_mode, const bool store_control_data);

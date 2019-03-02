@@ -27,18 +27,18 @@ SOFTWARE.
 #include "youbot_mediator.hpp"
 
 youbot_mediator::youbot_mediator(): 
-    is_initialized_(false), ROBOT_ID_(youbot_constants::ID), add_offsets_(false),
-    parser_result_(0), connection_established_(false), 
+    is_initialized_(false), ROBOT_ID_(youbot_constants::ID), parser_result_(0),
     youbot_model_(youbot_model::URDF),
     youbot_environment_(youbot_environment::SIMULATION),
+    add_offsets_(false), connection_established_(false),
+    youbot_arm_(nullptr), yb_chain_(), yb_tree_(), yb_urdf_model_(),
     linear_root_acc_(youbot_constants::root_acceleration[0],
                         youbot_constants::root_acceleration[1],
                         youbot_constants::root_acceleration[2]),
     angular_root_acc_(youbot_constants::root_acceleration[3],
                         youbot_constants::root_acceleration[4],
                         youbot_constants::root_acceleration[5]),
-    root_acc_(linear_root_acc_, angular_root_acc_), 
-    yb_chain_(), yb_tree_(), yb_urdf_model_()
+    root_acc_(linear_root_acc_, angular_root_acc_) 
 {   
     //Resize measurement variables
     q_measured_.resize(youbot_constants::NUMBER_OF_JOINTS);
@@ -273,13 +273,13 @@ KDL::Chain youbot_mediator::get_robot_model()
 //Extract youBot model from URDF file
 int youbot_mediator::get_model_from_urdf()
 {
-    //Extract KDL tree from the URDF file
     if (!yb_urdf_model_.initFile(youbot_constants::urdf_path))
     {
         std::cout << "ERROR: Failed to parse urdf robot model" << '\n';
         return -1;
     }
 
+    //Extract KDL tree from the URDF file
     if (!kdl_parser::treeFromUrdfModel(yb_urdf_model_, yb_tree_))
     {
         std::cout << "ERROR: Failed to construct kdl tree" << '\n';

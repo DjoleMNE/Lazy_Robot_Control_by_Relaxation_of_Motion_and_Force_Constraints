@@ -41,8 +41,8 @@ SOFTWARE.
 class safety_controller
 {
   public:
-    safety_controller(youbot_mediator &robot_driver, const bool print_logs);
-    ~safety_controller(){};
+    safety_controller(robot_mediator *robot_driver, const bool print_logs);
+    ~safety_controller(){}
 
     int set_control_commands(const state_specification &current_state,
                              const double dt_sec,
@@ -54,7 +54,7 @@ class safety_controller
     void stop_robot_motion();
 
   private:
-    youbot_mediator robot_driver_;
+    robot_mediator *robot_driver_;
     const KDL::Chain robot_chain_;
 	  model_prediction predictor_;
 
