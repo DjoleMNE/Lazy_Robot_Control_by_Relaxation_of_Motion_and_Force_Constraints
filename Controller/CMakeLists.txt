@@ -46,7 +46,7 @@ if("${ROBOT}" STREQUAL "lwr")
     src/solver_vereshchagin.cpp
     src/fk_vereshchagin.cpp
     src/lwr_mediator.cpp
-    #src/lwr_custom_model.cpp
+    src/lwr_kdl_model.cpp
     src/safety_controller.cpp
     src/abag.cpp
     src/dynamics_controller.cpp

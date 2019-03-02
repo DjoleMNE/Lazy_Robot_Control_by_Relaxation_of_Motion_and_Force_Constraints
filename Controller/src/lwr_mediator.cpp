@@ -216,10 +216,7 @@ int lwr_mediator::get_model_from_urdf()
 //Extract LWR model from KDL parameters
 void lwr_mediator::get_kdl_model()
 {
-    //Extract KDL chain from KDL tree
-    // lwr_tree_.getChain(lwr_constants::root_name, 
-    //                    lwr_constants::tooltip_name, 
-    //                    lwr_chain_);
+    lwr_kdl_model kdl_lwr(lwr_chain_);
 }
 
 std::string lwr_mediator::get_robot_ID()

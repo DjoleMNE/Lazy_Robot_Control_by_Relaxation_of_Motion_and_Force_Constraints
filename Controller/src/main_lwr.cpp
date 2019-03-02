@@ -82,7 +82,7 @@ int main(int argc, char **argv)
     lwr_mediator robot_driver;
 
     environment_ = lwr_environment::LWR_SIMULATION;
-    robot_model_ = lwr_model::LWR_URDF;
+    robot_model_ = lwr_model::LWR_KDL;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
     robot_driver.initialize(robot_model_, environment_);

@@ -1,7 +1,7 @@
 /*
 Author: Sven Schneider
 Institute: Hochschule Bonn-Rhein-Sieg
-Copyright (c) [2018]
+Copyright (c) [2019]
 */
 
 #ifndef YOUBOT_CUSTOM_MODEL_HPP

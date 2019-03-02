@@ -29,6 +29,7 @@ SOFTWARE.
 #include <robot_mediator.hpp>
 #include <kdl_parser/kdl_parser.hpp>
 #include <urdf/model.h>
+#include <lwr_kdl_model.hpp>
 #include <constants.hpp>
 
 enum lwr_model 
