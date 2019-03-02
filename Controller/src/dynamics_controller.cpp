@@ -437,17 +437,17 @@ void dynamics_controller::compute_cart_control_commands()
 #endif
 
     // // Set additional (virtual) force computed by the ABAG controller
-    // force_command_[END_EFF_].force(0) = CTRL_DIM_[0]? abag_command_(0) * MAX_FORCE_[0] : 0.0;
+    force_command_[END_EFF_].force(0) = CTRL_DIM_[0]? abag_command_(0) * MAX_FORCE_[0] : 0.0;
     
-    // force_command_[END_EFF_].force(1) = CTRL_DIM_[1]? abag_command_(1) * MAX_FORCE_[1] : 0.0;
+    force_command_[END_EFF_].force(1) = CTRL_DIM_[1]? abag_command_(1) * MAX_FORCE_[1] : 0.0;
     
-    // force_command_[END_EFF_].force(2) = CTRL_DIM_[2]? abag_command_(2) * MAX_FORCE_[2] : 0.0;  
+    force_command_[END_EFF_].force(2) = CTRL_DIM_[2]? abag_command_(2) * MAX_FORCE_[2] : 0.0;  
     
-    // force_command_[END_EFF_].torque(0) = CTRL_DIM_[3]? abag_command_(3) * MAX_FORCE_[3] : 0.0;
+    force_command_[END_EFF_].torque(0) = CTRL_DIM_[3]? abag_command_(3) * MAX_FORCE_[3] : 0.0;
 
-    // force_command_[END_EFF_].torque(1) = CTRL_DIM_[4]? abag_command_(4) * MAX_FORCE_[4] : 0.0;
+    force_command_[END_EFF_].torque(1) = CTRL_DIM_[4]? abag_command_(4) * MAX_FORCE_[4] : 0.0;
     
-    // force_command_[END_EFF_].torque(2) = CTRL_DIM_[5]? abag_command_(5) * MAX_FORCE_[5] : 0.0;
+    force_command_[END_EFF_].torque(2) = CTRL_DIM_[5]? abag_command_(5) * MAX_FORCE_[5] : 0.0;
 }
 
 //Calculate robot dynamics - Resolve motion and forces using the Vereshchagin HD solver
