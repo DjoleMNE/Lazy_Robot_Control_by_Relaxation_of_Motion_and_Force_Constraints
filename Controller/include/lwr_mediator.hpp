@@ -88,14 +88,12 @@ class lwr_mediator: public robot_mediator
 		virtual KDL::Chain get_robot_model();
 
 	private:
-		bool is_initialized_;
 		const std::string ROBOT_ID_;
-		int parser_result_;
+		bool add_offsets_;
+		bool is_initialized_;
+		bool connection_established_;
 		int lwr_model_;
 		int lwr_environment_;
-
-		bool add_offsets_;
-		bool connection_established_;
 
 		KDL::Chain lwr_chain_;		
 		KDL::Tree lwr_tree_;
@@ -106,7 +104,19 @@ class lwr_mediator: public robot_mediator
 		const KDL::Vector angular_root_acc_;
 		const KDL::Twist root_acc_;
 
+		// Joint Measured State Variables
+        Eigen::VectorXd q_measured_;
+        Eigen::VectorXd qd_measured_;
+        Eigen::VectorXd tau_measured_;
+        
+        // Joint Setpoint Variables
+        Eigen::VectorXd q_setpoint_;
+        Eigen::VectorXd qd_setpoint_;
+        Eigen::VectorXd tau_setpoint_;
+
         //Extract LWR model from urdf file
         int get_model_from_urdf();
+		//Extract LWR model from KDL parameters
+		void get_kdl_model();
 };
 #endif /* LWR_MEDIATOR_HPP */

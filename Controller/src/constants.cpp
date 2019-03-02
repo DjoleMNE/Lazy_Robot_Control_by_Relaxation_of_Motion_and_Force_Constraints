@@ -76,6 +76,41 @@ namespace youbot_constants
     const std::string tooltip_name = "arm_link_5";
 }
 
+namespace lwr_constants
+{
+   //Robot ID/Name
+   const std::string ID("lwr_arm");
+
+   // Number of joints in the manipulator
+   const int NUMBER_OF_JOINTS(7);
+   const int NUMBER_OF_SEGMENTS(7);
+   const int NUMBER_OF_FRAMES(8);
+
+   //Arm's root acceleration
+   const std::vector<double> root_acceleration {0.0, 0.0, 9.81, 0.0, 0.0, 0.0};
+
+   // Limits from KUKA manual-> Must be confermed
+   const std::vector<double> joint_position_limits_max {DEG_TO_RAD(170), DEG_TO_RAD(120), DEG_TO_RAD(170), DEG_TO_RAD(120), DEG_TO_RAD(170), DEG_TO_RAD(120), DEG_TO_RAD(170)};
+   const std::vector<double> joint_position_limits_min {DEG_TO_RAD(-170), DEG_TO_RAD(-120), DEG_TO_RAD(-170), DEG_TO_RAD(-120), DEG_TO_RAD(-170), DEG_TO_RAD(-120), DEG_TO_RAD(-170)};
+
+   const std::vector<double> joint_velocity_limits {DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(180), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5)};
+   const std::vector<double> joint_torque_limits {200, 200, 100, 100, 100, 30, 30};
+
+   //  const std::vector<double> joint_position_thresholds {DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0)};
+   const std::vector<double> joint_position_thresholds {DEG_TO_RAD(15), DEG_TO_RAD(15), DEG_TO_RAD(15), DEG_TO_RAD(15), DEG_TO_RAD(15), DEG_TO_RAD(15), DEG_TO_RAD(15)};
+
+   const std::vector<double> joint_offsets {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    // Rotor inertia - "d" in the algorithm:
+   const std::vector<double> joint_inertia {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+   const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/lwr.urdf";
+   const std::string root_name = "link_0";   
+   //   7 joints, 7 links, 8 frames. frames from link 0 to link 7
+   const std::string tooltip_name = "link_7";
+   //  arm as usual: 7 joints & 7 links, ati sensor additional 2 (fixed-not counted in kdl)joints and 2 links
+   // const std::string tooltip_name = "ati_link";
+}
+
 namespace abag_parameter
 {
     // How many dimension ABAG controller is supposed to control

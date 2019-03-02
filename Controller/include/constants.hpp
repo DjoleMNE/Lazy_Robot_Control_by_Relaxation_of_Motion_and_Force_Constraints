@@ -38,7 +38,6 @@ namespace youbot_constants
     //Robot ID/Name
     extern const std::string ID;
 
-    // Number of joints in the manipulator
     extern const int NUMBER_OF_JOINTS;
     extern const int NUMBER_OF_SEGMENTS;
     extern const int NUMBER_OF_FRAMES;
@@ -46,11 +45,9 @@ namespace youbot_constants
     //Arm's root acceleration
     extern const std::vector<double> root_acceleration;
 
-    //Kuka youBot store position limit values: positive and negative
     extern const std::vector<double> joint_position_limits_max_1;
     extern const std::vector<double> joint_position_limits_min_1;
 
-    //Position limit values from URDF file: positive and negative
     extern const std::vector<double> joint_position_limits_max_2;
     extern const std::vector<double> joint_position_limits_min_2;
     
@@ -59,16 +56,12 @@ namespace youbot_constants
 
     extern const std::vector<double> joint_position_thresholds;
 
-    // YouBot Store velocity limits
     extern const std::vector<double> joint_velocity_limits;
 
-    // youBot store's max torques 
     extern const std::vector<double> joint_torque_limits;
 
-    // Offsets required for the youBot store model: Negative Candle config values - JP 
     extern const std::vector<double> joint_offsets;
 
-    // Rotor inertia - "d" in the algorithm: Computed from youBot store values
     extern const std::vector<double> joint_inertia;
 
     extern const std::string config_path;    
@@ -76,6 +69,35 @@ namespace youbot_constants
 
     extern const std::string root_name;
     extern const std::string tooltip_name;
+}
+
+namespace lwr_constants
+{
+   //Robot ID/Name
+   extern const std::string ID;
+
+   extern const int NUMBER_OF_JOINTS;
+   extern const int NUMBER_OF_SEGMENTS;
+   extern const int NUMBER_OF_FRAMES;
+
+   //Arm's root acceleration
+   extern const std::vector<double> root_acceleration;
+
+   extern const std::vector<double> joint_position_limits_max;
+   extern const std::vector<double> joint_position_limits_min;
+
+   extern const std::vector<double> joint_velocity_limits;
+   extern const std::vector<double> joint_torque_limits;
+
+   extern const std::vector<double> joint_position_thresholds;
+
+   extern const std::vector<double> joint_offsets;
+    // Rotor inertia - "d" in the algorithm:
+   extern const std::vector<double> joint_inertia;
+
+   extern const std::string urdf_path;
+   extern const std::string root_name;
+   extern const std::string tooltip_name;
 }
 
 namespace abag_parameter

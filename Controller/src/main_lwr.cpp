@@ -89,7 +89,7 @@ int main(int argc, char **argv)
     
     int number_of_segments = robot_driver.get_robot_model().getNrOfSegments();
     int number_of_joints = robot_driver.get_robot_model().getNrOfJoints();
-
+    
     assert(JOINTS == number_of_segments);
 
     state_specification motion_(number_of_joints,
@@ -104,7 +104,6 @@ int main(int argc, char **argv)
 
     // robot_driver.get_joint_positions(motion_.q);
     // robot_driver.get_joint_velocities(motion_.qd);
-    // return 0;
     
     //loop rate in Hz
     int rate_hz = 999;
