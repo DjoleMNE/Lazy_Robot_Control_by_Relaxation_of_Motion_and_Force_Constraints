@@ -62,8 +62,21 @@ class dynamics_controller
     
     dynamics_controller(robot_mediator *robot_driver, const int rate_hz);
     ~dynamics_controller(){};
-
+    
+    //Main control loop
     int control(const int desired_control_mode, const bool store_control_data);
+
+    /**
+    * Perform single step of the control loop, given current robot joint state
+    * Required for RTT's updateHook method
+    */
+    int step(const Eigen::VectorXd q_input,
+             const Eigen::VectorXd qd_input, 
+             Eigen::VectorXd tau_output);
+
+    void initialize_control(const int desired_control_mode, const bool store_control_data);
+    void deinitialize_control();
+    void stop_robot_motion();
 
     void reset_desired_state();
     void define_desired_ee_pose(const std::vector<bool> &constraint_direction,
@@ -81,6 +94,7 @@ class dynamics_controller
     const double DT_SEC_;
 
     std::ofstream log_file_;
+    bool store_control_data_;
 
     struct desired_control_mode
     {
@@ -103,6 +117,7 @@ class dynamics_controller
     
     Eigen::VectorXd error_vector_;
     Eigen::VectorXd abag_command_;
+    KDL::Wrenches force_command_;
 
     KDL::Solver_Vereshchagin hd_solver_;
     KDL::FK_Vereshchagin fk_vereshchagin_;
@@ -113,12 +128,10 @@ class dynamics_controller
     state_specification robot_state_;
     state_specification desired_state_;
     state_specification predicted_state_;
-    KDL::Wrenches force_command_;
 
     void print_settings_info();
     void write_to_file();
     void reset_state(state_specification &state);
-    void stop_robot_motion();
     void update_dynamics_interfaces();
     void update_current_state();
     void compute_control_error();

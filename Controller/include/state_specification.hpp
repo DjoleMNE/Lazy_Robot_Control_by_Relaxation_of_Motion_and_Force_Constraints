@@ -102,7 +102,7 @@ class state_specification
 
 		void reset_values()
 		{
-			// Joint space varibles
+			// Joint space variables
 			KDL::SetToZero(q);
 			KDL::SetToZero(qd);
 			KDL::SetToZero(qdd);
