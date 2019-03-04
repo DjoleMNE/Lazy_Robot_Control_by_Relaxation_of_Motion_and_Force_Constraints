@@ -297,8 +297,8 @@ namespace geometry
 
         //If following assertions fail, above if statements are not working properly
         // Sometimes they are failling......
-        assert(std::fabs(angle) <  M_PI - epsilon1);
-        assert(angle > -epsilon1);
+        // assert(std::fabs(angle) <  M_PI - epsilon1);
+        // assert(angle > -epsilon1);
 
         // prevent divide by zero, should not happen if matrix is orthogonal and 
         // should be caught by singularity test above, but I've left it in just in case

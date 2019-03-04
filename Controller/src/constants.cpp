@@ -119,26 +119,26 @@ namespace abag_parameter
 
     // Error parameters: Low pass filter threshold
     const Eigen::VectorXd ERROR_ALPHA = (Eigen::VectorXd(DIMENSIONS) \
-                              << 0.650000, 0.178001, 0.650000, 
+                              << 0.650000, 0.650000, 0.650000, 
                                  0.650000, 0.850000, 0.178001).finished();
 
      // Bias parameters: threshold and step
     const Eigen::VectorXd BIAS_THRESHOLD = (Eigen::VectorXd(DIMENSIONS) \
-                              << 0.001007, 0.724277, 0.001007, 
+                              << 0.001007, 0.001007, 0.001007, 
                                  0.001007, 0.001007, 0.724277).finished();
 
     const Eigen::VectorXd BIAS_STEP = (Eigen::VectorXd(DIMENSIONS) \
-                              << 0.003495, 0.503495, 0.003495, 
+                              << 0.003495, 0.003495, 0.003495, 
                                  0.003495, 0.003495, 0.503495).finished();
 
 
     // Gain parameters: threshold and step
     const Eigen::VectorXd GAIN_THRESHOLD = (Eigen::VectorXd(DIMENSIONS) \
-                              << 0.252492, 0.432492, 0.252492, 
+                              << 0.252492, 0.252492, 0.252492, 
                                  0.252492, 0.252492, 0.432492).finished();
 
     const Eigen::VectorXd GAIN_STEP = (Eigen::VectorXd(DIMENSIONS) \
-                              << 0.015152, 0.655152, 0.015152, 
+                              << 0.015152, 0.015152, 0.015152, 
                                  0.015152, 0.015152, 0.655152).finished();
 
     // Saturation limits   
@@ -173,7 +173,7 @@ namespace dynamics_parameter
 {
     // Number of task constraints imposed on the robot, i.e. Cartesian DOFS
     const int NUMBER_OF_CONSTRAINTS(6);
-    const std::vector<double> MAX_FORCE{10.0, 10.0, 50.0, 2.0, 2.0, 2.0};
+    const std::vector<double> MAX_FORCE{50.0, 50.0, 200.0, 2.0, 2.0, 2.0};
     const Eigen::IOFormat WRITE_FORMAT(6, Eigen::DontAlignCols, " ", "", "", "\n");
     const std::string LOG_FILE_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/control_error.txt");
 }

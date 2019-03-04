@@ -11,7 +11,7 @@ desired_dim = np.int(sys.argv[1])
 print("Selected dimension: ", desired_dim)
 variable_num = 6
 
-filename = "control_error.txt"
+filename = "../control_error.txt"
 
 def restart_program(): #restart application
     python = sys.executable

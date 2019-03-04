@@ -145,7 +145,7 @@ void model_prediction::integrate_cartesian_space(
                             state_specification &predicted_state,
                             const double dt_sec, const int num_of_steps)
 {
-    assert(dt_sec > 0.0);
+    // assert(dt_sec > 0.0);
     assert(num_of_steps >= 1);
     assert(NUM_OF_SEGMENTS_ == current_state.frame_velocity.size());
     assert(NUM_OF_SEGMENTS_ == predicted_state.frame_velocity.size()); 
