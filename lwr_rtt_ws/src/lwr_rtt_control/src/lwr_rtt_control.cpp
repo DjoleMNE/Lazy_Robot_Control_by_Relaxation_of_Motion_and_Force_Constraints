@@ -43,6 +43,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addPort("JointTorqueCommand",port_joint_torque_cmd_out).doc("Command joint torques");
 //     this->addProperty("environment", environment_).doc("environment");
 //     this->addProperty("robot_model", robot_model_).doc("robot_model");
+    this->addProperty("compensate_gravity", compensate_gravity_).doc("compensate gravity");
 
 }
 
@@ -57,6 +58,7 @@ bool LwrRttControl::configureHook()
     jnt_pos_cmd_out.setZero(NUM_OF_JOINTS_);
     jnt_vel_cmd_out.setZero(NUM_OF_JOINTS_);
     jnt_trq_cmd_out.setZero(NUM_OF_JOINTS_);
+    jnt_gravity_trq_out.data.setZero(NUM_OF_JOINTS_);
 
     port_joint_position_cmd_out.setDataSample(jnt_pos_cmd_out);
     port_joint_velocity_cmd_out.setDataSample(jnt_vel_cmd_out);
@@ -76,8 +78,11 @@ bool LwrRttControl::configureHook()
            RTT::log(RTT::Warning) << "No output connection!"<< RTT::endlog();  
     }
 
-    robot_driver_.initialize(robot_model_, environment_);
-    assert(NUM_OF_JOINTS_ ==  robot_driver_.get_robot_model().getNrOfSegments());
+    robot_driver_.initialize(robot_model_, environment_, compensate_gravity_);
+    assert(NUM_OF_JOINTS_ == robot_driver_.get_robot_model().getNrOfSegments());
+
+    this->gravity_solver_ = std::make_shared<KDL::ChainDynParam>(robot_driver_.get_robot_model(), 
+                                                                 KDL::Vector(0.0, 0.0, -9.81289)); 
 
     this->controller_ = std::make_shared<dynamics_controller>(&robot_driver_, RATE_HZ_);
 
@@ -96,12 +101,12 @@ bool LwrRttControl::configureHook()
 
     controller_->define_desired_ee_pose(std::vector<bool>{true, true, true, // Linear
                                                           false, false, false}, // Angular
-                                        std::vector<double>{0.262105,  0.004157,  0.308883, // Linear: Vector
-                                                            0.338541,  0.137563,  0.930842, // Angular: Rotation Matrix
-                                                            0.337720, -0.941106,  0.016253,
-                                                            0.878257,  0.308861, -0.365061});
+                                        std::vector<double>{-0.210785, -0.328278,  0.632811, // Linear: Vector
+                                                            -0.540302, -0.841471, -0.000860, // Angular: Rotation matrix
+                                                            -0.841470,  0.540302, -0.001340,
+                                                             0.001592,  0.000000, -0.999999});
 //     controller_->control(control_mode::TORQUE, true);
-    controller_->initialize_control(control_mode::TORQUE, true);
+    controller_->initialize(control_mode::TORQUE, true);
 
     return true;
 }
@@ -112,32 +117,26 @@ void LwrRttControl::updateHook()
     port_joint_position_in.read(jnt_pos_in);
     port_joint_velocity_in.read(jnt_vel_in);
     port_joint_torque_in.read(jnt_trq_in);
+ 
+    robot_state_.q.data  = jnt_pos_in;
+    robot_state_.qd.data = jnt_vel_in;
 
-//     robot_state_.q.data = jnt_pos_in;
-//     robot_state_.qd.data = jnt_vel_in;
-
-    controller_->step(jnt_pos_in, 
-                      jnt_vel_in, 
+    controller_->step(robot_state_.q.data, 
+                      robot_state_.qd.data, 
                       robot_state_.control_torque.data);
 
-//     KDL::Vector linearAcc_RNE(0.0, 0.0, -9.81289);
-//     KDL::ChainDynParam gravity_solver(arm.Chain(), linearAcc_RNE);
-//     KDL::JntArray gravity_torque(7);
-//     gravity_torque.data.setZero();
-//     gravity_solver.JntToGravity(robot_state_->q, gravity_torque);
-    // std::cout << "Gravity\n" <<gravity_torque.data.transpose() << std::endl;
+    gravity_solver_->JntToGravity(robot_state_.q, jnt_gravity_trq_out);
 
-    // jnt_trq_cmd_out = -gravity_torque.data;
-//     jnt_trq_cmd_out = robot_state_->control_torque.data;// - gravity_torque.data;
+    if(compensate_gravity_) jnt_trq_cmd_out = robot_state_.control_torque.data;
+    else jnt_trq_cmd_out = robot_state_.control_torque.data - jnt_gravity_trq_out.data;
 
-    // jnt_trq_cmd_out = robot_state_->control_torque.data;
-//     port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
+    port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
 }
 
 void LwrRttControl::stopHook()
 {
     RTT::log(RTT::Warning) << "Robot stopped!" << RTT::endlog();
-    controller_->deinitialize_control();
+    controller_->deinitialize();
 }
 
 // Let orocos know how to create the component

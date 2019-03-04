@@ -70,12 +70,12 @@ class dynamics_controller
     * Perform single step of the control loop, given current robot joint state
     * Required for RTT's updateHook method
     */
-    int step(const Eigen::VectorXd q_input,
-             const Eigen::VectorXd qd_input, 
-             Eigen::VectorXd tau_output);
+    int step(const Eigen::VectorXd &q_input,
+             const Eigen::VectorXd &qd_input, 
+             Eigen::VectorXd &tau_output);
 
-    void initialize_control(const int desired_control_mode, const bool store_control_data);
-    void deinitialize_control();
+    void initialize(const int desired_control_mode, const bool store_control_data);
+    void deinitialize();
     void stop_robot_motion();
 
     void reset_desired_state();

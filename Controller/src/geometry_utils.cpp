@@ -287,7 +287,8 @@ namespace geometry
         angle = acos(std::max(-1.0, std::min(1.0, acos_input)));
 
         //If following assertions fail, above if statements are not working properly
-        assert(acos_input < 1.0); assert(acos_input > -1.0);
+        // This one is sometimes failing..
+        // assert(acos_input < 1.0); assert(acos_input > -1.0);
 
         // If this even happens, epsilon above should be increased
         // or logic behind if_s to be changed

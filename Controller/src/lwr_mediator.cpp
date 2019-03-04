@@ -230,11 +230,15 @@ bool lwr_mediator::is_initialized()
 }
 
 // Initialize variables and calibrate the manipulator: 
-void lwr_mediator::initialize(const int robot_model, const int robot_environment)
+void lwr_mediator::initialize(const int robot_model, 
+                              const int robot_environment,
+                              const bool gravity_compensated)
 {
     lwr_model_ = robot_model;
     lwr_environment_ = robot_environment;
     lwr_chain_ = KDL::Chain();
+
+    if(gravity_compensated) root_acc_ = KDL::Twist::Zero();
     
     // Reset Flags
     is_initialized_ = false;

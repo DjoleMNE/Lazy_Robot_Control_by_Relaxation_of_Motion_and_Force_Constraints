@@ -65,6 +65,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     desired_control_mode_.interface = control_mode::STOP_MOTION;
     desired_control_mode_.is_safe = false;
 
+    KDL::SetToZero(force_command_[END_EFF_]);
+
     // Setting parameters of the ABAG Controller
     abag_.set_error_alpha(abag_parameter::ERROR_ALPHA);    
     abag_.set_bias_threshold(abag_parameter::BIAS_THRESHOLD);
@@ -423,8 +425,8 @@ void dynamics_controller::compute_control_error()
         conversions::kdl_vector_to_eigen(geometry::log_map_so3(error_rot_matrix));
 
     #ifndef NDEBUG
-        std::cout << "\nLinear Error: " << error_vector_.head(3).transpose() << "    Linear norm: " << error_vector_.head(3).norm() << std::endl;
-        std::cout << "Angular Error: " << error_vector_.tail(3).transpose() << "         Angular norm: " << error_vector_.tail(3).norm() << std::endl;
+        // std::cout << "\nLinear Error: " << error_vector_.head(3).transpose() << "    Linear norm: " << error_vector_.head(3).norm() << std::endl;
+        // std::cout << "Angular Error: " << error_vector_.tail(3).transpose() << "         Angular norm: " << error_vector_.tail(3).norm() << std::endl;
     #endif
 }
 
@@ -432,22 +434,19 @@ void dynamics_controller::compute_cart_control_commands()
 {   
     abag_command_ = abag_.update_state(error_vector_).transpose();
 
-#ifndef NDEBUG
-    std::cout << "ABAG Commands: "<< abag_command_.transpose() << std::endl;
-#endif
-
     // Set additional (virtual) force computed by the ABAG controller
     force_command_[END_EFF_].force(0) = CTRL_DIM_[0]? abag_command_(0) * MAX_FORCE_[0] : 0.0;
-    
     force_command_[END_EFF_].force(1) = CTRL_DIM_[1]? abag_command_(1) * MAX_FORCE_[1] : 0.0;
-    
-    force_command_[END_EFF_].force(2) = CTRL_DIM_[2]? abag_command_(2) * MAX_FORCE_[2] : 0.0;  
-    
+    force_command_[END_EFF_].force(2) = CTRL_DIM_[2]? abag_command_(2) * MAX_FORCE_[2] : 0.0;
     force_command_[END_EFF_].torque(0) = CTRL_DIM_[3]? abag_command_(3) * MAX_FORCE_[3] : 0.0;
-
     force_command_[END_EFF_].torque(1) = CTRL_DIM_[4]? abag_command_(4) * MAX_FORCE_[4] : 0.0;
-    
     force_command_[END_EFF_].torque(2) = CTRL_DIM_[5]? abag_command_(5) * MAX_FORCE_[5] : 0.0;
+
+#ifndef NDEBUG
+    std::cout << "ABAG Commands:         "<< abag_command_.transpose() << std::endl;
+    std::cout << "Virtual Force Command: " << force_command_[END_EFF_] << std::endl;
+    printf("\n");
+#endif
 }
 
 //Calculate robot dynamics - Resolve motion and forces using the Vereshchagin HD solver
@@ -553,7 +552,7 @@ int dynamics_controller::control(const int desired_control_mode,
             printf("WARNING: Dynamics Solver returned error. Stopping the robot!");
             return -1;
         }
-        if(loop_count == 1) return 0;
+        // if(loop_count == 1) return 0;
 
         // Apply joint commands using safe control interface.
         if(apply_joint_control_commands() != 0){
@@ -578,7 +577,7 @@ int dynamics_controller::control(const int desired_control_mode,
     return 0;
 }
 
-void dynamics_controller::initialize_control(const int desired_control_mode, const bool store_control_data)
+void dynamics_controller::initialize(const int desired_control_mode, const bool store_control_data)
 {
     // Save current selection of desire control mode
     desired_control_mode_.interface = desired_control_mode;
@@ -604,9 +603,9 @@ void dynamics_controller::initialize_control(const int desired_control_mode, con
  * Perform single step of the control loop, given current robot joint state
  * Required for RTT's updateHook method
 */
-int dynamics_controller::step(const Eigen::VectorXd q_input,
-                              const Eigen::VectorXd qd_input,
-                              Eigen::VectorXd tau_output)
+int dynamics_controller::step(const Eigen::VectorXd &q_input,
+                              const Eigen::VectorXd &qd_input,
+                              Eigen::VectorXd &tau_output)
 {
     robot_state_.q.data  = q_input;
     robot_state_.qd.data = qd_input;
@@ -631,6 +630,8 @@ int dynamics_controller::step(const Eigen::VectorXd q_input,
         // std::cout << "\nCurrent Cartesian state:                 " << std::endl;
         // std::cout << "End-effector Position:   " 
         //           << robot_state_.frame_pose[END_EFF_].p  << std::endl;
+        // std::cout << "End-effector Orientation:   \n" 
+        //           << robot_state_.frame_pose[END_EFF_].M  << std::endl;
         // std::cout << "End-effector Velocity:                \n" 
         //           << robot_state_.frame_velocity[END_EFF_] << std::endl;
     #endif 
@@ -664,7 +665,7 @@ int dynamics_controller::step(const Eigen::VectorXd q_input,
     return 0;
 }
 
-void dynamics_controller::deinitialize_control()
+void dynamics_controller::deinitialize()
 {
     // First make sure that the robot is not moving
     stop_robot_motion();

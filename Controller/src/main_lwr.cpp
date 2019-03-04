@@ -124,10 +124,10 @@ int main(int argc, char **argv)
 
     controller.define_desired_ee_pose(std::vector<bool>{true, true, true, // Linear
                                                         false, false, false}, // Angular
-                                      std::vector<double>{0.262105,  0.004157,  0.308883, // Linear: Vector
-                                                          0.338541,  0.137563,  0.930842, // Angular: Rotation Matrix
-                                                          0.337720, -0.941106,  0.016253,
-                                                          0.878257,  0.308861, -0.365061});
+                                      std::vector<double>{-0.210785, -0.328278,  0.632811, // Linear: Vector
+                                                          -0.540302, -0.841471, -0.000860,
+                                                          -0.841470,  0.540302, -0.001340,
+                                                           0.001592,  0.000000, -0.999999});
 
     controller.control(control_mode::TORQUE, true);
 

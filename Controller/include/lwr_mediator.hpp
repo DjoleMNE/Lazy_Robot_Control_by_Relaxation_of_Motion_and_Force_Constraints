@@ -52,7 +52,8 @@ class lwr_mediator: public robot_mediator
 
 		// Initializes variables and calibrates the manipulator
 		virtual void initialize(const int robot_model,
-						const int robot_environment);
+								const int robot_environment,
+                                const bool gravity_compensated);
 		
 		virtual bool is_initialized();
 		virtual std::string get_robot_ID();
@@ -103,7 +104,7 @@ class lwr_mediator: public robot_mediator
 		//Arm's root acceleration
 		const KDL::Vector linear_root_acc_;
 		const KDL::Vector angular_root_acc_;
-		const KDL::Twist root_acc_;
+		KDL::Twist root_acc_;
 
 		// Joint Measured State Variables
         Eigen::VectorXd q_measured_;

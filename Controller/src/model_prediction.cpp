@@ -189,16 +189,16 @@ void model_prediction::integrate_cartesian_space(
     }
     
 #ifndef NDEBUG
-        std::cout << "Measured End-effector Position:\n" 
-                  << current_state.frame_pose[END_EFF_].p 
-                  << std::endl;
+        // std::cout << "Measured End-effector Position:\n" 
+        //           << current_state.frame_pose[END_EFF_].p 
+        //           << std::endl;
 
         // std::cout << "Measured End-effector Orientation:\n" 
         //           << current_state.frame_pose[END_EFF_].M 
         //           << std::endl;
 
-        std::cout << "Integrated End-effector Position:\n" 
-                  << temp_pose_.p  << std::endl;
+        // std::cout << "Integrated End-effector Position:\n" 
+        //           << temp_pose_.p  << std::endl;
         
         // std::cout << "Integrated End-effector Orientation:\n" 
         //           << temp_pose_.M  << std::endl;

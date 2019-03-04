@@ -54,6 +54,7 @@ class LwrRttControl : public RTT::TaskContext{
     private:
         int environment_;
         int robot_model_;
+        bool compensate_gravity_;
         const int RATE_HZ_;
         const int NUM_OF_SEGMENTS_;
         const int NUM_OF_JOINTS_;
@@ -61,6 +62,7 @@ class LwrRttControl : public RTT::TaskContext{
         state_specification robot_state_;
         lwr_mediator robot_driver_;
         std::shared_ptr<dynamics_controller> controller_;
+        std::shared_ptr<KDL::ChainDynParam> gravity_solver_;
 
     protected:
         // Input ports
@@ -79,6 +81,7 @@ class LwrRttControl : public RTT::TaskContext{
         Eigen::VectorXd jnt_pos_cmd_out,
                         jnt_vel_cmd_out,
                         jnt_trq_cmd_out;
+        KDL::JntArray jnt_gravity_trq_out;
 };
 
 #endif

@@ -49,7 +49,8 @@ class robot_mediator
 
 		// Initializes variables and calibrates the manipulator
 		virtual void initialize(const int robot_model,
-								const int robot_environment) = 0;
+								const int robot_environment,
+								const bool gravity_compensated) = 0;
 
 		// Set desired joint commands to move robot and save them for sake of simulation
 		virtual void set_joint_command(const KDL::JntArray &joint_positions,
