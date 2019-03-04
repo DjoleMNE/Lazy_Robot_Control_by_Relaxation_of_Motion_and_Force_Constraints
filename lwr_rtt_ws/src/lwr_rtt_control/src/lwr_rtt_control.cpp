@@ -30,6 +30,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     RTT::TaskContext(name), environment_(lwr_environment::LWR_SIMULATION), 
     robot_model_(lwr_model::LWR_URDF), RATE_HZ_(999), NUM_OF_SEGMENTS_(7), 
     NUM_OF_JOINTS_(7), NUM_OF_CONSTRAINTS_(6), 
+    control_dims_(NUM_OF_CONSTRAINTS_, false),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_SEGMENTS_ + 1, NUM_OF_CONSTRAINTS_)
 {
     // Here you can add your ports, properties and operations
@@ -44,7 +45,8 @@ LwrRttControl::LwrRttControl(const std::string& name):
 //     this->addProperty("environment", environment_).doc("environment");
 //     this->addProperty("robot_model", robot_model_).doc("robot_model");
     this->addProperty("compensate_gravity", compensate_gravity_).doc("compensate gravity");
-
+    this->addProperty("desired_pose", desired_pose_).doc("desired pose");
+    this->addProperty("control_dims", control_dims_).doc("control dimensions");
 }
 
 bool LwrRttControl::configureHook()
@@ -97,15 +99,40 @@ bool LwrRttControl::configureHook()
     //Create Feedforward torques task s
     controller_->define_feedforward_torque(std::vector<double>{0.0, 0.0, 
                                                                0.0, 0.0, 
-                                                               0.0, 0.0, 0.0}); 
+                                                               0.0, 0.0, 0.0});
+    switch (desired_pose_)
+    {
+        case desired_pose::CANDLE:
+                // Candle Pose
+            controller_->define_desired_ee_pose(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
+                                                                  control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
+                                                std::vector<double>{ 0.0,  0.0, 1.1785, // Linear: Vector
+                                                                     1.0,  0.0, 0.0, // Angular: Rotation matrix
+                                                                     0.0,  1.0, 0.0,
+                                                                     0.0,  0.0, 1.0});
+            break;
 
-    controller_->define_desired_ee_pose(std::vector<bool>{true, true, true, // Linear
-                                                          false, false, false}, // Angular
-                                        std::vector<double>{-0.210785, -0.328278,  0.632811, // Linear: Vector
-                                                            -0.540302, -0.841471, -0.000860, // Angular: Rotation matrix
-                                                            -0.841470,  0.540302, -0.001340,
-                                                             0.001592,  0.000000, -0.999999});
-//     controller_->control(control_mode::TORQUE, true);
+        case desired_pose::FOLDED:
+            // Navigation pose
+            controller_->define_desired_ee_pose(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
+                                                                  control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
+                                                std::vector<double>{-0.210785, -0.328278,  0.632811, // Linear: Vector
+                                                                    -0.540302, -0.841471, -0.000860, // Angular: Rotation matrix
+                                                                    -0.841470,  0.540302, -0.001340,
+                                                                     0.001592,  0.000000, -0.999999});
+            break;
+
+        default:
+            // Navigation pose
+            controller_->define_desired_ee_pose(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
+                                                                  control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
+                                                std::vector<double>{-0.210785, -0.328278,  0.632811, // Linear: Vector
+                                                                    -0.540302, -0.841471, -0.000860, // Angular: Rotation matrix
+                                                                    -0.841470,  0.540302, -0.001340,
+                                                                     0.001592,  0.000000, -0.999999});
+            break;
+    }
+
     controller_->initialize(control_mode::TORQUE, true);
 
     return true;
@@ -117,7 +144,7 @@ void LwrRttControl::updateHook()
     port_joint_position_in.read(jnt_pos_in);
     port_joint_velocity_in.read(jnt_vel_in);
     port_joint_torque_in.read(jnt_trq_in);
- 
+
     robot_state_.q.data  = jnt_pos_in;
     robot_state_.qd.data = jnt_vel_in;
 
@@ -125,18 +152,21 @@ void LwrRttControl::updateHook()
                       robot_state_.qd.data, 
                       robot_state_.control_torque.data);
 
-    gravity_solver_->JntToGravity(robot_state_.q, jnt_gravity_trq_out);
-
     if(compensate_gravity_) jnt_trq_cmd_out = robot_state_.control_torque.data;
-    else jnt_trq_cmd_out = robot_state_.control_torque.data - jnt_gravity_trq_out.data;
-
+    else
+    {
+        gravity_solver_->JntToGravity(robot_state_.q, jnt_gravity_trq_out);
+        jnt_trq_cmd_out = robot_state_.control_torque.data - jnt_gravity_trq_out.data;
+    }
+    
+    RTT::TaskContext::stop();
     port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
 }
 
 void LwrRttControl::stopHook()
 {
-    RTT::log(RTT::Warning) << "Robot stopped!" << RTT::endlog();
     controller_->deinitialize();
+    RTT::log(RTT::Error) << "Robot stopped!" << RTT::endlog();
 }
 
 // Let orocos know how to create the component

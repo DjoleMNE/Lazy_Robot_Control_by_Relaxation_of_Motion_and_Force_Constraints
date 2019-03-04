@@ -27,6 +27,18 @@
     <arg name="robot_model" default="0"/>
     <arg name="compensate_gravity" default="false"/>
 
+    <!-- ========= navigation pose ===============-->
+    <arg name="desired_pose" default="1"/>
+    
+    <!-- ========= candle pose ===============-->
+    <!-- <arg name="desired_pose" default="0"/> -->
+
+    <!-- ========= folded pose ===============-->
+    <!-- <arg name="desired_pose" default="2"/> -->
+
+    <!-- ========= Dimentions to be controlled ===============-->
+    <arg name="control_dims" default="[true, true, true, false, false, false]" type="bool"/>
+
 <!--============ LwrRttControl Params ============-->
     <!-- Set some parameters for LwrRttControl
     You can get them using rtt_ros_kdl_tools::getAllPropertiesFromROSParam(this)
@@ -36,6 +48,8 @@
         <param name="environment" value="$(arg environment)"/>
         <param name="robot_model" value="$(arg robot_model)"/>
         <param name="compensate_gravity" value="$(arg compensate_gravity)"/>
+        <param name="desired_pose" value="$(arg desired_pose)"/>
+        <rosparam param="control_dims" subst_value="True">$(arg control_dims)</rosparam>
     </node>
 
 <!-- ============ Runner script =============== -->

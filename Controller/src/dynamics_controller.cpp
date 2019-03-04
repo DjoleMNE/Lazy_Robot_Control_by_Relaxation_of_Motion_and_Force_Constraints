@@ -38,7 +38,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     NUM_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
     NUM_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
     END_EFF_(NUM_OF_SEGMENTS_ - 1),
-    MAX_FORCE_(dynamics_parameter::MAX_FORCE),
+    MAX_FORCE_(dynamics_parameter::MAX_FORCE), 
+    CTRL_DIM_(NUM_OF_CONSTRAINTS_, false),
     error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     force_command_(NUM_OF_SEGMENTS_),
@@ -425,7 +426,7 @@ void dynamics_controller::compute_control_error()
         conversions::kdl_vector_to_eigen(geometry::log_map_so3(error_rot_matrix));
 
     #ifndef NDEBUG
-        // std::cout << "\nLinear Error: " << error_vector_.head(3).transpose() << "    Linear norm: " << error_vector_.head(3).norm() << std::endl;
+        std::cout << "\nLinear Error: " << error_vector_.head(3).transpose() << "    Linear norm: " << error_vector_.head(3).norm() << std::endl;
         // std::cout << "Angular Error: " << error_vector_.tail(3).transpose() << "         Angular norm: " << error_vector_.tail(3).norm() << std::endl;
     #endif
 }
@@ -435,17 +436,17 @@ void dynamics_controller::compute_cart_control_commands()
     abag_command_ = abag_.update_state(error_vector_).transpose();
 
     // Set additional (virtual) force computed by the ABAG controller
-    force_command_[END_EFF_].force(0) = CTRL_DIM_[0]? abag_command_(0) * MAX_FORCE_[0] : 0.0;
-    force_command_[END_EFF_].force(1) = CTRL_DIM_[1]? abag_command_(1) * MAX_FORCE_[1] : 0.0;
-    force_command_[END_EFF_].force(2) = CTRL_DIM_[2]? abag_command_(2) * MAX_FORCE_[2] : 0.0;
+    force_command_[END_EFF_].force(0)  = CTRL_DIM_[0]? abag_command_(0) * MAX_FORCE_[0] : 0.0;
+    force_command_[END_EFF_].force(1)  = CTRL_DIM_[1]? abag_command_(1) * MAX_FORCE_[1] : 0.0;
+    force_command_[END_EFF_].force(2)  = CTRL_DIM_[2]? abag_command_(2) * MAX_FORCE_[2] : 0.0;
     force_command_[END_EFF_].torque(0) = CTRL_DIM_[3]? abag_command_(3) * MAX_FORCE_[3] : 0.0;
     force_command_[END_EFF_].torque(1) = CTRL_DIM_[4]? abag_command_(4) * MAX_FORCE_[4] : 0.0;
     force_command_[END_EFF_].torque(2) = CTRL_DIM_[5]? abag_command_(5) * MAX_FORCE_[5] : 0.0;
 
 #ifndef NDEBUG
-    std::cout << "ABAG Commands:         "<< abag_command_.transpose() << std::endl;
-    std::cout << "Virtual Force Command: " << force_command_[END_EFF_] << std::endl;
-    printf("\n");
+    // std::cout << "ABAG Commands:         "<< abag_command_.transpose() << std::endl;
+    // std::cout << "Virtual Force Command: " << force_command_[END_EFF_] << std::endl;
+    // printf("\n");
 #endif
 }
 
@@ -670,5 +671,4 @@ void dynamics_controller::deinitialize()
     // First make sure that the robot is not moving
     stop_robot_motion();
     if (store_control_data_) log_file_.close();
-    printf("Robot stopped!\n");
 }

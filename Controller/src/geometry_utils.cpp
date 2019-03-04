@@ -222,7 +222,7 @@ namespace geometry
     KDL::Vector log_map_so3(const KDL::Rotation &matrix)
     {
         double angle, x, y, z; // variables for result
-        double epsilon1 = 0.00001; // margin to allow for rounding errors
+        double epsilon1 = MIN_ANGLE; // margin to allow for rounding errors
         double epsilon2 = epsilon1 * 10; // margin to distinguish between 0 and 180 degrees
 
         //Check first if one of two singularity cases has occurred  

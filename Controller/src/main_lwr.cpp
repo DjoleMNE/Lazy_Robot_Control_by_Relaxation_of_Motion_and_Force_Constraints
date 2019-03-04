@@ -125,7 +125,7 @@ int main(int argc, char **argv)
     controller.define_desired_ee_pose(std::vector<bool>{true, true, true, // Linear
                                                         false, false, false}, // Angular
                                       std::vector<double>{-0.210785, -0.328278,  0.632811, // Linear: Vector
-                                                          -0.540302, -0.841471, -0.000860,
+                                                          -0.540302, -0.841471, -0.000860, // Angular: Rotation matrix
                                                           -0.841470,  0.540302, -0.001340,
                                                            0.001592,  0.000000, -0.999999});
 

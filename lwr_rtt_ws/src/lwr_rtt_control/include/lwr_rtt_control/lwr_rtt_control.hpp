@@ -43,6 +43,13 @@ SOFTWARE.
 #include <dynamics_controller.hpp>
 #include <utility> 
 
+enum desired_pose 
+{
+    CANDLE,
+    NAVIGATION,
+    FOLDED   
+};
+
 class LwrRttControl : public RTT::TaskContext{
     public:
         LwrRttControl(const std::string& name);
@@ -55,10 +62,12 @@ class LwrRttControl : public RTT::TaskContext{
         int environment_;
         int robot_model_;
         bool compensate_gravity_;
+        int desired_pose_;
         const int RATE_HZ_;
         const int NUM_OF_SEGMENTS_;
         const int NUM_OF_JOINTS_;
         const int NUM_OF_CONSTRAINTS_;
+        std::vector<bool> control_dims_;
         state_specification robot_state_;
         lwr_mediator robot_driver_;
         std::shared_ptr<dynamics_controller> controller_;
