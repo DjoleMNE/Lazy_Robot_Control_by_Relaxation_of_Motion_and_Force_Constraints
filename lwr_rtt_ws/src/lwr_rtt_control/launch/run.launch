@@ -9,7 +9,7 @@
     <!-- <arg name="tip_link" default="ati_link"/> -->
 
     <!-- Run Simulated robot -->
-    <arg name="sim" default="false" />
+    <arg name="sim" default="true" />
     <!-- Run in GDB -->
     <arg name="debug" default="false" />
     <!-- Launch rviz -->

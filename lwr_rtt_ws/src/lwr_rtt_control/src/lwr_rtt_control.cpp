@@ -147,10 +147,12 @@ void LwrRttControl::updateHook()
 
     robot_state_.q.data  = jnt_pos_in;
     robot_state_.qd.data = jnt_vel_in;
+    
+    int controller_result = controller_->step(robot_state_.q.data, 
+                                              robot_state_.qd.data, 
+                                              robot_state_.control_torque.data);
 
-    controller_->step(robot_state_.q.data, 
-                      robot_state_.qd.data, 
-                      robot_state_.control_torque.data);
+    if(!controller_result == 0) RTT::TaskContext::stop();
 
     if(compensate_gravity_) jnt_trq_cmd_out = robot_state_.control_torque.data;
     else
@@ -159,7 +161,6 @@ void LwrRttControl::updateHook()
         jnt_trq_cmd_out = robot_state_.control_torque.data - jnt_gravity_trq_out.data;
     }
     
-    RTT::TaskContext::stop();
     port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
 }
 

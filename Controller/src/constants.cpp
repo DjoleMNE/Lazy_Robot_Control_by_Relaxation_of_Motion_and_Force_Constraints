@@ -97,7 +97,7 @@ namespace lwr_constants
    const std::vector<double> joint_torque_limits {200, 200, 100, 100, 100, 30, 30};
 
    //  const std::vector<double> joint_position_thresholds {DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0)};
-   const std::vector<double> joint_position_thresholds {DEG_TO_RAD(15), DEG_TO_RAD(15), DEG_TO_RAD(15), DEG_TO_RAD(15), DEG_TO_RAD(15), DEG_TO_RAD(15), DEG_TO_RAD(15)};
+   const std::vector<double> joint_position_thresholds {DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10)};
 
    const std::vector<double> joint_offsets {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     // Rotor inertia - "d" in the algorithm:

@@ -378,7 +378,7 @@ int dynamics_controller::apply_joint_control_commands()
 
         default: 
             stop_robot_motion();
-            printf("WARNING: Computed commands are not safe. Stopping the robot!");
+            printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
             return -1;
     }
 }
@@ -618,6 +618,7 @@ int dynamics_controller::step(const Eigen::VectorXd &q_input,
                                                       robot_state_.frame_velocity);
     if(fk_solver_result != 0)
     {
+        deinitialize();
         printf("Warning: FK solver returned an error! %d \n", fk_solver_result);
         return -1;
     }
@@ -650,18 +651,18 @@ int dynamics_controller::step(const Eigen::VectorXd &q_input,
     // Calculate robot dynamics using the Vereshchagin HD solver
     if(evaluate_dynamics() != 0)
     {
-        // stop_robot_motion();
-        if (store_control_data_) log_file_.close();
-        printf("WARNING: Dynamics Solver returned error. Stopping the robot!");
+        deinitialize();
+        printf("WARNING: Dynamics Solver returned error. Stopping the robot!\n");
         return -1;
     }
 
     // Apply joint commands using safe control interface.
-    tau_output = robot_state_.control_torque.data;
-    // if(apply_joint_control_commands() != 0){
-    //     if (store_control_data) log_file_.close();
+    // if(apply_joint_control_commands() != 0)
+    // {
+    //     deinitialize();
     //     return -1;
     // } 
+    tau_output = robot_state_.control_torque.data;
     
     return 0;
 }

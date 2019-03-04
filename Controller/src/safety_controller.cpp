@@ -120,27 +120,19 @@ bool safety_controller::is_state_finite(const state_specification &state,
                                         const int joint)
 {
     if (!std::isfinite(state.control_torque(joint))){
-        if (PRINT_LOGS_) 
-            std::cout << "Computed torque for joint: "<< joint + 1 
-                      << " is not finite!" << std::endl;
+        if (PRINT_LOGS_) printf("Computed torque for joint: %d is not finite!\n", joint);
         return false;
     }
     else if (!std::isfinite(state.qdd(joint))){
-        if (PRINT_LOGS_) 
-            std::cout << "Computed joint "<< joint + 1 
-                      << " acceleration is not finite!" << std::endl;
+        if (PRINT_LOGS_) printf("Computed joint: %d acceleration is not finite!\n", joint);
         return false;
     }
     else if (!std::isfinite(state.qd(joint))){
-        if (PRINT_LOGS_) 
-            std::cout << "Computed joint "<< joint + 1 
-                      << " velocity is not finite!" << std::endl;
+        if (PRINT_LOGS_) printf("Computed joint: %d velocity is not finite!\n", joint);
         return false;
     }
     else if (!std::isfinite(state.q(joint))){
-        if (PRINT_LOGS_) 
-            std::cout << "Computed joint "<< joint + 1
-                      << " position is not finite!" << std::endl;
+        if (PRINT_LOGS_) printf("Computed joint: %d position is not finite!\n", joint);
         return false;
     }
     
@@ -152,9 +144,8 @@ bool safety_controller::torque_limit_reached(const state_specification &state,
 {
     if (fabs(state.control_torque(joint)) >= joint_torque_limits_[joint])
     {
-        if(PRINT_LOGS_) 
-            std::cout << "Joint " << joint + 1 
-                      << " torque limit reached!" << std::endl;
+        if(PRINT_LOGS_) printf("Joint %d torque limit reached: %f \n",  
+                                joint, state.control_torque(joint));
         return true;        
     }
     
@@ -166,9 +157,8 @@ bool safety_controller::velocity_limit_reached(const state_specification &state,
 {
     if (fabs(state.qd(joint)) >= joint_velocity_limits_[joint])
     {
-        if(PRINT_LOGS_) 
-            std::cout << "Joint " << joint + 1 
-                      << " velocity limit reached!" << std::endl;
+        if(PRINT_LOGS_) printf("Joint %d velocity limit reached: %f \n", 
+                               joint, state.qd(joint));
         return true;        
     }
     
@@ -181,9 +171,8 @@ bool safety_controller::position_limit_reached(const state_specification &state,
     if ((state.q(joint) >= joint_position_limits_max_[joint]) || \
         (state.q(joint) <= joint_position_limits_min_[joint]))
     {
-        if(PRINT_LOGS_) 
-            std::cout << "Joint " << joint + 1 
-                      << " position limit reached!" << std::endl;
+        if(PRINT_LOGS_) printf("Joint %d position limit reached: %f \n", 
+                                joint, state.q(joint));
         return true; 
     }
     
@@ -199,8 +188,8 @@ bool safety_controller::reaching_position_limits(const state_specification &stat
     {
         if(state.qd(joint) > 0.02)
         {
-            std::cout << "Joint " << joint + 1 << " is too close to the max limit "
-                      << state.q(joint) << " " << state.qd(joint) << std::endl;
+             printf("Joint %d is too close to the max limit %f %f \n", 
+                    joint, state.q(joint), state.qd(joint));
             return true;
         } 
     } 
@@ -210,8 +199,8 @@ bool safety_controller::reaching_position_limits(const state_specification &stat
     {
         if(state.qd(joint) < -0.02)
         {
-            std::cout << "Joint " << joint + 1 << " is too close to the min limit "
-                      << state.q(joint) << " " << state.qd(joint) << std::endl;
+            printf("Joint %d is too close to the min limit %f %f \n", 
+                    joint, state.q(joint), state.qd(joint));
             return true;
         }
     } 
@@ -238,7 +227,7 @@ int safety_controller::check_future_state(const int desired_control_mode)
 
 /*
     Check if the commaned torques are over torque limits.
-    Check if the commanded torqes will make a joint go over the position limits.
+    Check if the commanded torques will make a joint go over the position limits.
     If all ok: continue with this control mode.
     Else: stop the robot.
 */

@@ -79,10 +79,10 @@ void model_prediction::integrate_joint_space(
     #endif
 
     #ifdef NDEBUG // Print joint state in Release mode only
-        std::cout << "Computed Joint Torque: " << current_state.control_torque << std::endl;
+        // std::cout << "Computed Joint Torque: " << current_state.control_torque << std::endl;
         // std::cout << "Computed Joint Acc:    " << current_state.qdd << "\n" << std::endl;
         // std::cout << "Current Joint Vel:     " << current_state.qd << std::endl;
-        std::cout << "Integrated Joint Vel:  " << predicted_states[0].qd << std::endl;
+        // std::cout << "Integrated Joint Vel:  " << predicted_states[0].qd << std::endl;
         // std::cout << "Current Joint Pos:     " << current_state.q << std::endl;
         // std::cout << "Integrated Joint Pos:  " << predicted_states[0].q << std::endl;
         printf("\n");
