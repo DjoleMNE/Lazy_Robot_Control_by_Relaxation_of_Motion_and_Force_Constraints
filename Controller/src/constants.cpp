@@ -87,7 +87,7 @@ namespace lwr_constants
    const int NUMBER_OF_FRAMES(8);
 
    //Arm's root acceleration
-   const std::vector<double> root_acceleration {0.0, 0.0, 9.81, 0.0, 0.0, 0.0};
+   const std::vector<double> root_acceleration {0.0, 0.0, 9.81289, 0.0, 0.0, 0.0};
 
    // Limits from KUKA manual-> Must be confermed
    const std::vector<double> joint_position_limits_max {DEG_TO_RAD(170), DEG_TO_RAD(120), DEG_TO_RAD(170), DEG_TO_RAD(120), DEG_TO_RAD(170), DEG_TO_RAD(120), DEG_TO_RAD(170)};

@@ -21,11 +21,32 @@ include_directories(
     ${Eigen_INCLUDE_DIRS}
     ${orocos_kdl_INCLUDE_DIRS}
     ${USE_OROCOS_INCLUDE_DIRS}
+    /home/djole/youBot_driver_inst_dir/usr/local/include
+    /home/djole/youBot_driver_inst_dir/usr/local/include/youbot_driver/soem
+    /home/djole/youBot_driver_inst_dir/usr/local/include/youbot_driver/soem/osal
+    /home/djole/youBot_driver_inst_dir/usr/local/include/youbot_driver/soem/oshw/linux
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/include
 )
 
-add_library(vereshchagin /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/solver_vereshchagin.cpp)
-target_link_libraries(vereshchagin ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+link_directories(
+  /home/djole/youBot_driver_inst_dir/usr/local/lib
+  "/home/djole/Master/Thesis/GIT/MT_testing/KDL/KDL_install_dir/lib/"
+)
+
+add_library(controller 
+    /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/constants.cpp
+    /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/kdl_eigen_conversions.cpp
+    /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/geometry_utils.cpp
+    /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/model_prediction.cpp
+    /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/solver_vereshchagin.cpp
+    /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/fk_vereshchagin.cpp
+    /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/lwr_mediator.cpp
+    /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/lwr_kdl_model.cpp
+    /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/safety_controller.cpp
+    /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/abag.cpp
+    /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/dynamics_controller.cpp
+)
+target_link_libraries(controller ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 orocos_component(${PROJECT_NAME} src/${PROJECT_NAME}.cpp)
 set_property(TARGET ${PROJECT_NAME} APPEND PROPERTY COMPILE_DEFINITIONS RTT_COMPONENT)
@@ -34,7 +55,12 @@ target_link_libraries(${PROJECT_NAME}
     ${catkin_LIBRARIES}
     ${USE_OROCOS_LIBRARIES}
     ${orocos_kdl_LIBRARIES}
-    vereshchagin
+    ${kdl_parser_LIBRARIES}
+    YouBotDriver
+    soem
+    ${Boost_FILESYSTEM_LIBRARY}
+    ${Boost_SYSTEM_LIBRARY}
+    controller
 )
 
 file(GLOB headers include/${PROJECT_NAME}/*.h include/${PROJECT_NAME}/*.hpp )

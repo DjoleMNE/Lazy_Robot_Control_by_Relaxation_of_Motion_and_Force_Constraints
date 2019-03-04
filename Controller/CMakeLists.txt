@@ -77,13 +77,15 @@ target_link_libraries(main
     ${Boost_SYSTEM_LIBRARY}
 )
 
-## run sudo command to enable direct network access
-option(${PROJECT_NAME}_USE_SETCAP "Set permissions to access ethernet interface without sudo" ON)
+if("${ROBOT}" STREQUAL "youBot")
+  ## run sudo command to enable direct network access
+  option(${PROJECT_NAME}_USE_SETCAP "Set permissions to access ethernet interface without sudo" ON)
 
-set(SUDO_COMMAND sudo)
+  set(SUDO_COMMAND sudo)
 
-if(${PROJECT_NAME}_USE_SETCAP)
-    add_custom_command(TARGET main POST_BUILD
-    COMMAND ${SUDO_COMMAND} setcap cap_net_raw+ep $<TARGET_FILE:main>
-)    
+  if(${PROJECT_NAME}_USE_SETCAP)
+      add_custom_command(TARGET main POST_BUILD
+      COMMAND ${SUDO_COMMAND} setcap cap_net_raw+ep $<TARGET_FILE:main>
+  )    
+  endif()
 endif()

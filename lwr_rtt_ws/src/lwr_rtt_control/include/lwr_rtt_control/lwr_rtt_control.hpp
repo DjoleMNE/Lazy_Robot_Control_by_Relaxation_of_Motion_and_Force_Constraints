@@ -36,31 +36,33 @@ SOFTWARE.
 // RTT-ROS Utilities
 #include <rtt_ros_kdl_tools/tools.hpp>
 #include <rtt_ros_kdl_tools/chain_utils.hpp>
+#include <rtt_rosparam/rosparam.h>
 
 // Custom Controller code
 #include <state_specification.hpp>
-#include <solver_vereshchagin.hpp>
-#include <fk_vereshchagin.hpp>
-#include <geometry_utils.hpp>
-#include <model_prediction.hpp>
-// #include <dynamics_controller.hpp>
+#include <dynamics_controller.hpp>
 #include <utility> 
-#include <abag.hpp>
-#include <constants.hpp>
-#include <kdl_eigen_conversions.hpp>
 
 class LwrRttControl : public RTT::TaskContext{
     public:
         LwrRttControl(const std::string& name);
         virtual ~LwrRttControl(){};
         void updateHook();
+        void stopHook();
         bool configureHook();
-    protected:
-        // Generic Model that uses ROS param
-        rtt_ros_kdl_tools::ChainUtils arm;
-        std::shared_ptr<state_specification> robot_state_;
-        std::shared_ptr<KDL::Solver_Vereshchagin> hd_solver_;
 
+    private:
+        int environment_;
+        int robot_model_;
+        const int RATE_HZ_;
+        const int NUM_OF_SEGMENTS_;
+        const int NUM_OF_JOINTS_;
+        const int NUM_OF_CONSTRAINTS_;
+        state_specification robot_state_;
+        lwr_mediator robot_driver_;
+        std::shared_ptr<dynamics_controller> controller_;
+
+    protected:
         // Input ports
         RTT::InputPort<Eigen::VectorXd>  port_joint_position_in,
                                          port_joint_velocity_in,

@@ -1,43 +1,47 @@
 import("rtt_rospack")
 
-# The magic utility script
+// The magic utility script
 runScript(ros.find("lwr_utils")+"/scripts/utils.ops")
 
-# Load the robot (<name>, <is sim> ,<start component>)
+// Load the robot (<name>, <is sim> ,<start component>)
 loadRobot(getRobotName(), isSim(), true)
 
-# Start the state publisher (<start component>)
+// Start the state publisher (<start component>)
 loadStatePublisher(true)
 
 // Set initial robot configuration
 if (isSim()) then
+  // Navigation Pose
   setRobotInitialJointConfiguration(1.0, 0.0, 0.0, -1.57, 0.0, 1.57, 0.0)
+  // Candle Pose
+  //setRobotInitialJointConfiguration(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+  // Folded Pose
+  //setRobotInitialJointConfiguration(-1.1572, -1.9104, -2.5334, -1.7853, -0.0727, 0.9176, -1.88766)
 
-# On the real robot, you have to set the mode manually
-# In simulation, JointImpedance is selected by default at the end of the loadRobot()
-#setJointPositionControlMode()
+// On the real robot, you have to set the mode manually. In simulation, JointImpedance is selected by default at the end of the loadRobot()
 setJointTorqueControlMode()
-#setJointImpedanceControlMode()
+//setJointPositionControlMode()
+//setJointImpedanceControlMode()
 
-#os.execute("sleep 3") // wait for gazebo to load completely
+//os.execute("sleep 3") // wait for gazebo to load completely
 
-# Load and start the controller
+// Load and start the controller
 import("rtt_ros")
 
-# This will load all the dependencies in packages.xml <export><rtt_ros>
+// This will load all the dependencies in packages.xml <export><rtt_ros>
 ros.import("lwr_rtt_control")
 
 loadComponent("lwr_rtt_control", "LwrRttControl")
-setActivity("lwr_rtt_control", 0.0011, LowestPriority, ORO_SCHED_RT)
+setActivity("lwr_rtt_control", 0.0011, 50, ORO_SCHED_RT)
 
 connectPeers("lwr_rtt_control", getRobotName())
 
-# Connects corresponding ports from your controller to the robot component
+// Connects corresponding ports from your controller to the robot component
 connectStandardPorts(getRobotName(), "lwr_rtt_control", ConnPolicy())
 
 configureComponent("lwr_rtt_control")
 
 startComponent("lwr_rtt_control")
 
-#print.ln("\n\n\x1B[32mYou can change the robot control modes using the krl_tool\x1B[0m\n")
+//print.ln("\n\n\x1B[32mYou can change the robot control modes using the krl_tool\x1B[0m\n")
 

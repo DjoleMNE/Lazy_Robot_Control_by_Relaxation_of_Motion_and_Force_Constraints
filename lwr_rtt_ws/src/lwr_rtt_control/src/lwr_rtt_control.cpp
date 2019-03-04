@@ -22,11 +22,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
 #include "lwr_rtt_control/lwr_rtt_control.hpp"
+const int MILLISECOND = 1000;
+const long SECOND = 1000000;
 
 LwrRttControl::LwrRttControl(const std::string& name):
-RTT::TaskContext(name)
+    RTT::TaskContext(name), environment_(lwr_environment::LWR_SIMULATION), 
+    robot_model_(lwr_model::LWR_URDF), RATE_HZ_(999), NUM_OF_SEGMENTS_(7), 
+    NUM_OF_JOINTS_(7), NUM_OF_CONSTRAINTS_(6), 
+    robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_SEGMENTS_ + 1, NUM_OF_CONSTRAINTS_)
 {
     // Here you can add your ports, properties and operations
     // ex : this->addOperation("my_super_function",&LwrRttControl::MyFunction,this,RTT::OwnThread);
@@ -37,32 +41,22 @@ RTT::TaskContext(name)
     this->addPort("JointPositionCommand",port_joint_position_cmd_out).doc("Command joint positions");
     this->addPort("JointVelocityCommand",port_joint_velocity_cmd_out).doc("Command joint velocities");
     this->addPort("JointTorqueCommand",port_joint_torque_cmd_out).doc("Command joint torques");
+//     this->addProperty("environment", environment_).doc("environment");
+//     this->addProperty("robot_model", robot_model_).doc("robot_model");
+
 }
 
 bool LwrRttControl::configureHook()
 {
-    // Initialize the arm object
-    if(!this->arm.init())
-    {
-        RTT::log(RTT::Fatal)
-        << "Could not initialize arm, make sure roscore is launched"
-        " and that tip_link, root_link and robot_description are set in rosparam"
-        << RTT::endlog();
-    }
-    
-    this->robot_state_= std::make_shared<state_specification>(arm.getNrOfJoints(), arm.getNrOfSegments(), arm.getNrOfSegments() + 1, 6);
-    this->hd_solver_ = std::make_shared<KDL::Solver_Vereshchagin>(this->arm.Chain(), 
-                                                                  std::vector<double> {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-                                                                  KDL::Twist(KDL::Vector(0.0, 0.0, 9.81289), KDL::Vector(0.0, 0.0, 0.0)), 
-                                                                  6);
+    rtt_ros_kdl_tools::getAllPropertiesFromROSParam(this);
 
-    jnt_pos_in.setZero(arm.getNrOfJoints());
-    jnt_vel_in.setZero(arm.getNrOfJoints());
-    jnt_trq_in.setZero(arm.getNrOfJoints());
+    jnt_pos_in.setZero(NUM_OF_JOINTS_);
+    jnt_vel_in.setZero(NUM_OF_JOINTS_);
+    jnt_trq_in.setZero(NUM_OF_JOINTS_);
 
-    jnt_pos_cmd_out.setZero(arm.getNrOfJoints());
-    jnt_vel_cmd_out.setZero(arm.getNrOfJoints());
-    jnt_trq_cmd_out.setZero(arm.getNrOfJoints());
+    jnt_pos_cmd_out.setZero(NUM_OF_JOINTS_);
+    jnt_vel_cmd_out.setZero(NUM_OF_JOINTS_);
+    jnt_trq_cmd_out.setZero(NUM_OF_JOINTS_);
 
     port_joint_position_cmd_out.setDataSample(jnt_pos_cmd_out);
     port_joint_velocity_cmd_out.setDataSample(jnt_vel_cmd_out);
@@ -82,42 +76,32 @@ bool LwrRttControl::configureHook()
            RTT::log(RTT::Warning) << "No output connection!"<< RTT::endlog();  
     }
 
-    // robot_state_->q.data << 1.0, 0.0, 0.0, -1.57, 0.0, 1.57, 0.0;
-    KDL::Twist unit_constraint_force_x(
-            KDL::Vector(0.0, 0.0, 0.0),     // linear
-            KDL::Vector(0.0, 0.0, 0.0));    // angular
-    robot_state_->ee_unit_constraint_force.setColumn(0, unit_constraint_force_x);
-    robot_state_->ee_acceleration_energy(0) = 0.0;
+    robot_driver_.initialize(robot_model_, environment_);
+    assert(NUM_OF_JOINTS_ ==  robot_driver_.get_robot_model().getNrOfSegments());
 
-    KDL::Twist unit_constraint_force_y(
-            KDL::Vector(0.0, 0.0, 0.0),     // linear
-            KDL::Vector(0.0, 0.0, 0.0));    // angular
-    robot_state_->ee_unit_constraint_force.setColumn(1, unit_constraint_force_y);
-    robot_state_->ee_acceleration_energy(1) = 0.0;
+    this->controller_ = std::make_shared<dynamics_controller>(&robot_driver_, RATE_HZ_);
 
-    KDL::Twist unit_constraint_force_z(
-            KDL::Vector(0.0, 0.0, 0.0),     // linear
-            KDL::Vector(0.0, 0.0, 0.0));    // angular
-    robot_state_->ee_unit_constraint_force.setColumn(2, unit_constraint_force_z);
-    robot_state_->ee_acceleration_energy(2) = 0.0;
+    //Create End_effector Cartesian Acceleration task 
+    controller_->define_ee_acc_constraint(std::vector<bool>{false, false, false, // Linear
+                                                            false, false, false}, // Angular
+                                          std::vector<double>{0.0, 0.0, 0.0, // Linear
+                                                              0.0, 0.0, 0.0}); // Angular
+    //Create External Forces task 
+    controller_->define_ee_external_force(std::vector<double>{0.0, 0.0, 0.0, // Linear
+                                                              0.0, 0.0, 0.0}); // Angular
+    //Create Feedforward torques task s
+    controller_->define_feedforward_torque(std::vector<double>{0.0, 0.0, 
+                                                               0.0, 0.0, 
+                                                               0.0, 0.0, 0.0}); 
 
-    KDL::Twist unit_constraint_force_x1(
-            KDL::Vector(0.0, 0.0, 0.0),     // linear
-            KDL::Vector(0.0, 0.0, 0.0));    // angular
-    robot_state_->ee_unit_constraint_force.setColumn(3, unit_constraint_force_x1);
-    robot_state_->ee_acceleration_energy(3) = 0.0;
-
-    KDL::Twist unit_constraint_force_y1(
-            KDL::Vector(0.0, 0.0, 0.0),     // linear
-            KDL::Vector(0.0, 0.0, 0.0));    // angular
-    robot_state_->ee_unit_constraint_force.setColumn(4, unit_constraint_force_y1);
-    robot_state_->ee_acceleration_energy(4) = 0.0;
-
-    KDL::Twist unit_constraint_force_z1(
-            KDL::Vector(0.0, 0.0, 0.0),     // linear
-            KDL::Vector(0.0, 0.0, 0.0));    // angular
-    robot_state_->ee_unit_constraint_force.setColumn(5, unit_constraint_force_z1);
-    robot_state_->ee_acceleration_energy(5) = 0.0;
+    controller_->define_desired_ee_pose(std::vector<bool>{true, true, true, // Linear
+                                                          false, false, false}, // Angular
+                                        std::vector<double>{0.262105,  0.004157,  0.308883, // Linear: Vector
+                                                            0.338541,  0.137563,  0.930842, // Angular: Rotation Matrix
+                                                            0.337720, -0.941106,  0.016253,
+                                                            0.878257,  0.308861, -0.365061});
+//     controller_->control(control_mode::TORQUE, true);
+    controller_->initialize_control(control_mode::TORQUE, true);
 
     return true;
 }
@@ -129,45 +113,31 @@ void LwrRttControl::updateHook()
     port_joint_velocity_in.read(jnt_vel_in);
     port_joint_torque_in.read(jnt_trq_in);
 
-    robot_state_->q.data = jnt_pos_in;
-    robot_state_->qd.data = jnt_vel_in;
+//     robot_state_.q.data = jnt_pos_in;
+//     robot_state_.qd.data = jnt_vel_in;
 
+    controller_->step(jnt_pos_in, 
+                      jnt_vel_in, 
+                      robot_state_.control_torque.data);
 
-    KDL::Wrench wrench(KDL::Vector(4.0, 4.0, 0.0),
-                       KDL::Vector(0.0, 0.0, 0.0));
-    KDL::Wrenches virtual_wrenches(arm.getNrOfSegments());
-    virtual_wrenches[arm.getNrOfSegments() - 1] = wrench;
-
-    int hd_solver_result = hd_solver_->CartToJnt(robot_state_->q,
-                                                 robot_state_->qd,
-                                                 robot_state_->qdd,
-                                                 robot_state_->ee_unit_constraint_force,
-                                                 robot_state_->ee_acceleration_energy,
-                                                 robot_state_->external_force,
-                                                 virtual_wrenches,
-                                                 robot_state_->feedforward_torque);
-    if(hd_solver_result != 0) printf("ERROR");
-
-    hd_solver_->get_control_torque(robot_state_->control_torque);
-    // hd_solver_->get_constraint_torque(robot_state_->control_torque);
-    // hd_solver_->get_transformed_link_acceleration(robot_state_->frame_acceleration);
-
-    // std::cout << "Frame ACC" << '\n';
-    // for (size_t i = 0; i < 8; i++)
-    //     RTT::log(RTT::Warning) << robot_state_->frame_acceleration[i] << RTT::endlog();
-
-    KDL::Vector linearAcc_RNE(0.0, 0.0, -9.81289);
-    KDL::ChainDynParam gravity_solver(arm.Chain(), linearAcc_RNE);
-    KDL::JntArray gravity_torque(arm.getNrOfJoints());
-    gravity_torque.data.setZero();
-    gravity_solver.JntToGravity(robot_state_->q, gravity_torque);
+//     KDL::Vector linearAcc_RNE(0.0, 0.0, -9.81289);
+//     KDL::ChainDynParam gravity_solver(arm.Chain(), linearAcc_RNE);
+//     KDL::JntArray gravity_torque(7);
+//     gravity_torque.data.setZero();
+//     gravity_solver.JntToGravity(robot_state_->q, gravity_torque);
     // std::cout << "Gravity\n" <<gravity_torque.data.transpose() << std::endl;
 
     // jnt_trq_cmd_out = -gravity_torque.data;
-    jnt_trq_cmd_out = robot_state_->control_torque.data;// - gravity_torque.data;
+//     jnt_trq_cmd_out = robot_state_->control_torque.data;// - gravity_torque.data;
 
     // jnt_trq_cmd_out = robot_state_->control_torque.data;
-    port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
+//     port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
+}
+
+void LwrRttControl::stopHook()
+{
+    RTT::log(RTT::Warning) << "Robot stopped!" << RTT::endlog();
+    controller_->deinitialize_control();
 }
 
 // Let orocos know how to create the component

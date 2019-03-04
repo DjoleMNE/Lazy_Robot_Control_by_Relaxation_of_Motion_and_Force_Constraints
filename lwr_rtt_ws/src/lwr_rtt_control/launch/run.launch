@@ -15,28 +15,28 @@
     <!-- Launch rviz -->
     <arg name="rviz" default="true" />
     <!-- The level of verbose (never, fatal, critical, error, warning, info, debug, realtime) -->
-    <arg name="log_level" default="debug" />
+    <arg name="log_level" default="error" />
     <!-- Tools -->
     <arg name="load_base" default="false" />
     <arg name="load_ati_sensor" default="false" />
     <arg name="load_handle" default="false" />
-
     <!-- Gazebo -->
     <arg name="gazebo_gui" default="false"/>
-    
-<!--============ LwrRttControl Params ============-->
 
+    <arg name="environment" default="1"/>
+    <arg name="robot_model" default="0"/>
+
+<!--============ LwrRttControl Params ============-->
     <!-- Set some parameters for LwrRttControl
     You can get them using rtt_ros_kdl_tools::getAllPropertiesFromROSParam(this)
     in your component's configureHook() -->
 
-    <!--rosparam ns="LwrRttControl" subst_value="true">
-        damping: 1.0
-        max_vels: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
-    </rosparam-->
+    <node name="lwr_rtt_control" pkg="rtt_ros" type="deployer" args="-s $(find lwr_rtt_control)/scripts/run.ops --" output="screen">
+        <param name="environment" value="$(arg environment)"/>
+        <param name="robot_model" value="$(arg robot_model)"/>
+    </node>
 
-<!--============ Runner script ===============-->
-
+<!-- ============ Runner script =============== -->
     <include file="$(find lwr_utils)/launch/run.launch">
         <arg name="sim" value="$(arg sim)" />
         <arg name="ops_script" value="$(find lwr_rtt_control)/scripts/run.ops"/>
@@ -49,5 +49,4 @@
         <arg name="load_handle" value="$(arg load_handle)" />
         <arg name="gazebo_gui" value="$(arg gazebo_gui)"/>
     </include>
-
 </launch>

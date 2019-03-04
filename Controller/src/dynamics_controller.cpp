@@ -437,17 +437,17 @@ void dynamics_controller::compute_cart_control_commands()
 #endif
 
     // Set additional (virtual) force computed by the ABAG controller
-    // force_command_[END_EFF_].force(0) = CTRL_DIM_[0]? abag_command_(0) * MAX_FORCE_[0] : 0.0;
+    force_command_[END_EFF_].force(0) = CTRL_DIM_[0]? abag_command_(0) * MAX_FORCE_[0] : 0.0;
     
-    // force_command_[END_EFF_].force(1) = CTRL_DIM_[1]? abag_command_(1) * MAX_FORCE_[1] : 0.0;
+    force_command_[END_EFF_].force(1) = CTRL_DIM_[1]? abag_command_(1) * MAX_FORCE_[1] : 0.0;
     
-    // force_command_[END_EFF_].force(2) = CTRL_DIM_[2]? abag_command_(2) * MAX_FORCE_[2] : 0.0;  
+    force_command_[END_EFF_].force(2) = CTRL_DIM_[2]? abag_command_(2) * MAX_FORCE_[2] : 0.0;  
     
-    // force_command_[END_EFF_].torque(0) = CTRL_DIM_[3]? abag_command_(3) * MAX_FORCE_[3] : 0.0;
+    force_command_[END_EFF_].torque(0) = CTRL_DIM_[3]? abag_command_(3) * MAX_FORCE_[3] : 0.0;
 
-    // force_command_[END_EFF_].torque(1) = CTRL_DIM_[4]? abag_command_(4) * MAX_FORCE_[4] : 0.0;
+    force_command_[END_EFF_].torque(1) = CTRL_DIM_[4]? abag_command_(4) * MAX_FORCE_[4] : 0.0;
     
-    // force_command_[END_EFF_].torque(2) = CTRL_DIM_[5]? abag_command_(5) * MAX_FORCE_[5] : 0.0;
+    force_command_[END_EFF_].torque(2) = CTRL_DIM_[5]? abag_command_(5) * MAX_FORCE_[5] : 0.0;
 }
 
 //Calculate robot dynamics - Resolve motion and forces using the Vereshchagin HD solver
@@ -465,15 +465,15 @@ int dynamics_controller::evaluate_dynamics()
     if(hd_solver_result != 0) return hd_solver_result;
 
     hd_solver_.get_control_torque(robot_state_.control_torque);
-    hd_solver_.get_transformed_link_acceleration(robot_state_.frame_acceleration);
+    // hd_solver_.get_transformed_link_acceleration(robot_state_.frame_acceleration);
     
     // Print computed state in Debug mode
     #ifndef NDEBUG
         // std::cout << "\nComputed Cartesian state:" << std::endl;
 
-        std::cout << "Frame ACC" << '\n';
-        for (size_t i = 0; i < NUM_OF_SEGMENTS_ + 1; i++)
-            std::cout << robot_state_.frame_acceleration[i] << '\n';
+        // std::cout << "Frame ACC" << '\n';
+        // for (size_t i = 0; i < NUM_OF_SEGMENTS_ + 1; i++)
+        //     std::cout << robot_state_.frame_acceleration[i] << '\n';
 
         // std::cout << "End-effector Position:   " 
         //       << robot_state_.frame_pose[END_EFF_].p  << std::endl;
@@ -667,7 +667,7 @@ int dynamics_controller::step(const Eigen::VectorXd q_input,
 void dynamics_controller::deinitialize_control()
 {
     // First make sure that the robot is not moving
-    // stop_robot_motion();
-
+    stop_robot_motion();
     if (store_control_data_) log_file_.close();
+    printf("Robot stopped!\n");
 }
