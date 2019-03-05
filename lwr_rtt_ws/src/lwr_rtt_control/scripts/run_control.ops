@@ -1,0 +1,23 @@
+import("rtt_rospack")
+
+#os.execute("sleep 1") // wait for gazebo to load completely
+
+# Load and start the controller
+import("rtt_ros")
+
+# This will load all the dependencies in packages.xml <export><rtt_ros>
+ros.import("lwr_rtt_control")
+
+loadComponent("lwr_rtt_control", "LwrRttControl")
+setActivity("lwr_rtt_control", 0.0011, LowestPriority, ORO_SCHED_RT)
+
+connectPeers("lwr_rtt_control", "lwr_sim")
+
+# Connects corresponding ports from your controller to the robot component
+#connectStandardPorts("lwr_sim", "lwr_rtt_control", ConnPolicy())
+
+configureComponent("lwr_rtt_control")
+
+startComponent("lwr_rtt_control")
+
+print.ln("\n\n\x1B[32mYou can change the robot control modes using the krl_tool\x1B[0m\n")

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<launch>
+    
+<!--============ LwrRttControl Params ============-->
+
+    <!-- Set some parameters for LwrRttControl
+    You can get them using rtt_ros_kdl_tools::getAllPropertiesFromROSParam(this)
+    in your component's configureHook() -->
+
+    <!--rosparam ns="LwrRttControl" subst_value="true">
+        damping: 1.0
+        max_vels: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+    </rosparam-->
+
+<!--============ Runner script ===============-->
+
+
+    <!-- <arg name="sim" value="$(arg sim)" /> -->
+    <arg name="ops_script" value="$(find lwr_rtt_control)/scripts/run_control.ops"/>
+</launch>

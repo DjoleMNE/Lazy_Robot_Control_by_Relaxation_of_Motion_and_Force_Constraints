@@ -1,0 +1,22 @@
+import("rtt_rospack")
+
+# The magic utility script
+runScript(ros.find("lwr_utils")+"/scripts/utils.ops")
+
+# Load the robot (<name>, <is sim> ,<start component>)
+loadRobot(getRobotName(), isSim(), true)
+
+# Start the state publisher (<start component>)
+loadStatePublisher(true)
+
+// Set initial robot configuration
+if (isSim()) then
+  setRobotInitialJointConfiguration(1.0, 0.0, 0.0, -1.57, 0.0, 1.57, 0.0)
+
+# On the real robot, you have to set the mode manually
+# In simulation, JointImpedance is selected by default at the end of the loadRobot()
+#setJointPositionControlMode()
+setJointTorqueControlMode()
+#setJointImpedanceControlMode()
+
+print.ln(getRobotName())
