@@ -74,8 +74,8 @@ void model_prediction::integrate_joint_space(
     }
 
     #ifndef NDEBUG // Print joint state in Debug mode only
-        std::cout << "\nIntegrated Joint Vel: " << predicted_states[0].qd << std::endl;
-        std::cout << "Integrated Joint Pos: " << predicted_states[0].q << std::endl;
+        // std::cout << "\nIntegrated Joint Vel: " << predicted_states[0].qd << std::endl;
+        // std::cout << "Integrated Joint Pos: " << predicted_states[0].q << std::endl;
     #endif
 
     #ifdef NDEBUG // Print joint state in Release mode only

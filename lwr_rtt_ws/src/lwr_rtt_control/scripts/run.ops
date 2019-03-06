@@ -32,7 +32,7 @@ import("rtt_ros")
 ros.import("lwr_rtt_control")
 
 loadComponent("lwr_rtt_control", "LwrRttControl")
-setActivity("lwr_rtt_control", 0.0011, 50, ORO_SCHED_RT)
+setActivity("lwr_rtt_control", 0.001, 50, ORO_SCHED_RT)
 
 connectPeers("lwr_rtt_control", getRobotName())
 

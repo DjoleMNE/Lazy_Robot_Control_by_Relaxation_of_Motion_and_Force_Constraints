@@ -59,17 +59,29 @@ class LwrRttControl : public RTT::TaskContext{
         bool configureHook();
 
     private:
-        int environment_;
-        int robot_model_;
-        bool compensate_gravity_;
-        int desired_pose_;
         const int RATE_HZ_;
         const int NUM_OF_SEGMENTS_;
         const int NUM_OF_JOINTS_;
         const int NUM_OF_CONSTRAINTS_;
+        int environment_;
+        int robot_model_;
+
+        //General Control Parameters
+        bool krc_compensate_gravity_;
+        int desired_pose_;
+        double prediction_dt_sec_;
         std::vector<bool> control_dims_;
+        Eigen::VectorXd max_cart_force_; 
+
+        // ABAG Parameters
+        Eigen::VectorXd error_alpha_, bias_threshold_, bias_step_, gain_threshold_, gain_step_;
+        bool saturate_b_u_;
+
+        // State and Driver
         state_specification robot_state_;
         lwr_mediator robot_driver_;
+
+        //Solvers
         std::shared_ptr<dynamics_controller> controller_;
         std::shared_ptr<KDL::ChainDynParam> gravity_solver_;
 

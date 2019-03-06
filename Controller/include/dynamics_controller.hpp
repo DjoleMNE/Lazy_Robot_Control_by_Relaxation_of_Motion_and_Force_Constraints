@@ -73,7 +73,15 @@ class dynamics_controller
     int step(const Eigen::VectorXd &q_input,
              const Eigen::VectorXd &qd_input, 
              Eigen::VectorXd &tau_output);
-
+    
+    void set_parameters(const int prediction_dt_sec, 
+                        const Eigen::VectorXd &max_cart_force,
+                        const Eigen::VectorXd &error_alpha, 
+                        const Eigen::VectorXd &bias_threshold, 
+                        const Eigen::VectorXd &bias_step, 
+                        const Eigen::VectorXd &gain_threshold, 
+                        const Eigen::VectorXd &gain_step,
+                        const bool saturate_b_u);
     void initialize(const int desired_control_mode, const bool store_control_data);
     void deinitialize();
     void stop_robot_motion();
@@ -92,6 +100,7 @@ class dynamics_controller
     const int RATE_HZ_;
     const long DT_MICRO_;
     const double DT_SEC_;
+    double prediction_dt_sec_;
 
     std::ofstream log_file_;
     bool store_control_data_;
@@ -112,12 +121,12 @@ class dynamics_controller
     const int NUM_OF_FRAMES_;
     const int NUM_OF_CONSTRAINTS_;
     const int END_EFF_;
-    const std::vector<double> MAX_FORCE_;
+    Eigen::VectorXd max_cart_force_;
     std::vector<bool> CTRL_DIM_;
     
     Eigen::VectorXd error_vector_;
     Eigen::VectorXd abag_command_;
-    KDL::Wrenches force_command_;
+    KDL::Wrenches cart_force_command_;
 
     KDL::Solver_Vereshchagin hd_solver_;
     KDL::FK_Vereshchagin fk_vereshchagin_;

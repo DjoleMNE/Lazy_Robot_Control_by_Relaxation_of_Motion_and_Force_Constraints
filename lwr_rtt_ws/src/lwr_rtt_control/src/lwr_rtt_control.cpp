@@ -23,14 +23,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #include "lwr_rtt_control/lwr_rtt_control.hpp"
-const int MILLISECOND = 1000;
+const long MILLISECOND = 1000;
 const long SECOND = 1000000;
 
 LwrRttControl::LwrRttControl(const std::string& name):
-    RTT::TaskContext(name), environment_(lwr_environment::LWR_SIMULATION), 
-    robot_model_(lwr_model::LWR_URDF), RATE_HZ_(999), NUM_OF_SEGMENTS_(7), 
+    RTT::TaskContext(name), RATE_HZ_(999), NUM_OF_SEGMENTS_(7), 
     NUM_OF_JOINTS_(7), NUM_OF_CONSTRAINTS_(6), 
+    environment_(lwr_environment::LWR_SIMULATION), 
+    robot_model_(lwr_model::LWR_URDF), krc_compensate_gravity_(false),
+    desired_pose_(1), prediction_dt_sec_(1.0),
     control_dims_(NUM_OF_CONSTRAINTS_, false),
+    max_cart_force_(Eigen::VectorXd::Constant(6, 0.0)),
+    error_alpha_(Eigen::VectorXd::Constant(6, 0.0)),
+    bias_threshold_(Eigen::VectorXd::Constant(6, 0.0)),
+    bias_step_(Eigen::VectorXd::Constant(6, 0.0)),
+    gain_threshold_(Eigen::VectorXd::Constant(6, 0.0)),
+    gain_step_(Eigen::VectorXd::Constant(6, 0.0)), saturate_b_u_(false),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_SEGMENTS_ + 1, NUM_OF_CONSTRAINTS_)
 {
     // Here you can add your ports, properties and operations
@@ -42,11 +50,21 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addPort("JointPositionCommand",port_joint_position_cmd_out).doc("Command joint positions");
     this->addPort("JointVelocityCommand",port_joint_velocity_cmd_out).doc("Command joint velocities");
     this->addPort("JointTorqueCommand",port_joint_torque_cmd_out).doc("Command joint torques");
+
 //     this->addProperty("environment", environment_).doc("environment");
 //     this->addProperty("robot_model", robot_model_).doc("robot_model");
-    this->addProperty("compensate_gravity", compensate_gravity_).doc("compensate gravity");
+    this->addProperty("krc_compensate_gravity", krc_compensate_gravity_).doc("KRC compensate gravity");
     this->addProperty("desired_pose", desired_pose_).doc("desired pose");
+
     this->addProperty("control_dims", control_dims_).doc("control dimensions");
+    this->addProperty("prediction_dt_sec", prediction_dt_sec_).doc("prediction_dt_sec_");
+    this->addProperty("max_cart_force", max_cart_force_).doc("max_cart_force");
+    this->addProperty("ERROR_ALPHA", error_alpha_).doc("ABAG ERROR_ALPHA");
+    this->addProperty("BIAS_THRESHOLD", bias_threshold_).doc("BIAS_THRESHOLD");
+    this->addProperty("BIAS_STEP", bias_step_).doc("BIAS_STEP");
+    this->addProperty("GAIN_THRESHOLD", gain_threshold_).doc("GAIN_THRESHOLD");
+    this->addProperty("GAIN_STEP", gain_step_).doc("GAIN_STEP");
+    this->addProperty("saturate_b_u", saturate_b_u_).doc("saturate_b_u");
 }
 
 bool LwrRttControl::configureHook()
@@ -80,7 +98,7 @@ bool LwrRttControl::configureHook()
            RTT::log(RTT::Warning) << "No output connection!"<< RTT::endlog();  
     }
 
-    robot_driver_.initialize(robot_model_, environment_, compensate_gravity_);
+    robot_driver_.initialize(robot_model_, environment_, krc_compensate_gravity_);
     assert(NUM_OF_JOINTS_ == robot_driver_.get_robot_model().getNrOfSegments());
 
     this->gravity_solver_ = std::make_shared<KDL::ChainDynParam>(robot_driver_.get_robot_model(), 
@@ -133,8 +151,13 @@ bool LwrRttControl::configureHook()
             break;
     }
 
+    controller_->set_parameters(prediction_dt_sec_, max_cart_force_, error_alpha_,
+                                bias_threshold_, bias_step_, gain_threshold_,
+                                gain_step_, saturate_b_u_);
+
     controller_->initialize(control_mode::TORQUE, true);
 
+    sleep(2); // wait for gazebo to load completely
     return true;
 }
 
@@ -154,13 +177,13 @@ void LwrRttControl::updateHook()
 
     if(!controller_result == 0) RTT::TaskContext::stop();
 
-    if(compensate_gravity_) jnt_trq_cmd_out = robot_state_.control_torque.data;
+    if(krc_compensate_gravity_) jnt_trq_cmd_out = robot_state_.control_torque.data;
     else
     {
         gravity_solver_->JntToGravity(robot_state_.q, jnt_gravity_trq_out);
         jnt_trq_cmd_out = robot_state_.control_torque.data - jnt_gravity_trq_out.data;
     }
-    
+    // jnt_trq_cmd_out << 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
     port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
 }
 

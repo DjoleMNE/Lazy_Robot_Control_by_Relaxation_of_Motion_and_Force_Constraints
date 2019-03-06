@@ -62,8 +62,7 @@ int safety_controller::set_control_commands(const state_specification &current_s
         given the measured (not integrated) angles and velocities.
         If everything ok, proceed to the second level.
     */
-    if (!is_current_state_safe(current_state)) 
-        return control_mode::STOP_MOTION;
+    if (!is_current_state_safe(current_state)) return control_mode::STOP_MOTION;
 
     /*
         Integrate joint accelerations to velocities and positions
@@ -93,14 +92,14 @@ bool safety_controller::is_current_state_safe(const state_specification &current
         Our model is not correct and commanded torque in previous iteration,
         may produce too high velocities or move joint over position limits.
         Basically check for error in model evaluation and predictions.
-        TODO: Investigate if its necessary also to check for mesured torques.
+        TODO: Investigate if its necessary also to check for measured torques.
         It depends on:
             - which torque we command, full or constraint
-            - what sensor readings we receive: full torqe on the joint, 
+            - what sensor readings we receive: full torque on the joint, 
                                         or just torque produced by motors
             - question is: what torques do you command if e.g. RNE is used?
                         do you have a choice?
-                        e.g. gravity compenzation
+                        e.g. gravity compensation
     */
     for (int i = 0; i < NUM_OF_JOINTS_; i++)
     {
@@ -109,7 +108,7 @@ bool safety_controller::is_current_state_safe(const state_specification &current
            position_limit_reached(current_state, i) || \
            reaching_position_limits(current_state, i))
            {
-                if (PRINT_LOGS_) printf("Current robot state is not safe \n");
+                if (PRINT_LOGS_) printf("Current robot state is not safe \n\n");
                 return false;
            } 
     }

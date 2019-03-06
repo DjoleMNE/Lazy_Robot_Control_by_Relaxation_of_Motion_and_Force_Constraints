@@ -23,9 +23,14 @@
     <!-- Gazebo -->
     <arg name="gazebo_gui" default="false"/>
 
+
+
+
+
+
     <arg name="environment" default="1"/>
     <arg name="robot_model" default="0"/>
-    <arg name="compensate_gravity" default="false"/>
+    <arg name="krc_compensate_gravity" default="false"/>
 
     <!-- ========= navigation pose ===============-->
     <arg name="desired_pose" default="1"/>
@@ -37,19 +42,52 @@
     <!-- <arg name="desired_pose" default="2"/> -->
 
     <!-- ========= Dimentions to be controlled ===============-->
-    <arg name="control_dims" default="[true, true, true, false, false, false]"/>
+    <arg name="control_dims" default="[true, true, true, 
+                                       false, false, false]"/>
+
+    <!-- ========= Prediction Time Step ===============-->
+    <arg name="prediction_dt_sec" default="1.0"/>
+
+    <!-- ========= Max Cart force excerted on the End-Effector ===============-->
+    <arg name="max_cart_force" default="[50.0, 50.0, 200.0, 
+                                         10.0, 10.0, 10.0]"/>
+
+    <!-- ********************** ABAG PARAMETERS ********************** -->
+    <arg name="ERROR_ALPHA" default="[0.650000, 0.650000, 0.650000, 
+                                      0.650000, 0.850000, 0.178001]"/>
+    <arg name="BIAS_THRESHOLD" default="[0.001007, 0.001007, 0.001007, 
+                                         0.001007, 0.001007, 0.724277]"/>
+    <arg name="BIAS_STEP" default="[0.003495, 0.003495, 0.003495, 
+                                    0.003495, 0.003495, 0.503495]"/>
+    <arg name="GAIN_THRESHOLD" default="[0.252492, 0.252492, 0.252492, 
+                                         0.252492, 0.252492, 0.432492]"/>
+    <arg name="GAIN_STEP" default="[0.015152, 0.015152, 0.015152, 
+                                    0.015152, 0.015152, 0.655152]"/>
+    <!-- ========= Saturate Bias and Command signals to [0, 1] ===============-->
+    <arg name="saturate_b_u" default="false"/>
+
+
+
+
 
 <!--============ LwrRttControl Params ============-->
     <!-- Set some parameters for LwrRttControl
     You can get them using rtt_ros_kdl_tools::getAllPropertiesFromROSParam(this)
     in your component's configureHook() -->
-
     <node name="lwr_rtt_control" pkg="rtt_ros" type="deployer" args="-s $(find lwr_rtt_control)/scripts/run.ops --" output="screen">
         <param name="environment" value="$(arg environment)"/>
         <param name="robot_model" value="$(arg robot_model)"/>
-        <param name="compensate_gravity" value="$(arg compensate_gravity)"/>
+        <param name="krc_compensate_gravity" value="$(arg krc_compensate_gravity)"/>
         <param name="desired_pose" value="$(arg desired_pose)"/>
         <rosparam param="control_dims" subst_value="True">$(arg control_dims)</rosparam>
+        <rosparam param="prediction_dt_sec" subst_value="True">$(arg prediction_dt_sec)</rosparam>
+        <rosparam param="max_cart_force" subst_value="True">$(arg max_cart_force)</rosparam>
+        <rosparam param="ERROR_ALPHA" subst_value="True">$(arg ERROR_ALPHA)</rosparam>
+        <rosparam param="BIAS_THRESHOLD" subst_value="True">$(arg BIAS_THRESHOLD)</rosparam>
+        <rosparam param="BIAS_STEP" subst_value="True">$(arg BIAS_STEP)</rosparam>
+        <rosparam param="GAIN_THRESHOLD" subst_value="True">$(arg GAIN_THRESHOLD)</rosparam>
+        <rosparam param="GAIN_STEP" subst_value="True">$(arg GAIN_STEP)</rosparam>
+        <rosparam param="saturate_b_u" subst_value="True">$(arg saturate_b_u)</rosparam>
     </node>
 
 <!-- ============ Runner script =============== -->

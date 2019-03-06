@@ -31,18 +31,18 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     RATE_HZ_(rate_hz),
     // Time period defined in microseconds: 1s = 1 000 000us
     DT_MICRO_(SECOND / RATE_HZ_),  DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
-    loop_start_time_(), loop_end_time_(), //Not sure if required to init
+    prediction_dt_sec_(1.0), loop_start_time_(), loop_end_time_(), //Not sure if required to init
     robot_chain_(robot_driver->get_robot_model()),
     NUM_OF_JOINTS_(robot_chain_.getNrOfJoints()),
     NUM_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
     NUM_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
     NUM_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
     END_EFF_(NUM_OF_SEGMENTS_ - 1),
-    MAX_FORCE_(dynamics_parameter::MAX_FORCE), 
+    max_cart_force_(dynamics_parameter::MAX_FORCE), 
     CTRL_DIM_(NUM_OF_CONSTRAINTS_, false),
     error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
-    force_command_(NUM_OF_SEGMENTS_),
+    cart_force_command_(NUM_OF_SEGMENTS_),
     hd_solver_(robot_chain_, robot_driver->get_joint_inertia(),
                robot_driver->get_root_acceleration(), NUM_OF_CONSTRAINTS_),
     fk_vereshchagin_(robot_chain_),
@@ -66,7 +66,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     desired_control_mode_.interface = control_mode::STOP_MOTION;
     desired_control_mode_.is_safe = false;
 
-    KDL::SetToZero(force_command_[END_EFF_]);
+    KDL::SetToZero(cart_force_command_[END_EFF_]);
 
     // Setting parameters of the ABAG Controller
     abag_.set_error_alpha(abag_parameter::ERROR_ALPHA);    
@@ -378,7 +378,7 @@ int dynamics_controller::apply_joint_control_commands()
 
         default: 
             stop_robot_motion();
-            printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
+            // printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
             return -1;
     }
 }
@@ -400,7 +400,8 @@ void dynamics_controller::make_predictions(const double dt_sec, const int num_st
 */
 void dynamics_controller::compute_control_error()
 {
-    make_predictions(1, 1);
+    // predicted_state_ = robot_state_;
+    make_predictions(prediction_dt_sec_, 1);
     // make_predictions(0.1, 10);
     // make_predictions(0.0001, 10000);
 
@@ -436,16 +437,16 @@ void dynamics_controller::compute_cart_control_commands()
     abag_command_ = abag_.update_state(error_vector_).transpose();
 
     // Set additional (virtual) force computed by the ABAG controller
-    force_command_[END_EFF_].force(0)  = CTRL_DIM_[0]? abag_command_(0) * MAX_FORCE_[0] : 0.0;
-    force_command_[END_EFF_].force(1)  = CTRL_DIM_[1]? abag_command_(1) * MAX_FORCE_[1] : 0.0;
-    force_command_[END_EFF_].force(2)  = CTRL_DIM_[2]? abag_command_(2) * MAX_FORCE_[2] : 0.0;
-    force_command_[END_EFF_].torque(0) = CTRL_DIM_[3]? abag_command_(3) * MAX_FORCE_[3] : 0.0;
-    force_command_[END_EFF_].torque(1) = CTRL_DIM_[4]? abag_command_(4) * MAX_FORCE_[4] : 0.0;
-    force_command_[END_EFF_].torque(2) = CTRL_DIM_[5]? abag_command_(5) * MAX_FORCE_[5] : 0.0;
+    cart_force_command_[END_EFF_].force(0)  = CTRL_DIM_[0]? abag_command_(0) * max_cart_force_(0) : 0.0;
+    cart_force_command_[END_EFF_].force(1)  = CTRL_DIM_[1]? abag_command_(1) * max_cart_force_(1) : 0.0;
+    cart_force_command_[END_EFF_].force(2)  = CTRL_DIM_[2]? abag_command_(2) * max_cart_force_(2) : 0.0;
+    cart_force_command_[END_EFF_].torque(0) = CTRL_DIM_[3]? abag_command_(3) * max_cart_force_(3) : 0.0;
+    cart_force_command_[END_EFF_].torque(1) = CTRL_DIM_[4]? abag_command_(4) * max_cart_force_(4) : 0.0;
+    cart_force_command_[END_EFF_].torque(2) = CTRL_DIM_[5]? abag_command_(5) * max_cart_force_(5) : 0.0;
 
 #ifndef NDEBUG
     // std::cout << "ABAG Commands:         "<< abag_command_.transpose() << std::endl;
-    // std::cout << "Virtual Force Command: " << force_command_[END_EFF_] << std::endl;
+    // std::cout << "Virtual Force Command: " << cart_force_command_[END_EFF_] << std::endl;
     // printf("\n");
 #endif
 }
@@ -459,12 +460,13 @@ int dynamics_controller::evaluate_dynamics()
                                                 robot_state_.ee_unit_constraint_force,
                                                 robot_state_.ee_acceleration_energy,
                                                 robot_state_.external_force,
-                                                force_command_,
+                                                cart_force_command_,
                                                 robot_state_.feedforward_torque);
 
     if(hd_solver_result != 0) return hd_solver_result;
 
     hd_solver_.get_control_torque(robot_state_.control_torque);
+
     // hd_solver_.get_transformed_link_acceleration(robot_state_.frame_acceleration);
     
     // Print computed state in Debug mode
@@ -600,6 +602,44 @@ void dynamics_controller::initialize(const int desired_control_mode, const bool 
     }
 }
 
+void dynamics_controller::set_parameters(const int prediction_dt_sec, 
+                                         const Eigen::VectorXd &max_cart_force,
+                                         const Eigen::VectorXd &error_alpha, 
+                                         const Eigen::VectorXd &bias_threshold, 
+                                         const Eigen::VectorXd &bias_step, 
+                                         const Eigen::VectorXd &gain_threshold, 
+                                         const Eigen::VectorXd &gain_step,
+                                         const bool saturate_b_u)
+{
+    //First check input dimensions
+    assert(max_cart_force.size() == NUM_OF_CONSTRAINTS_); 
+    assert(error_alpha.size()    == NUM_OF_CONSTRAINTS_); 
+    assert(bias_threshold.size() == NUM_OF_CONSTRAINTS_); 
+    assert(bias_step.size()      == NUM_OF_CONSTRAINTS_); 
+    assert(gain_threshold.size() == NUM_OF_CONSTRAINTS_); 
+    assert(gain_step.size()      == NUM_OF_CONSTRAINTS_); 
+
+    this->prediction_dt_sec_ = prediction_dt_sec;
+    this->max_cart_force_ = max_cart_force;
+
+    // Setting parameters of the ABAG Controller
+    abag_.set_error_alpha(error_alpha);    
+    abag_.set_bias_threshold(bias_threshold);
+    abag_.set_bias_step(bias_step);
+    abag_.set_gain_threshold(gain_threshold);
+    abag_.set_gain_step(gain_step);
+
+    // if(saturate_b_u)
+    // {
+    //     std::cout << "Satureated" << std::endl;
+    // }
+    // else
+    // {
+    //     std::cout <<  "NOT Saturated"  << std::endl;
+    // }
+    
+}
+
 /**
  * Perform single step of the control loop, given current robot joint state
  * Required for RTT's updateHook method
@@ -656,6 +696,7 @@ int dynamics_controller::step(const Eigen::VectorXd &q_input,
         return -1;
     }
 
+    apply_joint_control_commands();
     // Apply joint commands using safe control interface.
     // if(apply_joint_control_commands() != 0)
     // {

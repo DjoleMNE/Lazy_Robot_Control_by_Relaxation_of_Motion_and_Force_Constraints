@@ -141,10 +141,14 @@ namespace abag_parameter
                               << 0.015152, 0.015152, 0.015152, 
                                  0.015152, 0.015152, 0.655152).finished();
 
-    // Saturation limits   
+   //  Saturation limits   
     const Eigen::VectorXd MIN_BIAS_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
                                            << -1.0, -1.0, -1.0, 
                                               -1.0, -1.0, -1.0).finished();
+
+   //  const Eigen::VectorXd MIN_BIAS_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
+   //                                         << 0.0, 0.0, 0.0, 
+   //                                            0.0, 0.0, 0.0).finished();
 
     const Eigen::VectorXd MAX_BIAS_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
                                            << 1.0, 1.0, 1.0, 
@@ -164,6 +168,10 @@ namespace abag_parameter
                                            << -1.0, -1.0, -1.0, 
                                               -1.0, -1.0, -1.0).finished();
 
+   //  const Eigen::VectorXd MIN_COMMAND_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
+   //                                         <<  0.0, 0.0, 0.0, 
+   //                                             0.0, 0.0, 0.0).finished();
+
     const Eigen::VectorXd MAX_COMMAND_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
                                            << 1.0, 1.0, 1.0, 
                                               1.0, 1.0, 1.0).finished();
@@ -173,7 +181,8 @@ namespace dynamics_parameter
 {
     // Number of task constraints imposed on the robot, i.e. Cartesian DOFS
     const int NUMBER_OF_CONSTRAINTS(6);
-    const std::vector<double> MAX_FORCE{50.0, 50.0, 200.0, 2.0, 2.0, 2.0};
+    const Eigen::VectorXd MAX_FORCE = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                    << 50.0, 50.0, 200.0, 2.0, 2.0, 2.0).finished();
     const Eigen::IOFormat WRITE_FORMAT(6, Eigen::DontAlignCols, " ", "", "", "\n");
     const std::string LOG_FILE_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/control_error.txt");
 }
