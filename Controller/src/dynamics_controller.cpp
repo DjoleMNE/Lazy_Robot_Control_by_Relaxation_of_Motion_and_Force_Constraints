@@ -695,7 +695,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
         return -1;
     }
 
-    apply_joint_control_commands();
+    // apply_joint_control_commands();
     // Apply joint commands using safe control interface.
     // if(apply_joint_control_commands() != 0)
     // {
