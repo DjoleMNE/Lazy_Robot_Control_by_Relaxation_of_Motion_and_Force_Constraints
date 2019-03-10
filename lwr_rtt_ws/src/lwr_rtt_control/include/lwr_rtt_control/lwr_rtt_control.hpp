@@ -121,6 +121,8 @@ class LwrRttControl : public RTT::TaskContext{
                         jnt_vel_cmd_out,
                         jnt_trq_cmd_out;
         KDL::JntArray jnt_gravity_trq_out;
+
+        void visualize_pose(const std::vector<double> &pose);
 };
 
 #endif

@@ -166,6 +166,13 @@ bool LwrRttControl::configureHook()
 
     sleep(2); // wait for gazebo to load completely
 
+    this->visualize_pose(desired_ee_pose);
+    return true;
+}
+
+void LwrRttControl::visualize_pose(const std::vector<double> &pose)
+{
+
     // Create Temp ROS Node
     if (!ros::isInitialized())
     {
@@ -179,14 +186,14 @@ bool LwrRttControl::configureHook()
     static_transformStamped_.header.frame_id = "link_0";
     static_transformStamped_.child_frame_id = "desired_pose";
 
-    tf2::Matrix3x3 desired_matrix = tf2::Matrix3x3(desired_ee_pose[3], desired_ee_pose[4], desired_ee_pose[5], // Angular: Rotation matrix
-                                                   desired_ee_pose[6], desired_ee_pose[7], desired_ee_pose[8],
-                                                   desired_ee_pose[9], desired_ee_pose[10], desired_ee_pose[11]);
+    tf2::Matrix3x3 desired_matrix = tf2::Matrix3x3(pose[3], pose[4], pose[5], // Angular: Rotation matrix
+                                                   pose[6], pose[7], pose[8],
+                                                   pose[9], pose[10], pose[11]);
 
     // Convert data
-    static_transformStamped_.transform.translation.x = desired_ee_pose[0];
-    static_transformStamped_.transform.translation.y = desired_ee_pose[1];
-    static_transformStamped_.transform.translation.z = desired_ee_pose[2];
+    static_transformStamped_.transform.translation.x = pose[0];
+    static_transformStamped_.transform.translation.y = pose[1];
+    static_transformStamped_.transform.translation.z = pose[2];
 
     tf2::Quaternion quaternion_rotation;
     desired_matrix.getRotation(quaternion_rotation);
@@ -199,7 +206,6 @@ bool LwrRttControl::configureHook()
 
     // Publish once
     static_broadcaster_.sendTransform(static_transformStamped_);
-    return true;
 }
 
 void LwrRttControl::updateHook()
