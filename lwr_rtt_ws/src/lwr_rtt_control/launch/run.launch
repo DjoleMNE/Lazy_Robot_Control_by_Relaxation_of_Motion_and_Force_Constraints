@@ -64,7 +64,8 @@
     <arg name="GAIN_STEP" default="[0.015152, 0.015152, 0.015152, 
                                     0.015152, 0.015152, 0.655152]"/>
     <!-- ========= Saturate Bias and Command signals to [0, 1] ===============-->
-    <arg name="saturate_b_u" default="false"/>
+    <arg name="saturate_bias" default="false"/>
+    <arg name="saturate_u" default="false"/>
 
 
 
@@ -87,7 +88,8 @@
         <rosparam param="BIAS_STEP" subst_value="True">$(arg BIAS_STEP)</rosparam>
         <rosparam param="GAIN_THRESHOLD" subst_value="True">$(arg GAIN_THRESHOLD)</rosparam>
         <rosparam param="GAIN_STEP" subst_value="True">$(arg GAIN_STEP)</rosparam>
-        <rosparam param="saturate_b_u" subst_value="True">$(arg saturate_b_u)</rosparam>
+        <rosparam param="saturate_bias" subst_value="True">$(arg saturate_bias)</rosparam>
+        <rosparam param="saturate_u" subst_value="True">$(arg saturate_u)</rosparam>
     </node>
 
 <!-- ============ Runner script =============== -->

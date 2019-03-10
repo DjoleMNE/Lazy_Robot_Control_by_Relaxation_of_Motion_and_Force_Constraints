@@ -609,7 +609,8 @@ void dynamics_controller::set_parameters(const int prediction_dt_sec,
                                          const Eigen::VectorXd &bias_step, 
                                          const Eigen::VectorXd &gain_threshold, 
                                          const Eigen::VectorXd &gain_step,
-                                         const bool saturate_b_u)
+                                         const bool saturate_abag_bias,
+                                         const bool saturate_abag_u)
 {
     //First check input dimensions
     assert(max_cart_force.size() == NUM_OF_CONSTRAINTS_); 
@@ -629,16 +630,11 @@ void dynamics_controller::set_parameters(const int prediction_dt_sec,
     abag_.set_gain_threshold(gain_threshold);
     abag_.set_gain_step(gain_step);
 
-    if(saturate_b_u)
-    {
-        abag_.set_min_bias_sat_limit( Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_));
-        abag_.set_min_command_sat_limit( Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_));
-    }
-    else
-    {
-        abag_.set_min_bias_sat_limit(-Eigen::VectorXd::Ones(NUM_OF_CONSTRAINTS_));
-        abag_.set_min_command_sat_limit(-Eigen::VectorXd::Ones(NUM_OF_CONSTRAINTS_));
-    }
+    if(saturate_abag_bias) abag_.set_min_bias_sat_limit( Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_));
+    else abag_.set_min_bias_sat_limit(-Eigen::VectorXd::Ones(NUM_OF_CONSTRAINTS_));
+
+    if(saturate_abag_u) abag_.set_min_command_sat_limit( Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_));
+    else abag_.set_min_command_sat_limit(-Eigen::VectorXd::Ones(NUM_OF_CONSTRAINTS_));
 }
 
 /**

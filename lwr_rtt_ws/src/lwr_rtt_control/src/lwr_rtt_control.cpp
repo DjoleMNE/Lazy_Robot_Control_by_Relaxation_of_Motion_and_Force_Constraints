@@ -38,7 +38,8 @@ LwrRttControl::LwrRttControl(const std::string& name):
     bias_threshold_(Eigen::VectorXd::Constant(6, 0.0)),
     bias_step_(Eigen::VectorXd::Constant(6, 0.0)),
     gain_threshold_(Eigen::VectorXd::Constant(6, 0.0)),
-    gain_step_(Eigen::VectorXd::Constant(6, 0.0)), saturate_b_u_(false),
+    gain_step_(Eigen::VectorXd::Constant(6, 0.0)), 
+    saturate_bias_(false), saturate_u_(false),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_SEGMENTS_ + 1, NUM_OF_CONSTRAINTS_)
 {
     // Here you can add your ports, properties and operations
@@ -64,7 +65,8 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addProperty("BIAS_STEP", bias_step_).doc("BIAS_STEP");
     this->addProperty("GAIN_THRESHOLD", gain_threshold_).doc("GAIN_THRESHOLD");
     this->addProperty("GAIN_STEP", gain_step_).doc("GAIN_STEP");
-    this->addProperty("saturate_b_u", saturate_b_u_).doc("saturate_b_u");
+    this->addProperty("saturate_bias", saturate_bias_).doc("saturate_bias");
+    this->addProperty("saturate_u", saturate_u_).doc("saturate_u");
 }
 
 bool LwrRttControl::configureHook()
@@ -158,7 +160,7 @@ bool LwrRttControl::configureHook()
 
     controller_->set_parameters(prediction_dt_sec_, max_cart_force_, error_alpha_,
                                 bias_threshold_, bias_step_, gain_threshold_,
-                                gain_step_, saturate_b_u_);
+                                gain_step_, saturate_bias_, saturate_u_);
 
     controller_->initialize(control_mode::TORQUE, true);
 
@@ -172,7 +174,7 @@ bool LwrRttControl::configureHook()
         ros::init(argc, argv, "lwr_control", ros::init_options::NoSigintHandler|ros::init_options::AnonymousName);
     } this->rosnode_ = std::make_shared<ros::NodeHandle>();
 
-    // create transform message
+    // Create transform message
     static_transformStamped_.header.stamp = ros::Time::now();
     static_transformStamped_.header.frame_id = "link_0";
     static_transformStamped_.child_frame_id = "desired_pose";

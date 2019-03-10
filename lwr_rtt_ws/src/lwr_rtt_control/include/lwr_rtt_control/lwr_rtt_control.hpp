@@ -88,7 +88,7 @@ class LwrRttControl : public RTT::TaskContext{
 
         // ABAG Parameters
         Eigen::VectorXd error_alpha_, bias_threshold_, bias_step_, gain_threshold_, gain_step_;
-        bool saturate_b_u_;
+        bool saturate_bias_, saturate_u_;
 
         // State and Driver
         state_specification robot_state_;

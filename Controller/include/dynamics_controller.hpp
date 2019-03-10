@@ -81,7 +81,8 @@ class dynamics_controller
                         const Eigen::VectorXd &bias_step, 
                         const Eigen::VectorXd &gain_threshold, 
                         const Eigen::VectorXd &gain_step,
-                        const bool saturate_b_u);
+                        const bool saturate_abag_bias,
+                        const bool saturate_abag_u);
     void initialize(const int desired_control_mode, const bool store_control_data);
     void deinitialize();
     void stop_robot_motion();
