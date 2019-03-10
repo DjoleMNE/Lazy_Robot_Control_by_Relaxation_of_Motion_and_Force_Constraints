@@ -79,6 +79,13 @@ class ABAG
     void set_gain_step(const Eigen::VectorXd &gain_step);
     void set_gain_step(double gain_step, const int dimension);
 
+    void set_min_bias_sat_limit(const Eigen::VectorXd &sat_limit);
+    void set_max_bias_sat_limit(const Eigen::VectorXd &sat_limit);
+    void set_min_gain_sat_limit(const Eigen::VectorXd &sat_limit);
+    void set_max_gain_sat_limit(const Eigen::VectorXd &sat_limit);
+    void set_min_command_sat_limit(const Eigen::VectorXd &sat_limit);
+    void set_max_command_sat_limit(const Eigen::VectorXd &sat_limit);
+
     void reset_state();
     void reset_state(const int dimension);
 

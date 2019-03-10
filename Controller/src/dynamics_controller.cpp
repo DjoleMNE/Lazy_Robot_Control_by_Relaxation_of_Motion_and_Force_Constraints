@@ -629,14 +629,16 @@ void dynamics_controller::set_parameters(const int prediction_dt_sec,
     abag_.set_gain_threshold(gain_threshold);
     abag_.set_gain_step(gain_step);
 
-    // if(saturate_b_u)
-    // {
-    //     std::cout << "Satureated" << std::endl;
-    // }
-    // else
-    // {
-    //     std::cout <<  "NOT Saturated"  << std::endl;
-    // }
+    if(saturate_b_u)
+    {
+        abag_.set_min_bias_sat_limit( Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_));
+        abag_.set_min_command_sat_limit( Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_));
+    }
+    else
+    {
+        abag_.set_min_bias_sat_limit(-Eigen::VectorXd::Ones(NUM_OF_CONSTRAINTS_));
+        abag_.set_min_command_sat_limit(-Eigen::VectorXd::Ones(NUM_OF_CONSTRAINTS_));
+    }
 }
 
 /**

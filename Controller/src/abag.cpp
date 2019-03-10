@@ -36,7 +36,7 @@ ABAG::ABAG(const int num_of_dimensions, const bool use_error_magnitude):
     assert(("ABAG Controller not initialized properly", DIMENSIONS_ > 0));
 }
 
-// Constructor with all predifined set/s of parameters
+// Constructor with all predefined set/s of parameters
 ABAG::ABAG(const int num_of_dimensions, const bool use_error_magnitude, 
            const Eigen::VectorXd &error_alpha,
            const Eigen::VectorXd &bias_threshold, const Eigen::VectorXd &bias_step, 
@@ -358,6 +358,57 @@ void ABAG::set_gain_step(double gain_step, const int dimension)
     assert(gain_step > 0.0);
 
     parameter.GAIN_STEP(dimension) = gain_step;
+}
+
+
+void ABAG::set_min_bias_sat_limit(const Eigen::VectorXd &sat_limit)
+{
+    assert(("Not valid dimension number", sat_limit.rows() > 0));
+    assert(("Not valid dimension number", sat_limit.rows() <= DIMENSIONS_));
+
+    parameter.MIN_BIAS_SAT_LIMIT = sat_limit;
+}
+
+void ABAG::set_max_bias_sat_limit(const Eigen::VectorXd &sat_limit)
+{
+    assert(("Not valid dimension number", sat_limit.rows() > 0));
+    assert(("Not valid dimension number", sat_limit.rows() <= DIMENSIONS_));
+
+    parameter.MAX_BIAS_SAT_LIMIT = sat_limit;
+}
+
+
+void ABAG::set_min_gain_sat_limit(const Eigen::VectorXd &sat_limit)
+{
+    assert(("Not valid dimension number", sat_limit.rows() > 0));
+    assert(("Not valid dimension number", sat_limit.rows() <= DIMENSIONS_));
+
+    parameter.MIN_GAIN_SAT_LIMIT = sat_limit;
+}
+
+void ABAG::set_max_gain_sat_limit(const Eigen::VectorXd &sat_limit)
+{
+    assert(("Not valid dimension number", sat_limit.rows() > 0));
+    assert(("Not valid dimension number", sat_limit.rows() <= DIMENSIONS_));
+
+    parameter.MAX_GAIN_SAT_LIMIT = sat_limit;
+}
+
+
+void ABAG::set_min_command_sat_limit(const Eigen::VectorXd &sat_limit)
+{
+    assert(("Not valid dimension number", sat_limit.rows() > 0));
+    assert(("Not valid dimension number", sat_limit.rows() <= DIMENSIONS_));
+
+    parameter.MIN_COMMAND_SAT_LIMIT = sat_limit;
+}
+
+void ABAG::set_max_command_sat_limit(const Eigen::VectorXd &sat_limit)
+{
+    assert(("Not valid dimension number", sat_limit.rows() > 0));
+    assert(("Not valid dimension number", sat_limit.rows() <= DIMENSIONS_));
+
+    parameter.MAX_COMMAND_SAT_LIMIT = sat_limit;
 }
 
 /*
