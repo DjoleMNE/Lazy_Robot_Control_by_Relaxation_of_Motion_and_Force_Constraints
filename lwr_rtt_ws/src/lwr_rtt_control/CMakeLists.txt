@@ -10,6 +10,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 find_package(catkin REQUIRED COMPONENTS
     rtt_ros
     cmake_modules
+    roscpp
+    tf
+    tf2_ros
+    tf2
+    geometry_msgs
+    tf2_geometry_msgs
 )
 
 find_package(Eigen3 REQUIRED)

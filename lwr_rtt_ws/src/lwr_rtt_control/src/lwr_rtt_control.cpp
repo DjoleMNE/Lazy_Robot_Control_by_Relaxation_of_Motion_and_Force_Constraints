@@ -118,36 +118,41 @@ bool LwrRttControl::configureHook()
     controller_->define_feedforward_torque(std::vector<double>{0.0, 0.0, 
                                                                0.0, 0.0, 
                                                                0.0, 0.0, 0.0});
+
+    std::vector<double> desired_ee_pose(9); 
     switch (desired_pose_)
     {
         case desired_pose::CANDLE:
-                // Candle Pose
+            // Candle Pose
+            desired_ee_pose = { 0.0,  0.0, 1.1785, // Linear: Vector
+                                1.0,  0.0, 0.0, // Angular: Rotation matrix
+                                0.0,  1.0, 0.0,
+                                0.0,  0.0, 1.0};
             controller_->define_desired_ee_pose(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
                                                                   control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
-                                                std::vector<double>{ 0.0,  0.0, 1.1785, // Linear: Vector
-                                                                     1.0,  0.0, 0.0, // Angular: Rotation matrix
-                                                                     0.0,  1.0, 0.0,
-                                                                     0.0,  0.0, 1.0});
+                                                desired_ee_pose);
             break;
 
         case desired_pose::FOLDED:
-            // Navigation pose
+            // Folded pose
+            desired_ee_pose = { 0.260912, -0.014731, -0.0945801, // Linear: Vector
+                                0.575147,  0.789481, -0.214301, // Angular: Rotation matrix
+                                0.174954,  0.137195,  0.974971,
+                                0.799122, -0.598245, -0.059216};
             controller_->define_desired_ee_pose(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
                                                                   control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
-                                                std::vector<double>{ 0.260912, -0.014731, -0.0945801, // Linear: Vector
-                                                                     0.575147,  0.789481, -0.214301, // Angular: Rotation matrix
-                                                                     0.174954,  0.137195,  0.974971,
-                                                                     0.799122, -0.598245, -0.059216});
+                                                desired_ee_pose);
             break;
 
         default:
             // Navigation pose
+            desired_ee_pose = {-0.210785, -0.328278,  0.632811, // Linear: Vector
+                               -0.540302, -0.841471, -0.000860, // Angular: Rotation matrix
+                               -0.841470,  0.540302, -0.001340,
+                                0.001592,  0.000000, -0.999999};
             controller_->define_desired_ee_pose(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
                                                                   control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
-                                                std::vector<double>{-0.210785, -0.328278,  0.632811, // Linear: Vector
-                                                                    -0.540302, -0.841471, -0.000860, // Angular: Rotation matrix
-                                                                    -0.841470,  0.540302, -0.001340,
-                                                                     0.001592,  0.000000, -0.999999});
+                                                desired_ee_pose);
             break;
     }
 
@@ -158,6 +163,40 @@ bool LwrRttControl::configureHook()
     controller_->initialize(control_mode::TORQUE, true);
 
     sleep(2); // wait for gazebo to load completely
+
+    // Create Temp ROS Node
+    if (!ros::isInitialized())
+    {
+        int argc = 0;
+        char** argv = NULL;
+        ros::init(argc, argv, "lwr_control", ros::init_options::NoSigintHandler|ros::init_options::AnonymousName);
+    } this->rosnode_ = std::make_shared<ros::NodeHandle>();
+
+    // create transform message
+    static_transformStamped_.header.stamp = ros::Time::now();
+    static_transformStamped_.header.frame_id = "link_0";
+    static_transformStamped_.child_frame_id = "desired_pose";
+
+    tf2::Matrix3x3 desired_matrix = tf2::Matrix3x3(desired_ee_pose[3], desired_ee_pose[4], desired_ee_pose[5], // Angular: Rotation matrix
+                                                   desired_ee_pose[6], desired_ee_pose[7], desired_ee_pose[8],
+                                                   desired_ee_pose[9], desired_ee_pose[10], desired_ee_pose[11]);
+
+    // Convert data
+    static_transformStamped_.transform.translation.x = desired_ee_pose[0];
+    static_transformStamped_.transform.translation.y = desired_ee_pose[1];
+    static_transformStamped_.transform.translation.z = desired_ee_pose[2];
+
+    tf2::Quaternion quaternion_rotation;
+    desired_matrix.getRotation(quaternion_rotation);
+    quaternion_rotation.normalize();
+
+    static_transformStamped_.transform.rotation.x = quaternion_rotation[0];
+    static_transformStamped_.transform.rotation.y = quaternion_rotation[1];
+    static_transformStamped_.transform.rotation.z = quaternion_rotation[2];
+    static_transformStamped_.transform.rotation.w = quaternion_rotation[3];
+
+    // Publish once
+    static_broadcaster_.sendTransform(static_transformStamped_);
     return true;
 }
 

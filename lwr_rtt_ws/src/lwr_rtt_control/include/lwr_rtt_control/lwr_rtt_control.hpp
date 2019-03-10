@@ -31,12 +31,25 @@ SOFTWARE.
 #include <rtt/Port.hpp>
 #include <rtt/Logger.hpp>
 #include <rtt/Component.hpp>
+
 // Eigen
 #include <Eigen/Dense>
+
 // RTT-ROS Utilities
 #include <rtt_ros_kdl_tools/tools.hpp>
 #include <rtt_ros_kdl_tools/chain_utils.hpp>
 #include <rtt_rosparam/rosparam.h>
+#include <ros/ros.h>
+#include <tf/transform_datatypes.h>
+#include <tf/transform_listener.h>
+#include <tf/transform_broadcaster.h>
+#include <tf2/transform_datatypes.h>
+#include <tf2/LinearMath/Transform.h>
+#include <tf2/convert.h>
+#include <tf2_ros/static_transform_broadcaster.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/Transform.h>
 
 // Custom Controller code
 #include <state_specification.hpp>
@@ -84,6 +97,11 @@ class LwrRttControl : public RTT::TaskContext{
         //Solvers
         std::shared_ptr<dynamics_controller> controller_;
         std::shared_ptr<KDL::ChainDynParam> gravity_solver_;
+
+        // ROS components 
+        std::shared_ptr<ros::NodeHandle> rosnode_;
+        tf2_ros::StaticTransformBroadcaster static_broadcaster_;
+        geometry_msgs::TransformStamped static_transformStamped_;
 
     protected:
         // Input ports

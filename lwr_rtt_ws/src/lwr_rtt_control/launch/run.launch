@@ -42,7 +42,7 @@
     <!-- <arg name="desired_pose" default="2"/> -->
 
     <!-- ========= Dimentions to be controlled ===============-->
-    <arg name="control_dims" default="[true, false, true, 
+    <arg name="control_dims" default="[true, true, true, 
                                        false, false, false]"/>
 
     <!-- ========= Prediction Time Step ===============-->
