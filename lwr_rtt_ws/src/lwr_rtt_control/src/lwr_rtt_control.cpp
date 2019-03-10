@@ -171,8 +171,8 @@ void LwrRttControl::updateHook()
     robot_state_.q.data  = jnt_pos_in;
     robot_state_.qd.data = jnt_vel_in;
     
-    int controller_result = controller_->step(robot_state_.q.data, 
-                                              robot_state_.qd.data, 
+    int controller_result = controller_->step(robot_state_.q, 
+                                              robot_state_.qd, 
                                               robot_state_.control_torque.data);
 
     if(!controller_result == 0) RTT::TaskContext::stop();

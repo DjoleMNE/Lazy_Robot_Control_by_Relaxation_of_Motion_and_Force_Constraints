@@ -637,19 +637,18 @@ void dynamics_controller::set_parameters(const int prediction_dt_sec,
     // {
     //     std::cout <<  "NOT Saturated"  << std::endl;
     // }
-    
 }
 
 /**
  * Perform single step of the control loop, given current robot joint state
  * Required for RTT's updateHook method
 */
-int dynamics_controller::step(const Eigen::VectorXd &q_input,
-                              const Eigen::VectorXd &qd_input,
+int dynamics_controller::step(const KDL::JntArray &q_input,
+                              const KDL::JntArray &qd_input,
                               Eigen::VectorXd &tau_output)
 {
-    robot_state_.q.data  = q_input;
-    robot_state_.qd.data = qd_input;
+    robot_state_.q = q_input;
+    robot_state_.qd = qd_input;
 
     // Get Cart poses and velocities
     int fk_solver_result = fk_vereshchagin_.JntToCart(robot_state_.q, 

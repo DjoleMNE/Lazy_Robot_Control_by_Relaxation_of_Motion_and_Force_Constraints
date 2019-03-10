@@ -70,8 +70,8 @@ class dynamics_controller
     * Perform single step of the control loop, given current robot joint state
     * Required for RTT's updateHook method
     */
-    int step(const Eigen::VectorXd &q_input,
-             const Eigen::VectorXd &qd_input, 
+    int step(const KDL::JntArray &q_input,
+             const KDL::JntArray &qd_input, 
              Eigen::VectorXd &tau_output);
     
     void set_parameters(const int prediction_dt_sec, 
