@@ -61,8 +61,9 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addProperty("desired_pose", desired_pose_).doc("desired pose");
 
     this->addProperty("control_dims", control_dims_).doc("control dimensions");
-    this->addProperty("prediction_dt_sec", prediction_dt_sec_).doc("prediction_dt_sec_");
+    this->addProperty("prediction_dt_sec", prediction_dt_sec_).doc("prediction_dt_sec");
     this->addProperty("max_cart_force", max_cart_force_).doc("max_cart_force");
+    this->addProperty("max_cart_acc", max_cart_acc_).doc("max_cart_acc");
     this->addProperty("ERROR_ALPHA", error_alpha_).doc("ABAG ERROR_ALPHA");
     this->addProperty("BIAS_THRESHOLD", bias_threshold_).doc("BIAS_THRESHOLD");
     this->addProperty("BIAS_STEP", bias_step_).doc("BIAS_STEP");
@@ -161,7 +162,8 @@ bool LwrRttControl::configureHook()
             break;
     }
 
-    controller_->set_parameters(prediction_dt_sec_, max_cart_force_, error_alpha_,
+    controller_->set_parameters(prediction_dt_sec_, max_cart_force_, 
+                                max_cart_acc_, error_alpha_,
                                 bias_threshold_, bias_step_, gain_threshold_,
                                 gain_step_, saturate_bias_, saturate_u_);
 

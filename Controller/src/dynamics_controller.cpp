@@ -654,6 +654,7 @@ void dynamics_controller::initialize(const int desired_control_mode,
 
 void dynamics_controller::set_parameters(const int prediction_dt_sec, 
                                          const Eigen::VectorXd &max_cart_force,
+                                         const Eigen::VectorXd &max_cart_acc,
                                          const Eigen::VectorXd &error_alpha, 
                                          const Eigen::VectorXd &bias_threshold, 
                                          const Eigen::VectorXd &bias_step, 
@@ -664,6 +665,7 @@ void dynamics_controller::set_parameters(const int prediction_dt_sec,
 {
     //First check input dimensions
     assert(max_cart_force.size() == NUM_OF_CONSTRAINTS_); 
+    assert(max_cart_acc.size()   == NUM_OF_CONSTRAINTS_); 
     assert(error_alpha.size()    == NUM_OF_CONSTRAINTS_); 
     assert(bias_threshold.size() == NUM_OF_CONSTRAINTS_); 
     assert(bias_step.size()      == NUM_OF_CONSTRAINTS_); 
@@ -672,7 +674,8 @@ void dynamics_controller::set_parameters(const int prediction_dt_sec,
 
     this->prediction_dt_sec_ = prediction_dt_sec;
     this->max_cart_force_ = max_cart_force;
-
+    this->max_cart_acc_ = max_cart_acc;
+    
     // Setting parameters of the ABAG Controller
     abag_.set_error_alpha(error_alpha);    
     abag_.set_bias_threshold(bias_threshold);

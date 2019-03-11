@@ -68,7 +68,7 @@
                                          10.0, 10.0, 10.0]"/>
 
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
-    <arg name="max_cart_acc" default="[50.0, 50.0, 200.0, 
+    <arg name="max_cart_acc" default="[50.0, 50.0, 50.0, 
                                        10.0, 10.0, 10.0]"/>
 
 

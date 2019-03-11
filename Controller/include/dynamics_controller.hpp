@@ -74,6 +74,7 @@ class dynamics_controller
     
     void set_parameters(const int prediction_dt_sec, 
                         const Eigen::VectorXd &max_cart_force,
+                        const Eigen::VectorXd &max_cart_acc,
                         const Eigen::VectorXd &error_alpha, 
                         const Eigen::VectorXd &bias_threshold, 
                         const Eigen::VectorXd &bias_step, 
