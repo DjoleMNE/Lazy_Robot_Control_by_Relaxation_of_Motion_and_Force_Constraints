@@ -48,9 +48,9 @@ SOFTWARE.
 
 enum dynamics_interface
 {
-  CART_ACCELERATION,
-  CART_FORCE,
-  FF_JOINT_TORQUE
+  CART_ACCELERATION = 0,
+  CART_FORCE = 1,
+  FF_JOINT_TORQUE = 2
 };
 
 class dynamics_controller

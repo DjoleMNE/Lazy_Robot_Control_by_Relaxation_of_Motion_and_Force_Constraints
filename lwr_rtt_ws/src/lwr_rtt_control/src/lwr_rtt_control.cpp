@@ -31,6 +31,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     NUM_OF_JOINTS_(7), NUM_OF_CONSTRAINTS_(6), 
     environment_(lwr_environment::LWR_SIMULATION), 
     robot_model_(lwr_model::LWR_URDF), krc_compensate_gravity_(false),
+    desired_control_mode_(0), desired_dynamics_interface_(1),
     desired_pose_(1), prediction_dt_sec_(1.0),
     control_dims_(NUM_OF_CONSTRAINTS_, false),
     max_cart_force_(Eigen::VectorXd::Constant(6, 0.0)),
@@ -55,6 +56,8 @@ LwrRttControl::LwrRttControl(const std::string& name):
 //     this->addProperty("environment", environment_).doc("environment");
 //     this->addProperty("robot_model", robot_model_).doc("robot_model");
     this->addProperty("krc_compensate_gravity", krc_compensate_gravity_).doc("KRC compensate gravity");
+    this->addProperty("desired_control_mode", desired_control_mode_).doc("desired_control_mode");
+    this->addProperty("desired_dynamics_interface", desired_dynamics_interface_).doc("desired_dynamics_interface");
     this->addProperty("desired_pose", desired_pose_).doc("desired pose");
 
     this->addProperty("control_dims", control_dims_).doc("control dimensions");
@@ -162,8 +165,8 @@ bool LwrRttControl::configureHook()
                                 bias_threshold_, bias_step_, gain_threshold_,
                                 gain_step_, saturate_bias_, saturate_u_);
 
-    controller_->initialize(control_mode::TORQUE, 
-                            dynamics_interface::CART_FORCE, 
+    controller_->initialize(desired_control_mode_, 
+                            desired_dynamics_interface_, 
                             true);
 
     sleep(2); // wait for gazebo to load completely
