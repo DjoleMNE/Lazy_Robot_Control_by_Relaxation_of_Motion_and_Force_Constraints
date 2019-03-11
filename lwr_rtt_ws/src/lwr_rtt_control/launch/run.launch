@@ -60,8 +60,8 @@
     <arg name="control_dims" default="[true, true, true, 
                                        false, false, false]"/>
 
-    <!-- ========= Prediction Time Step ===============-->
-    <arg name="prediction_dt_sec" default="1.0"/>
+    <!-- ========= Initial Prediction Time Step ===============-->
+    <arg name="prediction_dt_sec" default="20.0"/>
 
     <!-- ========= Max Cart force excerted on the End-Effector ===============-->
     <arg name="max_cart_force" default="[50.0, 50.0, 200.0, 
@@ -83,6 +83,7 @@
                                          0.252492, 0.252492, 0.432492]"/>
     <arg name="GAIN_STEP" default="[0.015152, 0.015152, 0.015152, 
                                     0.015152, 0.015152, 0.655152]"/>
+
     <!-- ========= Saturate Bias and Command signals to [0, 1] ===============-->
     <arg name="saturate_bias" default="false"/>
     <arg name="saturate_u" default="false"/>

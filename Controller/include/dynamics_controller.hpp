@@ -128,7 +128,7 @@ class dynamics_controller
     Eigen::VectorXd max_cart_force_, max_cart_acc_;
     std::vector<bool> CTRL_DIM_;
     
-    Eigen::VectorXd error_vector_;
+    Eigen::VectorXd predicted_error_vector_, current_error_vector_;
     Eigen::VectorXd abag_command_;
     KDL::Wrenches cart_force_command_;
 

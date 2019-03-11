@@ -41,7 +41,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     max_cart_force_(dynamics_parameter::MAX_CART_FORCE),
     max_cart_acc_(dynamics_parameter::MAX_CART_ACC),
     CTRL_DIM_(NUM_OF_CONSTRAINTS_, false),
-    error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
+    predicted_error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
+    current_error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     cart_force_command_(NUM_OF_SEGMENTS_),
     hd_solver_(robot_chain_, robot_driver->get_joint_inertia(),
@@ -194,15 +195,11 @@ void dynamics_controller::update_dynamics_interfaces()
 // Write control data to a file
 void dynamics_controller::write_to_file()
 {   
-    for(int i = 0; i < 3; i++)
-        log_file_ << robot_state_.frame_pose[END_EFF_].p(i) << " ";
-
-    for(int i = 3; i < 6; i++) log_file_ << error_vector_(i) << " ";
+    for(int i = 0; i < 3; i++) log_file_ << robot_state_.frame_pose[END_EFF_].p(i) << " ";
+    for(int i = 3; i < 6; i++) log_file_ << predicted_error_vector_(i) << " ";
     log_file_ << std::endl;
 
-    for(int i = 0; i < 3; i++)
-        log_file_ << desired_state_.frame_pose[END_EFF_].p(i) << " ";
-
+    for(int i = 0; i < 3; i++) log_file_ << desired_state_.frame_pose[END_EFF_].p(i) << " ";
     for(int i = 3; i < 6; i++) log_file_ << 0.0 << " ";
     log_file_ << std::endl;
 
@@ -423,8 +420,16 @@ void dynamics_controller::make_predictions(const double dt_sec, const int num_st
 */
 void dynamics_controller::compute_control_error()
 {
-    // predicted_state_ = robot_state_;
-    make_predictions(prediction_dt_sec_, 1);
+    current_error_vector_.head(3) = \
+        conversions::kdl_vector_to_eigen(desired_state_.frame_pose[END_EFF_].p - \
+                                         robot_state_.frame_pose[END_EFF_].p);
+
+    double current_error_norm = current_error_vector_.head(3).norm();
+    // printf("DS: %f\n",prediction_dt_sec_ * current_error_norm);
+
+
+    make_predictions(prediction_dt_sec_ * current_error_norm, 1);
+    // make_predictions(prediction_dt_sec_, 1);
     // make_predictions(0.1, 10);
     // make_predictions(0.0001, 10000);
 
@@ -432,7 +437,7 @@ void dynamics_controller::compute_control_error()
      * This error part represents linear motion necessary to go from 
      * predicted to desired position (positive direction of translation).
     */
-    error_vector_.head(3) = \
+    predicted_error_vector_.head(3) = \
         conversions::kdl_vector_to_eigen(desired_state_.frame_pose[END_EFF_].p - \
                                          predicted_state_.frame_pose[END_EFF_].p);
     /**
@@ -446,18 +451,18 @@ void dynamics_controller::compute_control_error()
                                      predicted_state_.frame_pose[END_EFF_].M.Inverse();
 
     // Error calculation for angular part, i.e. logarithmic map on SO(3).
-    error_vector_.tail(3) = \
+    predicted_error_vector_.tail(3) = \
         conversions::kdl_vector_to_eigen(geometry::log_map_so3(error_rot_matrix));
 
     #ifndef NDEBUG
-        // std::cout << "\nLinear Error: " << error_vector_.head(3).transpose() << "    Linear norm: " << error_vector_.head(3).norm() << std::endl;
-        // std::cout << "Angular Error: " << error_vector_.tail(3).transpose() << "         Angular norm: " << error_vector_.tail(3).norm() << std::endl;
+        // std::cout << "\nLinear Error: " << predicted_error_vector_.head(3).transpose() << "    Linear norm: " << predicted_error_vector_.head(3).norm() << std::endl;
+        // std::cout << "Angular Error: " << predicted_error_vector_.tail(3).transpose() << "         Angular norm: " << predicted_error_vector_.tail(3).norm() << std::endl;
     #endif
 }
 
 void dynamics_controller::compute_cart_control_commands()
 {   
-    abag_command_ = abag_.update_state(error_vector_).transpose();
+    abag_command_ = abag_.update_state(predicted_error_vector_).transpose();
 
     switch (desired_task_inteface_)
     {
