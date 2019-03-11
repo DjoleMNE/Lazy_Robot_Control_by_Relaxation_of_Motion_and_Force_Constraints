@@ -129,7 +129,8 @@ namespace dynamics_parameter
 {
     // Number of task constraints imposed on the robot, i.e. Cartesian DOFS
     extern const int NUMBER_OF_CONSTRAINTS;
-    extern const Eigen::VectorXd MAX_FORCE;
+    extern const Eigen::VectorXd MAX_CART_FORCE;
+    extern const Eigen::VectorXd MAX_CART_ACC;
     extern const Eigen::IOFormat WRITE_FORMAT;
     extern const std::string LOG_FILE_PATH;
 }

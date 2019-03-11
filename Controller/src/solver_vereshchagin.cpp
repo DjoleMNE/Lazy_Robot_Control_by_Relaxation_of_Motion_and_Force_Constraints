@@ -372,12 +372,16 @@ void Solver_Vereshchagin::constraint_calculation(const JntArray& beta)
     assert(result == 0);
 
     //truncated svd, what would sdls, dls physically mean?
+    // printf("\n Singular: ");
     for (unsigned int i = 0; i < nc; i++)
-        if (Sm(i) < 1e-14){
+    {   
+        if (Sm(i) < 1e-14)
+        {
+            // printf("%d: %f,  ", i, Sm(i));
             Sm(i) = 0.0;
-        }
-        else
-            Sm(i) = 1 / Sm(i);
+        } 
+        else Sm(i) = 1 / Sm(i);
+    }
 
     results[0].M.noalias() = Vm * Sm.asDiagonal();
     M_0_inverse.noalias() = results[0].M * Um.transpose();

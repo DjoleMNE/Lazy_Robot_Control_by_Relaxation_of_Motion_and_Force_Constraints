@@ -33,10 +33,10 @@
     <arg name="krc_compensate_gravity" default="false"/>
 
     <!-- ========= navigation pose ===============-->
-    <arg name="desired_pose" default="1"/>
+    <!-- <arg name="desired_pose" default="1"/> -->
     
     <!-- ========= candle pose ===============-->
-    <!-- <arg name="desired_pose" default="0"/> -->
+    <arg name="desired_pose" default="0"/>
 
     <!-- ========= folded pose ===============-->
     <!-- <arg name="desired_pose" default="2"/> -->

@@ -38,7 +38,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     NUM_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
     NUM_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
     END_EFF_(NUM_OF_SEGMENTS_ - 1),
-    max_cart_force_(dynamics_parameter::MAX_FORCE), 
+    max_cart_force_(dynamics_parameter::MAX_CART_FORCE),
+    max_cart_acc_(dynamics_parameter::MAX_CART_ACC),
     CTRL_DIM_(NUM_OF_CONSTRAINTS_, false),
     error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
@@ -66,6 +67,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     desired_control_mode_.interface = control_mode::STOP_MOTION;
     desired_control_mode_.is_safe = false;
 
+    desired_task_inteface_ = dynamics_interface::CART_FORCE;
+
     KDL::SetToZero(cart_force_command_[END_EFF_]);
 
     // Setting parameters of the ABAG Controller
@@ -80,32 +83,52 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
 void dynamics_controller::print_settings_info()
 {   
     #ifdef NDEBUG
-        std::cout << "The program is build in RELEASE mode." << std::endl;
+        printf("The program is build in RELEASE mode.\n");
     #endif
     #ifndef NDEBUG
-        std::cout << "The program is build in DEBUG mode." << std::endl;
+        printf("The program is build in DEBUG mode.\n");
     #endif
     
-    std::cout << "Selected controller settings:" << std::endl;
-    std::cout << "Control Loop Frequency: " << RATE_HZ_ << " Hz" << std::endl;
-    std::cout << "Control Mode: ";
+    printf("Selected controller settings:\n");
+    printf("Control Loop Frequency: %d Hz\n", RATE_HZ_);
 
+    printf("Control Mode: ");
     switch(desired_control_mode_.interface) 
     {
         case control_mode::STOP_MOTION:
-            std::cout << "STOP MOTION \n" << "Stopping the robot!" << std::endl;
+            printf("STOP MOTION \n Stopping the robot!\n");
             break;
 
         case control_mode::POSITION:
-            std::cout << "Joint Position Control" << std::endl;
+            printf("Joint Position Control\n");
             break;
 
         case control_mode::VELOCITY:
-            std::cout << "Joint Velocity Control" << std::endl;
+            printf("Joint Velocity Control\n");
             break;
 
         case control_mode::TORQUE:
-            std::cout << "Joint Torque Control" << std::endl;
+            printf("Joint Torque Control\n");
+            break;
+    }
+
+    printf("Dynamics Interface: ");
+    switch(desired_task_inteface_) 
+    {
+        case dynamics_interface::CART_ACCELERATION:
+            printf("Cartesian EndEffector Acceleration Interface\n");
+            break;
+
+        case dynamics_interface::CART_FORCE:
+            printf("Cartesian Force Interface\n");
+            break;
+
+        case dynamics_interface::FF_JOINT_TORQUE:
+            printf("FeedForward Joint Torque Interface\n");
+            break;
+
+        default:
+            printf("Stopping the robot!\n");
             break;
     }
 
@@ -436,13 +459,36 @@ void dynamics_controller::compute_cart_control_commands()
 {   
     abag_command_ = abag_.update_state(error_vector_).transpose();
 
-    // Set additional (virtual) force computed by the ABAG controller
-    cart_force_command_[END_EFF_].force(0)  = CTRL_DIM_[0]? abag_command_(0) * max_cart_force_(0) : 0.0;
-    cart_force_command_[END_EFF_].force(1)  = CTRL_DIM_[1]? abag_command_(1) * max_cart_force_(1) : 0.0;
-    cart_force_command_[END_EFF_].force(2)  = CTRL_DIM_[2]? abag_command_(2) * max_cart_force_(2) : 0.0;
-    cart_force_command_[END_EFF_].torque(0) = CTRL_DIM_[3]? abag_command_(3) * max_cart_force_(3) : 0.0;
-    cart_force_command_[END_EFF_].torque(1) = CTRL_DIM_[4]? abag_command_(4) * max_cart_force_(4) : 0.0;
-    cart_force_command_[END_EFF_].torque(2) = CTRL_DIM_[5]? abag_command_(5) * max_cart_force_(5) : 0.0;
+    switch (desired_task_inteface_)
+    {
+        case dynamics_interface::CART_FORCE:
+            // Set additional (virtual) force computed by the ABAG controller
+            cart_force_command_[END_EFF_].force(0)  = CTRL_DIM_[0]? abag_command_(0) * max_cart_force_(0) : 0.0;
+            cart_force_command_[END_EFF_].force(1)  = CTRL_DIM_[1]? abag_command_(1) * max_cart_force_(1) : 0.0;
+            cart_force_command_[END_EFF_].force(2)  = CTRL_DIM_[2]? abag_command_(2) * max_cart_force_(2) : 0.0;
+            cart_force_command_[END_EFF_].torque(0) = CTRL_DIM_[3]? abag_command_(3) * max_cart_force_(3) : 0.0;
+            cart_force_command_[END_EFF_].torque(1) = CTRL_DIM_[4]? abag_command_(4) * max_cart_force_(4) : 0.0;
+            cart_force_command_[END_EFF_].torque(2) = CTRL_DIM_[5]? abag_command_(5) * max_cart_force_(5) : 0.0;
+            break;
+
+        case dynamics_interface::CART_ACCELERATION:
+            // Overwrite the existing Cart Acc Constraints on the End-Effector
+            set_ee_acc_constraints(robot_state_,
+                                   std::vector<bool>{CTRL_DIM_[0], CTRL_DIM_[1], CTRL_DIM_[2], // Linear
+                                                     CTRL_DIM_[3], CTRL_DIM_[4], CTRL_DIM_[5]}, // Angular
+                                   std::vector<double>{abag_command_(0) * max_cart_acc_(0), // Linear
+                                                       abag_command_(1) * max_cart_acc_(1), // Linear
+                                                       abag_command_(2) * max_cart_acc_(2), // Linear
+                                                       abag_command_(3) * max_cart_acc_(3), // Angular
+                                                       abag_command_(4) * max_cart_acc_(4), // Angular
+                                                       abag_command_(5) * max_cart_acc_(5)}); // Angular
+            break;
+    
+        default:
+            assert(("Unsupported interface!", false));
+            break;
+    }
+
 
 #ifndef NDEBUG
     // std::cout << "ABAG Commands:         "<< abag_command_.transpose() << std::endl;
@@ -580,13 +626,17 @@ int dynamics_controller::control(const int desired_control_mode,
     return 0;
 }
 
-void dynamics_controller::initialize(const int desired_control_mode, const bool store_control_data)
+void dynamics_controller::initialize(const int desired_control_mode, 
+                                     const int desired_task_inteface, 
+                                     const bool store_control_data)
 {
     // Save current selection of desire control mode
     desired_control_mode_.interface = desired_control_mode;
 
     //Exit the program if the "Stop Motion" mode is selected
     assert(desired_control_mode_.interface != control_mode::STOP_MOTION); 
+
+    desired_task_inteface_ = desired_task_inteface;
     
     // First make sure that the robot is not moving
     // stop_robot_motion();
@@ -683,7 +733,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
     compute_control_error();
     
     compute_cart_control_commands();
-    if (store_control_data_) write_to_file();        
+    if (store_control_data_) write_to_file();   
 
     // Calculate robot dynamics using the Vereshchagin HD solver
     if(evaluate_dynamics() != 0)

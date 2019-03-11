@@ -46,10 +46,8 @@ SOFTWARE.
 #include <cmath>
 #include <stdlib.h> /* abs */
 
-enum task_interface
+enum dynamics_interface
 {
-  CART_POSE,
-  CART_VELOCITY,
   CART_ACCELERATION,
   CART_FORCE,
   FF_JOINT_TORQUE
@@ -83,7 +81,9 @@ class dynamics_controller
                         const Eigen::VectorXd &gain_step,
                         const bool saturate_abag_bias,
                         const bool saturate_abag_u);
-    void initialize(const int desired_control_mode, const bool store_control_data);
+    void initialize(const int desired_control_mode, 
+                    const int desired_task_inteface, 
+                    const bool store_control_data);
     void deinitialize();
     void stop_robot_motion();
 
@@ -112,6 +112,8 @@ class dynamics_controller
       bool is_safe;
     } desired_control_mode_;
 
+    int desired_task_inteface_;
+
     std::chrono::steady_clock::time_point loop_start_time_;
     std::chrono::steady_clock::time_point loop_end_time_;
     std::chrono::duration <double, std::micro> loop_interval_{};
@@ -122,7 +124,7 @@ class dynamics_controller
     const int NUM_OF_FRAMES_;
     const int NUM_OF_CONSTRAINTS_;
     const int END_EFF_;
-    Eigen::VectorXd max_cart_force_;
+    Eigen::VectorXd max_cart_force_, max_cart_acc_;
     std::vector<bool> CTRL_DIM_;
     
     Eigen::VectorXd error_vector_;

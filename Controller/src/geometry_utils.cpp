@@ -293,7 +293,7 @@ namespace geometry
         // If this even happens, epsilon above should be increased
         // or logic behind if_s to be changed
         if (std::fabs(angle) < epsilon1) printf("LOG: Too small angle: %f", angle);
-        else if (std::fabs(angle) > M_PI - epsilon1) printf("LOG: Too big angle: %f", angle);
+        else if (std::fabs(angle) > M_PI) printf("LOG: Too big angle: %f", angle);
 
         //If following assertions fail, above if statements are not working properly
         // Sometimes they are failling......
@@ -302,7 +302,7 @@ namespace geometry
 
         // prevent divide by zero, should not happen if matrix is orthogonal and 
         // should be caught by singularity test above, but I've left it in just in case
-        if (std::fabs(angle) < epsilon1) return KDL::Vector(0.0, 0.0, 0.0);
+        if ((std::fabs(angle) < epsilon1) || (std::fabs(angle) > M_PI - epsilon1)) return KDL::Vector(0.0, 0.0, 0.0);
 
         x = (matrix.data[7] - matrix.data[5]);
         y = (matrix.data[2] - matrix.data[6]);

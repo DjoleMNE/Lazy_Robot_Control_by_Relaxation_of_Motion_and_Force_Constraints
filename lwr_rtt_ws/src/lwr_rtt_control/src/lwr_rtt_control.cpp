@@ -162,12 +162,48 @@ bool LwrRttControl::configureHook()
                                 bias_threshold_, bias_step_, gain_threshold_,
                                 gain_step_, saturate_bias_, saturate_u_);
 
-    controller_->initialize(control_mode::TORQUE, true);
+    controller_->initialize(control_mode::TORQUE, 
+                            dynamics_interface::CART_FORCE, 
+                            true);
 
     sleep(2); // wait for gazebo to load completely
 
     this->visualize_pose(desired_ee_pose);
     return true;
+}
+
+
+void LwrRttControl::updateHook()
+{
+    // Read status from robot
+    port_joint_position_in.read(jnt_pos_in);
+    port_joint_velocity_in.read(jnt_vel_in);
+    port_joint_torque_in.read(jnt_trq_in);
+
+    robot_state_.q.data  = jnt_pos_in;
+    robot_state_.qd.data = jnt_vel_in;
+    
+    int controller_result = controller_->step(robot_state_.q, 
+                                              robot_state_.qd, 
+                                              robot_state_.control_torque.data);
+
+    if(!controller_result == 0) RTT::TaskContext::stop();
+    //  RTT::TaskContext::stop();
+
+    if(krc_compensate_gravity_) jnt_trq_cmd_out = robot_state_.control_torque.data;
+    else
+    {
+        gravity_solver_->JntToGravity(robot_state_.q, jnt_gravity_trq_out);
+        jnt_trq_cmd_out = robot_state_.control_torque.data - jnt_gravity_trq_out.data;
+    }
+    // jnt_trq_cmd_out << 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+    port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
+}
+
+void LwrRttControl::stopHook()
+{
+    controller_->deinitialize();
+    RTT::log(RTT::Error) << "Robot stopped!" << RTT::endlog();
 }
 
 void LwrRttControl::visualize_pose(const std::vector<double> &pose)
@@ -186,14 +222,15 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose)
     static_transformStamped_.header.frame_id = "link_0";
     static_transformStamped_.child_frame_id = "desired_pose";
 
-    tf2::Matrix3x3 desired_matrix = tf2::Matrix3x3(pose[3], pose[4], pose[5], // Angular: Rotation matrix
-                                                   pose[6], pose[7], pose[8],
-                                                   pose[9], pose[10], pose[11]);
-
     // Convert data
+    // Linear part
     static_transformStamped_.transform.translation.x = pose[0];
     static_transformStamped_.transform.translation.y = pose[1];
     static_transformStamped_.transform.translation.z = pose[2];
+    
+    tf2::Matrix3x3 desired_matrix = tf2::Matrix3x3(pose[3], pose[4], pose[5], // Angular: Rotation matrix
+                                                   pose[6], pose[7], pose[8],
+                                                   pose[9], pose[10], pose[11]);
 
     tf2::Quaternion quaternion_rotation;
     desired_matrix.getRotation(quaternion_rotation);
@@ -206,38 +243,6 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose)
 
     // Publish once
     static_broadcaster_.sendTransform(static_transformStamped_);
-}
-
-void LwrRttControl::updateHook()
-{
-    // Read status from robot
-    port_joint_position_in.read(jnt_pos_in);
-    port_joint_velocity_in.read(jnt_vel_in);
-    port_joint_torque_in.read(jnt_trq_in);
-
-    robot_state_.q.data  = jnt_pos_in;
-    robot_state_.qd.data = jnt_vel_in;
-    
-    int controller_result = controller_->step(robot_state_.q, 
-                                              robot_state_.qd, 
-                                              robot_state_.control_torque.data);
-
-    if(!controller_result == 0) RTT::TaskContext::stop();
-
-    if(krc_compensate_gravity_) jnt_trq_cmd_out = robot_state_.control_torque.data;
-    else
-    {
-        gravity_solver_->JntToGravity(robot_state_.q, jnt_gravity_trq_out);
-        jnt_trq_cmd_out = robot_state_.control_torque.data - jnt_gravity_trq_out.data;
-    }
-    // jnt_trq_cmd_out << 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-    port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
-}
-
-void LwrRttControl::stopHook()
-{
-    controller_->deinitialize();
-    RTT::log(RTT::Error) << "Robot stopped!" << RTT::endlog();
 }
 
 // Let orocos know how to create the component

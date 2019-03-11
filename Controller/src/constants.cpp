@@ -181,8 +181,10 @@ namespace dynamics_parameter
 {
     // Number of task constraints imposed on the robot, i.e. Cartesian DOFS
     const int NUMBER_OF_CONSTRAINTS(6);
-    const Eigen::VectorXd MAX_FORCE = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+    const Eigen::VectorXd MAX_CART_FORCE = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                     << 50.0, 50.0, 200.0, 2.0, 2.0, 2.0).finished();
+    const Eigen::VectorXd MAX_CART_ACC = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                    << 100.0, 100.0, 200.0, 2.0, 2.0, 2.0).finished();
     const Eigen::IOFormat WRITE_FORMAT(6, Eigen::DontAlignCols, " ", "", "", "\n");
     const std::string LOG_FILE_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/control_error.txt");
 }
