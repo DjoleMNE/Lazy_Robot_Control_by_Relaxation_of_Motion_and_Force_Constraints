@@ -32,7 +32,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     environment_(lwr_environment::LWR_SIMULATION), 
     robot_model_(lwr_model::LWR_URDF), krc_compensate_gravity_(false),
     desired_control_mode_(0), desired_dynamics_interface_(1),
-    desired_pose_(1), prediction_dt_sec_(1.0),
+    desired_pose_(1), damper_amplitude_(1.0), damper_slope_(4.0),
     control_dims_(NUM_OF_CONSTRAINTS_, false),
     max_cart_force_(Eigen::VectorXd::Constant(6, 0.0)),
     error_alpha_(Eigen::VectorXd::Constant(6, 0.0)),
@@ -61,7 +61,8 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addProperty("desired_pose", desired_pose_).doc("desired pose");
 
     this->addProperty("control_dims", control_dims_).doc("control dimensions");
-    this->addProperty("prediction_dt_sec", prediction_dt_sec_).doc("prediction_dt_sec");
+    this->addProperty("damper_amplitude", damper_amplitude_).doc("damper_amplitude");
+    this->addProperty("damper_slope", damper_slope_).doc("damper_slope");
     this->addProperty("max_cart_force", max_cart_force_).doc("max_cart_force");
     this->addProperty("max_cart_acc", max_cart_acc_).doc("max_cart_acc");
     this->addProperty("ERROR_ALPHA", error_alpha_).doc("ABAG ERROR_ALPHA");
@@ -130,7 +131,7 @@ bool LwrRttControl::configureHook()
     {
         case desired_pose::CANDLE:
             // Candle Pose
-            desired_ee_pose = { 0.0,  0.0, 1.1785, // Linear: Vector
+            desired_ee_pose = { 0.0,  0.0, 1.175, // Linear: Vector
                                 1.0,  0.0, 0.0, // Angular: Rotation matrix
                                 0.0,  1.0, 0.0,
                                 0.0,  0.0, 1.0};
@@ -162,8 +163,8 @@ bool LwrRttControl::configureHook()
             break;
     }
 
-    controller_->set_parameters(prediction_dt_sec_, max_cart_force_, 
-                                max_cart_acc_, error_alpha_,
+    controller_->set_parameters(damper_amplitude_, damper_slope_, 
+                                max_cart_force_, max_cart_acc_, error_alpha_,
                                 bias_threshold_, bias_step_, gain_threshold_,
                                 gain_step_, saturate_bias_, saturate_u_);
 

@@ -72,7 +72,8 @@ class dynamics_controller
              const KDL::JntArray &qd_input, 
              Eigen::VectorXd &tau_output);
     
-    void set_parameters(const int prediction_dt_sec, 
+    void set_parameters(const double damper_amplitude,
+                        const double damper_slope,
                         const Eigen::VectorXd &max_cart_force,
                         const Eigen::VectorXd &max_cart_acc,
                         const Eigen::VectorXd &error_alpha, 
@@ -102,7 +103,6 @@ class dynamics_controller
     const int RATE_HZ_;
     const long DT_MICRO_;
     const double DT_SEC_;
-    double prediction_dt_sec_;
 
     std::ofstream log_file_;
     bool store_control_data_;
@@ -128,7 +128,9 @@ class dynamics_controller
     Eigen::VectorXd max_cart_force_, max_cart_acc_;
     std::vector<bool> CTRL_DIM_;
     
-    Eigen::VectorXd predicted_error_vector_, current_error_vector_;
+    KDL::Twist current_error_twist_;
+    Eigen::VectorXd predicted_error_twist_;
+    double damper_amplitude_, damper_slope_;
     Eigen::VectorXd abag_command_;
     KDL::Wrenches cart_force_command_;
 
@@ -150,6 +152,10 @@ class dynamics_controller
     void compute_control_error();
     void make_predictions(const double dt_sec, const int num_steps);
     void compute_cart_control_commands();
+    KDL::Twist infinitesimal_displacement_twist(const state_specification &state_a, 
+                                                const state_specification &state_b);
+    double kinetic_energy(const KDL::Twist &twist, const int segment_index);
+    double damper_decision_map(const double kinetic_energy);
     int apply_joint_control_commands();
     int evaluate_dynamics();
     int enforce_loop_frequency();

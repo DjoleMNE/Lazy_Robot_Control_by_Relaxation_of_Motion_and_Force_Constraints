@@ -60,8 +60,9 @@
     <arg name="control_dims" default="[true, true, true, 
                                        false, false, false]"/>
 
-    <!-- ========= Initial Prediction Time Step ===============-->
-    <arg name="prediction_dt_sec" default="20.0"/>
+    <!-- ========= Damping decision map parameters ===============-->
+    <arg name="damper_amplitude" default="0.7"/>
+    <arg name="damper_slope" default="4.0"/>
 
     <!-- ========= Max Cart force excerted on the End-Effector ===============-->
     <arg name="max_cart_force" default="[50.0, 50.0, 200.0, 
@@ -104,7 +105,8 @@
         <param name="desired_dynamics_interface" value="$(arg desired_dynamics_interface)"/>
         <param name="desired_pose" value="$(arg desired_pose)"/>
         <rosparam param="control_dims" subst_value="True">$(arg control_dims)</rosparam>
-        <rosparam param="prediction_dt_sec" subst_value="True">$(arg prediction_dt_sec)</rosparam>
+        <rosparam param="damper_amplitude" subst_value="True">$(arg damper_amplitude)</rosparam>
+        <rosparam param="damper_slope" subst_value="True">$(arg damper_slope)</rosparam>
         <rosparam param="max_cart_force" subst_value="True">$(arg max_cart_force)</rosparam>
         <rosparam param="max_cart_acc" subst_value="True">$(arg max_cart_acc)</rosparam>
         <rosparam param="ERROR_ALPHA" subst_value="True">$(arg ERROR_ALPHA)</rosparam>

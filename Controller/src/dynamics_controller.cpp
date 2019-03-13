@@ -31,7 +31,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     RATE_HZ_(rate_hz),
     // Time period defined in microseconds: 1s = 1 000 000us
     DT_MICRO_(SECOND / RATE_HZ_),  DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
-    prediction_dt_sec_(1.0), loop_start_time_(), loop_end_time_(), //Not sure if required to init
+    loop_start_time_(), loop_end_time_(), //Not sure if required to init
     robot_chain_(robot_driver->get_robot_model()),
     NUM_OF_JOINTS_(robot_chain_.getNrOfJoints()),
     NUM_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
@@ -41,8 +41,9 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     max_cart_force_(dynamics_parameter::MAX_CART_FORCE),
     max_cart_acc_(dynamics_parameter::MAX_CART_ACC),
     CTRL_DIM_(NUM_OF_CONSTRAINTS_, false),
-    predicted_error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
-    current_error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
+    current_error_twist_(KDL::Twist::Zero()),
+    predicted_error_twist_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
+    damper_amplitude_(1.0), damper_slope_(4.5),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     cart_force_command_(NUM_OF_SEGMENTS_),
     hd_solver_(robot_chain_, robot_driver->get_joint_inertia(),
@@ -196,7 +197,7 @@ void dynamics_controller::update_dynamics_interfaces()
 void dynamics_controller::write_to_file()
 {   
     for(int i = 0; i < 3; i++) log_file_ << robot_state_.frame_pose[END_EFF_].p(i) << " ";
-    for(int i = 3; i < 6; i++) log_file_ << predicted_error_vector_(i) << " ";
+    for(int i = 3; i < 6; i++) log_file_ << predicted_error_twist_(i) << " ";
     log_file_ << std::endl;
 
     for(int i = 0; i < 3; i++) log_file_ << desired_state_.frame_pose[END_EFF_].p(i) << " ";
@@ -414,32 +415,18 @@ void dynamics_controller::make_predictions(const double dt_sec, const int num_st
                                          dt_sec, num_steps);
 }
 
-/**
- * Compute the error between current (measured) or desired Cartesian state 
- * and predicted (integrated) Cartesian state.
-*/
-void dynamics_controller::compute_control_error()
-{
-    current_error_vector_.head(3) = \
-        conversions::kdl_vector_to_eigen(desired_state_.frame_pose[END_EFF_].p - \
-                                         robot_state_.frame_pose[END_EFF_].p);
 
-    double current_error_norm = current_error_vector_.head(3).norm();
-    // printf("DS: %f\n",prediction_dt_sec_ * current_error_norm);
-
-
-    make_predictions(prediction_dt_sec_ * current_error_norm, 1);
-    // make_predictions(prediction_dt_sec_, 1);
-    // make_predictions(0.1, 10);
-    // make_predictions(0.0001, 10000);
+KDL::Twist dynamics_controller::infinitesimal_displacement_twist(const state_specification &state_a, 
+                                                                 const state_specification &state_b)
+{   
+    // The default constructor initialises to Zero via the constructor of Vector!
+    KDL::Twist twist;
 
     /**
-     * This error part represents linear motion necessary to go from 
+     * This error part represents a linear motion necessary to go from 
      * predicted to desired position (positive direction of translation).
     */
-    predicted_error_vector_.head(3) = \
-        conversions::kdl_vector_to_eigen(desired_state_.frame_pose[END_EFF_].p - \
-                                         predicted_state_.frame_pose[END_EFF_].p);
+    twist.vel = state_a.frame_pose[END_EFF_].p - state_b.frame_pose[END_EFF_].p;
     /**
      * Describes rotation required to align R_p with R_d.
      * It represents relative rotation from predicted state to 
@@ -447,22 +434,66 @@ void dynamics_controller::compute_control_error()
      * Source: Luh et al. "Resolved-acceleration control of 
      * mechanical manipulators".
     */
-    KDL::Rotation error_rot_matrix = desired_state_.frame_pose[END_EFF_].M * \
-                                     predicted_state_.frame_pose[END_EFF_].M.Inverse();
+    KDL::Rotation relative_rot_matrix = state_a.frame_pose[END_EFF_].M * \
+                                        state_b.frame_pose[END_EFF_].M.Inverse();
 
     // Error calculation for angular part, i.e. logarithmic map on SO(3).
-    predicted_error_vector_.tail(3) = \
-        conversions::kdl_vector_to_eigen(geometry::log_map_so3(error_rot_matrix));
+    twist.rot = geometry::log_map_so3(relative_rot_matrix);
+
+    return twist;
+}
+
+double dynamics_controller::kinetic_energy(const KDL::Twist &twist,
+                                           const int segment_index)
+{
+    return 0.5 * dot(twist, robot_chain_.getSegment(segment_index).getInertia() * twist);
+}
+
+double dynamics_controller::damper_decision_map(const double energy)
+{
+   // Two parameter scaled tanh function
+   std::cout << damper_amplitude_ << " " << damper_slope_ << std::endl;
+   return damper_amplitude_ * std::tanh(damper_slope_ * energy);
+}
+
+
+/**
+ * Compute the error between desired Cartesian state 
+ * and predicted (integrated) Cartesian state.
+*/
+void dynamics_controller::compute_control_error()
+{
+
+    current_error_twist_ = infinitesimal_displacement_twist(desired_state_,
+                                                            robot_state_);
+
+    KDL::Twist twist_diff = current_error_twist_ - robot_state_.frame_velocity[END_EFF_];
+
+    for(int i = 0; i < 6; i++)
+    {
+        if(!CTRL_DIM_[i]) twist_diff(i) = 0.0;
+    }
+
+    double energy = kinetic_energy(twist_diff, END_EFF_);
+    
+    // double energy = kinetic_energy(current_error_twist_, END_EFF_);
+
+    double time_horizon_sec = damper_decision_map(energy);
+    make_predictions(time_horizon_sec, 1);
+ 
+    predicted_error_twist_ = \
+        conversions::kdl_twist_to_eigen(infinitesimal_displacement_twist(desired_state_,
+                                                                         predicted_state_));
 
     #ifndef NDEBUG
-        // std::cout << "\nLinear Error: " << predicted_error_vector_.head(3).transpose() << "    Linear norm: " << predicted_error_vector_.head(3).norm() << std::endl;
-        // std::cout << "Angular Error: " << predicted_error_vector_.tail(3).transpose() << "         Angular norm: " << predicted_error_vector_.tail(3).norm() << std::endl;
+        // std::cout << "\nLinear Error: " << predicted_error_twist_.head(3).transpose() << "    Linear norm: " << predicted_error_twist_.head(3).norm() << std::endl;
+        // std::cout << "Angular Error: " << predicted_error_twist_.tail(3).transpose() << "         Angular norm: " << predicted_error_twist_.tail(3).norm() << std::endl;
     #endif
 }
 
 void dynamics_controller::compute_cart_control_commands()
 {   
-    abag_command_ = abag_.update_state(predicted_error_vector_).transpose();
+    abag_command_ = abag_.update_state(predicted_error_twist_).transpose();
 
     switch (desired_task_inteface_)
     {
@@ -657,7 +688,8 @@ void dynamics_controller::initialize(const int desired_control_mode,
     }
 }
 
-void dynamics_controller::set_parameters(const int prediction_dt_sec, 
+void dynamics_controller::set_parameters(const double damper_amplitude,
+                                         const double damper_slope,
                                          const Eigen::VectorXd &max_cart_force,
                                          const Eigen::VectorXd &max_cart_acc,
                                          const Eigen::VectorXd &error_alpha, 
@@ -677,7 +709,8 @@ void dynamics_controller::set_parameters(const int prediction_dt_sec,
     assert(gain_threshold.size() == NUM_OF_CONSTRAINTS_); 
     assert(gain_step.size()      == NUM_OF_CONSTRAINTS_); 
 
-    this->prediction_dt_sec_ = prediction_dt_sec;
+    this->damper_amplitude_ = damper_amplitude;
+    this->damper_slope_ = damper_slope;
     this->max_cart_force_ = max_cart_force;
     this->max_cart_acc_ = max_cart_acc;
     
