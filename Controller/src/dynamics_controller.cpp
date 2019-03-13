@@ -474,9 +474,7 @@ void dynamics_controller::compute_control_error()
     }
 
     double energy = kinetic_energy(twist_diff, END_EFF_);
-    
-    // double energy = kinetic_energy(current_error_twist_, END_EFF_);
-
+ 
     double time_horizon_sec = damper_decision_map(energy);
     make_predictions(time_horizon_sec, 1);
  

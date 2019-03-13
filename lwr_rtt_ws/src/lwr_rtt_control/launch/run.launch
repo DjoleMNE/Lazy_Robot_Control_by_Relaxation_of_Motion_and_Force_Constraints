@@ -61,8 +61,8 @@
                                        false, false, false]"/>
 
     <!-- ========= Damping decision map parameters ===============-->
-    <arg name="damper_amplitude" default="0.7"/>
-    <arg name="damper_slope" default="4.0"/>
+    <arg name="damper_amplitude" default="1.0"/>
+    <arg name="damper_slope" default="3.5"/>
 
     <!-- ========= Max Cart force excerted on the End-Effector ===============-->
     <arg name="max_cart_force" default="[50.0, 50.0, 200.0, 
