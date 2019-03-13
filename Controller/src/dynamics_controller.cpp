@@ -452,7 +452,6 @@ double dynamics_controller::kinetic_energy(const KDL::Twist &twist,
 double dynamics_controller::damper_decision_map(const double energy)
 {
    // Two parameter scaled tanh function
-   std::cout << damper_amplitude_ << " " << damper_slope_ << std::endl;
    return damper_amplitude_ * std::tanh(damper_slope_ * energy);
 }
 
