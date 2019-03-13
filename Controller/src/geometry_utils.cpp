@@ -292,8 +292,8 @@ namespace geometry
 
         // If this even happens, epsilon above should be increased
         // or logic behind if_s to be changed
-        if (std::fabs(angle) < epsilon1) printf("LOG: Too small angle: %f", angle);
-        else if (std::fabs(angle) > M_PI) printf("LOG: Too big angle: %f", angle);
+        // if (std::fabs(angle) < epsilon1) printf("LOG: Too small angle: %f", angle);
+        // else if (std::fabs(angle) > M_PI) printf("LOG: Too big angle: %f", angle);
 
         //If following assertions fail, above if statements are not working properly
         // Sometimes they are failling......
