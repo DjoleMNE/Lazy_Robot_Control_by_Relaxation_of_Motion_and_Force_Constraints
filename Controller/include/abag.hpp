@@ -38,9 +38,9 @@ SOFTWARE.
 class ABAG
 {
   public:
-    ABAG(const int num_of_dimensions, const bool use_error_magnitude);
+    ABAG(const int num_of_dimensions, const bool use_error_sign);
 
-    ABAG(const int num_of_dimensions, const bool use_error_magnitude, 
+    ABAG(const int num_of_dimensions, const bool use_error_sign, 
          const Eigen::VectorXd &error_alpha,
          const Eigen::VectorXd &bias_threshold, const Eigen::VectorXd &bias_step, 
          const Eigen::VectorXd &gain_threshold, const Eigen::VectorXd &gain_step,
@@ -91,11 +91,9 @@ class ABAG
 
   private:
     const int DIMENSIONS_;
-    const bool USE_ERROR_MAGNITUDE_;
+    const bool USE_ERROR_SIGN_;
     const Eigen::VectorXd ONES_;
-    
     Eigen::VectorXd error_sign_;
-    Eigen::VectorXd error_magnitude_;
 
     struct abag_signal 
     {

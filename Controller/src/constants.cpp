@@ -115,7 +115,7 @@ namespace abag_parameter
 {
     // How many dimension ABAG controller is supposed to control
     const int DIMENSIONS(6);
-    const bool USE_ERROR_MAGNITUDE(false); //Experimental feature! False is normal!
+    const bool USE_ERROR_SIGN(false); 
 
     // Error parameters: Low pass filter threshold
     const Eigen::VectorXd ERROR_ALPHA = (Eigen::VectorXd(DIMENSIONS) \

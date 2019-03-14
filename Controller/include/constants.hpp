@@ -104,8 +104,7 @@ namespace abag_parameter
 {
     // How many dimension ABAG controller is supposed to control
     extern const int DIMENSIONS;
-    extern const bool REVERSE_ERROR;
-    extern const bool USE_ERROR_MAGNITUDE;
+    extern const bool USE_ERROR_SIGN;
 
     extern const Eigen::VectorXd ERROR_ALPHA;
 

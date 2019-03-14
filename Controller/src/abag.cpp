@@ -26,10 +26,9 @@ SOFTWARE.
 #include <abag.hpp>
 
 // Constructor without the predifined set/s of parameters
-ABAG::ABAG(const int num_of_dimensions, const bool use_error_magnitude):
-    DIMENSIONS_(num_of_dimensions), USE_ERROR_MAGNITUDE_(use_error_magnitude),
+ABAG::ABAG(const int num_of_dimensions, const bool use_error_sign):
+    DIMENSIONS_(num_of_dimensions), USE_ERROR_SIGN_(use_error_sign),
     error_sign_(Eigen::VectorXd::Zero(num_of_dimensions)),
-    error_magnitude_(Eigen::VectorXd::Zero(num_of_dimensions)), 
     ONES_(Eigen::VectorXd::Ones(num_of_dimensions)), 
     signal(num_of_dimensions), parameter(num_of_dimensions)
 {
@@ -37,16 +36,15 @@ ABAG::ABAG(const int num_of_dimensions, const bool use_error_magnitude):
 }
 
 // Constructor with all predefined set/s of parameters
-ABAG::ABAG(const int num_of_dimensions, const bool use_error_magnitude, 
+ABAG::ABAG(const int num_of_dimensions, const bool use_error_sign, 
            const Eigen::VectorXd &error_alpha,
            const Eigen::VectorXd &bias_threshold, const Eigen::VectorXd &bias_step, 
            const Eigen::VectorXd &gain_threshold, const Eigen::VectorXd &gain_step,
            const Eigen::VectorXd &min_bias_sat_limit, const Eigen::VectorXd &max_bias_sat_limit,
            const Eigen::VectorXd &min_gain_sat_limit, const Eigen::VectorXd &max_gain_sat_limit,
            const Eigen::VectorXd &min_command_sat_limit, const Eigen::VectorXd &max_command_sat_limit):
-    DIMENSIONS_(num_of_dimensions), USE_ERROR_MAGNITUDE_(use_error_magnitude),
+    DIMENSIONS_(num_of_dimensions), USE_ERROR_SIGN_(use_error_sign),
     error_sign_(Eigen::VectorXd::Zero(num_of_dimensions)),
-    error_magnitude_(Eigen::VectorXd::Zero(num_of_dimensions)), 
     ONES_(Eigen::VectorXd::Ones(num_of_dimensions)), 
     signal(num_of_dimensions), parameter(error_alpha, 
                                          bias_threshold, bias_step, 
@@ -114,10 +112,10 @@ void ABAG::update_error(const Eigen::VectorXd &raw_error)
     
     error_sign_ = raw_error.cwiseSign();
     
-    // Using error magnitude here instead of sign is an experimental feature!
-    // Be carefull with setting "USE_ERROR_MAGNITUDE_" flag!
+    // Using raw error here instead of sign is an experimental feature!
+    // Be carefull with setting "USE_ERROR_SIGN_" flag!
     signal.error_ = parameter.ERROR_ALPHA.cwiseProduct( signal.error_ ) + \
-                    (ONES_ - parameter.ERROR_ALPHA).cwiseProduct( USE_ERROR_MAGNITUDE_? raw_error : error_sign_ );
+                    (ONES_ - parameter.ERROR_ALPHA).cwiseProduct( USE_ERROR_SIGN_? error_sign_ : raw_error );
 }
 
 // - private method
