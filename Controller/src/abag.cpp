@@ -232,7 +232,7 @@ double ABAG::get_bias(const int dimension)
 // Get gain signal values for all dimensions - public method
 Eigen::VectorXd ABAG::get_gain()
 {
-    return signal.gain_;
+    return signal.gain_.cwiseProduct(error_sign_);
 }
 
 // Get gain signal value for specific dimension - public method
@@ -240,7 +240,7 @@ double ABAG::get_gain(const int dimension)
 {
     assert(("Not valid dimension number", dimension >= 0));
     assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1) ));
-    return signal.gain_(dimension);
+    return signal.gain_(dimension) * error_sign_(dimension);
 }
 
 
