@@ -196,12 +196,22 @@ void dynamics_controller::update_dynamics_interfaces()
 // Write control data to a file
 void dynamics_controller::write_to_file()
 {   
-    for(int i = 0; i < 3; i++) log_file_ << robot_state_.frame_pose[END_EFF_].p(i) << " ";
-    for(int i = 3; i < 6; i++) log_file_ << predicted_error_twist_(i) << " ";
+    for(int i = 0; i < 3; i++) 
+        log_file_ << robot_state_.frame_pose[END_EFF_].p(i) << " ";
+    for(int i = 3; i < 6; i++) 
+        log_file_ << 0.0 << " ";
+
     log_file_ << std::endl;
 
-    for(int i = 0; i < 3; i++) log_file_ << desired_state_.frame_pose[END_EFF_].p(i) << " ";
-    for(int i = 3; i < 6; i++) log_file_ << 0.0 << " ";
+    for(int i = 0; i < 3; i++) 
+        log_file_ << desired_state_.frame_pose[END_EFF_].p(i) << " ";
+    for(int i = 3; i < 6; i++) 
+        log_file_ << 0.0 << " ";
+        
+    log_file_ << std::endl;
+
+    for(int i = 0; i < 6; i++) 
+        log_file_ << predicted_error_twist_(i) << " ";
     log_file_ << std::endl;
 
     log_file_ << abag_.get_error().transpose().format(dynamics_parameter::WRITE_FORMAT);
@@ -427,7 +437,7 @@ KDL::Twist dynamics_controller::infinitesimal_displacement_twist(const state_spe
      * predicted to desired position (positive direction of translation).
     */
     twist.vel = state_a.frame_pose[END_EFF_].p - state_b.frame_pose[END_EFF_].p;
-    
+
     /**
      * Describes rotation required to align R_p with R_d.
      * It represents relative rotation from predicted state to 
