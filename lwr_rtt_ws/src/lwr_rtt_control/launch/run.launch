@@ -46,13 +46,16 @@
     
 
     <!-- ========= navigation pose ===============-->
-    <arg name="desired_pose" default="1"/>
+    <!-- <arg name="desired_pose" default="1"/> -->
+
+    <!-- ========= navigation 2 pose ===============-->
+    <arg name="desired_pose" default="2"/>
     
     <!-- ========= candle pose ===============-->
     <!-- <arg name="desired_pose" default="0"/> -->
 
     <!-- ========= folded pose ===============-->
-    <!-- <arg name="desired_pose" default="2"/> -->
+    <!-- <arg name="desired_pose" default="3"/> -->
 
 
     <!-- ========= Dimensions to be controlled ===============-->

@@ -58,9 +58,10 @@ SOFTWARE.
 
 enum desired_pose 
 {
-    CANDLE,
-    NAVIGATION,
-    FOLDED   
+    CANDLE = 0,
+    NAVIGATION = 1,
+    NAVIGATION_2 = 2,
+    FOLDED = 3  
 };
 
 class LwrRttControl : public RTT::TaskContext{

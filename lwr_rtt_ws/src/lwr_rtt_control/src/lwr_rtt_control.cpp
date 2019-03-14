@@ -151,9 +151,20 @@ bool LwrRttControl::configureHook()
                                                 desired_ee_pose);
             break;
 
+        case desired_pose::NAVIGATION_2:
+            // Folded pose
+            desired_ee_pose = { 0.20,  0.30,  0.632811, // Linear: Vector
+                                1.0,  0.0, 0.0, // Angular: Rotation matrix
+                                0.0,  1.0, 0.0,
+                                0.0,  0.0, 1.0};
+            controller_->define_desired_ee_pose(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
+                                                                  control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
+                                                desired_ee_pose);
+            break;
+
         default:
             // Navigation pose
-            desired_ee_pose = {-0.210785, -0.328278,  0.632811, // Linear: Vector
+            desired_ee_pose = {-0.200785, -0.308278,  0.632811, // Linear: Vector
                                -0.540302, -0.841471, -0.000860, // Angular: Rotation matrix
                                -0.841470,  0.540302, -0.001340,
                                 0.001592,  0.000000, -0.999999};
