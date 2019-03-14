@@ -12,7 +12,7 @@ loadStatePublisher(true)
 // Set initial robot configuration
 if (isSim()) then
   // Navigation Pose
-  setRobotInitialJointConfiguration(1.0, 0.0, 0.0, -1.57, 0.0, 1.57, 0.0)
+  //setRobotInitialJointConfiguration(1.0, 0.0, 0.0, -1.57, 0.0, 1.57, 0.0)
   // Candle Pose
   //setRobotInitialJointConfiguration(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
   // Folded Pose

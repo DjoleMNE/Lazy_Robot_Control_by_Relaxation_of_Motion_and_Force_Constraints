@@ -451,7 +451,7 @@ double dynamics_controller::kinetic_energy(const KDL::Twist &twist,
 
 double dynamics_controller::damper_decision_map(const double energy)
 {
-   // Two parameter scaled tanh function
+   // Two-parameter-scaled tanh function
    return damper_amplitude_ * std::tanh(damper_slope_ * energy);
 }
 
@@ -462,20 +462,18 @@ double dynamics_controller::damper_decision_map(const double energy)
 */
 void dynamics_controller::compute_control_error()
 {
-
     current_error_twist_ = infinitesimal_displacement_twist(desired_state_,
                                                             robot_state_);
 
     KDL::Twist twist_diff = current_error_twist_ - robot_state_.frame_velocity[END_EFF_];
 
     for(int i = 0; i < 6; i++)
-    {
         if(!CTRL_DIM_[i]) twist_diff(i) = 0.0;
-    }
 
     double energy = kinetic_energy(twist_diff, END_EFF_);
- 
+
     double time_horizon_sec = damper_decision_map(energy);
+
     make_predictions(time_horizon_sec, 1);
  
     predicted_error_twist_ = \
@@ -496,12 +494,12 @@ void dynamics_controller::compute_cart_control_commands()
     {
         case dynamics_interface::CART_FORCE:
             // Set additional (virtual) force computed by the ABAG controller
-            cart_force_command_[END_EFF_].force(0)  = CTRL_DIM_[0]? abag_command_(0) * max_cart_force_(0) : 0.0;
-            cart_force_command_[END_EFF_].force(1)  = CTRL_DIM_[1]? abag_command_(1) * max_cart_force_(1) : 0.0;
-            cart_force_command_[END_EFF_].force(2)  = CTRL_DIM_[2]? abag_command_(2) * max_cart_force_(2) : 0.0;
-            cart_force_command_[END_EFF_].torque(0) = CTRL_DIM_[3]? abag_command_(3) * max_cart_force_(3) : 0.0;
-            cart_force_command_[END_EFF_].torque(1) = CTRL_DIM_[4]? abag_command_(4) * max_cart_force_(4) : 0.0;
-            cart_force_command_[END_EFF_].torque(2) = CTRL_DIM_[5]? abag_command_(5) * max_cart_force_(5) : 0.0;
+            cart_force_command_[END_EFF_].force(0)  = CTRL_DIM_[0] ? abag_command_(0) * max_cart_force_(0) : 0.0;
+            cart_force_command_[END_EFF_].force(1)  = CTRL_DIM_[1] ? abag_command_(1) * max_cart_force_(1) : 0.0;
+            cart_force_command_[END_EFF_].force(2)  = CTRL_DIM_[2] ? abag_command_(2) * max_cart_force_(2) : 0.0;
+            cart_force_command_[END_EFF_].torque(0) = CTRL_DIM_[3] ? abag_command_(3) * max_cart_force_(3) : 0.0;
+            cart_force_command_[END_EFF_].torque(1) = CTRL_DIM_[4] ? abag_command_(4) * max_cart_force_(4) : 0.0;
+            cart_force_command_[END_EFF_].torque(2) = CTRL_DIM_[5] ? abag_command_(5) * max_cart_force_(5) : 0.0;
             break;
 
         case dynamics_interface::CART_ACCELERATION:

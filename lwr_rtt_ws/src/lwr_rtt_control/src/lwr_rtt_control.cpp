@@ -142,7 +142,7 @@ bool LwrRttControl::configureHook()
 
         case desired_pose::FOLDED:
             // Folded pose
-            desired_ee_pose = { 0.260912, -0.014731, -0.0945801, // Linear: Vector
+            desired_ee_pose = { 0.260912, -0.014731,  0.0945801, // Linear: Vector
                                 0.575147,  0.789481, -0.214301, // Angular: Rotation matrix
                                 0.174954,  0.137195,  0.974971,
                                 0.799122, -0.598245, -0.059216};
