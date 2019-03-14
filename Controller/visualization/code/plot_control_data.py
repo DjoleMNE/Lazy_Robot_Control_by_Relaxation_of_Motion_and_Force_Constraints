@@ -9,7 +9,7 @@ import pyinotify
 
 desired_dim = np.int(sys.argv[1])
 print("Selected dimension: ", desired_dim)
-variable_num = 6
+variable_num = 7
 
 filename = "../control_error.txt"
 
@@ -39,64 +39,72 @@ rows = rows - (rows % variable_num)
 num_samples = np.int(rows / variable_num) 
 print("Data size: ", num_samples, ",", cols)
 
-measured = []
-command  = []
-desired  = []
-error    = []
-bias     = []
-gain     = []
+measured  = []
+command   = []
+desired   = []
+raw_error = []
+error     = []
+bias      = []
+gain      = []
 
 for sample_ in range(0, rows, variable_num):
-    measured.append(np.float32( input_data[    sample_][desired_dim]) )
-    desired.append( np.float32( input_data[1 + sample_][desired_dim]) )
-    error.append(   np.float32( input_data[2 + sample_][desired_dim]) )
-    bias.append(    np.float32( input_data[3 + sample_][desired_dim]) )
-    gain.append(    np.float32( input_data[4 + sample_][desired_dim]) )
-    command.append( np.float32( input_data[5 + sample_][desired_dim]) )
+    measured.append(    np.float32( input_data[    sample_][desired_dim]) )
+    desired.append(     np.float32( input_data[1 + sample_][desired_dim]) )
+    raw_error.append(   np.float32( input_data[2 + sample_][desired_dim]) )
+    error.append(       np.float32( input_data[3 + sample_][desired_dim]) )
+    bias.append(        np.float32( input_data[4 + sample_][desired_dim]) )
+    gain.append(        np.float32( input_data[5 + sample_][desired_dim]) )
+    command.append(     np.float32( input_data[6 + sample_][desired_dim]) )
 
 samples = np.arange(0, num_samples, 1)
 measured = np.array(measured)
 desired = np.array(desired)
+raw_error = np.array(raw_error)
 bias = np.array(bias)
 gain = np.array(gain)
 command = np.array(command)
 
 plt.ion()
-plt.figure(figsize = (8,10))
-if(desired_dim is 0):   plt.suptitle('Linear X')
-elif(desired_dim is 1): plt.suptitle('Linear Y')
-elif(desired_dim is 2): plt.suptitle('Linear Z')
-elif(desired_dim is 3): plt.suptitle('Angular X')
-elif(desired_dim is 4): plt.suptitle('Angular Y')
-elif(desired_dim is 5): plt.suptitle('Angular Z')
+plt.figure(figsize = (18,10))
+if(desired_dim is 0):   plt.suptitle('Linear X', fontsize=20)
+elif(desired_dim is 1): plt.suptitle('Linear Y', fontsize=20)
+elif(desired_dim is 2): plt.suptitle('Linear Z', fontsize=20)
+elif(desired_dim is 3): plt.suptitle('Angular X', fontsize=20)
+elif(desired_dim is 4): plt.suptitle('Angular Y', fontsize=20)
+elif(desired_dim is 5): plt.suptitle('Angular Z', fontsize=20)
 
 plt.gca().set_axis_off()
-plt.subplots_adjust(hspace = 0.02, wspace = 0)
+plt.subplots_adjust(hspace = 0.02, wspace = 15)
+plt.subplots_adjust(left=0.05, right=0.99, top=0.95, bottom=0.03)
 plt.margins(0,0)
 
-plt.subplot(3, 1, 1)
+plt.subplot(4, 1, 1)
 if(desired_dim < 3):
     plt.plot(measured, c = 'purple', label='X_measured', linewidth = 2, zorder = 2)
     if not num_samples == 1:
         plt.step(samples, desired, label='X_desired', linewidth = 2, where='post', color = 'black', zorder = 3)
-        # l = plt.hlines(xmin = 800, xmax = 1000, y = desired[-1], color = 'black', linewidth=2, zorder=1)
     else:
         l = plt.axhline(y = desired[0], label='X_d', c = 'black', linewidth=2)
-else:
-    plt.plot(measured, c = 'orange', label='Raw Error', linewidth = 2, zorder = 2)
 
 plt.legend(loc=4, fontsize = 'x-large')
 plt.grid(True)
 
-plt.subplot(3, 1, 2)
-plt.plot(bias, c = 'green', label='bias', linewidth=2, zorder=3)
-plt.plot(gain, c = 'red', label='gain', linewidth=2, zorder=4)
-plt.plot(command, c = 'blue', label='u', linewidth=2, zorder=2)
+plt.subplot(4, 1, 2)
+plt.plot(raw_error, c = 'orange', label='raw error', linewidth=0.5, zorder=2)
+# plt.scatter(samples, error, c = 'orange', label='low_pass-error', marker='o',s=0.1)
 plt.legend(fontsize = 'x-large')
 plt.grid(True)
 
-plt.subplot(3, 1, 3)
-plt.plot(error, c = 'orange', label='low_pass-error', linewidth=2, zorder=2)
+plt.subplot(4, 1, 3)
+plt.plot(error, c = 'orange', label='low_passed error sign', linewidth=0.5, zorder=2)
+# plt.scatter(samples, error, c = 'orange', label='low_pass-error', marker='o',s=0.1)
+plt.legend(fontsize = 'x-large')
+plt.grid(True)
+
+plt.subplot(4, 1, 4)
+plt.plot(bias, c = 'green', label='bias', linewidth=2, zorder=4)
+plt.plot(gain, c = 'red', label='gain', linewidth=2, zorder=2)
+plt.plot(command, c = 'blue', label='u', linewidth=0.5, zorder=3)
 plt.legend(fontsize = 'x-large')
 plt.grid(True)
 
