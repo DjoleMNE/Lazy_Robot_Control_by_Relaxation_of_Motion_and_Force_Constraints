@@ -427,6 +427,7 @@ KDL::Twist dynamics_controller::infinitesimal_displacement_twist(const state_spe
      * predicted to desired position (positive direction of translation).
     */
     twist.vel = state_a.frame_pose[END_EFF_].p - state_b.frame_pose[END_EFF_].p;
+    
     /**
      * Describes rotation required to align R_p with R_d.
      * It represents relative rotation from predicted state to 
@@ -465,12 +466,12 @@ void dynamics_controller::compute_control_error()
     current_error_twist_ = infinitesimal_displacement_twist(desired_state_,
                                                             robot_state_);
 
-    KDL::Twist twist_diff = current_error_twist_ - robot_state_.frame_velocity[END_EFF_];
+    KDL::Twist total_twist = current_error_twist_ + robot_state_.frame_velocity[END_EFF_];
 
     for(int i = 0; i < 6; i++)
-        if(!CTRL_DIM_[i]) twist_diff(i) = 0.0;
+        if(!CTRL_DIM_[i]) total_twist(i) = 0.0;
 
-    double energy = kinetic_energy(twist_diff, END_EFF_);
+    double energy = kinetic_energy(total_twist, END_EFF_);
 
     double time_horizon_sec = damper_decision_map(energy);
 
