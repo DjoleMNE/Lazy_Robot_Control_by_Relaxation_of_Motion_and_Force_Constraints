@@ -365,6 +365,7 @@ void ABAG::set_min_bias_sat_limit(const Eigen::VectorXd &sat_limit)
     assert(("Not valid dimension number", sat_limit.rows() <= DIMENSIONS_));
 
     parameter.MIN_BIAS_SAT_LIMIT = sat_limit;
+    // parameter.MIN_BIAS_SAT_LIMIT(2) = 0.0;
 }
 
 void ABAG::set_max_bias_sat_limit(const Eigen::VectorXd &sat_limit)
@@ -399,6 +400,7 @@ void ABAG::set_min_command_sat_limit(const Eigen::VectorXd &sat_limit)
     assert(("Not valid dimension number", sat_limit.rows() <= DIMENSIONS_));
 
     parameter.MIN_COMMAND_SAT_LIMIT = sat_limit;
+    // parameter.MIN_COMMAND_SAT_LIMIT(2) = 0.0;
 }
 
 void ABAG::set_max_command_sat_limit(const Eigen::VectorXd &sat_limit)

@@ -46,10 +46,10 @@
     
 
     <!-- ========= navigation pose ===============-->
-    <!-- <arg name="desired_pose" default="1"/> -->
+    <arg name="desired_pose" default="1"/>
 
     <!-- ========= navigation 2 pose ===============-->
-    <arg name="desired_pose" default="2"/>
+    <!-- <arg name="desired_pose" default="2"/> -->
     
     <!-- ========= candle pose ===============-->
     <!-- <arg name="desired_pose" default="0"/> -->
@@ -64,7 +64,7 @@
 
     <!-- ========= Damping decision map parameters ===============-->
     <arg name="damper_amplitude" default="55.07"/>
-    <arg name="damper_slope" default="2.05"/>
+    <arg name="damper_slope"     default="2.05"/>
   
     <!-- ========= Max Cart force excerted on the End-Effector ===============-->
     <arg name="max_cart_force" default="[50.0, 50.0, 200.0, 
