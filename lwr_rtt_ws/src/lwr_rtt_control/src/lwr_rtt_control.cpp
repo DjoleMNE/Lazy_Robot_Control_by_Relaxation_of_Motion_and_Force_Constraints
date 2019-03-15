@@ -30,7 +30,8 @@ LwrRttControl::LwrRttControl(const std::string& name):
     RTT::TaskContext(name), RATE_HZ_(999), NUM_OF_SEGMENTS_(7), 
     NUM_OF_JOINTS_(7), NUM_OF_CONSTRAINTS_(6), 
     environment_(lwr_environment::LWR_SIMULATION), 
-    robot_model_(lwr_model::LWR_URDF), krc_compensate_gravity_(false),
+    robot_model_(lwr_model::LWR_URDF), interation_count_(0),
+    krc_compensate_gravity_(false),
     desired_control_mode_(0), desired_dynamics_interface_(1),
     desired_pose_(1), damper_amplitude_(1.0), damper_slope_(4.0),
     control_dims_(NUM_OF_CONSTRAINTS_, false),
@@ -192,6 +193,8 @@ bool LwrRttControl::configureHook()
 
 void LwrRttControl::updateHook()
 {
+    if(interation_count_ > 8000) RTT::TaskContext::stop();
+    
     // Read status from robot
     port_joint_position_in.read(jnt_pos_in);
     port_joint_velocity_in.read(jnt_vel_in);
@@ -215,6 +218,7 @@ void LwrRttControl::updateHook()
     }
     // jnt_trq_cmd_out << 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
     port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
+    interation_count_++;
 }
 
 void LwrRttControl::stopHook()
