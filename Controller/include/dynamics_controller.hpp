@@ -74,6 +74,7 @@ class dynamics_controller
     
     void set_parameters(const double damper_amplitude,
                         const double damper_slope,
+                        const int abag_error_type,
                         const Eigen::VectorXd &max_cart_force,
                         const Eigen::VectorXd &max_cart_acc,
                         const Eigen::VectorXd &error_alpha, 
@@ -81,8 +82,8 @@ class dynamics_controller
                         const Eigen::VectorXd &bias_step, 
                         const Eigen::VectorXd &gain_threshold, 
                         const Eigen::VectorXd &gain_step,
-                        const bool saturate_abag_bias,
-                        const bool saturate_abag_u);
+                        const Eigen::VectorXd &min_bias_sat,
+                        const Eigen::VectorXd &min_command_sat);
     void initialize(const int desired_control_mode, 
                     const int desired_task_inteface, 
                     const bool store_control_data);

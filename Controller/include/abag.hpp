@@ -35,6 +35,12 @@ SOFTWARE.
 #include <cmath>
 #include <stdlib.h>     /* abs */
 
+enum error_type 
+{
+    RAW = 0,
+    SIGN = 1
+};
+
 class ABAG
 {
   public:
@@ -86,13 +92,15 @@ class ABAG
     void set_min_command_sat_limit(const Eigen::VectorXd &sat_limit);
     void set_max_command_sat_limit(const Eigen::VectorXd &sat_limit);
 
+    void set_error_type(const int type);
+
     void reset_state();
     void reset_state(const int dimension);
 
   private:
     const int DIMENSIONS_;
-    const bool USE_ERROR_SIGN_;
     const Eigen::VectorXd ONES_;
+    bool use_error_sign_;
     Eigen::VectorXd error_sign_;
 
     struct abag_signal 
@@ -121,12 +129,10 @@ class ABAG
             GAIN_THRESHOLD(Eigen::VectorXd::Zero(num_of_dimensions)),
             GAIN_STEP(Eigen::VectorXd::Zero(num_of_dimensions)),
             MIN_BIAS_SAT_LIMIT(-Eigen::VectorXd::Ones(num_of_dimensions)),
-            // MIN_BIAS_SAT_LIMIT(Eigen::VectorXd::Zero(num_of_dimensions)),
             MAX_BIAS_SAT_LIMIT(Eigen::VectorXd::Ones(num_of_dimensions)),
             MIN_GAIN_SAT_LIMIT(Eigen::VectorXd::Zero(num_of_dimensions)),
             MAX_GAIN_SAT_LIMIT(Eigen::VectorXd::Ones(num_of_dimensions)),
             MIN_COMMAND_SAT_LIMIT(-Eigen::VectorXd::Ones(num_of_dimensions)),
-            // MIN_COMMAND_SAT_LIMIT(Eigen::VectorXd::Zero(num_of_dimensions)),
             MAX_COMMAND_SAT_LIMIT(Eigen::VectorXd::Ones(num_of_dimensions))   {};
 
         abag_parameter(const Eigen::VectorXd &error_alpha, 

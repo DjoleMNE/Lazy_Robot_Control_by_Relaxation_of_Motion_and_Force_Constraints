@@ -696,6 +696,7 @@ void dynamics_controller::initialize(const int desired_control_mode,
 
 void dynamics_controller::set_parameters(const double damper_amplitude,
                                          const double damper_slope,
+                                         const int abag_error_type,
                                          const Eigen::VectorXd &max_cart_force,
                                          const Eigen::VectorXd &max_cart_acc,
                                          const Eigen::VectorXd &error_alpha, 
@@ -703,8 +704,8 @@ void dynamics_controller::set_parameters(const double damper_amplitude,
                                          const Eigen::VectorXd &bias_step, 
                                          const Eigen::VectorXd &gain_threshold, 
                                          const Eigen::VectorXd &gain_step,
-                                         const bool saturate_abag_bias,
-                                         const bool saturate_abag_u)
+                                         const Eigen::VectorXd &min_bias_sat,
+                                         const Eigen::VectorXd &min_command_sat)
 {
     //First check input dimensions
     assert(max_cart_force.size() == NUM_OF_CONSTRAINTS_); 
@@ -715,10 +716,10 @@ void dynamics_controller::set_parameters(const double damper_amplitude,
     assert(gain_threshold.size() == NUM_OF_CONSTRAINTS_); 
     assert(gain_step.size()      == NUM_OF_CONSTRAINTS_); 
 
-    this->damper_amplitude_ = damper_amplitude;
-    this->damper_slope_ = damper_slope;
-    this->max_cart_force_ = max_cart_force;
-    this->max_cart_acc_ = max_cart_acc;
+    this->damper_amplitude_  = damper_amplitude;
+    this->damper_slope_      = damper_slope;
+    this->max_cart_force_    = max_cart_force;
+    this->max_cart_acc_      = max_cart_acc;
     
     // Setting parameters of the ABAG Controller
     abag_.set_error_alpha(error_alpha);    
@@ -726,12 +727,9 @@ void dynamics_controller::set_parameters(const double damper_amplitude,
     abag_.set_bias_step(bias_step);
     abag_.set_gain_threshold(gain_threshold);
     abag_.set_gain_step(gain_step);
-
-    if(saturate_abag_bias) abag_.set_min_bias_sat_limit( Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_));
-    else abag_.set_min_bias_sat_limit(-Eigen::VectorXd::Ones(NUM_OF_CONSTRAINTS_));
-
-    if(saturate_abag_u) abag_.set_min_command_sat_limit( Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_));
-    else abag_.set_min_command_sat_limit(-Eigen::VectorXd::Ones(NUM_OF_CONSTRAINTS_));
+    abag_.set_min_bias_sat_limit(min_bias_sat);
+    abag_.set_min_command_sat_limit(min_command_sat);
+    abag_.set_error_type(abag_error_type);
 }
 
 /**

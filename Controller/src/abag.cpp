@@ -25,9 +25,9 @@ SOFTWARE.
 
 #include <abag.hpp>
 
-// Constructor without the predifined set/s of parameters
+// Constructor without the predefined set/s of parameters
 ABAG::ABAG(const int num_of_dimensions, const bool use_error_sign):
-    DIMENSIONS_(num_of_dimensions), USE_ERROR_SIGN_(use_error_sign),
+    DIMENSIONS_(num_of_dimensions), use_error_sign_(use_error_sign),
     error_sign_(Eigen::VectorXd::Zero(num_of_dimensions)),
     ONES_(Eigen::VectorXd::Ones(num_of_dimensions)), 
     signal(num_of_dimensions), parameter(num_of_dimensions)
@@ -43,7 +43,7 @@ ABAG::ABAG(const int num_of_dimensions, const bool use_error_sign,
            const Eigen::VectorXd &min_bias_sat_limit, const Eigen::VectorXd &max_bias_sat_limit,
            const Eigen::VectorXd &min_gain_sat_limit, const Eigen::VectorXd &max_gain_sat_limit,
            const Eigen::VectorXd &min_command_sat_limit, const Eigen::VectorXd &max_command_sat_limit):
-    DIMENSIONS_(num_of_dimensions), USE_ERROR_SIGN_(use_error_sign),
+    DIMENSIONS_(num_of_dimensions), use_error_sign_(use_error_sign),
     error_sign_(Eigen::VectorXd::Zero(num_of_dimensions)),
     ONES_(Eigen::VectorXd::Ones(num_of_dimensions)), 
     signal(num_of_dimensions), parameter(error_alpha, 
@@ -84,16 +84,12 @@ Eigen::VectorXd ABAG::update_state(const Eigen::VectorXd &error)
     assert(DIMENSIONS_ == error.rows());
 
     update_error(error);
-    // std::cout << "Error: \n" << signal.error_.transpose() << std::endl;
 
     update_bias();
-    // std::cout << "Bias: \n" << signal.bias_.transpose() << std::endl;
 
     update_gain();
-    // std::cout << "Gain: \n" << signal.gain_.transpose() << std::endl;
 
     update_command();
-    // std::cout << "Command: \n" << signal.command_.transpose() << std::endl;
 
     return signal.command_;
 }
@@ -103,6 +99,7 @@ Eigen::VectorXd ABAG::update_state(const Eigen::VectorXd &error)
 void ABAG::update_error(const Eigen::VectorXd &raw_error)
 {
     /*
+    *   Be careful with direction of error!
     *   Reversing error is important due to possibility of different controller inputs.
     *   If e.g. velocity is given in Hz or m/s, the error should be reversed w.r.t. 
     *   pseudo code error explained in the original publication. 
@@ -113,9 +110,9 @@ void ABAG::update_error(const Eigen::VectorXd &raw_error)
     error_sign_ = raw_error.cwiseSign();
     
     // Using raw error here instead of sign is an experimental feature!
-    // Be carefull with setting "USE_ERROR_SIGN_" flag!
+    // Be carefull with setting "use_error_sign_" flag!
     signal.error_ = parameter.ERROR_ALPHA.cwiseProduct( signal.error_ ) + \
-                    (ONES_ - parameter.ERROR_ALPHA).cwiseProduct( USE_ERROR_SIGN_? error_sign_ : raw_error );
+                    (ONES_ - parameter.ERROR_ALPHA).cwiseProduct( use_error_sign_? error_sign_ : raw_error );
 }
 
 // - private method
@@ -153,6 +150,45 @@ Eigen::VectorXd ABAG::bias_decision_map()
 Eigen::VectorXd ABAG::gain_decision_map()
 {
     return (signal.error_.cwiseAbs() - parameter.GAIN_THRESHOLD).cwiseSign();
+}
+
+
+/*
+    Help functions
+*/
+Eigen::VectorXd ABAG::saturate_bias(const Eigen::VectorXd &value)
+{   
+    assert(parameter.MAX_BIAS_SAT_LIMIT.rows() == value.rows());
+    assert(parameter.MIN_BIAS_SAT_LIMIT.rows() == value.rows());
+    return value.cwiseMin(parameter.MAX_BIAS_SAT_LIMIT).cwiseMax(parameter.MIN_BIAS_SAT_LIMIT);
+}
+
+Eigen::VectorXd ABAG::saturate_gain(const Eigen::VectorXd &value)
+{   
+    assert(parameter.MAX_GAIN_SAT_LIMIT.rows() == value.rows());
+    assert(parameter.MIN_GAIN_SAT_LIMIT.rows() == value.rows());
+    return value.cwiseMin(parameter.MAX_GAIN_SAT_LIMIT).cwiseMax(parameter.MIN_GAIN_SAT_LIMIT);
+}
+
+Eigen::VectorXd ABAG::saturate_command(const Eigen::VectorXd &value)
+{   
+    assert(parameter.MAX_COMMAND_SAT_LIMIT.rows() == value.rows());
+    assert(parameter.MIN_COMMAND_SAT_LIMIT.rows() == value.rows());
+    return value.cwiseMin(parameter.MAX_COMMAND_SAT_LIMIT).cwiseMax(parameter.MIN_COMMAND_SAT_LIMIT);
+}
+
+Eigen::VectorXd ABAG::saturate(const Eigen::VectorXd &value, 
+                               const Eigen::VectorXd &MIN_LIMIT, 
+                               const Eigen::VectorXd &MAX_LIMIT)
+{   
+    assert(MAX_LIMIT.rows() == value.rows());
+    assert(MIN_LIMIT.rows() == value.rows());
+    return value.cwiseMin(MAX_LIMIT).cwiseMax(MIN_LIMIT);
+}
+
+Eigen::VectorXd ABAG::heaviside(const Eigen::VectorXd &value)
+{   
+    return 0.5 * (value.cwiseSign() + ONES_);
 }
 
 
@@ -365,7 +401,6 @@ void ABAG::set_min_bias_sat_limit(const Eigen::VectorXd &sat_limit)
     assert(("Not valid dimension number", sat_limit.rows() <= DIMENSIONS_));
 
     parameter.MIN_BIAS_SAT_LIMIT = sat_limit;
-    // parameter.MIN_BIAS_SAT_LIMIT(2) = 0.0;
 }
 
 void ABAG::set_max_bias_sat_limit(const Eigen::VectorXd &sat_limit)
@@ -400,7 +435,6 @@ void ABAG::set_min_command_sat_limit(const Eigen::VectorXd &sat_limit)
     assert(("Not valid dimension number", sat_limit.rows() <= DIMENSIONS_));
 
     parameter.MIN_COMMAND_SAT_LIMIT = sat_limit;
-    // parameter.MIN_COMMAND_SAT_LIMIT(2) = 0.0;
 }
 
 void ABAG::set_max_command_sat_limit(const Eigen::VectorXd &sat_limit)
@@ -411,40 +445,16 @@ void ABAG::set_max_command_sat_limit(const Eigen::VectorXd &sat_limit)
     parameter.MAX_COMMAND_SAT_LIMIT = sat_limit;
 }
 
-/*
-    Help functions
-*/
-Eigen::VectorXd ABAG::saturate_bias(const Eigen::VectorXd &value)
-{   
-    assert(parameter.MAX_BIAS_SAT_LIMIT.rows() == value.rows());
-    assert(parameter.MIN_BIAS_SAT_LIMIT.rows() == value.rows());
-    return value.cwiseMin(parameter.MAX_BIAS_SAT_LIMIT).cwiseMax(parameter.MIN_BIAS_SAT_LIMIT);
-}
-
-Eigen::VectorXd ABAG::saturate_gain(const Eigen::VectorXd &value)
-{   
-    assert(parameter.MAX_GAIN_SAT_LIMIT.rows() == value.rows());
-    assert(parameter.MIN_GAIN_SAT_LIMIT.rows() == value.rows());
-    return value.cwiseMin(parameter.MAX_GAIN_SAT_LIMIT).cwiseMax(parameter.MIN_GAIN_SAT_LIMIT);
-}
-
-Eigen::VectorXd ABAG::saturate_command(const Eigen::VectorXd &value)
-{   
-    assert(parameter.MAX_COMMAND_SAT_LIMIT.rows() == value.rows());
-    assert(parameter.MIN_COMMAND_SAT_LIMIT.rows() == value.rows());
-    return value.cwiseMin(parameter.MAX_COMMAND_SAT_LIMIT).cwiseMax(parameter.MIN_COMMAND_SAT_LIMIT);
-}
-
-Eigen::VectorXd ABAG::saturate(const Eigen::VectorXd &value, 
-                               const Eigen::VectorXd &MIN_LIMIT, 
-                               const Eigen::VectorXd &MAX_LIMIT)
-{   
-    assert(MAX_LIMIT.rows() == value.rows());
-    assert(MIN_LIMIT.rows() == value.rows());
-    return value.cwiseMin(MAX_LIMIT).cwiseMax(MIN_LIMIT);
-}
-
-Eigen::VectorXd ABAG::heaviside(const Eigen::VectorXd &value)
-{   
-    return 0.5 * (value.cwiseSign() + ONES_);
+void ABAG::set_error_type(const int type)
+{
+    switch (type)
+    {
+        case error_type::RAW:
+            use_error_sign_ = false;
+            break;
+    
+        default:
+            use_error_sign_ = true;
+            break;
+    }
 }
