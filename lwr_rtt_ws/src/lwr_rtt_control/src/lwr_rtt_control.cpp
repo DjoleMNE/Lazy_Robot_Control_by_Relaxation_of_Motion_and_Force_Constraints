@@ -196,7 +196,7 @@ bool LwrRttControl::configureHook()
 
 void LwrRttControl::updateHook()
 {
-    if(iteration_count_ > 8000) RTT::TaskContext::stop();
+    if(iteration_count_ > 10000) RTT::TaskContext::stop();
     
     // Read status from robot
     port_joint_position_in.read(jnt_pos_in);
