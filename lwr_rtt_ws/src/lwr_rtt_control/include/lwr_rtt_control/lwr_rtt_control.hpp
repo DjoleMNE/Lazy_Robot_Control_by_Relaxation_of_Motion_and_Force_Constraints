@@ -78,7 +78,7 @@ class LwrRttControl : public RTT::TaskContext{
         const int NUM_OF_JOINTS_;
         const int NUM_OF_CONSTRAINTS_;
         int environment_, robot_model_;
-        int interation_count_;
+        int iteration_count_;
 
         //General Control Parameters
         bool krc_compensate_gravity_;
