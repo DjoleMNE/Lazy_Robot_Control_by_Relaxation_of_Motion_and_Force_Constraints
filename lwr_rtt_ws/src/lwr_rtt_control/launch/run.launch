@@ -76,8 +76,9 @@
 
     
 <!-- *************** ABAG SETTINGS ******************** -->
-    <!-- ========= Saturate Bias and Command signals to [0, 1] ===============-->
-    <arg name="abag_error_type"   default="0"/>
+    <!-- ==== Raw error is 0, sign is 1 flag ======-->
+    <arg name="abag_error_type"   default="1"/>
+    <!-- ==== Saturate Bias and Command signals to [0, 1] or [-1, 1] ======-->
     <arg name="min_bias_sat"       default="[-1.0, -1.0, -1.0, 
                                              -1.0, -1.0, -1.0]"/>
     <arg name="min_command_sat"    default="[-1.0, -1.0, -1.0, 
@@ -108,7 +109,7 @@
 
 
 
-    <!-- ******* Low Gain but less robust ABAG PARAMETERS - Error Sign ***** -->
+    <!-- ABAG PARAMETERS(Error Sign): Low Gain, low chattering but less robust -->
     <!-- <arg name="ERROR_ALPHA" default="   [0.930000, 0.930000, 0.930000, 
                                          0.650000, 0.850000, 0.178001]"/>
 
@@ -125,7 +126,7 @@
                                          0.015152, 0.015152, 0.655152]"/> -->
 
 
-    <!-- ***** Robust but high Gain ABAG PARAMETERS: Error Sign**** -->
+    <!-- ABAG PARAMETERS(Error Sign): Robust but high Gain, high chattering in motors  -->
     <arg name="ERROR_ALPHA"    default="[0.650000, 0.650000, 0.650000, 
                                          0.650000, 0.850000, 0.178001]"/>
 
