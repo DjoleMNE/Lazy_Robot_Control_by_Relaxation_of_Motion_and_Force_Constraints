@@ -88,8 +88,9 @@ class LwrRttControl : public RTT::TaskContext{
         Eigen::VectorXd max_cart_force_, max_cart_acc_; 
 
         // ABAG Parameters
-        Eigen::VectorXd error_alpha_, bias_threshold_, bias_step_, gain_threshold_, gain_step_;
-        bool saturate_bias_, saturate_u_;
+        Eigen::VectorXd error_alpha_, bias_threshold_, bias_step_, 
+                        gain_threshold_, gain_step_, min_bias_sat_, min_command_sat_;
+        int abag_error_type_;
 
         // State and Driver
         state_specification robot_state_;

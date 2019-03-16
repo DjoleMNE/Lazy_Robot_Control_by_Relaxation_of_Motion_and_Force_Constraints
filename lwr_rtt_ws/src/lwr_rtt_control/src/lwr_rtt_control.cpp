@@ -40,8 +40,10 @@ LwrRttControl::LwrRttControl(const std::string& name):
     bias_threshold_(Eigen::VectorXd::Constant(6, 0.0)),
     bias_step_(Eigen::VectorXd::Constant(6, 0.0)),
     gain_threshold_(Eigen::VectorXd::Constant(6, 0.0)),
-    gain_step_(Eigen::VectorXd::Constant(6, 0.0)), 
-    saturate_bias_(false), saturate_u_(false),
+    gain_step_(Eigen::VectorXd::Constant(6, 0.0)),
+    abag_error_type_(1), 
+    min_bias_sat_(Eigen::VectorXd::Constant(6, -1.0)), 
+    min_command_sat_(Eigen::VectorXd::Constant(6, -1.0)),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_SEGMENTS_ + 1, NUM_OF_CONSTRAINTS_)
 {
     // Here you can add your ports, properties and operations
@@ -71,8 +73,9 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addProperty("BIAS_STEP", bias_step_).doc("BIAS_STEP");
     this->addProperty("GAIN_THRESHOLD", gain_threshold_).doc("GAIN_THRESHOLD");
     this->addProperty("GAIN_STEP", gain_step_).doc("GAIN_STEP");
-    this->addProperty("saturate_bias", saturate_bias_).doc("saturate_bias");
-    this->addProperty("saturate_u", saturate_u_).doc("saturate_u");
+    this->addProperty("abag_error_type", abag_error_type_).doc("abag_error_type");
+    this->addProperty("min_bias_sat", min_bias_sat_).doc("min_bias_sat");
+    this->addProperty("min_command_sat", min_command_sat_).doc("min_command_sat");
 }
 
 bool LwrRttControl::configureHook()
@@ -175,10 +178,10 @@ bool LwrRttControl::configureHook()
             break;
     }
 
-    controller_->set_parameters(damper_amplitude_, damper_slope_, 
+    controller_->set_parameters(damper_amplitude_, damper_slope_, abag_error_type_,
                                 max_cart_force_, max_cart_acc_, error_alpha_,
                                 bias_threshold_, bias_step_, gain_threshold_,
-                                gain_step_, saturate_bias_, saturate_u_);
+                                gain_step_, min_bias_sat_, min_command_sat_);
 
     controller_->initialize(desired_control_mode_, 
                             desired_dynamics_interface_, 

@@ -74,9 +74,23 @@
     <arg name="max_cart_acc" default="[50.0, 50.0, 50.0, 
                                        10.0, 10.0, 10.0]"/>
 
+    
+<!-- *************** ABAG SETTINGS ******************** -->
+    <!-- ========= Saturate Bias and Command signals to [0, 1] ===============-->
+    <arg name="abag_error_type"   default="0"/>
+    <arg name="min_bias_sat"       default="[-1.0, -1.0, -1.0, 
+                                             -1.0, -1.0, -1.0]"/>
+    <arg name="min_command_sat"    default="[-1.0, -1.0, -1.0, 
+                                             -1.0, -1.0, -1.0]"/>
 
-<!-- ********************** ABAG PARAMETERS ********************** -->
-    <arg name="ERROR_ALPHA" default="   [0.930000, 0.930000, 0.930000, 
+    <!-- <arg name="min_bias_sat"       default="[0.0, 0.0, 0.0, 
+                                             0.0, 0.0, 0.0]"/>
+                                             
+    <arg name="min_command_sat"    default="[0.0, 0.0, 0.0, 
+                                             0.0, 0.0, 0.0]"/> -->
+
+<!-- *************** ABAG PARAMETERS: Raw Error ******************** -->
+    <!-- <arg name="ERROR_ALPHA" default="   [0.930000, 0.930000, 0.930000, 
                                          0.650000, 0.850000, 0.178001]"/>
 
     <arg name="BIAS_THRESHOLD" default="[0.000407, 0.000407, 0.000407, 
@@ -89,12 +103,43 @@
                                          0.252492, 0.252492, 0.432492]"/>
 
     <arg name="GAIN_STEP" default="     [0.003152, 0.003152, 0.003152, 
+                                         0.015152, 0.015152, 0.655152]"/> -->
+
+
+
+
+    <!-- ******* Low Gain but less robust ABAG PARAMETERS - Error Sign ***** -->
+    <!-- <arg name="ERROR_ALPHA" default="   [0.930000, 0.930000, 0.930000, 
+                                         0.650000, 0.850000, 0.178001]"/>
+
+    <arg name="BIAS_THRESHOLD" default="[0.000407, 0.000407, 0.000407, 
+                                         0.001007, 0.001007, 0.724277]"/>
+
+    <arg name="BIAS_STEP" default="     [0.000495, 0.000495, 0.000495, 
+                                         0.003495, 0.003495, 0.503495]"/>
+
+    <arg name="GAIN_THRESHOLD" default="[0.552492, 0.552492, 0.552492, 
+                                         0.252492, 0.252492, 0.432492]"/>
+
+    <arg name="GAIN_STEP" default="     [0.003152, 0.003152, 0.003152, 
+                                         0.015152, 0.015152, 0.655152]"/> -->
+
+
+    <!-- ***** Robust but high Gain ABAG PARAMETERS: Error Sign**** -->
+    <arg name="ERROR_ALPHA"    default="[0.650000, 0.650000, 0.650000, 
+                                         0.650000, 0.850000, 0.178001]"/>
+
+    <arg name="BIAS_THRESHOLD" default="[0.001007, 0.001007, 0.001007, 
+                                         0.001007, 0.001007, 0.724277]"/>
+
+    <arg name="BIAS_STEP"      default="[0.003495, 0.003495, 0.003495, 
+                                         0.003495, 0.003495, 0.503495]"/>
+
+    <arg name="GAIN_THRESHOLD" default="[0.252492, 0.252492, 0.252492, 
+                                         0.252492, 0.252492, 0.432492]"/>
+
+    <arg name="GAIN_STEP"      default="[0.015152, 0.015152, 0.015152, 
                                          0.015152, 0.015152, 0.655152]"/>
-
-    <!-- ========= Saturate Bias and Command signals to [0, 1] ===============-->
-    <arg name="saturate_bias" default="false"/>
-    <arg name="saturate_u"    default="false"/>
-
 
 
 
@@ -120,8 +165,9 @@
         <rosparam param="BIAS_STEP" subst_value="True">$(arg BIAS_STEP)</rosparam>
         <rosparam param="GAIN_THRESHOLD" subst_value="True">$(arg GAIN_THRESHOLD)</rosparam>
         <rosparam param="GAIN_STEP" subst_value="True">$(arg GAIN_STEP)</rosparam>
-        <rosparam param="saturate_bias" subst_value="True">$(arg saturate_bias)</rosparam>
-        <rosparam param="saturate_u" subst_value="True">$(arg saturate_u)</rosparam>
+        <rosparam param="abag_error_type" subst_value="True">$(arg abag_error_type)</rosparam>
+        <rosparam param="min_bias_sat" subst_value="True">$(arg min_bias_sat)</rosparam>
+        <rosparam param="min_command_sat" subst_value="True">$(arg min_command_sat)</rosparam>
     </node>
 
 <!-- ============ Runner script =============== -->
