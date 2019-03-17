@@ -44,15 +44,14 @@
     <!-- ========= Use Cart Virtual Force Interface ===============-->
     <arg name="desired_dynamics_interface" default="1"/>
     
+    <!-- ========= candle pose ===============-->
+    <!-- <arg name="desired_pose" default="0"/> -->
 
     <!-- ========= navigation pose ===============-->
     <arg name="desired_pose" default="1"/>
 
     <!-- ========= navigation 2 pose ===============-->
     <!-- <arg name="desired_pose" default="2"/> -->
-    
-    <!-- ========= candle pose ===============-->
-    <!-- <arg name="desired_pose" default="0"/> -->
 
     <!-- ========= folded pose ===============-->
     <!-- <arg name="desired_pose" default="3"/> -->
@@ -71,8 +70,8 @@
     <arg name="damper_slope"     default="2.05"/>
   
     <!-- ========= Max Cart force excerted on the End-Effector ===============-->
-    <arg name="max_cart_force" default="[60.0, 60.0, 200.0, 
-                                         10.0, 10.0, 10.0]"/>
+    <arg name="max_cart_force" default="[100.0, 100.0, 200.0, 
+                                         20.0, 20.0, 20.0]"/>
 
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
     <arg name="max_cart_acc" default="[50.0, 50.0, 50.0, 
