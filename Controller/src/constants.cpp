@@ -94,7 +94,7 @@ namespace lwr_constants
    const std::vector<double> joint_position_limits_min {DEG_TO_RAD(-170), DEG_TO_RAD(-120), DEG_TO_RAD(-170), DEG_TO_RAD(-120), DEG_TO_RAD(-170), DEG_TO_RAD(-120), DEG_TO_RAD(-170)};
 
    const std::vector<double> joint_velocity_limits {DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(180), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5)};
-   const std::vector<double> joint_torque_limits {176, 176, 100, 100, 100, 30, 30};
+   const std::vector<double> joint_torque_limits {176.0, 176.0, 100.0, 100.0, 100.0, 30.0, 30.0};
 
    //  const std::vector<double> joint_position_thresholds {DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0)};
    const std::vector<double> joint_position_thresholds {DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10)};
@@ -186,7 +186,8 @@ namespace dynamics_parameter
     const Eigen::VectorXd MAX_CART_ACC = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                     << 100.0, 100.0, 200.0, 2.0, 2.0, 2.0).finished();
     const Eigen::IOFormat WRITE_FORMAT(6, Eigen::DontAlignCols, " ", "", "", "\n");
-    const std::string LOG_FILE_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/control_error.txt");
+    const std::string LOG_FILE_CART_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/control_error.txt");
+    const std::string LOG_FILE_JOINT_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/joint_torques.txt");
 }
 
 namespace prediction_parameter

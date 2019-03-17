@@ -105,7 +105,7 @@ class dynamics_controller
     const long DT_MICRO_;
     const double DT_SEC_;
 
-    std::ofstream log_file_;
+    std::ofstream log_file_cart_, log_file_joint_;
     bool store_control_data_;
 
     struct desired_control_mode
@@ -126,6 +126,7 @@ class dynamics_controller
     const int NUM_OF_FRAMES_;
     const int NUM_OF_CONSTRAINTS_;
     const int END_EFF_;
+    const std::vector<double> JOINT_TORQUE_LIMITS_;
     Eigen::VectorXd max_cart_force_, max_cart_acc_;
     std::vector<bool> CTRL_DIM_;
     

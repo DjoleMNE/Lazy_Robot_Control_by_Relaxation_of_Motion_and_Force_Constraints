@@ -131,7 +131,8 @@ namespace dynamics_parameter
     extern const Eigen::VectorXd MAX_CART_FORCE;
     extern const Eigen::VectorXd MAX_CART_ACC;
     extern const Eigen::IOFormat WRITE_FORMAT;
-    extern const std::string LOG_FILE_PATH;
+    extern const std::string LOG_FILE_CART_PATH;
+    extern const std::string LOG_FILE_JOINT_PATH;
 }
 
 namespace prediction_parameter

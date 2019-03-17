@@ -40,12 +40,12 @@ num_samples = np.int(rows / variable_num)
 print("Data size: ", num_samples, ",", cols)
 
 measured  = []
-command   = []
 desired   = []
 raw_error = []
 error     = []
 bias      = []
 gain      = []
+command   = []
 
 for sample_ in range(0, rows, variable_num):
     measured.append(    np.float32( input_data[    sample_][desired_dim]) )
@@ -56,13 +56,13 @@ for sample_ in range(0, rows, variable_num):
     gain.append(        np.float32( input_data[5 + sample_][desired_dim]) )
     command.append(     np.float32( input_data[6 + sample_][desired_dim]) )
 
-samples = np.arange(0, num_samples, 1)
-measured = np.array(measured)
-desired = np.array(desired)
+samples   = np.arange(0, num_samples, 1)
+measured  = np.array(measured)
+desired   = np.array(desired)
 raw_error = np.array(raw_error)
-bias = np.array(bias)
-gain = np.array(gain)
-command = np.array(command)
+bias      = np.array(bias)
+gain      = np.array(gain)
+command   = np.array(command)
 
 plt.ion()
 plt.figure(figsize = (18,10))
@@ -91,13 +91,11 @@ plt.grid(True)
 
 plt.subplot(4, 1, 2)
 plt.plot(raw_error, c = 'orange', label='raw error', linewidth=1, zorder=2)
-# plt.scatter(samples, error, c = 'orange', label='low_pass-error', marker='o',s=0.1)
 plt.legend(fontsize = 'x-large')
 plt.grid(True)
 
 plt.subplot(4, 1, 3)
-plt.plot(error, c = 'orange', label='low_passed error', linewidth=1, zorder=2)
-# plt.scatter(samples, error, c = 'orange', label='low_pass-error', marker='o',s=0.1)
+plt.plot(error, c = 'orange', label='filtered error', linewidth=1, zorder=2)
 plt.legend(fontsize = 'x-large')
 plt.grid(True)
 
@@ -110,10 +108,10 @@ plt.grid(True)
 
 plt.draw()
 plt.pause(0.001)
-if(desired_dim is 0):   plt.savefig('x_linear_control.pdf')
-elif(desired_dim is 1): plt.savefig('y_linear_control.pdf')
-elif(desired_dim is 2): plt.savefig('z_linear_control.pdf')
-elif(desired_dim is 3): plt.savefig('x_angular_control.pdf')
-elif(desired_dim is 4): plt.savefig('y_angular_control.pdf')
-elif(desired_dim is 5): plt.savefig('z_angular_control.pdf')
+if(desired_dim is 0):   plt.savefig('../x_linear_control.pdf')
+elif(desired_dim is 1): plt.savefig('../y_linear_control.pdf')
+elif(desired_dim is 2): plt.savefig('../z_linear_control.pdf')
+elif(desired_dim is 3): plt.savefig('../x_angular_control.pdf')
+elif(desired_dim is 4): plt.savefig('../y_angular_control.pdf')
+elif(desired_dim is 5): plt.savefig('../z_angular_control.pdf')
 notifier.loop()

@@ -41,6 +41,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     max_cart_force_(dynamics_parameter::MAX_CART_FORCE),
     max_cart_acc_(dynamics_parameter::MAX_CART_ACC),
     CTRL_DIM_(NUM_OF_CONSTRAINTS_, false),
+    JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
     current_error_twist_(KDL::Twist::Zero()),
     predicted_error_twist_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     damper_amplitude_(1.0), damper_slope_(4.5),
@@ -197,27 +198,29 @@ void dynamics_controller::update_dynamics_interfaces()
 void dynamics_controller::write_to_file()
 {   
     for(int i = 0; i < 3; i++) 
-        log_file_ << robot_state_.frame_pose[END_EFF_].p(i) << " ";
+        log_file_cart_ << robot_state_.frame_pose[END_EFF_].p(i) << " ";
     for(int i = 3; i < 6; i++) 
-        log_file_ << 0.0 << " ";
+        log_file_cart_ << 0.0 << " ";
 
-    log_file_ << std::endl;
+    log_file_cart_ << std::endl;
 
     for(int i = 0; i < 3; i++) 
-        log_file_ << desired_state_.frame_pose[END_EFF_].p(i) << " ";
+        log_file_cart_ << desired_state_.frame_pose[END_EFF_].p(i) << " ";
     for(int i = 3; i < 6; i++) 
-        log_file_ << 0.0 << " ";
+        log_file_cart_ << 0.0 << " ";
         
-    log_file_ << std::endl;
+    log_file_cart_ << std::endl;
 
     for(int i = 0; i < 6; i++) 
-        log_file_ << predicted_error_twist_(i) << " ";
-    log_file_ << std::endl;
+        log_file_cart_ << predicted_error_twist_(i) << " ";
+    log_file_cart_ << std::endl;
 
-    log_file_ << abag_.get_error().transpose().format(dynamics_parameter::WRITE_FORMAT);
-    log_file_ << abag_.get_bias().transpose().format(dynamics_parameter::WRITE_FORMAT);
-    log_file_ << abag_.get_gain().transpose().format(dynamics_parameter::WRITE_FORMAT);
-    log_file_ << abag_.get_command().transpose().format(dynamics_parameter::WRITE_FORMAT);
+    log_file_cart_ << abag_.get_error().transpose().format(dynamics_parameter::WRITE_FORMAT);
+    log_file_cart_ << abag_.get_bias().transpose().format(dynamics_parameter::WRITE_FORMAT);
+    log_file_cart_ << abag_.get_gain().transpose().format(dynamics_parameter::WRITE_FORMAT);
+    log_file_cart_ << abag_.get_command().transpose().format(dynamics_parameter::WRITE_FORMAT);
+    
+    log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
 }
 
 // Set all values of desired state to 0 - public method
@@ -604,11 +607,21 @@ int dynamics_controller::control(const int desired_control_mode,
 
     if (store_control_data) 
     {
-        log_file_.open(dynamics_parameter::LOG_FILE_PATH);
-        if (!log_file_.is_open()) {
-            std::cout << "Unable to open the file"<< std::endl;
+        log_file_cart_.open(dynamics_parameter::LOG_FILE_CART_PATH);
+        if (!log_file_cart_.is_open()) {
+            printf("Unable to open the file!\n");
             return -1;
         }
+
+        log_file_joint_.open(dynamics_parameter::LOG_FILE_JOINT_PATH);
+        if (!log_file_joint_.is_open()) {
+            printf("Unable to open the file!\n");
+            return -1;
+        }
+
+        for(int i = 0; i < NUM_OF_JOINTS_; i++) 
+            log_file_joint_ << JOINT_TORQUE_LIMITS_[i] << " ";
+        log_file_joint_ << std::endl;
     }
 
     double loop_time = 0.0;
@@ -635,7 +648,7 @@ int dynamics_controller::control(const int desired_control_mode,
         if(evaluate_dynamics() != 0)
         {
             stop_robot_motion();
-            if (store_control_data) log_file_.close();
+            if (store_control_data) log_file_cart_.close();
             printf("WARNING: Dynamics Solver returned error. Stopping the robot!");
             return -1;
         }
@@ -643,7 +656,7 @@ int dynamics_controller::control(const int desired_control_mode,
 
         // Apply joint commands using safe control interface.
         if(apply_joint_control_commands() != 0){
-            if (store_control_data) log_file_.close();
+            if (store_control_data) log_file_cart_.close();
             return -1;
         } 
 
@@ -660,7 +673,7 @@ int dynamics_controller::control(const int desired_control_mode,
         // }
     }
 
-    if (store_control_data) log_file_.close();
+    if (store_control_data) log_file_cart_.close();
     return 0;
 }
 
@@ -685,8 +698,15 @@ void dynamics_controller::initialize(const int desired_control_mode,
 
     if (store_control_data_) 
     {
-        log_file_.open(dynamics_parameter::LOG_FILE_PATH);
-        assert(log_file_.is_open());
+        log_file_cart_.open(dynamics_parameter::LOG_FILE_CART_PATH);
+        assert(log_file_cart_.is_open());
+
+        log_file_joint_.open(dynamics_parameter::LOG_FILE_JOINT_PATH);
+        assert(log_file_joint_.is_open());
+
+        for(int i = 0; i < NUM_OF_JOINTS_; i++) 
+            log_file_joint_ << JOINT_TORQUE_LIMITS_[i] << " ";
+        log_file_joint_ << std::endl;
     }
 }
 
@@ -800,5 +820,5 @@ void dynamics_controller::deinitialize()
 {
     // First make sure that the robot is not moving
     stop_robot_motion();
-    if (store_control_data_) log_file_.close();
+    if (store_control_data_) log_file_cart_.close();
 }
