@@ -80,9 +80,9 @@ plt.margins(0,0)
 
 plt.subplot(4, 1, 1)
 if(desired_dim < 3):
-    plt.plot(measured, c = 'magenta', label='X_measured', linewidth = 2, zorder = 2)
+    plt.plot(measured, c = 'magenta', label='Measured', linewidth = 2, zorder = 2)
     if not num_samples == 1:
-        plt.step(samples, desired, label='X_desired', linewidth = 2, where='post', color = 'black', zorder = 1)
+        plt.step(samples, desired, label='Desired', linewidth = 2, where='post', color = 'black', zorder = 1)
     else:
         l = plt.axhline(y = desired[0], label='X_d', c = 'black', linewidth=2)
 
@@ -90,12 +90,12 @@ plt.legend(loc=4, fontsize = 'x-large')
 plt.grid(True)
 
 plt.subplot(4, 1, 2)
-plt.plot(raw_error, c = 'orange', label='raw error', linewidth=1, zorder=2)
+plt.plot(raw_error, c = 'orange', label='non-filtered raw error', linewidth=1, zorder=2)
 plt.legend(fontsize = 'x-large')
 plt.grid(True)
 
 plt.subplot(4, 1, 3)
-plt.plot(error, c = 'orange', label='filtered error', linewidth=1, zorder=2)
+plt.plot(error, c = 'orange', label='low-pass filtered error sign', linewidth=1, zorder=2)
 plt.legend(fontsize = 'x-large')
 plt.grid(True)
 

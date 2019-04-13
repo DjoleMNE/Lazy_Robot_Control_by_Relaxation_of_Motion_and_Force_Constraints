@@ -12,3 +12,5 @@ lwr_rtt_ws/.catkin_tools/*
 \.ipynb_checkpoints/*
 
 ABAG_testing/\.ipynb_checkpoints/
+
+\.vscode/
