@@ -24,9 +24,10 @@
 #include "kdl/utilities/svd_eigen_HH.hpp"
 /**
  * \brief Dynamics calculations by constraints based on Vereshchagin 1989.
- * for a chain. This class creates instance of hybrid dynamics solver.
- * The solver calculates total joint space accelerations in a chain when a constraint force(s) is applied
- * to the chain's end-effector (task space/cartesian space).
+ * This class creates instance of hybrid dynamics solver.
+ * The solver calculates total joint space torques and accelerations in a chain 
+ * when a constraint force(s) is applied to the chain's 
+ * end-effector (task space/cartesian space).
  * This implementation includes only end-effector constraints, but PhD thesis containts solution for all segments.
  */
 
@@ -248,7 +249,7 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
             gravity_acc_swap << Vector3d::Map(gravity_acc.rot.data), Vector3d::Map(gravity_acc.vel.data);
 
             // Djordje: Initializing G matrix with gravitational effects. Compensation for gravity forces on end-effector
-            // See Popov and Vereshchagin book from 1978, Moscow 
+            // Djordje: See Popov and Vereshchagin book from 1978, Moscow 
             s.G.noalias() = s.E_tilde * gravity_acc_swap;
         }
         else
@@ -402,7 +403,6 @@ void Solver_Vereshchagin::constraint_calculation(const JntArray& beta)
  *  This method puts all acceleration contributions (constraint, bias, nullspace and parent accelerations) together.
  *
  */
-
 void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torques)
 {
     unsigned int j = 0;
@@ -445,7 +445,7 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
         //The result should be the torque at this joint.
         constraintTorque(j) = constraint_torque;
 
-        //Summing all 2 contributions for true control torque:
+        //Summing 2 contributions for true control torque:
         controlTorque(j) = constraintTorque(j) + ext_torque(j);
         // controlTorque(j) = ext_torque(j);
 
