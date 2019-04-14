@@ -132,6 +132,7 @@ class dynamics_controller
     
     KDL::Twist current_error_twist_;
     Eigen::VectorXd predicted_error_twist_;
+    double linear_error_norm_, angular_error_norm_;
     double damper_amplitude_, damper_slope_;
     Eigen::VectorXd abag_command_;
     KDL::Wrenches cart_force_command_;
@@ -152,6 +153,7 @@ class dynamics_controller
     void update_dynamics_interfaces();
     void update_current_state();
     void compute_control_error();
+    void transform_motion_driver();
     void make_predictions(const double dt_sec, const int num_steps);
     void compute_cart_control_commands();
     KDL::Twist infinitesimal_displacement_twist(const state_specification &state_a, 

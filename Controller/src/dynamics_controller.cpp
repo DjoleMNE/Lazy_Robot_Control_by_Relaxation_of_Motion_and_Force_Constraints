@@ -25,6 +25,7 @@ SOFTWARE.
 
 #include <dynamics_controller.hpp>
 #define SECOND 1000000
+const double MIN_NORM = 1e-6;
 
 dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
                                          const int rate_hz):
@@ -489,10 +490,13 @@ void dynamics_controller::compute_control_error()
     double time_horizon_sec = horizon_decision_map(energy);
 
     make_predictions(time_horizon_sec, 1);
- 
-    predicted_error_twist_ = \
-        conversions::kdl_twist_to_eigen(infinitesimal_displacement_twist(desired_state_,
-                                                                         predicted_state_));
+
+    KDL::Twist error_twist = infinitesimal_displacement_twist(desired_state_, 
+                                                              predicted_state_);
+    linear_error_norm_ = error_twist.vel.Norm();
+    angular_error_norm_ = error_twist.rot.Norm();
+    
+    predicted_error_twist_ = conversions::kdl_twist_to_eigen(error_twist);
 
     #ifndef NDEBUG
         // std::cout << "\nLinear Error: " << predicted_error_twist_.head(3).transpose() << "    Linear norm: " << predicted_error_twist_.head(3).norm() << std::endl;
@@ -500,9 +504,33 @@ void dynamics_controller::compute_control_error()
     #endif
 }
 
+void dynamics_controller::transform_motion_driver()
+{
+    Eigen::VectorXd transformed_error = Eigen::VectorXd::Constant(6, 0.0);
+    transformed_error(0) = linear_error_norm_;
+    transformed_error(3) = angular_error_norm_;
+
+    abag_command_ = abag_.update_state(transformed_error).transpose();
+    double linear_1D_command = 0.0;
+    double angular_1D_command = 0.0;
+
+    if (linear_error_norm_ >= MIN_NORM) linear_1D_command = abag_command_(0);
+    if (angular_error_norm_>= MIN_NORM) angular_1D_command = abag_command_(3);
+
+    // Transform to Linear 3D command
+    for(int i = 0; i < 3; i++)
+        abag_command_(i) = (predicted_error_twist_(i) / linear_error_norm_) * linear_1D_command;
+
+    // Transform to Angular 3D command
+    for(int i = 3; i < 6; i++)
+        abag_command_(i) = (predicted_error_twist_(i) / angular_error_norm_) * angular_1D_command;
+}
+
 void dynamics_controller::compute_cart_control_commands()
 {   
-    abag_command_ = abag_.update_state(predicted_error_twist_).transpose();
+    bool use_transformed_driver_ = true;
+    if (use_transformed_driver_) transform_motion_driver();
+    else abag_command_ = abag_.update_state(predicted_error_twist_).transpose();
 
     switch (desired_task_inteface_)
     {
