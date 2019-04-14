@@ -157,7 +157,7 @@ class dynamics_controller
     KDL::Twist infinitesimal_displacement_twist(const state_specification &state_a, 
                                                 const state_specification &state_b);
     double kinetic_energy(const KDL::Twist &twist, const int segment_index);
-    double damper_decision_map(const double kinetic_energy);
+    double horizon_decision_map(const double kinetic_energy);
     int apply_joint_control_commands();
     int evaluate_dynamics();
     int enforce_loop_frequency();

@@ -463,7 +463,7 @@ double dynamics_controller::kinetic_energy(const KDL::Twist &twist,
     return 0.5 * dot(twist, robot_chain_.getSegment(segment_index).getInertia() * twist);
 }
 
-double dynamics_controller::damper_decision_map(const double energy)
+double dynamics_controller::horizon_decision_map(const double energy)
 {
    // Two-parameter-scaled tanh function
    return damper_amplitude_ * std::tanh(damper_slope_ * energy);
@@ -486,7 +486,7 @@ void dynamics_controller::compute_control_error()
 
     double energy = kinetic_energy(total_twist, END_EFF_);
 
-    double time_horizon_sec = damper_decision_map(energy);
+    double time_horizon_sec = horizon_decision_map(energy);
 
     make_predictions(time_horizon_sec, 1);
  
