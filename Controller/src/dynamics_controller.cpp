@@ -25,7 +25,7 @@ SOFTWARE.
 
 #include <dynamics_controller.hpp>
 #define SECOND 1000000
-const double MIN_NORM = 1e-6;
+const double MIN_NORM = 1e-7;
 
 dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
                                          const int rate_hz):
@@ -520,6 +520,9 @@ void dynamics_controller::transform_motion_driver()
     }
     else
     {
+        #ifndef NDEBUG
+            printf("Linear error Norm too small");
+        #endif
         for(int i = 0; i < 3; i++) 
             abag_command_(i) = 0.0;
     }
@@ -532,6 +535,9 @@ void dynamics_controller::transform_motion_driver()
     }
     else
     {
+        #ifndef NDEBUG
+            // printf("Angular error Norm too small");
+        #endif
         for(int i = 3; i < 6; i++) 
             abag_command_(i) = 0.0;
     }
