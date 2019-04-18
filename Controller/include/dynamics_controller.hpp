@@ -85,7 +85,8 @@ class dynamics_controller
                         const Eigen::VectorXd &min_bias_sat,
                         const Eigen::VectorXd &min_command_sat);
     void initialize(const int desired_control_mode, 
-                    const int desired_task_inteface, 
+                    const int desired_task_inteface,
+                    const bool use_transformed_driver, 
                     const bool store_control_data);
     void deinitialize();
     void stop_robot_motion();
@@ -129,10 +130,10 @@ class dynamics_controller
     const std::vector<double> JOINT_TORQUE_LIMITS_;
     Eigen::VectorXd max_cart_force_, max_cart_acc_;
     std::vector<bool> CTRL_DIM_;
+    bool use_transformed_driver_;
     
     KDL::Twist current_error_twist_;
-    Eigen::VectorXd predicted_error_twist_;
-    double linear_error_norm_, angular_error_norm_;
+    Eigen::VectorXd predicted_error_twist_, transformed_error_;
     double damper_amplitude_, damper_slope_;
     Eigen::VectorXd abag_command_;
     KDL::Wrenches cart_force_command_;

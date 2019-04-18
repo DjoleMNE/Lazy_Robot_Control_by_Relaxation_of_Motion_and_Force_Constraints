@@ -37,12 +37,16 @@
     <!-- <arg name="desired_control_mode" default="1"/> -->
 
 
+    <!-- ========= Use Transformed Motion Driver ===============-->
+    <!-- <arg name="use_transformed_driver" default="false"/> -->
+    <arg name="use_transformed_driver" default="true"/>
+
 
     <!-- ========= Use Cart Acc Constraint Interface ===============-->
-    <!-- <arg name="desired_dynamics_interface" default="0"/> -->
+    <arg name="desired_dynamics_interface" default="0"/>
 
     <!-- ========= Use Cart Virtual Force Interface ===============-->
-    <arg name="desired_dynamics_interface" default="1"/>
+    <!-- <arg name="desired_dynamics_interface" default="1"/> -->
     
     <!-- ========= candle pose ===============-->
     <!-- <arg name="desired_pose" default="0"/> -->
@@ -111,6 +115,21 @@
                                          0.015152, 0.015152, 0.655152]"/> -->
 
 
+    <!-- ABAG PARAMETERS (Error Sign): Low Gain, Transformed Motion Driver -->
+    <!-- <arg name="ERROR_ALPHA" default="   [0.900000, 0.000001, 0.000001, 
+                                         0.650000, 0.000001, 0.000001]"/>
+
+    <arg name="BIAS_THRESHOLD" default="[0.000407, 0.000001, 0.000001, 
+                                         0.001007, 0.000001, 0.000001]"/>
+
+    <arg name="BIAS_STEP" default="     [0.000495, 0.000001, 0.000001, 
+                                         0.003495, 0.000001, 0.000001]"/>
+
+    <arg name="GAIN_THRESHOLD" default="[0.552492, 0.000001, 0.000001, 
+                                         0.252492, 0.000001, 0.000001]"/>
+
+    <arg name="GAIN_STEP" default="     [0.003152, 0.000001, 0.000001, 
+                                         0.015152, 0.000001, 0.000001]"/> -->
 
 
     <!-- ABAG PARAMETERS(Error Sign): Low Gain, low chattering but less robust -->
@@ -157,6 +176,7 @@
         <param name="environment" value="$(arg environment)"/>
         <param name="robot_model" value="$(arg robot_model)"/>
         <param name="krc_compensate_gravity" value="$(arg krc_compensate_gravity)"/>
+        <param name="use_transformed_driver" value="$(arg use_transformed_driver)"/>
         <param name="desired_control_mode" value="$(arg desired_control_mode)"/>
         <param name="desired_dynamics_interface" value="$(arg desired_dynamics_interface)"/>
         <param name="desired_pose" value="$(arg desired_pose)"/>

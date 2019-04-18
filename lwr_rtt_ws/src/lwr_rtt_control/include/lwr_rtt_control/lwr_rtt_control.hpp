@@ -81,7 +81,7 @@ class LwrRttControl : public RTT::TaskContext{
         int iteration_count_;
 
         //General Control Parameters
-        bool krc_compensate_gravity_;
+        bool krc_compensate_gravity_, use_transformed_driver_;
         int desired_control_mode_, desired_dynamics_interface_, desired_pose_;
         double damper_amplitude_, damper_slope_;
         std::vector<bool> control_dims_;
