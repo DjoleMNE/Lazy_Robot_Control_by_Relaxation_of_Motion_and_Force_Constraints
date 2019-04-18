@@ -367,22 +367,54 @@ void Solver_Vereshchagin::constraint_calculation(const JntArray& beta)
     // std::cout <<"\n Constraint Coupling Matrix: \n" << results[0].M << '\n';
 
     int result  = svd_eigen_HH(results[0].M, Um, Sm, Vm, tmpm);
-    // std::cout << "Constraint::SVD: " << result << '\n';
-    // std::cout << Sm.transpose() << std::endl;
-
     assert(result == 0);
+    // std::cout << "Constraint::SVD: " << result << '\n';
+
+    bool use_dls = false;
+    double sigma_min = 0.0;
+    double lambda_scaled_square = 0.01;
+    // double lambda_scaled_square = 0.0;
+    double eps = 1e-6;
+    double lambda_max = 1.010;
+    // if (use_dls)
+    // {
+    //     // std::cout << SM.transpose() << std::endl;
+    //     // Minimal of six largest singular values is Sm(5), if number of joints >=6, else it's  0
+    //     if (nj >= 6 ) sigma_min = Sm(2);
+    //     printf("SIMGA min: %.12g \n", sigma_min);
+
+    //     // If sigmaMin > eps, then dls is not active and lambda_scaled = 0 (default value)
+    //     // If sigmaMin < eps, then dls is active and lambda_scaled is scaled from 0 to lambda
+    //     // Note:  singular values are always positive so sigmaMin >=0
+    //     if ( sigma_min < eps )
+    //     {
+    //         lambda_scaled_square = (1.0 - (sigma_min / eps) * (sigma_min / eps)) * lambda_max * lambda_max;
+    //         // lambda_scaled_square = sqrt(1.0 - (sigma_min / eps )*(sigma_min / eps)) * lambda_max;
+    //         // lambda_scaled_square = lambda_scaled_square * lambda_scaled_square;
+    //     }
+    //     printf("Lambda: %.12g", lambda_scaled_square);
+    // }
 
     //truncated svd, what would sdls, dls physically mean?
     // printf("\n Singular: ");
     for (unsigned int i = 0; i < nc; i++)
     {   
-        if (Sm(i) < 1e-14)
+        if(use_dls && nj >= 6)
         {
-            // printf("%d: %f,  ", i, Sm(i));
-            Sm(i) = 0.0;
-        } 
-        else Sm(i) = 1 / Sm(i);
+            Sm(i) = Sm(i) / (Sm(i) * Sm(i) + lambda_scaled_square);
+            // printf("%d: %.10g,  ", i, Sm(i));
+        }
+        else
+        {
+            if (Sm(i) < 1e-8)
+            {
+                // printf("%d: %f,  ", i, Sm(i));
+                Sm(i) = 0.0;
+            } 
+            else Sm(i) = 1 / Sm(i);
+        }
     }
+    // printf("\n \n");
 
     results[0].M.noalias() = Vm * Sm.asDiagonal();
     M_0_inverse.noalias() = results[0].M * Um.transpose();
