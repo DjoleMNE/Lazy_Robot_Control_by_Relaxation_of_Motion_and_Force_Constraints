@@ -25,7 +25,7 @@ SOFTWARE.
 
 #include <dynamics_controller.hpp>
 #define SECOND 1000000
-const double MIN_NORM = 1e-7;
+const double MIN_NORM = 1e-10;
 
 dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
                                          const int rate_hz):
@@ -170,7 +170,7 @@ void dynamics_controller::update_current_state()
     // update_dynamics_interfaces();
 
     // Print Current robot state in Debug mode
-    #ifndef NDEBUG
+#ifndef NDEBUG
         // std::cout << "\nCurrent Joint state:          " << std::endl;
         // std::cout << "Joint angle:    " << robot_state_.q << std::endl;
         // std::cout << "Joint velocity: " << robot_state_.qd << std::endl;
@@ -180,12 +180,12 @@ void dynamics_controller::update_current_state()
         //           << robot_state_.frame_pose[END_EFF_].p  << std::endl;
         // std::cout << "End-effector Velocity:                \n" 
         //           << robot_state_.frame_velocity[END_EFF_] << std::endl;
-    #endif 
+#endif 
 
-    #ifdef NDEBUG
+#ifdef NDEBUG
         // std::cout << "End-effector Velocity:   \n" 
         //           << robot_state_.frame_velocity[END_EFF_] << std::endl;
-    #endif
+#endif
 }
 
 // Update current dynamics intefaces using desired robot state specifications 
@@ -500,10 +500,10 @@ void dynamics_controller::compute_control_error()
     
     predicted_error_twist_ = conversions::kdl_twist_to_eigen(error_twist);
 
-    #ifndef NDEBUG
+#ifndef NDEBUG
         // std::cout << "\nLinear Error: " << predicted_error_twist_.head(3).transpose() << "    Linear norm: " << predicted_error_twist_.head(3).norm() << std::endl;
         // std::cout << "Angular Error: " << predicted_error_twist_.tail(3).transpose() << "         Angular norm: " << predicted_error_twist_.tail(3).norm() << std::endl;
-    #endif
+#endif
 }
 
 void dynamics_controller::transform_motion_driver()
@@ -520,9 +520,10 @@ void dynamics_controller::transform_motion_driver()
     }
     else
     {
-        #ifndef NDEBUG
+
+#ifndef NDEBUG
             printf("Linear error Norm too small");
-        #endif
+#endif
         for(int i = 0; i < 3; i++) 
             abag_command_(i) = 0.0;
     }
@@ -535,9 +536,10 @@ void dynamics_controller::transform_motion_driver()
     }
     else
     {
-        #ifndef NDEBUG
+
+#ifndef NDEBUG
             // printf("Angular error Norm too small");
-        #endif
+#endif
         for(int i = 3; i < 6; i++) 
             abag_command_(i) = 0.0;
     }
@@ -569,7 +571,7 @@ void dynamics_controller::compute_cart_control_commands()
                                                        abag_command_(4) * max_cart_acc_(4), // Angular
                                                        abag_command_(5) * max_cart_acc_(5)}); // Angular
             break;
-    
+
         default:
             assert(("Unsupported interface!", false));
             break;
@@ -602,7 +604,7 @@ int dynamics_controller::evaluate_dynamics()
     // hd_solver_.get_transformed_link_acceleration(robot_state_.frame_acceleration);
     
     // Print computed state in Debug mode
-    #ifndef NDEBUG
+#ifndef NDEBUG
         // std::cout << "\nComputed Cartesian state:" << std::endl;
 
         // std::cout << "Frame ACC" << '\n';
@@ -615,11 +617,11 @@ int dynamics_controller::evaluate_dynamics()
         // std::cout << "\nComputed Joint state:          " << std::endl;
         // std::cout << "Joint torque:  " << robot_state_.control_torque << std::endl;
         // std::cout << "Joint acc:     " << robot_state_.qdd << std::endl;
-    #endif 
+#endif 
 
-    #ifdef NDEBUG
+#ifdef NDEBUG
         // std::cout << "Joint torque:  " << robot_state_.control_torque << std::endl;
-    #endif
+#endif
 
     return hd_solver_result;
 }
