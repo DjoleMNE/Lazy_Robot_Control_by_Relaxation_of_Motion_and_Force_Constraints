@@ -169,6 +169,7 @@ void model_prediction::integrate_cartesian_space(
 
     geometry::orthonormalize_rot_matrix(temp_pose_.M);
     assert(("Current rotation matrix", geometry::is_rotation_matrix(temp_pose_.M)));
+    
 #ifdef NDEBUG
     if(!geometry::is_rotation_matrix(temp_pose_.M)) printf("Current Matrix is not rotation!");
 #endif 
@@ -180,12 +181,13 @@ void model_prediction::integrate_cartesian_space(
         geometry::orthonormalize_rot_matrix(temp_pose_.M);
         assert(("Integrated rotation matrix", geometry::is_rotation_matrix(temp_pose_.M)));
 
-    #ifdef NDEBUG
+#ifdef NDEBUG
         if(!geometry::is_rotation_matrix(temp_pose_.M)) printf("Integrated Matrix is not rotation!");
-    #endif
-    #ifndef NDEBUG
+#endif
+
+#ifndef NDEBUG
         save_pose_to_file(predicted_pose_data_file_, temp_pose_);
-    #endif
+#endif
     }
     
 #ifndef NDEBUG
@@ -230,6 +232,10 @@ KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
 
     if(decouple_dimensions)
     {   
+        /** 
+         * Exponential map on SO(3) only: Decoupled calculation 
+         * See "Modern Robotics" Book, 2017, sections 9.2.1 and 11.3.3.
+        */
         return current_pose * KDL::Frame(geometry::exp_map_so3(current_twist), 
                                          current_twist.vel);
     }
