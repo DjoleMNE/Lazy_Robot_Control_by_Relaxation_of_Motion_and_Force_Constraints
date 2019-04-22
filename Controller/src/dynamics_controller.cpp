@@ -53,7 +53,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     hd_solver_(robot_chain_, robot_driver->get_joint_inertia(),
                robot_driver->get_root_acceleration(), NUM_OF_CONSTRAINTS_),
     fk_vereshchagin_(robot_chain_),
-    safety_control_(robot_driver, true), 
+    safety_control_(robot_driver, true), fsm_(),
     abag_(abag_parameter::DIMENSIONS, abag_parameter::USE_ERROR_SIGN),
     predictor_(robot_chain_),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
@@ -471,13 +471,6 @@ double dynamics_controller::kinetic_energy(const KDL::Twist &twist,
     return 0.5 * dot(twist, robot_chain_.getSegment(segment_index).getInertia() * twist);
 }
 
-double dynamics_controller::horizon_decision_map(const double energy)
-{
-   // Two-parameter-scaled tanh function
-   return damper_amplitude_ * std::tanh(damper_slope_ * energy);
-}
-
-
 /**
  * Compute the error between desired Cartesian state 
  * and predicted (integrated) Cartesian state.
@@ -494,7 +487,16 @@ void dynamics_controller::compute_control_error()
 
     double energy = kinetic_energy(total_twist, END_EFF_);
 
-    double time_horizon_sec = horizon_decision_map(energy);
+    double time_horizon_sec = fsm_.tanh_decision_map(energy, 
+                                                     damper_amplitude_, 
+                                                     damper_slope_);
+
+#ifndef NDEBUG
+    for(int i = 0; i < 3; i++) 
+        log_file_predictions_ << robot_state_.frame_velocity[END_EFF_].vel(i) << " ";
+    
+    log_file_predictions_ << energy << " " << time_horizon_sec << std::endl;
+#endif
 
     make_predictions(time_horizon_sec, 1);
 

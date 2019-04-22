@@ -32,6 +32,7 @@ SOFTWARE.
 #include <geometry_utils.hpp>
 #include <model_prediction.hpp>
 #include <safety_controller.hpp>
+#include <finite_state_machine.hpp>
 #include <utility> 
 #include <abag.hpp>
 #include <constants.hpp>
@@ -142,6 +143,7 @@ class dynamics_controller
     KDL::FK_Vereshchagin fk_vereshchagin_;
     safety_controller safety_control_;
     ABAG abag_;
+    finite_state_machine fsm_;
     model_prediction predictor_;
 
     state_specification robot_state_;
@@ -160,7 +162,6 @@ class dynamics_controller
     KDL::Twist infinitesimal_displacement_twist(const state_specification &state_a, 
                                                 const state_specification &state_b);
     double kinetic_energy(const KDL::Twist &twist, const int segment_index);
-    double horizon_decision_map(const double kinetic_energy);
     int apply_joint_control_commands();
     int evaluate_dynamics();
     int enforce_loop_frequency();

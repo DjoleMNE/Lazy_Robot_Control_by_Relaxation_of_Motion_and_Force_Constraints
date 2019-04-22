@@ -43,6 +43,7 @@ if("${ROBOT}" STREQUAL "lwr")
     src/kdl_eigen_conversions.cpp
     src/geometry_utils.cpp
     src/model_prediction.cpp
+    src/finite_state_machine.cpp
     src/solver_vereshchagin.cpp
     src/fk_vereshchagin.cpp
     src/lwr_mediator.cpp
@@ -58,6 +59,7 @@ else()
     src/kdl_eigen_conversions.cpp
     src/geometry_utils.cpp
     src/model_prediction.cpp
+    src/finite_state_machine.cpp
     src/solver_vereshchagin.cpp
     src/fk_vereshchagin.cpp
     src/youbot_mediator.cpp
