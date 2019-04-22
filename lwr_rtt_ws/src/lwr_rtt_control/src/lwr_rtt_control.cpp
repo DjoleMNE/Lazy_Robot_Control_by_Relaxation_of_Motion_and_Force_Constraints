@@ -104,6 +104,7 @@ bool LwrRttControl::configureHook()
         RTT::log(RTT::Fatal) << "No input connection!"<< RTT::endlog();
         return false;
     }
+
     if ( !port_joint_position_cmd_out.connected() ||
          !port_joint_torque_cmd_out.connected()) 
     {
@@ -158,7 +159,7 @@ bool LwrRttControl::configureHook()
 
         case desired_pose::NAVIGATION_2:
             // Folded pose
-            desired_ee_pose = { 0.20,  0.30,  0.632811, // Linear: Vector
+            desired_ee_pose = { 0.2,  0.3, 0.632811, // Linear: Vector
                                 1.0,  0.0, 0.0, // Angular: Rotation matrix
                                 0.0,  1.0, 0.0,
                                 0.0,  0.0, 1.0};
@@ -190,7 +191,8 @@ bool LwrRttControl::configureHook()
                             true);
 
     sleep(2); // wait for gazebo to load completely
-
+    loop_total_time_ = 0.0;
+    
     this->visualize_pose(desired_ee_pose);
     return true;
 }
@@ -198,8 +200,15 @@ bool LwrRttControl::configureHook()
 
 void LwrRttControl::updateHook()
 {
-    if(iteration_count_ > 10000) RTT::TaskContext::stop();
-    
+    if(iteration_count_ > 10000) 
+    {
+        // std::cout << "Loop time: " << loop_total_time_ / iteration_count_ << std::endl;
+        RTT::TaskContext::stop();
+    }
+
+    // Save current time point
+    // loop_start_time_ = std::chrono::steady_clock::now();
+
     // Read status from robot
     port_joint_position_in.read(jnt_pos_in);
     port_joint_velocity_in.read(jnt_vel_in);
@@ -224,6 +233,10 @@ void LwrRttControl::updateHook()
     // jnt_trq_cmd_out << 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
     port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
     iteration_count_++;
+
+    // loop_total_time_ += std::chrono::duration<double, std::micro>\
+    //         (std::chrono::steady_clock::now() -\
+    //                                         loop_start_time_).count();
 }
 
 void LwrRttControl::stopHook()
@@ -234,7 +247,6 @@ void LwrRttControl::stopHook()
 
 void LwrRttControl::visualize_pose(const std::vector<double> &pose)
 {
-
     // Create Temp ROS Node
     if (!ros::isInitialized())
     {
