@@ -76,8 +76,7 @@ class dynamics_controller
     void set_parameters(const double damper_amplitude,
                         const double damper_slope,
                         const int abag_error_type,
-                        const Eigen::VectorXd &max_cart_force,
-                        const Eigen::VectorXd &max_cart_acc,
+                        const Eigen::VectorXd &max_command,
                         const Eigen::VectorXd &error_alpha, 
                         const Eigen::VectorXd &bias_threshold, 
                         const Eigen::VectorXd &bias_step, 
@@ -129,14 +128,13 @@ class dynamics_controller
     const int NUM_OF_CONSTRAINTS_;
     const int END_EFF_;
     const std::vector<double> JOINT_TORQUE_LIMITS_;
-    Eigen::VectorXd max_cart_force_, max_cart_acc_;
     std::vector<bool> CTRL_DIM_;
     bool use_transformed_driver_;
     
     KDL::Twist current_error_twist_;
     Eigen::VectorXd predicted_error_twist_, transformed_error_;
     double damper_amplitude_, damper_slope_;
-    Eigen::VectorXd abag_command_;
+    Eigen::VectorXd abag_command_, max_command_;
     KDL::Wrenches cart_force_command_;
 
     KDL::Solver_Vereshchagin hd_solver_;

@@ -36,7 +36,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     desired_control_mode_(0), desired_dynamics_interface_(1),
     desired_pose_(1), damper_amplitude_(1.0), damper_slope_(4.0),
     control_dims_(NUM_OF_CONSTRAINTS_, false),
-    max_cart_force_(Eigen::VectorXd::Constant(6, 0.0)),
+    max_command_(Eigen::VectorXd::Constant(6, 0.0)),
     error_alpha_(Eigen::VectorXd::Constant(6, 0.0)),
     bias_threshold_(Eigen::VectorXd::Constant(6, 0.0)),
     bias_step_(Eigen::VectorXd::Constant(6, 0.0)),
@@ -68,8 +68,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addProperty("control_dims", control_dims_).doc("control dimensions");
     this->addProperty("damper_amplitude", damper_amplitude_).doc("damper_amplitude");
     this->addProperty("damper_slope", damper_slope_).doc("damper_slope");
-    this->addProperty("max_cart_force", max_cart_force_).doc("max_cart_force");
-    this->addProperty("max_cart_acc", max_cart_acc_).doc("max_cart_acc");
+    this->addProperty("max_command", max_command_).doc("max_command");
     this->addProperty("ERROR_ALPHA", error_alpha_).doc("ABAG ERROR_ALPHA");
     this->addProperty("BIAS_THRESHOLD", bias_threshold_).doc("BIAS_THRESHOLD");
     this->addProperty("BIAS_STEP", bias_step_).doc("BIAS_STEP");
@@ -181,8 +180,8 @@ bool LwrRttControl::configureHook()
             break;
     }
 
-    controller_->set_parameters(damper_amplitude_, damper_slope_, abag_error_type_,
-                                max_cart_force_, max_cart_acc_, error_alpha_,
+    controller_->set_parameters(damper_amplitude_, damper_slope_, 
+                                abag_error_type_, max_command_, error_alpha_,
                                 bias_threshold_, bias_step_, gain_threshold_,
                                 gain_step_, min_bias_sat_, min_command_sat_);
 

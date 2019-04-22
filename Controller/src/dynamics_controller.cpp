@@ -39,8 +39,6 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     NUM_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
     NUM_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
     END_EFF_(NUM_OF_SEGMENTS_ - 1),
-    max_cart_force_(dynamics_parameter::MAX_CART_FORCE),
-    max_cart_acc_(dynamics_parameter::MAX_CART_ACC),
     CTRL_DIM_(NUM_OF_CONSTRAINTS_, false),
     JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
     current_error_twist_(KDL::Twist::Zero()),
@@ -49,6 +47,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     use_transformed_driver_(true),
     damper_amplitude_(1.0), damper_slope_(4.5),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
+    max_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     cart_force_command_(NUM_OF_SEGMENTS_),
     hd_solver_(robot_chain_, robot_driver->get_joint_inertia(),
                robot_driver->get_root_acceleration(), NUM_OF_CONSTRAINTS_),
@@ -487,7 +486,7 @@ void dynamics_controller::compute_control_error()
 
     // double energy = kinetic_energy(total_twist, END_EFF_);
 
-    
+
 
     // double time_horizon_sec = fsm_.tanh_decision_map(energy, 
     //                                                  damper_amplitude_, 
@@ -575,7 +574,7 @@ void dynamics_controller::compute_cart_control_commands()
         case dynamics_interface::CART_FORCE:
             // Set additional (virtual) force computed by the ABAG controller
             for(int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
-                cart_force_command_[END_EFF_](i) = CTRL_DIM_[i]? abag_command_(i) * max_cart_force_(i) : 0.0;
+                cart_force_command_[END_EFF_](i) = CTRL_DIM_[i]? abag_command_(i) * max_command_(i) : 0.0;
             break;
 
         case dynamics_interface::CART_ACCELERATION:
@@ -583,12 +582,12 @@ void dynamics_controller::compute_cart_control_commands()
             set_ee_acc_constraints(robot_state_,
                                    std::vector<bool>{CTRL_DIM_[0], CTRL_DIM_[1], CTRL_DIM_[2], // Linear
                                                      CTRL_DIM_[3], CTRL_DIM_[4], CTRL_DIM_[5]}, // Angular
-                                   std::vector<double>{abag_command_(0) * max_cart_acc_(0), // Linear
-                                                       abag_command_(1) * max_cart_acc_(1), // Linear
-                                                       abag_command_(2) * max_cart_acc_(2), // Linear
-                                                       abag_command_(3) * max_cart_acc_(3), // Angular
-                                                       abag_command_(4) * max_cart_acc_(4), // Angular
-                                                       abag_command_(5) * max_cart_acc_(5)}); // Angular
+                                   std::vector<double>{abag_command_(0) * max_command_(0), // Linear
+                                                       abag_command_(1) * max_command_(1), // Linear
+                                                       abag_command_(2) * max_command_(2), // Linear
+                                                       abag_command_(3) * max_command_(3), // Angular
+                                                       abag_command_(4) * max_command_(4), // Angular
+                                                       abag_command_(5) * max_command_(5)}); // Angular
             break;
 
         default:
@@ -806,8 +805,7 @@ void dynamics_controller::initialize(const int desired_control_mode,
 void dynamics_controller::set_parameters(const double damper_amplitude,
                                          const double damper_slope,
                                          const int abag_error_type,
-                                         const Eigen::VectorXd &max_cart_force,
-                                         const Eigen::VectorXd &max_cart_acc,
+                                         const Eigen::VectorXd &max_command,
                                          const Eigen::VectorXd &error_alpha, 
                                          const Eigen::VectorXd &bias_threshold, 
                                          const Eigen::VectorXd &bias_step, 
@@ -817,8 +815,7 @@ void dynamics_controller::set_parameters(const double damper_amplitude,
                                          const Eigen::VectorXd &min_command_sat)
 {
     //First check input dimensions
-    assert(max_cart_force.size() == NUM_OF_CONSTRAINTS_); 
-    assert(max_cart_acc.size()   == NUM_OF_CONSTRAINTS_); 
+    assert(max_command.size() == NUM_OF_CONSTRAINTS_); 
     assert(error_alpha.size()    == NUM_OF_CONSTRAINTS_); 
     assert(bias_threshold.size() == NUM_OF_CONSTRAINTS_); 
     assert(bias_step.size()      == NUM_OF_CONSTRAINTS_); 
@@ -827,8 +824,7 @@ void dynamics_controller::set_parameters(const double damper_amplitude,
 
     this->damper_amplitude_  = damper_amplitude;
     this->damper_slope_      = damper_slope;
-    this->max_cart_force_    = max_cart_force;
-    this->max_cart_acc_      = max_cart_acc;
+    this->max_command_       = max_command;
     
     // Setting parameters of the ABAG Controller
     abag_.set_error_alpha(error_alpha);    

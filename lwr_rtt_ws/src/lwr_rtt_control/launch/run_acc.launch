@@ -60,16 +60,12 @@
 
     <!-- === Damping decision map parameters: Error Sign =======-->
     <!-- <arg name="damper_amplitude" default="0.0"/> -->
-    <arg name="damper_amplitude" default="65.07"/>
+    <arg name="damper_amplitude" default="60.07"/>
     <arg name="damper_slope"     default="9.05"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
-    <arg name="max_cart_acc" default="[50.0, 50.0, 50.0, 
-                                       10.0, 10.0, 10.0]"/>
-    
-    <!-- ========= Max Cart force excerted on the End-Effector ===============-->
-    <arg name="max_cart_force" default="[100.0, 100.0, 200.0, 
-                                         20.0, 20.0, 20.0]"/>
+    <arg name="max_command" default="[50.0, 50.0, 50.0, 
+                                      10.0, 10.0, 10.0]"/>
 
     
 <!-- *************** ABAG SETTINGS ******************** -->
@@ -120,8 +116,7 @@
         <rosparam param="control_dims" subst_value="True">$(arg control_dims)</rosparam>
         <rosparam param="damper_amplitude" subst_value="True">$(arg damper_amplitude)</rosparam>
         <rosparam param="damper_slope" subst_value="True">$(arg damper_slope)</rosparam>
-        <rosparam param="max_cart_force" subst_value="True">$(arg max_cart_force)</rosparam>
-        <rosparam param="max_cart_acc" subst_value="True">$(arg max_cart_acc)</rosparam>
+        <rosparam param="max_command" subst_value="True">$(arg max_command)</rosparam>
         <rosparam param="ERROR_ALPHA" subst_value="True">$(arg ERROR_ALPHA)</rosparam>
         <rosparam param="BIAS_THRESHOLD" subst_value="True">$(arg BIAS_THRESHOLD)</rosparam>
         <rosparam param="BIAS_STEP" subst_value="True">$(arg BIAS_STEP)</rosparam>

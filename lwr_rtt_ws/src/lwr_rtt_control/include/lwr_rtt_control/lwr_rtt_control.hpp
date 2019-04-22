@@ -90,7 +90,7 @@ class LwrRttControl : public RTT::TaskContext{
         int desired_control_mode_, desired_dynamics_interface_, desired_pose_;
         double damper_amplitude_, damper_slope_;
         std::vector<bool> control_dims_;
-        Eigen::VectorXd max_cart_force_, max_cart_acc_; 
+        Eigen::VectorXd max_command_; 
 
         // ABAG Parameters
         Eigen::VectorXd error_alpha_, bias_threshold_, bias_step_, 
