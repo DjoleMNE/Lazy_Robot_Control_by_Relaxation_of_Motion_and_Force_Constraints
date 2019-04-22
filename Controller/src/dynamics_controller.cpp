@@ -673,6 +673,12 @@ int dynamics_controller::control(const int desired_control_mode,
             return -1;
         }
 
+        log_file_predictions_.open(dynamics_parameter::LOG_FILE_PREDICTIONS_PATH);
+        if (!log_file_predictions_.is_open()) {
+            printf("Unable to open the file!\n");
+            return -1;
+        }
+
         for(int i = 0; i < NUM_OF_JOINTS_; i++) 
             log_file_joint_ << JOINT_TORQUE_LIMITS_[i] << " ";
         log_file_joint_ << std::endl;
@@ -702,7 +708,12 @@ int dynamics_controller::control(const int desired_control_mode,
         if(evaluate_dynamics() != 0)
         {
             stop_robot_motion();
-            if (store_control_data) log_file_cart_.close();
+            if (store_control_data) 
+            {
+                log_file_cart_.close();
+                log_file_joint_.close();
+                log_file_predictions_.close();
+            }
             printf("WARNING: Dynamics Solver returned error. Stopping the robot!");
             return -1;
         }
@@ -710,7 +721,12 @@ int dynamics_controller::control(const int desired_control_mode,
 
         // Apply joint commands using safe control interface.
         if(apply_joint_control_commands() != 0){
-            if (store_control_data) log_file_cart_.close();
+            if (store_control_data) 
+            {
+                log_file_cart_.close();
+                log_file_joint_.close();
+                log_file_predictions_.close();
+            }
             return -1;
         } 
 
@@ -727,7 +743,12 @@ int dynamics_controller::control(const int desired_control_mode,
         // }
     }
 
-    if (store_control_data) log_file_cart_.close();
+    if (store_control_data) 
+    {
+        log_file_cart_.close();
+        log_file_joint_.close();
+        log_file_predictions_.close();
+    }
     return 0;
 }
 
@@ -760,6 +781,9 @@ void dynamics_controller::initialize(const int desired_control_mode,
 
         log_file_joint_.open(dynamics_parameter::LOG_FILE_JOINT_PATH);
         assert(log_file_joint_.is_open());
+
+        log_file_predictions_.open(dynamics_parameter::LOG_FILE_PREDICTIONS_PATH);
+        assert(log_file_predictions_.is_open());
 
         for(int i = 0; i < NUM_OF_JOINTS_; i++) 
             log_file_joint_ << JOINT_TORQUE_LIMITS_[i] << " ";
@@ -877,5 +901,10 @@ void dynamics_controller::deinitialize()
 {
     // First make sure that the robot is not moving
     stop_robot_motion();
-    if (store_control_data_) log_file_cart_.close();
+    if (store_control_data_) 
+    {
+        log_file_cart_.close();
+        log_file_joint_.close();
+        log_file_predictions_.close();
+    }
 }

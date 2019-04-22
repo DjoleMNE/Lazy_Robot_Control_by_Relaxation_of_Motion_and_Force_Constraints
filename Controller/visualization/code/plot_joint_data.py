@@ -80,6 +80,7 @@ plt.plot(joint_0, c = 'green', label='joint_1_torque', linewidth = 0.5, zorder =
 plt.plot(joint_0_limit, c = 'red', label='max_torque_limit', linewidth = 2.3, zorder = 2)
 plt.plot(-1 *joint_0_limit, c = 'blue', label='min_torque_limit', linewidth = 2.3, zorder = 2)
 plt.legend(loc = 1, fontsize = 'x-large')
+plt.ylim(-1 *joint_0_limit[0] - 10, joint_0_limit[0] + 10)
 plt.grid(True)
 
 plt.subplot(7, 1, 2)
@@ -87,6 +88,7 @@ plt.plot(joint_1, c = 'green', label='joint_2_torque', linewidth = 0.5, zorder =
 plt.plot(joint_1_limit, c = 'red', label='max_torque_limit', linewidth = 2.3, zorder = 2)
 plt.plot(-1 *joint_1_limit, c = 'blue', label='min_torque_limit', linewidth = 2.3, zorder = 2)
 plt.legend(loc = 1, fontsize = 'x-large')
+plt.ylim(-1 *joint_1_limit[0] - 10, joint_1_limit[0]+ 10)
 plt.grid(True)
 
 plt.subplot(7, 1, 3)
@@ -94,6 +96,7 @@ plt.plot(joint_2, c = 'green', label='joint_3_torque', linewidth = 0.5, zorder =
 plt.plot(joint_2_limit, c = 'red', label='max_torque_limit', linewidth = 2.3, zorder = 2)
 plt.plot(-1 *joint_2_limit, c = 'blue', label='min_torque_limit', linewidth = 2.3, zorder = 2)
 plt.legend(loc = 1, fontsize = 'x-large')
+plt.ylim(-1 *joint_2_limit[0] - 10, joint_2_limit[0]+ 10)
 plt.grid(True)
 
 plt.subplot(7, 1, 4)
@@ -101,6 +104,7 @@ plt.plot(joint_3, c = 'green', label='joint_4_torque', linewidth = 0.5, zorder =
 plt.plot(joint_3_limit, c = 'red', label='max_torque_limit', linewidth = 2.3, zorder = 2)
 plt.plot(-1 *joint_3_limit, c = 'blue', label='min_torque_limit', linewidth = 2.3, zorder = 2)
 plt.legend(loc = 1, fontsize = 'x-large')
+plt.ylim(-1 *joint_3_limit[0] - 10, joint_3_limit[0] + 10)
 plt.grid(True)
 
 plt.subplot(7, 1, 5)
@@ -108,6 +112,7 @@ plt.plot(joint_4, c = 'green', label='joint_5_torque', linewidth = 0.5, zorder =
 plt.plot(joint_4_limit, c = 'red', label='max_torque_limit', linewidth = 2.3, zorder = 2)
 plt.plot(-1 *joint_4_limit, c = 'blue', label='min_torque_limit', linewidth = 2.3, zorder = 2)
 plt.legend(loc = 1, fontsize = 'x-large')
+plt.ylim(-1 *joint_4_limit[0] - 10, joint_4_limit[0] + 10)
 plt.grid(True)
 
 plt.subplot(7, 1, 6)
@@ -115,6 +120,7 @@ plt.plot(joint_5, c = 'green', label='joint_6_torque', linewidth = 0.5, zorder =
 plt.plot(joint_5_limit, c = 'red', label='max_torque_limit', linewidth = 2.3, zorder = 2)
 plt.plot(-1 *joint_5_limit, c = 'blue', label='min_torque_limit', linewidth = 2.3, zorder = 2)
 plt.legend(loc = 1, fontsize = 'x-large')
+plt.ylim(-1 *joint_5_limit[0] - 10, joint_5_limit[0] + 10)
 plt.grid(True)
 
 plt.subplot(7, 1, 7)
@@ -122,6 +128,7 @@ plt.plot(joint_6, c = 'green', label='joint_7_torque', linewidth = 0.5, zorder =
 plt.plot(joint_6_limit, c = 'red', label='max_torque_limit', linewidth = 2.3, zorder = 2)
 plt.plot(-1 *joint_6_limit, c = 'blue', label='min_torque_limit', linewidth = 2.3, zorder = 2)
 plt.legend(loc = 1, fontsize = 'x-large')
+plt.ylim(-1 * joint_6_limit[0] - 10, joint_6_limit[0] + 10)
 plt.grid(True)
 
 plt.draw()

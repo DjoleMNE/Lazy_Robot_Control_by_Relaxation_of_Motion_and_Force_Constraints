@@ -90,19 +90,22 @@ plt.legend(loc=4, fontsize = 'x-large')
 plt.grid(True)
 
 plt.subplot(4, 1, 2)
-plt.plot(raw_error, c = 'orange', label='non-filtered raw error', linewidth=1, zorder=2)
+plt.plot(raw_error, c = 'orange', label=r'non-filtered raw error: $e = y_d - y_k$', linewidth=1, zorder=2)
 plt.legend(fontsize = 'x-large')
 plt.grid(True)
 
 plt.subplot(4, 1, 3)
-plt.plot(error, c = 'orange', label='low-pass filtered error sign', linewidth=1, zorder=2)
+plt.plot(error, c = 'orange', label=r'low-pass filtered error sign: $\bar{e}$', linewidth=1, zorder=2)
 plt.legend(fontsize = 'x-large')
+plt.ylim(-1.2, 1.2)
 plt.grid(True)
 
 plt.subplot(4, 1, 4)
-plt.plot(bias, c = 'green', label='bias', linewidth=2, zorder=3)
-plt.plot(gain, c = 'red', label='gain', linewidth=2, zorder=2)
-plt.plot(command, c = 'blue', label='u', linewidth=0.5, zorder=4)
+plt.plot(bias, c = 'green', label='bias', linewidth = 2, zorder = 3)
+plt.plot(gain, c = 'red', label=r'gain * sign(e)', linewidth = 2, zorder = 2)
+plt.plot(command, c = 'blue', label='u', linewidth = 0.5, zorder = 4)
+plt.ylim(-1.2, 1.2)
+
 plt.legend(fontsize = 'x-large')
 plt.grid(True)
 
