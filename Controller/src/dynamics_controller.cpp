@@ -477,19 +477,31 @@ double dynamics_controller::kinetic_energy(const KDL::Twist &twist,
 */
 void dynamics_controller::compute_control_error()
 {
-    current_error_twist_ = infinitesimal_displacement_twist(desired_state_,
-                                                            robot_state_);
+    // current_error_twist_ = infinitesimal_displacement_twist(desired_state_,
+    //                                                         robot_state_);
 
-    KDL::Twist total_twist = current_error_twist_ + robot_state_.frame_velocity[END_EFF_];
+    // KDL::Twist total_twist = current_error_twist_ + robot_state_.frame_velocity[END_EFF_];
 
-    for(int i = 0; i < 6; i++)
-        if(!CTRL_DIM_[i]) total_twist(i) = 0.0;
+    // for(int i = 0; i < 6; i++)
+    //     if(!CTRL_DIM_[i]) total_twist(i) = 0.0;
 
-    double energy = kinetic_energy(total_twist, END_EFF_);
+    // double energy = kinetic_energy(total_twist, END_EFF_);
 
-    double time_horizon_sec = fsm_.tanh_decision_map(energy, 
-                                                     damper_amplitude_, 
-                                                     damper_slope_);
+    
+
+    // double time_horizon_sec = fsm_.tanh_decision_map(energy, 
+    //                                                  damper_amplitude_, 
+    //                                                  damper_slope_);
+
+    // double time_horizon_sec = fsm_.tanh_inverse_decision_map(energy,
+    //                                                          0.1, 2.4, 1.0);
+
+    // double time_horizon_sec = fsm_.step_decision_map(energy, 
+    //                                                  3.5, 0.2, 
+    //                                                  0.03, 0.01);
+
+    double energy = 0.0; 
+    double time_horizon_sec = 2.5;
 
 #ifndef NDEBUG
     for(int i = 0; i < 3; i++) 

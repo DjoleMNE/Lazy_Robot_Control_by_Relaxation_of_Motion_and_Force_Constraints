@@ -51,9 +51,15 @@ class finite_state_machine
         double tanh_decision_map(const double state,
                                  const double amplitude,
                                  const double slope);
-        double s_curve_decision_map(const double state,
-                                    const double amplitude,
-                                    const double slope);
+        double tanh_inverse_decision_map(const double state,
+                                         const double offset,
+                                         const double amplitude,
+                                         const double slope);
+        double step_decision_map(const double state,
+                                 const double magnitude,
+                                 const double delta_slope,
+                                 const double upper_limit,
+                                 const double lower_limit);
 
     private:
         int method_;

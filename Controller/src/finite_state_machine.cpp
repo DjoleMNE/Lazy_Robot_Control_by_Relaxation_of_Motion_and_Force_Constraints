@@ -37,9 +37,23 @@ double finite_state_machine::tanh_decision_map(const double state,
    return amplitude * std::tanh(slope * state);
 }
 
-double finite_state_machine::s_curve_decision_map(const double state,
-                                                  const double amplitude,
-                                                  const double slope)
+double finite_state_machine::tanh_inverse_decision_map(const double state,
+                                                       const double offset,
+                                                       const double amplitude,
+                                                       const double slope)
 {
-    return 0.0;
+   // Three-parameter-scaled tanh function
+   if(state < 0.001) return offset + amplitude * std::tanh(slope / 0.001);
+   else return offset + amplitude * std::tanh(slope / state);
+}
+
+double finite_state_machine::step_decision_map(const double state,
+                                                        const double magnitude,
+                                                        const double delta_slope,
+                                                        const double upper_limit,
+                                                        const double lower_limit)
+{
+    if(state >= upper_limit) return magnitude;
+    else if (state < upper_limit && state > lower_limit) return (1.0 + delta_slope) * magnitude;
+    else return (1.0 + 2 * delta_slope) * magnitude;
 }
