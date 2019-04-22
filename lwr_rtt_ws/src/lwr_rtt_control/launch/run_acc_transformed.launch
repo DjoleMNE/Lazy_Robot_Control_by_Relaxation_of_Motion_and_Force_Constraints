@@ -33,21 +33,13 @@
     <!-- ========= Use Joint Torque Commands ===============-->
     <arg name="desired_control_mode" default="0"/>
 
-    <!-- ========= Use Joint Velocity Commands ===============-->
-    <!-- <arg name="desired_control_mode" default="1"/> -->
-
-
     <!-- ========= Use Transformed Motion Driver ===============-->
-    <!-- <arg name="use_transformed_driver" default="false"/> -->
     <arg name="use_transformed_driver" default="true"/>
-
 
     <!-- ========= Use Cart Acc Constraint Interface ===============-->
     <arg name="desired_dynamics_interface" default="0"/>
 
-    <!-- ========= Use Cart Virtual Force Interface ===============-->
-    <!-- <arg name="desired_dynamics_interface" default="1"/> -->
-    
+
     <!-- ========= candle pose ===============-->
     <!-- <arg name="desired_pose" default="0"/> -->
 
@@ -65,21 +57,17 @@
     <arg name="control_dims" default="[true, true, true, 
                                        false, false, false]"/>
 
-    <!-- === Damping decision map parameters: Raw Error ==========-->
-    <!-- <arg name="damper_amplitude" default="45.07"/>
-    <arg name="damper_slope"     default="3.55"/> -->
-
     <!-- === Damping decision map parameters: Error Sign =======-->
     <arg name="damper_amplitude" default="55.07"/>
     <arg name="damper_slope"     default="2.05"/>
   
-    <!-- ========= Max Cart force excerted on the End-Effector ===============-->
-    <arg name="max_cart_force" default="[100.0, 100.0, 200.0, 
-                                         20.0, 20.0, 20.0]"/>
-
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
     <arg name="max_cart_acc" default="[50.0, 50.0, 50.0, 
                                        10.0, 10.0, 10.0]"/>
+
+    <!-- ========= Max Cart force excerted on the End-Effector ===============-->
+    <arg name="max_cart_force" default="[100.0, 100.0, 200.0, 
+                                         20.0, 20.0, 20.0]"/>
 
     
 <!-- *************** ABAG SETTINGS ******************** -->
@@ -98,25 +86,9 @@
     <arg name="min_command_sat"    default="[0.0, 0.0, 0.0, 
                                              0.0, 0.0, 0.0]"/> -->
 
-<!-- *************** ABAG PARAMETERS: Raw Error ******************** -->
-    <!-- <arg name="ERROR_ALPHA" default="   [0.830000, 0.830000, 0.830000, 
-                                         0.650000, 0.850000, 0.178001]"/>
-
-    <arg name="BIAS_THRESHOLD" default="[0.000252, 0.000252, 0.000252, 
-                                         0.001007, 0.001007, 0.724277]"/>
-
-    <arg name="BIAS_STEP" default="     [0.003495, 0.003495, 0.003495, 
-                                         0.003495, 0.003495, 0.503495]"/>
-
-    <arg name="GAIN_THRESHOLD" default="[0.022492, 0.022492, 0.052492, 
-                                         0.252492, 0.252492, 0.432492]"/>
-
-    <arg name="GAIN_STEP" default="     [0.003152, 0.003152, 0.003152, 
-                                         0.015152, 0.015152, 0.655152]"/> -->
-
 
     <!-- ABAG PARAMETERS (Error Sign): Low Gain, Transformed Motion Driver -->
-    <!-- <arg name="ERROR_ALPHA" default="   [0.900000, 0.000001, 0.000001, 
+    <arg name="ERROR_ALPHA" default="   [0.900000, 0.000001, 0.000001, 
                                          0.650000, 0.000001, 0.000001]"/>
 
     <arg name="BIAS_THRESHOLD" default="[0.000407, 0.000001, 0.000001, 
@@ -129,44 +101,7 @@
                                          0.252492, 0.000001, 0.000001]"/>
 
     <arg name="GAIN_STEP" default="     [0.003152, 0.000001, 0.000001, 
-                                         0.015152, 0.000001, 0.000001]"/> -->
-
-
-    <!-- ABAG PARAMETERS(Error Sign): Low Gain, low chattering but less robust -->
-    <arg name="ERROR_ALPHA" default="   [0.900000, 0.900000, 0.900000, 
-                                         0.650000, 0.850000, 0.178001]"/>
-
-    <arg name="BIAS_THRESHOLD" default="[0.000407, 0.000407, 0.000407, 
-                                         0.001007, 0.001007, 0.724277]"/>
-
-    <arg name="BIAS_STEP" default="     [0.000495, 0.000495, 0.000495, 
-                                         0.003495, 0.003495, 0.503495]"/>
-
-    <arg name="GAIN_THRESHOLD" default="[0.552492, 0.552492, 0.552492, 
-                                         0.252492, 0.252492, 0.432492]"/>
-
-    <arg name="GAIN_STEP" default="     [0.003152, 0.003152, 0.003152, 
-                                         0.015152, 0.015152, 0.655152]"/>
-
-
-    <!-- ABAG PARAMETERS(Error Sign): Robust but high Gain, high chattering in motors  -->
-    <!-- <arg name="ERROR_ALPHA"    default="[0.650000, 0.650000, 0.650000, 
-                                         0.650000, 0.850000, 0.178001]"/>
-
-    <arg name="BIAS_THRESHOLD" default="[0.001007, 0.001007, 0.001007, 
-                                         0.001007, 0.001007, 0.724277]"/>
-
-    <arg name="BIAS_STEP"      default="[0.003495, 0.003495, 0.003495, 
-                                         0.003495, 0.003495, 0.503495]"/>
-
-    <arg name="GAIN_THRESHOLD" default="[0.252492, 0.252492, 0.252492, 
-                                         0.252492, 0.252492, 0.432492]"/>
-
-    <arg name="GAIN_STEP"      default="[0.015152, 0.015152, 0.015152, 
-                                         0.015152, 0.015152, 0.655152]"/> -->
-
-
-
+                                         0.015152, 0.000001, 0.000001]"/>
 
 <!--============ LwrRttControl Params ============-->
     <!-- Set some parameters for LwrRttControl
