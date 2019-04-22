@@ -90,7 +90,7 @@ plt.legend(loc=4, fontsize = 'x-large')
 plt.grid(True)
 
 plt.subplot(4, 1, 2)
-plt.plot(raw_error, c = 'orange', label=r'non-filtered raw error: $e = y_d - y_k$', linewidth=1, zorder=2)
+plt.plot(raw_error, c = 'orange', label=r'raw error: $e = y_d - y_k$', linewidth=1, zorder=2)
 plt.legend(fontsize = 'x-large')
 plt.grid(True)
 

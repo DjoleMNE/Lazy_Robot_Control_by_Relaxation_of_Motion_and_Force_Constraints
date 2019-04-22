@@ -64,7 +64,7 @@ plt.subplots_adjust(left=0.05, right=0.99, top=0.99, bottom=0.03)
 plt.margins(0,0)
 
 plt.subplot(5, 1, 1)
-plt.plot(energy, c = 'orange', label='energy', linewidth = 0.5, zorder = 3)
+plt.plot(energy, c = 'orange', label='energy', linewidth = 0.9, zorder = 3)
 plt.legend(loc = 1, fontsize = 'x-large')
 # plt.ylim(-1 *joint_0_limit[0] - 10, joint_0_limit[0] + 10)
 plt.grid(True)
