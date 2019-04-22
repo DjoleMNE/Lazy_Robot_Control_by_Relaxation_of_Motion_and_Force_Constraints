@@ -31,6 +31,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     NUM_OF_JOINTS_(7), NUM_OF_CONSTRAINTS_(6), 
     environment_(lwr_environment::LWR_SIMULATION), 
     robot_model_(lwr_model::LWR_URDF), iteration_count_(0),
+    loop_total_time_(0.0),
     krc_compensate_gravity_(false), use_transformed_driver_(true),
     desired_control_mode_(0), desired_dynamics_interface_(1),
     desired_pose_(1), damper_amplitude_(1.0), damper_slope_(4.0),
@@ -191,8 +192,7 @@ bool LwrRttControl::configureHook()
                             true);
 
     sleep(2); // wait for gazebo to load completely
-    loop_total_time_ = 0.0;
-    
+        
     this->visualize_pose(desired_ee_pose);
     return true;
 }
@@ -200,7 +200,7 @@ bool LwrRttControl::configureHook()
 
 void LwrRttControl::updateHook()
 {
-    if(iteration_count_ > 10000) 
+    if(iteration_count_ > 8000) 
     {
         // std::cout << "Loop time: " << loop_total_time_ / iteration_count_ << std::endl;
         RTT::TaskContext::stop();
