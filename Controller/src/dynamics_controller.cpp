@@ -48,6 +48,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     horizon_amplitude_(1.0), horizon_slope_(4.5),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     max_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
+    motion_profile_(Eigen::VectorXd::Ones(abag_parameter::DIMENSIONS)),
     cart_force_command_(NUM_OF_SEGMENTS_),
     hd_solver_(robot_chain_, robot_driver->get_joint_inertia(),
                robot_driver->get_root_acceleration(), NUM_OF_CONSTRAINTS_),
@@ -476,8 +477,8 @@ double dynamics_controller::kinetic_energy(const KDL::Twist &twist,
 */
 void dynamics_controller::compute_control_error()
 {
-    // current_error_twist_ = infinitesimal_displacement_twist(desired_state_,
-    //                                                         robot_state_);
+    current_error_twist_ = infinitesimal_displacement_twist(desired_state_,
+                                                            robot_state_);
 
     // KDL::Twist total_twist = current_error_twist_ + robot_state_.frame_velocity[END_EFF_];
 
@@ -568,13 +569,22 @@ void dynamics_controller::compute_cart_control_commands()
 {   
     if (use_transformed_driver_) transform_motion_driver();
     else abag_command_ = abag_.update_state(predicted_error_twist_).transpose();
+    
+    bool use_fsm_ = false;
+    if(use_fsm_)
+    {
+        for(int i = 0; i < 3; i++)
+            motion_profile_(i) = fsm_.negative_step_decision_map(current_error_twist_.vel.Norm(), 
+                                                                 max_command_(i), 0.25, 0.4, 0.1);
+    }
+    else motion_profile_ = max_command_;
 
     switch (desired_task_inteface_)
     {
         case dynamics_interface::CART_FORCE:
             // Set additional (virtual) force computed by the ABAG controller
             for(int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
-                cart_force_command_[END_EFF_](i) = CTRL_DIM_[i]? abag_command_(i) * max_command_(i) : 0.0;
+                cart_force_command_[END_EFF_](i) = CTRL_DIM_[i]? abag_command_(i) * motion_profile_(i) : 0.0;
             break;
 
         case dynamics_interface::CART_ACCELERATION:
@@ -582,12 +592,12 @@ void dynamics_controller::compute_cart_control_commands()
             set_ee_acc_constraints(robot_state_,
                                    std::vector<bool>{CTRL_DIM_[0], CTRL_DIM_[1], CTRL_DIM_[2], // Linear
                                                      CTRL_DIM_[3], CTRL_DIM_[4], CTRL_DIM_[5]}, // Angular
-                                   std::vector<double>{abag_command_(0) * max_command_(0), // Linear
-                                                       abag_command_(1) * max_command_(1), // Linear
-                                                       abag_command_(2) * max_command_(2), // Linear
-                                                       abag_command_(3) * max_command_(3), // Angular
-                                                       abag_command_(4) * max_command_(4), // Angular
-                                                       abag_command_(5) * max_command_(5)}); // Angular
+                                   std::vector<double>{abag_command_(0) * motion_profile_(0), // Linear
+                                                       abag_command_(1) * motion_profile_(1), // Linear
+                                                       abag_command_(2) * motion_profile_(2), // Linear
+                                                       abag_command_(3) * motion_profile_(3), // Angular
+                                                       abag_command_(4) * motion_profile_(4), // Angular
+                                                       abag_command_(5) * motion_profile_(5)}); // Angular
             break;
 
         default:

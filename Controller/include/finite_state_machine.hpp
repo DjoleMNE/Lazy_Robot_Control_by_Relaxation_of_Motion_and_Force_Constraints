@@ -60,6 +60,11 @@ class finite_state_machine
                                  const double delta_slope,
                                  const double upper_limit,
                                  const double lower_limit);
+        double negative_step_decision_map(const double state,
+                                          const double magnitude,
+                                          const double delta_slope,
+                                          const double upper_limit,
+                                          const double lower_limit);
 
     private:
         int method_;
