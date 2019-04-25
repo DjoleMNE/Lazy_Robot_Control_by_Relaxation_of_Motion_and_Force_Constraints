@@ -101,10 +101,10 @@ plt.ylim(-1.2, 1.2)
 plt.grid(True)
 
 plt.subplot(4, 1, 4)
-plt.plot(bias, c = 'green', label='bias', linewidth = 2, zorder = 3)
+plt.plot(bias, c = 'green', label='bias', linewidth = 2, zorder = 4)
 plt.plot(gain, c = 'red', label=r'gain * sign(e)', linewidth = 2, zorder = 2)
-plt.plot(command, c = 'blue', label='u', linewidth = 0.5, zorder = 4)
-plt.ylim(-1.2, 1.2)
+plt.plot(command, c = 'blue', label='u', linewidth = 1.0, zorder = 3)
+plt.ylim(-1.05, 1.05)
 
 plt.legend(fontsize = 'x-large')
 plt.grid(True)
