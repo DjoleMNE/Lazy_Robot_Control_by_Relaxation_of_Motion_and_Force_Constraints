@@ -157,8 +157,8 @@ class dynamics_controller
     void transform_motion_driver();
     void make_predictions(const double dt_sec, const int num_steps);
     void compute_cart_control_commands();
-    KDL::Twist infinitesimal_displacement_twist(const state_specification &state_a, 
-                                                const state_specification &state_b);
+    KDL::Twist displacement_twist(const state_specification &state_a, 
+                                  const state_specification &state_b);
     double kinetic_energy(const KDL::Twist &twist, const int segment_index);
     int apply_joint_control_commands();
     int evaluate_dynamics();
