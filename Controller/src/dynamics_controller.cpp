@@ -45,7 +45,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     predicted_error_twist_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     transformed_error_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     use_transformed_driver_(true),
-    damper_amplitude_(1.0), damper_slope_(4.5),
+    horizon_amplitude_(1.0), horizon_slope_(4.5),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     max_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     cart_force_command_(NUM_OF_SEGMENTS_),
@@ -489,8 +489,8 @@ void dynamics_controller::compute_control_error()
 
 
     // double time_horizon_sec = fsm_.tanh_decision_map(energy, 
-    //                                                  damper_amplitude_, 
-    //                                                  damper_slope_);
+    //                                                  horizon_amplitude_, 
+    //                                                  horizon_slope_);
 
     // double time_horizon_sec = fsm_.tanh_inverse_decision_map(energy,
     //                                                          0.1, 2.4, 1.0);
@@ -500,7 +500,7 @@ void dynamics_controller::compute_control_error()
     //                                                  0.03, 0.01);
 
     double energy = 0.0; 
-    double time_horizon_sec = 2.5;
+    double time_horizon_sec = horizon_amplitude_;
 
 #ifndef NDEBUG
     for(int i = 0; i < 3; i++) 
@@ -802,8 +802,8 @@ void dynamics_controller::initialize(const int desired_control_mode,
     }
 }
 
-void dynamics_controller::set_parameters(const double damper_amplitude,
-                                         const double damper_slope,
+void dynamics_controller::set_parameters(const double horizon_amplitude,
+                                         const double horizon_slope,
                                          const int abag_error_type,
                                          const Eigen::VectorXd &max_command,
                                          const Eigen::VectorXd &error_alpha, 
@@ -815,16 +815,16 @@ void dynamics_controller::set_parameters(const double damper_amplitude,
                                          const Eigen::VectorXd &min_command_sat)
 {
     //First check input dimensions
-    assert(max_command.size() == NUM_OF_CONSTRAINTS_); 
+    assert(max_command.size()    == NUM_OF_CONSTRAINTS_); 
     assert(error_alpha.size()    == NUM_OF_CONSTRAINTS_); 
     assert(bias_threshold.size() == NUM_OF_CONSTRAINTS_); 
     assert(bias_step.size()      == NUM_OF_CONSTRAINTS_); 
     assert(gain_threshold.size() == NUM_OF_CONSTRAINTS_); 
     assert(gain_step.size()      == NUM_OF_CONSTRAINTS_); 
 
-    this->damper_amplitude_  = damper_amplitude;
-    this->damper_slope_      = damper_slope;
-    this->max_command_       = max_command;
+    this->horizon_amplitude_  = horizon_amplitude;
+    this->horizon_slope_      = horizon_slope;
+    this->max_command_        = max_command;
     
     // Setting parameters of the ABAG Controller
     abag_.set_error_alpha(error_alpha);    

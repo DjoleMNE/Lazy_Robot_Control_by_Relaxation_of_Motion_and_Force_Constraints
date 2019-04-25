@@ -133,7 +133,7 @@ class dynamics_controller
     
     KDL::Twist current_error_twist_;
     Eigen::VectorXd predicted_error_twist_, transformed_error_;
-    double damper_amplitude_, damper_slope_;
+    double horizon_amplitude_, horizon_slope_;
     Eigen::VectorXd abag_command_, max_command_;
     KDL::Wrenches cart_force_command_;
 

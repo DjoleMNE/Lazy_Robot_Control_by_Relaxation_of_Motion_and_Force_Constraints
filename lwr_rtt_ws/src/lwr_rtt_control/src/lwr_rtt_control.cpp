@@ -199,7 +199,7 @@ bool LwrRttControl::configureHook()
 
 void LwrRttControl::updateHook()
 {
-    if(iteration_count_ > 8000) 
+    if(iteration_count_ > 12000) 
     {
         // std::cout << "Loop time: " << loop_total_time_ / iteration_count_ << std::endl;
         RTT::TaskContext::stop();

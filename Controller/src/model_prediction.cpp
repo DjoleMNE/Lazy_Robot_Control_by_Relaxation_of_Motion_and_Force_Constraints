@@ -216,11 +216,11 @@ void model_prediction::integrate_cartesian_space(
  * Input: 
  * 		- current pose to be integrated
  * 		- current "body-fixed" twist scaled with delta time
- * 		- flag for rescaling rotation if its out of 0 - PI range
+ * 		- flag for rescaling rotation if it's out of 0 - PI range
  * 		- flag for decoupling integration of linear and angular parts  
  * Output: tranformation (KDL::Frame) of the integrated (predicted) pose
  * Code is based on formulas given in books:
- * "Modern Robotics", 2017, F.C.Park
+ * "Modern Robotics", 2017, F.C. Park
  * "Robot Kinematics and Dynamics", 2010, Herman Bruyninckx.
 */
 KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
