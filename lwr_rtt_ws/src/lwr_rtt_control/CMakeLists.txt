@@ -45,6 +45,7 @@ add_library(controller
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/geometry_utils.cpp
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/model_prediction.cpp
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/finite_state_machine.cpp
+    /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/motion_profile.cpp
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/solver_vereshchagin.cpp
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/fk_vereshchagin.cpp
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/lwr_mediator.cpp

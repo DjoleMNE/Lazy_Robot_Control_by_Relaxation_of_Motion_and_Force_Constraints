@@ -568,13 +568,10 @@ void dynamics_controller::compute_cart_control_commands()
     if (use_transformed_driver_) transform_motion_driver();
     else abag_command_ = abag_.update_state(predicted_error_twist_).transpose();
     
-    bool use_fsm_ = false;
-    if(use_fsm_)
-    {
-        for(int i = 0; i < 3; i++)
-            motion_profile_(i) = fsm_.negative_step_decision_map(current_error_twist_.vel.Norm(), 
-                                                                 max_command_(i), 0.25, 0.4, 0.1);
-    }
+    bool use_motion_profile = true;
+    if(use_motion_profile) for(int i = 0; i < 3; i++)
+        motion_profile_(i) = motion_profile::negative_step_decision_map(current_error_twist_.vel.Norm(), 
+                                                                        max_command_(i), 0.25, 0.4, 0.1);
     else motion_profile_ = max_command_;
 
     switch (desired_task_inteface_)

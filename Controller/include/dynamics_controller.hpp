@@ -33,6 +33,7 @@ SOFTWARE.
 #include <model_prediction.hpp>
 #include <safety_controller.hpp>
 #include <finite_state_machine.hpp>
+#include <motion_profile.hpp>
 #include <utility> 
 #include <abag.hpp>
 #include <constants.hpp>
