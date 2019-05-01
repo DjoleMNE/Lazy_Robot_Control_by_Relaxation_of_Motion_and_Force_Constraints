@@ -572,7 +572,7 @@ void dynamics_controller::compute_cart_control_commands()
     if (use_transformed_driver_) transform_motion_driver();
     else abag_command_ = abag_.update_state(predicted_error_twist_).transpose();
     
-    bool use_motion_profile = true;
+    bool use_motion_profile = false;
     if(use_motion_profile) for(int i = 0; i < 3; i++)
         motion_profile_(i) = motion_profile::negative_step_decision_map(current_error_twist_.vel.Norm(), 
                                                                         max_command_(i), 0.25, 0.4, 0.1);

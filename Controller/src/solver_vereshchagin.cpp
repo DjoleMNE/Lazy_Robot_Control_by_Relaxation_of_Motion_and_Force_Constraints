@@ -242,15 +242,15 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
             }
             
             // Gravity acceleration expressed in end-effector frame. First linear than angular part.
-            Twist gravity_acc = base_to_end * acc_root;
+            // Twist gravity_acc = base_to_end * acc_root;
 
             // Gravity acceleration expressed in end-effector frame. First angular than linear part.
-            Vector6d gravity_acc_swap;
-            gravity_acc_swap << Vector3d::Map(gravity_acc.rot.data), Vector3d::Map(gravity_acc.vel.data);
+            // Vector6d gravity_acc_swap;
+            // gravity_acc_swap << Vector3d::Map(gravity_acc.rot.data), Vector3d::Map(gravity_acc.vel.data);
 
             // Djordje: Initializing G matrix with gravitational effects. Compensation for gravity forces on end-effector
             // Djordje: See Popov and Vereshchagin book from 1978, Moscow 
-            s.G.noalias() = s.E_tilde * gravity_acc_swap;
+            // s.G.noalias() = s.E_tilde * gravity_acc_swap;
         }
         else
         {
@@ -349,6 +349,10 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
  */
 void Solver_Vereshchagin::constraint_calculation(const JntArray& beta)
 {
+    JntArray total_beta(6);
+    for (int i = 0; i < 6; i++)
+        total_beta(i) = beta(i) + acc_root(i);     
+    
     //equation f) nu = M_0_inverse*(beta_N - E0_tilde`*acc0 - G0)
     //M_0_inverse, always nc*nc symmetric matrix
     //std::cout<<"M0: "<<results[0].M<<std::endl;
@@ -424,7 +428,7 @@ void Solver_Vereshchagin::constraint_calculation(const JntArray& beta)
     acc << Vector3d::Map(acc_root.rot.data), Vector3d::Map(acc_root.vel.data);
     nu_sum.noalias() = -(results[0].E_tilde.transpose() * acc);
     //nu_sum.setZero();
-    nu_sum += beta.data;
+    nu_sum += total_beta.data;
     nu_sum -= results[0].G;
 
     //equation f) nu = M_0_inverse*(beta_N - E0_tilde`*acc0 - G0)

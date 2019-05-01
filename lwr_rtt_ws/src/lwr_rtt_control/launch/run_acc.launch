@@ -28,7 +28,7 @@
 <!-- ***************** General Control PARAMETERS ********************** -->
     <arg name="environment" default="1"/>
     <arg name="robot_model" default="0"/>
-    <arg name="krc_compensate_gravity" default="true"/>
+    <arg name="krc_compensate_gravity" default="false"/>
     
     <!-- ========= Use Joint Torque Commands ===============-->
     <arg name="desired_control_mode" default="0"/>
