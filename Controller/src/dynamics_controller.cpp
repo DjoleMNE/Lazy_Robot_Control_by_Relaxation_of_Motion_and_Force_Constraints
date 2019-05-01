@@ -224,6 +224,15 @@ void dynamics_controller::write_to_file()
     log_file_cart_ << abag_.get_command().transpose().format(dynamics_parameter::WRITE_FORMAT);
     
     log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
+
+    if(use_transformed_driver_)
+    {
+        log_file_tranformed_ << transformed_error_.transpose().format(dynamics_parameter::WRITE_FORMAT);
+        log_file_tranformed_ << abag_.get_error().transpose().format(dynamics_parameter::WRITE_FORMAT);
+        log_file_tranformed_ << abag_.get_bias().transpose().format(dynamics_parameter::WRITE_FORMAT);
+        log_file_tranformed_ << abag_.get_gain().transpose().format(dynamics_parameter::WRITE_FORMAT);
+        log_file_tranformed_ << abag_.get_command().transpose().format(dynamics_parameter::WRITE_FORMAT);
+    }
 }
 
 // Set all values of desired state to 0 - public method
@@ -568,7 +577,7 @@ void dynamics_controller::compute_cart_control_commands()
     if (use_transformed_driver_) transform_motion_driver();
     else abag_command_ = abag_.update_state(predicted_error_twist_).transpose();
     
-    bool use_motion_profile = true;
+    bool use_motion_profile = false;
     if(use_motion_profile) for(int i = 0; i < 3; i++)
         motion_profile_(i) = motion_profile::negative_step_decision_map(current_error_twist_.vel.Norm(), 
                                                                         max_command_(i), 0.25, 0.4, 0.1);
@@ -695,6 +704,12 @@ int dynamics_controller::control(const int desired_control_mode,
             return -1;
         }
 
+        log_file_tranformed_.open(dynamics_parameter::LOG_FILE_TRANSFORMED_PATH);
+        if (!log_file_tranformed_.is_open()) {
+            printf("Unable to open the file!\n");
+            return -1;
+        }
+
         for(int i = 0; i < NUM_OF_JOINTS_; i++) 
             log_file_joint_ << JOINT_TORQUE_LIMITS_[i] << " ";
         log_file_joint_ << std::endl;
@@ -729,6 +744,7 @@ int dynamics_controller::control(const int desired_control_mode,
                 log_file_cart_.close();
                 log_file_joint_.close();
                 log_file_predictions_.close();
+                log_file_tranformed_.close();
             }
             printf("WARNING: Dynamics Solver returned error. Stopping the robot!");
             return -1;
@@ -742,6 +758,7 @@ int dynamics_controller::control(const int desired_control_mode,
                 log_file_cart_.close();
                 log_file_joint_.close();
                 log_file_predictions_.close();
+                log_file_tranformed_.close();
             }
             return -1;
         } 
@@ -764,6 +781,7 @@ int dynamics_controller::control(const int desired_control_mode,
         log_file_cart_.close();
         log_file_joint_.close();
         log_file_predictions_.close();
+        log_file_tranformed_.close();
     }
     return 0;
 }
@@ -800,6 +818,9 @@ void dynamics_controller::initialize(const int desired_control_mode,
 
         log_file_predictions_.open(dynamics_parameter::LOG_FILE_PREDICTIONS_PATH);
         assert(log_file_predictions_.is_open());
+
+        log_file_tranformed_.open(dynamics_parameter::LOG_FILE_TRANSFORMED_PATH);
+        assert(log_file_tranformed_.is_open());
 
         for(int i = 0; i < NUM_OF_JOINTS_; i++) 
             log_file_joint_ << JOINT_TORQUE_LIMITS_[i] << " ";
@@ -850,7 +871,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
                               const KDL::JntArray &qd_input,
                               Eigen::VectorXd &tau_output)
 {
-    robot_state_.q = q_input;
+    robot_state_.q  = q_input;
     robot_state_.qd = qd_input;
 
     // Get Cart poses and velocities
@@ -919,5 +940,6 @@ void dynamics_controller::deinitialize()
         log_file_cart_.close();
         log_file_joint_.close();
         log_file_predictions_.close();
+        log_file_tranformed_.close();
     }
 }

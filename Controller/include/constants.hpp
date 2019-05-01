@@ -134,6 +134,8 @@ namespace dynamics_parameter
     extern const std::string LOG_FILE_CART_PATH;
     extern const std::string LOG_FILE_JOINT_PATH;
     extern const std::string LOG_FILE_PREDICTIONS_PATH;
+    extern const std::string LOG_FILE_TRANSFORMED_PATH;
+
 }
 
 namespace prediction_parameter
