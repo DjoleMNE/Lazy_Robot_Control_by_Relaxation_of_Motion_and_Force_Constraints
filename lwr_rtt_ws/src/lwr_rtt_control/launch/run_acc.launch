@@ -28,7 +28,7 @@
 <!-- ***************** General Control PARAMETERS ********************** -->
     <arg name="environment" default="1"/>
     <arg name="robot_model" default="0"/>
-    <arg name="krc_compensate_gravity" default="false"/>
+    <arg name="krc_compensate_gravity" default="true"/>
     
     <!-- ========= Use Joint Torque Commands ===============-->
     <arg name="desired_control_mode" default="0"/>
@@ -60,7 +60,7 @@
 
     <!-- === Damping decision map parameters: Error Sign =======-->
     <!-- <arg name="damper_amplitude" default="0.0"/> -->
-    <arg name="damper_amplitude" default="60.07"/>
+    <arg name="damper_amplitude" default="2.5"/>
     <arg name="damper_slope"     default="9.05"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->

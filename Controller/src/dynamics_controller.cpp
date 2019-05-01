@@ -227,11 +227,12 @@ void dynamics_controller::write_to_file()
 
     if(use_transformed_driver_)
     {
-        log_file_tranformed_ << transformed_error_.transpose().format(dynamics_parameter::WRITE_FORMAT);
-        log_file_tranformed_ << abag_.get_error().transpose().format(dynamics_parameter::WRITE_FORMAT);
-        log_file_tranformed_ << abag_.get_bias().transpose().format(dynamics_parameter::WRITE_FORMAT);
-        log_file_tranformed_ << abag_.get_gain().transpose().format(dynamics_parameter::WRITE_FORMAT);
-        log_file_tranformed_ << abag_.get_command().transpose().format(dynamics_parameter::WRITE_FORMAT);
+        log_file_transformed_ << transformed_error_.transpose().format(dynamics_parameter::WRITE_FORMAT);
+        log_file_transformed_ << abag_.get_error().transpose().format(dynamics_parameter::WRITE_FORMAT);
+        log_file_transformed_ << abag_.get_bias().transpose().format(dynamics_parameter::WRITE_FORMAT);
+        log_file_transformed_ << abag_.get_gain().transpose().format(dynamics_parameter::WRITE_FORMAT);
+        log_file_transformed_ << abag_.get_command().transpose().format(dynamics_parameter::WRITE_FORMAT);
+        log_file_transformed_ << abag_command_.transpose().format(dynamics_parameter::WRITE_FORMAT);
     }
 }
 
@@ -546,10 +547,6 @@ void dynamics_controller::transform_motion_driver()
     }
     else
     {
-
-#ifndef NDEBUG
-            printf("Linear error Norm too small");
-#endif
         for(int i = 0; i < 3; i++) 
             abag_command_(i) = 0.0;
     }
@@ -562,10 +559,6 @@ void dynamics_controller::transform_motion_driver()
     }
     else
     {
-
-#ifndef NDEBUG
-            // printf("Angular error Norm too small");
-#endif
         for(int i = 3; i < 6; i++) 
             abag_command_(i) = 0.0;
     }
@@ -577,7 +570,7 @@ void dynamics_controller::compute_cart_control_commands()
     if (use_transformed_driver_) transform_motion_driver();
     else abag_command_ = abag_.update_state(predicted_error_twist_).transpose();
     
-    bool use_motion_profile = false;
+    bool use_motion_profile = true;
     if(use_motion_profile) for(int i = 0; i < 3; i++)
         motion_profile_(i) = motion_profile::negative_step_decision_map(current_error_twist_.vel.Norm(), 
                                                                         max_command_(i), 0.25, 0.4, 0.1);
@@ -704,8 +697,8 @@ int dynamics_controller::control(const int desired_control_mode,
             return -1;
         }
 
-        log_file_tranformed_.open(dynamics_parameter::LOG_FILE_TRANSFORMED_PATH);
-        if (!log_file_tranformed_.is_open()) {
+        log_file_transformed_.open(dynamics_parameter::LOG_FILE_TRANSFORMED_PATH);
+        if (!log_file_transformed_.is_open()) {
             printf("Unable to open the file!\n");
             return -1;
         }
@@ -744,7 +737,7 @@ int dynamics_controller::control(const int desired_control_mode,
                 log_file_cart_.close();
                 log_file_joint_.close();
                 log_file_predictions_.close();
-                log_file_tranformed_.close();
+                log_file_transformed_.close();
             }
             printf("WARNING: Dynamics Solver returned error. Stopping the robot!");
             return -1;
@@ -758,7 +751,7 @@ int dynamics_controller::control(const int desired_control_mode,
                 log_file_cart_.close();
                 log_file_joint_.close();
                 log_file_predictions_.close();
-                log_file_tranformed_.close();
+                log_file_transformed_.close();
             }
             return -1;
         } 
@@ -781,7 +774,7 @@ int dynamics_controller::control(const int desired_control_mode,
         log_file_cart_.close();
         log_file_joint_.close();
         log_file_predictions_.close();
-        log_file_tranformed_.close();
+        log_file_transformed_.close();
     }
     return 0;
 }
@@ -819,8 +812,8 @@ void dynamics_controller::initialize(const int desired_control_mode,
         log_file_predictions_.open(dynamics_parameter::LOG_FILE_PREDICTIONS_PATH);
         assert(log_file_predictions_.is_open());
 
-        log_file_tranformed_.open(dynamics_parameter::LOG_FILE_TRANSFORMED_PATH);
-        assert(log_file_tranformed_.is_open());
+        log_file_transformed_.open(dynamics_parameter::LOG_FILE_TRANSFORMED_PATH);
+        assert(log_file_transformed_.is_open());
 
         for(int i = 0; i < NUM_OF_JOINTS_; i++) 
             log_file_joint_ << JOINT_TORQUE_LIMITS_[i] << " ";
@@ -940,6 +933,6 @@ void dynamics_controller::deinitialize()
         log_file_cart_.close();
         log_file_joint_.close();
         log_file_predictions_.close();
-        log_file_tranformed_.close();
+        log_file_transformed_.close();
     }
 }
