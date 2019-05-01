@@ -47,6 +47,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     use_transformed_driver_(true),
     horizon_amplitude_(1.0), horizon_slope_(4.5),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
+    transformed_abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     max_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     motion_profile_(Eigen::VectorXd::Ones(abag_parameter::DIMENSIONS)),
     cart_force_command_(NUM_OF_SEGMENTS_),
@@ -535,15 +536,15 @@ void dynamics_controller::compute_control_error()
 
 void dynamics_controller::transform_motion_driver()
 {
-    abag_command_ = abag_.update_state(transformed_error_).transpose();
-    double linear_1D_command = abag_command_(0);
-    double angular_1D_command = abag_command_(3);
+    transformed_abag_command_ = abag_.update_state(transformed_error_).transpose();
+    double filter_alpha = 0.9;
 
     // Transform to Linear 3D command
     if (transformed_error_(0) >= MIN_NORM)
     {
         for(int i = 0; i < 3; i++)
-            abag_command_(i) = (predicted_error_twist_(i) / transformed_error_(0)) * linear_1D_command;
+            abag_command_(i) = filter_alpha * abag_command_(i) \
+                               + (1 - filter_alpha) * (predicted_error_twist_(i) / transformed_error_(0)) * transformed_abag_command_(0);
     }
     else
     {
@@ -555,7 +556,8 @@ void dynamics_controller::transform_motion_driver()
     if (transformed_error_(3) >= MIN_NORM)
     {
         for(int i = 3; i < 6; i++)
-            abag_command_(i) = (predicted_error_twist_(i) / transformed_error_(3)) * angular_1D_command;
+            abag_command_(i) = filter_alpha * abag_command_(i) \
+                               + (1 - filter_alpha) * (predicted_error_twist_(i) / transformed_error_(3)) * transformed_abag_command_(3);
     }
     else
     {
