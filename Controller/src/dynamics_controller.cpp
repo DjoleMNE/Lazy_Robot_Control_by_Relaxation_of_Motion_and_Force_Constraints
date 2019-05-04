@@ -443,8 +443,8 @@ void dynamics_controller::make_predictions(const double dt_sec, const int num_st
 }
 
 
-KDL::Twist dynamics_controller::displacement_twist(const state_specification &state_a, 
-                                                   const state_specification &state_b)
+KDL::Twist dynamics_controller::finite_displacement_twist(const state_specification &state_a, 
+                                                          const state_specification &state_b)
 {
     /** 
      * Difference between two poses: Decoupled calculation 
@@ -488,7 +488,7 @@ double dynamics_controller::kinetic_energy(const KDL::Twist &twist,
 */
 void dynamics_controller::compute_control_error()
 {
-    current_error_twist_ = displacement_twist(desired_state_, robot_state_);
+    current_error_twist_ = finite_displacement_twist(desired_state_, robot_state_);
 
     // KDL::Twist total_twist = current_error_twist_ + robot_state_.frame_velocity[END_EFF_];
 
@@ -522,7 +522,7 @@ void dynamics_controller::compute_control_error()
 
     make_predictions(time_horizon_sec, 1);
 
-    KDL::Twist error_twist = displacement_twist(desired_state_, predicted_state_);
+    KDL::Twist error_twist = finite_displacement_twist(desired_state_, predicted_state_);
     transformed_error_(0) = error_twist.vel.Norm();
     transformed_error_(3) = error_twist.rot.Norm();
     
