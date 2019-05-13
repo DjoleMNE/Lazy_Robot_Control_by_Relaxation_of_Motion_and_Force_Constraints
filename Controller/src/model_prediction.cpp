@@ -236,7 +236,7 @@ KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
          * Exponential map on SO(3) only: Decoupled calculation 
          * See "Modern Robotics" Book, 2017, sections 9.2.1 and 11.3.3.
         */
-        return current_pose * KDL::Frame(geometry::exp_map_so3(current_twist), 
+        return current_pose * KDL::Frame(geometry::exp_map_so3(current_twist.rot), 
                                          current_twist.vel);
     }
     

@@ -68,7 +68,7 @@ namespace geometry
      * Given twist vector should NOT be normalized!
      * If rotation is too small, rotation matrix will be set to identity
     */
-    KDL::Rotation exp_map_so3(const KDL::Twist &current_twist);
+    KDL::Rotation exp_map_so3(const KDL::Vector &current_twist);
     /**
      * Calculate exponential map for linear part of the given screw twist.
      * Given twist vector should NOT be normalized!
