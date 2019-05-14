@@ -55,6 +55,15 @@ enum dynamics_interface
   FF_JOINT_TORQUE = 2
 };
 
+enum task_model
+{
+  stop_motion = -1,
+  full_pose = 0,
+  moveGuarded = 1,
+  moveTo = 2
+};
+
+
 class dynamics_controller
 {
   public:
@@ -93,6 +102,13 @@ class dynamics_controller
     void stop_robot_motion();
 
     void reset_desired_state();
+    void define_moveTo_task(const std::vector<bool> &constraint_direction,
+                            const std::vector<double> &tube_tolerances,
+                            const double tube_speed,
+                            const double contact_threshold_linear,
+                            const double contact_threshold_angular,
+                            const double time_limit,
+                            std::vector<double> &task_frame_pose);
     void define_desired_ee_pose(const std::vector<bool> &constraint_direction,
                                 const std::vector<double> &cartesian_pose);
 
@@ -116,7 +132,7 @@ class dynamics_controller
       bool is_safe;
     } desired_control_mode_;
 
-    int desired_task_inteface_;
+    int desired_task_inteface_, desired_task_model_;
 
     std::chrono::steady_clock::time_point loop_start_time_;
     std::chrono::steady_clock::time_point loop_end_time_;
@@ -132,6 +148,16 @@ class dynamics_controller
     std::vector<bool> CTRL_DIM_;
     bool use_transformed_driver_;
     
+    struct moveTo_task
+    {
+      std::vector<double> tf_pose{std::vector<double>(12, 0.0)};
+      std::vector<double> tube_tolerances{std::vector<double>(6, 0.0)};
+      double tube_speed = 0.0;
+      double contact_threshold_linear = 0.0;
+      double contact_threshold_angular = 0.0;
+      double time_limit = 0.0;
+    } moveTo_task_;
+
     KDL::Twist current_error_twist_;
     Eigen::VectorXd predicted_error_twist_, transformed_error_;
     double horizon_amplitude_, horizon_slope_;

@@ -75,6 +75,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     desired_control_mode_.is_safe = false;
 
     desired_task_inteface_ = dynamics_interface::CART_FORCE;
+    desired_task_model_    = task_model::stop_motion;
 
     KDL::SetToZero(cart_force_command_[END_EFF_]);
 
@@ -132,6 +133,26 @@ void dynamics_controller::print_settings_info()
 
         case dynamics_interface::FF_JOINT_TORQUE:
             printf("FeedForward Joint Torque Interface\n");
+            break;
+
+        default:
+            printf("Stopping the robot!\n");
+            break;
+    }
+
+    printf("Task Model: ");
+    switch(desired_task_model_) 
+    {
+        case task_model::full_pose:
+            printf("Control Full 6D Pose\n");
+            break;
+
+        case task_model::moveGuarded:
+            printf("moveGuarded\n");
+            break;
+
+        case task_model::moveTo:
+            printf("moveTo\n");
             break;
 
         default:
@@ -255,6 +276,56 @@ void dynamics_controller::stop_robot_motion()
     safety_control_.stop_robot_motion();
 }
 
+
+void dynamics_controller::define_moveTo_task(
+                                const std::vector<bool> &constraint_direction,
+                                const std::vector<double> &tube_tolerances,
+                                const double tube_speed,
+                                const double contact_threshold_linear,
+                                const double contact_threshold_angular,
+                                const double time_limit,
+                                std::vector<double> &task_frame_pose)
+{
+    assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
+    assert(task_frame_pose.size() == 12);
+    assert(tube_tolerances.size() == NUM_OF_CONSTRAINTS_);
+
+    CTRL_DIM_ = constraint_direction;
+
+    //X-Y-Z linear
+    KDL::Vector x_world(1.0, 0.0, 0.0);
+    KDL::Vector x_task = KDL::Vector(task_frame_pose[0], task_frame_pose[1], task_frame_pose[2]) - KDL::Vector(0.0, 0.0, 1.175);
+    x_task.Normalize();
+
+    KDL::Vector cross_product = x_world * x_task;
+    double cosine = dot(x_world, x_task);
+    double sine = cross_product.Norm();
+    double angle = atan2(sine, cosine);
+
+    if(sine < 1e-6)
+    {
+        task_frame_pose[3] = 1.0; task_frame_pose[4]  = 0.0; task_frame_pose[5]  = 0.0;
+        task_frame_pose[6] = 0.0; task_frame_pose[7]  = 1.0; task_frame_pose[8]  = 0.0;
+        task_frame_pose[9] = 0.0; task_frame_pose[10] = 0.0; task_frame_pose[11] = 1.0;
+    }
+    else
+    {
+        KDL::Rotation tf_orientation = geometry::exp_map_so3(cross_product/sine * angle);
+        task_frame_pose[3] = tf_orientation.data[0]; task_frame_pose[4]  = tf_orientation.data[1]; task_frame_pose[5]  = tf_orientation.data[2];
+        task_frame_pose[6] = tf_orientation.data[3]; task_frame_pose[7]  = tf_orientation.data[4]; task_frame_pose[8]  = tf_orientation.data[5];
+        task_frame_pose[9] = tf_orientation.data[6]; task_frame_pose[10] = tf_orientation.data[7]; task_frame_pose[11] = tf_orientation.data[8];
+    }
+
+    moveTo_task_.tf_pose                   = task_frame_pose;
+    moveTo_task_.tube_tolerances           = tube_tolerances;
+    moveTo_task_.tube_speed                = tube_speed;
+    moveTo_task_.contact_threshold_linear  = contact_threshold_linear;
+    moveTo_task_.contact_threshold_angular = contact_threshold_angular;
+    moveTo_task_.time_limit                = time_limit;
+
+    desired_task_model_ = task_model::moveTo;
+}
+
 void dynamics_controller::define_desired_ee_pose(
                             const std::vector<bool> &constraint_direction,
                             const std::vector<double> &cartesian_pose)
@@ -272,6 +343,8 @@ void dynamics_controller::define_desired_ee_pose(
         KDL::Rotation(cartesian_pose[3], cartesian_pose[4], cartesian_pose[5],
                       cartesian_pose[6], cartesian_pose[7], cartesian_pose[8],
                       cartesian_pose[9], cartesian_pose[10], cartesian_pose[11]);
+    
+    desired_task_model_ = task_model::full_pose;
 }
 
 // Define Cartesian Acceleration task on the end-effector - Public Method
@@ -793,7 +866,6 @@ void dynamics_controller::initialize(const int desired_control_mode,
     assert(desired_control_mode_.interface != control_mode::STOP_MOTION); 
 
     desired_task_inteface_ = desired_task_inteface;
-
     use_transformed_driver_ = use_transformed_driver;
     
     // First make sure that the robot is not moving
@@ -821,6 +893,8 @@ void dynamics_controller::initialize(const int desired_control_mode,
             log_file_joint_ << JOINT_TORQUE_LIMITS_[i] << " ";
         log_file_joint_ << std::endl;
     }
+
+    print_settings_info();
 }
 
 void dynamics_controller::set_parameters(const double horizon_amplitude,

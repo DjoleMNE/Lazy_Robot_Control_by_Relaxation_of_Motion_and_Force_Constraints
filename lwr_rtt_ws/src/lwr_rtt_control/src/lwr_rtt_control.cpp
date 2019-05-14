@@ -36,6 +36,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     desired_control_mode_(0), desired_dynamics_interface_(1),
     desired_pose_(1), damper_amplitude_(1.0), damper_slope_(4.0),
     control_dims_(NUM_OF_CONSTRAINTS_, false),
+    desired_ee_pose_(12, 0.0),
     max_command_(Eigen::VectorXd::Constant(6, 0.0)),
     error_alpha_(Eigen::VectorXd::Constant(6, 0.0)),
     bias_threshold_(Eigen::VectorXd::Constant(6, 0.0)),
@@ -131,54 +132,61 @@ bool LwrRttControl::configureHook()
     controller_->define_feedforward_torque(std::vector<double>{0.0, 0.0, 
                                                                0.0, 0.0, 
                                                                0.0, 0.0, 0.0});
-
-    std::vector<double> desired_ee_pose(9); 
     switch (desired_pose_)
     {
         case desired_pose::CANDLE:
             // Candle Pose
-            desired_ee_pose = { 0.0,  0.0, 1.175, // Linear: Vector
-                                1.0,  0.0, 0.0, // Angular: Rotation matrix
-                                0.0,  1.0, 0.0,
-                                0.0,  0.0, 1.0};
+            desired_ee_pose_ = { 0.0,  0.0, 1.175, // Linear: Vector
+                                 1.0,  0.0, 0.0, // Angular: Rotation matrix
+                                 0.0,  1.0, 0.0,
+                                 0.0,  0.0, 1.0};
             controller_->define_desired_ee_pose(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
                                                                   control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
-                                                desired_ee_pose);
+                                                desired_ee_pose_);
             break;
 
         case desired_pose::FOLDED:
             // Folded pose
-            desired_ee_pose = { 0.260912, -0.014731,  0.0945801, // Linear: Vector
-                                0.575147,  0.789481, -0.214301, // Angular: Rotation matrix
-                                0.174954,  0.137195,  0.974971,
-                                0.799122, -0.598245, -0.059216};
+            desired_ee_pose_ = { 0.260912, -0.014731,  0.0945801, // Linear: Vector
+                                 0.575147,  0.789481, -0.214301, // Angular: Rotation matrix
+                                 0.174954,  0.137195,  0.974971,
+                                 0.799122, -0.598245, -0.059216};
             controller_->define_desired_ee_pose(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
                                                                   control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
-                                                desired_ee_pose);
+                                                desired_ee_pose_);
             break;
 
         case desired_pose::NAVIGATION_2:
-            // Folded pose
-            desired_ee_pose = { 0.2,  0.3, 0.632811, // Linear: Vector
-                                1.0,  0.0, 0.0, // Angular: Rotation matrix
-                                0.0,  1.0, 0.0,
-                                0.0,  0.0, 1.0};
+            // Navigation pose 2
+            desired_ee_pose_ = { 0.2,  0.3, 0.632811, // Linear: Vector
+                                 1.0,  0.0, 0.0, // Angular: Rotation matrix
+                                 0.0,  1.0, 0.0,
+                                 0.0,  0.0, 1.0};
             controller_->define_desired_ee_pose(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
                                                                   control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
-                                                desired_ee_pose);
+                                                desired_ee_pose_);
             break;
 
         default:
-            // Navigation pose
-            desired_ee_pose = {-0.200785, -0.308278,  0.632811, // Linear: Vector
-                               -0.540302, -0.841471, -0.000860, // Angular: Rotation matrix
-                               -0.841470,  0.540302, -0.001340,
-                                0.001592,  0.000000, -0.999999};
+            // Navigation pose 1
+            desired_ee_pose_ = {-0.200785, -0.308278,  0.632811, // Linear: Vector
+                                -0.540302, -0.841471, -0.000860, // Angular: Rotation matrix
+                                -0.841470,  0.540302, -0.001340,
+                                 0.001592,  0.000000, -0.999999};
             controller_->define_desired_ee_pose(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
                                                                   control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
-                                                desired_ee_pose);
+                                                desired_ee_pose_);
             break;
     }
+
+    controller_->define_moveTo_task(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
+                                                      control_dims_[3], control_dims_[4], control_dims_[5]},// Angular
+                                    std::vector<double>{0.04, 0.04, 0.04, // Linear tolerances
+                                                        0.17, 0.17, 0.17},// Angular tolerances
+                                    0.2, // tube_speed
+                                    0.1, 0.1, //contact_threshold linear and angular
+                                    15.0,// time_limit
+                                    desired_ee_pose_); // TF pose 
 
     controller_->set_parameters(damper_amplitude_, damper_slope_, 
                                 abag_error_type_, max_command_, error_alpha_,
@@ -190,9 +198,8 @@ bool LwrRttControl::configureHook()
                             use_transformed_driver_, 
                             true);
 
-    sleep(2); // wait for gazebo to load completely
-        
-    this->visualize_pose(desired_ee_pose);
+    // sleep(2); // wait for gazebo to load completely        
+    this->visualize_pose(desired_ee_pose_);
     return true;
 }
 
@@ -280,6 +287,45 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose)
 
     // Publish once
     static_broadcaster_.sendTransform(static_transformStamped_);
+
+    ros::NodeHandle handle;
+    ros::Publisher vis_pub = handle.advertise<visualization_msgs::Marker>( "visualization_marker", 1);
+    sleep(2);
+
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "link_0";
+    marker.header.stamp = ros::Time::now();
+    marker.ns = "tube";
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::CYLINDER;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.pose.position.x = pose[0];
+    marker.pose.position.y = pose[1];
+    marker.pose.position.z = pose[2];
+
+    desired_matrix = desired_matrix * tf2::Matrix3x3(0.0, 0.0, -1.0, // Rotate frame: Y axis -90deg
+                                                     0.0, 1.0,  0.0,
+                                                     1.0, 0.0,  0.0);
+    desired_matrix.getRotation(quaternion_rotation);
+    quaternion_rotation.normalize();
+    marker.pose.orientation.x = quaternion_rotation[0];
+    marker.pose.orientation.y = quaternion_rotation[1];
+    marker.pose.orientation.z = quaternion_rotation[2];
+    marker.pose.orientation.w = quaternion_rotation[3];
+
+    marker.scale.x = 0.1;
+    marker.scale.y = 0.1;
+    marker.scale.z = 1.5;
+    marker.color.a = 0.2; // Don't forget to set the alpha!
+    marker.color.r = 255.0;
+    marker.color.g = 255.0;
+    marker.color.b = 255.0;
+    //only if using a MESH_RESOURCE marker type:
+    marker.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae";
+    marker.lifetime = ros::Duration(1000);
+
+    // Publish the marker
+    vis_pub.publish(marker);
 }
 
 // Let orocos know how to create the component

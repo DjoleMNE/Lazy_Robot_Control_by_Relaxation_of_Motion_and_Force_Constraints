@@ -50,6 +50,7 @@ SOFTWARE.
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/Transform.h>
+#include <visualization_msgs/Marker.h>
 
 // Custom Controller code
 #include <state_specification.hpp>
@@ -90,6 +91,7 @@ class LwrRttControl : public RTT::TaskContext{
         int desired_control_mode_, desired_dynamics_interface_, desired_pose_;
         double damper_amplitude_, damper_slope_;
         std::vector<bool> control_dims_;
+        std::vector<double> desired_ee_pose_;
         Eigen::VectorXd max_command_; 
 
         // ABAG Parameters
