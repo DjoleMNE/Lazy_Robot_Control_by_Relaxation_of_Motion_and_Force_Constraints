@@ -322,8 +322,8 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose)
         marker_1.pose.orientation.z = quaternion_rotation[2];
         marker_1.pose.orientation.w = quaternion_rotation[3];
 
-        marker_1.scale.x = tube_tolerances_[1];
-        marker_1.scale.y = tube_tolerances_[2];
+        marker_1.scale.x = tube_tolerances_[1] * 2;
+        marker_1.scale.y = tube_tolerances_[2] * 2;
         marker_1.scale.z = 1.5;
         marker_1.color.a = 0.2; // Don't forget to set the alpha!
         marker_1.color.r = 255.0;
@@ -351,9 +351,9 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose)
         marker_2.pose.orientation.z = quaternion_rotation[2];
         marker_2.pose.orientation.w = quaternion_rotation[3];
 
-        marker_2.scale.x = tube_tolerances_[1];
-        marker_2.scale.y = tube_tolerances_[2];
-        marker_2.scale.z = tube_tolerances_[0];
+        marker_2.scale.x = tube_tolerances_[1] * 2;
+        marker_2.scale.y = tube_tolerances_[2] * 2;
+        marker_2.scale.z = tube_tolerances_[0] * 2;
         marker_2.color.a = 0.2; // Don't forget to set the alpha!
         marker_2.color.r = 102.0;
         marker_2.color.g = 178.0;
