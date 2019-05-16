@@ -651,7 +651,6 @@ void dynamics_controller::compute_control_error()
 void dynamics_controller::transform_force_driver()
 {
     cart_force_command_[END_EFF_] = moveTo_task_.tf_pose.M * cart_force_command_[END_EFF_];
-    // std::cout << cart_force_command_[END_EFF_] << std::endl;
 }
 
 //Change the reference frame of constraint forces and acceleration energy, from task frame to base frame
@@ -664,6 +663,7 @@ void dynamics_controller::transform_motion_driver()
     //Change the reference frame of constraint forces, from task frame to base frame
     for (int c = 0; c < NUM_OF_CONSTRAINTS_; c++)
     {
+        // Change Data Type of constraint forces to fit General KDL type
         wrench_column = KDL::Wrench(KDL::Vector(alpha(0, c), alpha(1, c), alpha(2, c)),
                                     KDL::Vector(alpha(3, c), alpha(4, c), alpha(5, c)));
         wrench_column = moveTo_task_.tf_pose.M * wrench_column;
@@ -672,20 +672,8 @@ void dynamics_controller::transform_motion_driver()
         twist_column = KDL::Twist(wrench_column.force, wrench_column.torque);
         robot_state_.ee_unit_constraint_force.setColumn(c, twist_column);
     }
-    
-    // Change Data Type of Acceleration Energy to fit General KDL type
-    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
-        twist_column(i) = robot_state_.ee_acceleration_energy(i);
-
-    //Change the reference frame of Acceleration Energy, from task frame to base frame
-    twist_column = moveTo_task_.tf_pose.M * twist_column;
-
-    // Change Data Type again, to fit Vereshchagin
-    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
-        robot_state_.ee_acceleration_energy(i) = twist_column(i);
 
     // Change the reference frame of External Force from the task frame to the base frame
-    // std::cout << cart_force_command_[END_EFF_] << std::endl;
     // cart_force_command_[END_EFF_] = moveTo_task_.tf_pose.M * cart_force_command_[END_EFF_];
 }
 
