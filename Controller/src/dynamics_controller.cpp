@@ -279,6 +279,7 @@ void dynamics_controller::stop_robot_motion()
 
 void dynamics_controller::define_moveTo_task(
                                 const std::vector<bool> &constraint_direction,
+                                const std::vector<double> &tube_start_position,
                                 const std::vector<double> &tube_tolerances,
                                 const double tube_speed,
                                 const double contact_threshold_linear,
@@ -287,43 +288,57 @@ void dynamics_controller::define_moveTo_task(
                                 std::vector<double> &task_frame_pose)
 {
     assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
-    assert(task_frame_pose.size() == 12);
-    assert(tube_tolerances.size() == NUM_OF_CONSTRAINTS_);
+    assert(tube_tolerances.size()      == NUM_OF_CONSTRAINTS_);
+    assert(task_frame_pose.size()      == 12);
+    assert(tube_start_position.size()  == 3);
 
     CTRL_DIM_ = constraint_direction;
 
-    //X-Y-Z linear
+    // X-Y-Z linear
     KDL::Vector x_world(1.0, 0.0, 0.0);
-    KDL::Vector x_task = KDL::Vector(task_frame_pose[0], task_frame_pose[1], task_frame_pose[2]) - KDL::Vector(0.0, 0.0, 1.175);
+    KDL::Vector tf_position = KDL::Vector(task_frame_pose[0], task_frame_pose[1], task_frame_pose[2]);
+    KDL::Vector x_task = tf_position - KDL::Vector(tube_start_position[0], tube_start_position[1], tube_start_position[2]);
     x_task.Normalize();
 
     KDL::Vector cross_product = x_world * x_task;
-    double cosine = dot(x_world, x_task);
-    double sine = cross_product.Norm();
-    double angle = atan2(sine, cosine);
+    double cosine             = dot(x_world, x_task);
+    double sine               = cross_product.Norm();
+    double angle              = atan2(sine, cosine);
 
-    if(sine < 1e-6)
+    KDL::Rotation tf_orientation;
+    if(cosine < (-1 + 1e-6))
     {
+        tf_orientation = KDL::Rotation::EulerZYZ(M_PI, 0.0, 0.0);
+        task_frame_pose[3] = -1.0; task_frame_pose[4]  =  0.0; task_frame_pose[5]  = 0.0;
+        task_frame_pose[6] =  0.0; task_frame_pose[7]  = -1.0; task_frame_pose[8]  = 0.0;
+        task_frame_pose[9] =  0.0; task_frame_pose[10] =  0.0; task_frame_pose[11] = 1.0;
+    }
+    else if(sine < 1e-6)
+    {
+        tf_orientation = KDL::Rotation::Identity();
         task_frame_pose[3] = 1.0; task_frame_pose[4]  = 0.0; task_frame_pose[5]  = 0.0;
         task_frame_pose[6] = 0.0; task_frame_pose[7]  = 1.0; task_frame_pose[8]  = 0.0;
         task_frame_pose[9] = 0.0; task_frame_pose[10] = 0.0; task_frame_pose[11] = 1.0;
     }
     else
     {
-        KDL::Rotation tf_orientation = geometry::exp_map_so3(cross_product/sine * angle);
+        tf_orientation = geometry::exp_map_so3(cross_product / sine * angle);
         task_frame_pose[3] = tf_orientation.data[0]; task_frame_pose[4]  = tf_orientation.data[1]; task_frame_pose[5]  = tf_orientation.data[2];
         task_frame_pose[6] = tf_orientation.data[3]; task_frame_pose[7]  = tf_orientation.data[4]; task_frame_pose[8]  = tf_orientation.data[5];
         task_frame_pose[9] = tf_orientation.data[6]; task_frame_pose[10] = tf_orientation.data[7]; task_frame_pose[11] = tf_orientation.data[8];
     }
 
-    moveTo_task_.tf_pose                   = task_frame_pose;
+    moveTo_task_.tf_pose                   = KDL::Frame(tf_orientation, tf_position);
+    moveTo_task_.tube_start_position       = tube_start_position;
     moveTo_task_.tube_tolerances           = tube_tolerances;
     moveTo_task_.tube_speed                = tube_speed;
     moveTo_task_.contact_threshold_linear  = contact_threshold_linear;
     moveTo_task_.contact_threshold_angular = contact_threshold_angular;
     moveTo_task_.time_limit                = time_limit;
 
-    desired_task_model_ = task_model::moveTo;
+    desired_state_.frame_pose[END_EFF_]            = KDL::Frame::Identity();
+    desired_state_.frame_velocity[END_EFF_].vel(0) = moveTo_task_.tube_speed;
+    desired_task_model_                            = task_model::moveTo;
 }
 
 void dynamics_controller::define_desired_ee_pose(
@@ -364,7 +379,7 @@ void dynamics_controller::set_ee_acc_constraints(
                                 const std::vector<bool> &constraint_direction, 
                                 const std::vector<double> &cartesian_acceleration)
 {    
-    assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
+    assert(constraint_direction.size()   == NUM_OF_CONSTRAINTS_);
     assert(cartesian_acceleration.size() == NUM_OF_CONSTRAINTS_);
 
     // Set directions in which constraint force should work. Alpha in the solver 
@@ -996,7 +1011,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
     //     return -1;
     // } 
     tau_output = robot_state_.control_torque.data;
-    
+
     return 0;
 }
 

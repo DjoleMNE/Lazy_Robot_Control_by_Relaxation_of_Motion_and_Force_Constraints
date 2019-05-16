@@ -103,6 +103,7 @@ class dynamics_controller
 
     void reset_desired_state();
     void define_moveTo_task(const std::vector<bool> &constraint_direction,
+                            const std::vector<double> &tube_start_position,
                             const std::vector<double> &tube_tolerances,
                             const double tube_speed,
                             const double contact_threshold_linear,
@@ -150,7 +151,8 @@ class dynamics_controller
     
     struct moveTo_task
     {
-      std::vector<double> tf_pose{std::vector<double>(12, 0.0)};
+      KDL::Frame tf_pose;
+      std::vector<double> tube_start_position{std::vector<double>(3, 0.0)};
       std::vector<double> tube_tolerances{std::vector<double>(6, 0.0)};
       double tube_speed = 0.0;
       double contact_threshold_linear = 0.0;
