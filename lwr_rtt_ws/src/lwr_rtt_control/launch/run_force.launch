@@ -59,10 +59,20 @@
 
 
     <!-- ========= Tube tolerances ===============-->
-    <arg name="tube_tolerances" default="[0.03, 0.02, 0.02, 
+    <arg name="tube_tolerances" default="[0.05, 0.05, 0.05, 
                                           0.17, 0.17, 0.17]"/>
     <!-- <arg name="tube_tolerances" default="[0.0, 0.0, 0.0, 
                                                0.0, 0.0, 0.0]"/> -->
+
+
+    <!-- ========= Tube start position ===============-->
+    <arg name="tube_start_position" default="[0.0,  0.0, 1.175]"/>
+    <!-- <arg name="tube_start_position" default="[0.0,  -0.1, 1.165]"/> -->
+
+    <!-- ========= Tube speed ===============-->
+    <arg name="tube_speed" default="0.2"/>
+    <!-- <arg name="tube_speed" default="0.4"/> -->
+
 
 
     <!-- ========= Dimensions to be controlled ===============-->
@@ -144,6 +154,8 @@
         <param name="desired_dynamics_interface" value="$(arg desired_dynamics_interface)"/>
         <param name="desired_pose" value="$(arg desired_pose)"/>        
         <rosparam param="tube_tolerances" subst_value="True">$(arg tube_tolerances)</rosparam>
+        <rosparam param="tube_start_position" subst_value="True">$(arg tube_start_position)</rosparam>
+        <rosparam param="tube_speed" subst_value="True">$(arg tube_speed)</rosparam>
         <rosparam param="control_dims" subst_value="True">$(arg control_dims)</rosparam>
         <rosparam param="damper_amplitude" subst_value="True">$(arg damper_amplitude)</rosparam>
         <rosparam param="damper_slope" subst_value="True">$(arg damper_slope)</rosparam>

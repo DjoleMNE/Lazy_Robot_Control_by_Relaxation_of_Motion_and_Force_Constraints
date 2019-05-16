@@ -33,10 +33,10 @@ LwrRttControl::LwrRttControl(const std::string& name):
     robot_model_(lwr_model::LWR_URDF), iteration_count_(0),
     loop_total_time_(0.0),
     krc_compensate_gravity_(false), use_transformed_driver_(true),
-    desired_control_mode_(0), desired_dynamics_interface_(1),
-    desired_pose_(1), damper_amplitude_(1.0), damper_slope_(4.0),
+    desired_task_model_(2), desired_control_mode_(0), desired_dynamics_interface_(1),
+    desired_pose_(1), damper_amplitude_(1.0), damper_slope_(4.0), tube_speed_(0.2),
     control_dims_(NUM_OF_CONSTRAINTS_, false),
-    desired_ee_pose_(12, 0.0), tube_tolerances_(6, 0.0),
+    desired_ee_pose_(12, 0.0), tube_tolerances_(6, 0.0), tube_start_position_(3, 0.0),
     max_command_(Eigen::VectorXd::Constant(6, 0.0)),
     error_alpha_(Eigen::VectorXd::Constant(6, 0.0)),
     bias_threshold_(Eigen::VectorXd::Constant(6, 0.0)),
@@ -67,6 +67,8 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addProperty("desired_dynamics_interface", desired_dynamics_interface_).doc("desired_dynamics_interface");
     this->addProperty("desired_pose", desired_pose_).doc("desired pose");
     this->addProperty("tube_tolerances", tube_tolerances_).doc("tube_tolerances");
+    this->addProperty("tube_start_position", tube_start_position_).doc("tube_start_position");
+    this->addProperty("tube_speed", tube_speed_).doc("tube_speed");
     this->addProperty("control_dims", control_dims_).doc("control dimensions");
     this->addProperty("damper_amplitude", damper_amplitude_).doc("damper_amplitude");
     this->addProperty("damper_slope", damper_slope_).doc("damper_slope");
@@ -168,15 +170,14 @@ bool LwrRttControl::configureHook()
             break;
     }
 
-
     switch (desired_task_model_)
     {
         case task_model::moveTo:
             controller_->define_moveTo_task(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
                                                               control_dims_[3], control_dims_[4], control_dims_[5]},// Angular
-                                    std::vector<double>{0.0,  0.0, 1.175}, // Tube start position
+                                    tube_start_position_,
                                     tube_tolerances_,
-                                    0.2, // tube_speed
+                                    tube_speed_,
                                     0.1, 0.1, //contact_threshold linear and angular
                                     15.0,// time_limit
                                     desired_ee_pose_); // TF pose
