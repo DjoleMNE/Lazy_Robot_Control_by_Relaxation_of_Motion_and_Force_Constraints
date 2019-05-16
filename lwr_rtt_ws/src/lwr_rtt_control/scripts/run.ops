@@ -14,7 +14,7 @@ if (isSim()) then
   // Navigation Pose
   //setRobotInitialJointConfiguration(1.0, 0.0, 0.0, -1.57, 0.0, 1.57, 0.0)
   // Candle Pose
-  //setRobotInitialJointConfiguration(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+  //setRobotInitialJointConfiguration(0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0)
   // Folded Pose
   //setRobotInitialJointConfiguration(-1.1572, -1.9104, -2.5334, -1.7853, -0.0727, 0.9176, -1.88766)
 

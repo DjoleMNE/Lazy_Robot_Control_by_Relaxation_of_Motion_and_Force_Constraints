@@ -36,7 +36,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     desired_control_mode_(0), desired_dynamics_interface_(1),
     desired_pose_(1), damper_amplitude_(1.0), damper_slope_(4.0),
     control_dims_(NUM_OF_CONSTRAINTS_, false),
-    desired_ee_pose_(12, 0.0),
+    desired_ee_pose_(12, 0.0), tube_tolerances_(6, 0.0),
     max_command_(Eigen::VectorXd::Constant(6, 0.0)),
     error_alpha_(Eigen::VectorXd::Constant(6, 0.0)),
     bias_threshold_(Eigen::VectorXd::Constant(6, 0.0)),
@@ -62,10 +62,11 @@ LwrRttControl::LwrRttControl(const std::string& name):
 //     this->addProperty("robot_model", robot_model_).doc("robot_model");
     this->addProperty("krc_compensate_gravity", krc_compensate_gravity_).doc("KRC compensate gravity");
     this->addProperty("use_transformed_driver", use_transformed_driver_).doc("use_transformed_driver");
+    this->addProperty("desired_task_model", desired_task_model_).doc("desired_task_model");
     this->addProperty("desired_control_mode", desired_control_mode_).doc("desired_control_mode");
     this->addProperty("desired_dynamics_interface", desired_dynamics_interface_).doc("desired_dynamics_interface");
     this->addProperty("desired_pose", desired_pose_).doc("desired pose");
-
+    this->addProperty("tube_tolerances", tube_tolerances_).doc("tube_tolerances");
     this->addProperty("control_dims", control_dims_).doc("control dimensions");
     this->addProperty("damper_amplitude", damper_amplitude_).doc("damper_amplitude");
     this->addProperty("damper_slope", damper_slope_).doc("damper_slope");
@@ -140,9 +141,6 @@ bool LwrRttControl::configureHook()
                                  1.0,  0.0, 0.0, // Angular: Rotation matrix
                                  0.0,  1.0, 0.0,
                                  0.0,  0.0, 1.0};
-            controller_->define_desired_ee_pose(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
-                                                                  control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
-                                                desired_ee_pose_);
             break;
 
         case desired_pose::FOLDED:
@@ -151,9 +149,6 @@ bool LwrRttControl::configureHook()
                                  0.575147,  0.789481, -0.214301, // Angular: Rotation matrix
                                  0.174954,  0.137195,  0.974971,
                                  0.799122, -0.598245, -0.059216};
-            controller_->define_desired_ee_pose(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
-                                                                  control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
-                                                desired_ee_pose_);
             break;
 
         case desired_pose::NAVIGATION_2:
@@ -162,9 +157,6 @@ bool LwrRttControl::configureHook()
                                  1.0,  0.0, 0.0, // Angular: Rotation matrix
                                  0.0,  1.0, 0.0,
                                  0.0,  0.0, 1.0};
-            controller_->define_desired_ee_pose(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
-                                                                  control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
-                                                desired_ee_pose_);
             break;
 
         default:
@@ -173,20 +165,34 @@ bool LwrRttControl::configureHook()
                                 -0.540302, -0.841471, -0.000860, // Angular: Rotation matrix
                                 -0.841470,  0.540302, -0.001340,
                                  0.001592,  0.000000, -0.999999};
+            break;
+    }
+
+
+    switch (desired_task_model_)
+    {
+        case task_model::moveTo:
+            controller_->define_moveTo_task(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
+                                                              control_dims_[3], control_dims_[4], control_dims_[5]},// Angular
+                                    std::vector<double>{0.0,  0.0, 1.175}, // Tube start position
+                                    tube_tolerances_,
+                                    0.2, // tube_speed
+                                    0.1, 0.1, //contact_threshold linear and angular
+                                    15.0,// time_limit
+                                    desired_ee_pose_); // TF pose
+            break;
+
+        case task_model::full_pose:
             controller_->define_desired_ee_pose(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
                                                                   control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
                                                 desired_ee_pose_);
             break;
-    }
 
-    controller_->define_moveTo_task(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
-                                                      control_dims_[3], control_dims_[4], control_dims_[5]},// Angular
-                                    std::vector<double>{0.04, 0.04, 0.04, // Linear tolerances
-                                                        0.17, 0.17, 0.17},// Angular tolerances
-                                    0.2, // tube_speed
-                                    0.1, 0.1, //contact_threshold linear and angular
-                                    15.0,// time_limit
-                                    desired_ee_pose_); // TF pose 
+        default:
+            assert(("Unsupported task model", false));
+            break;
+    }
+ 
 
     controller_->set_parameters(damper_amplitude_, damper_slope_, 
                                 abag_error_type_, max_command_, error_alpha_,
@@ -236,6 +242,7 @@ void LwrRttControl::updateHook()
         gravity_solver_->JntToGravity(robot_state_.q, jnt_gravity_trq_out);
         jnt_trq_cmd_out = robot_state_.control_torque.data - jnt_gravity_trq_out.data;
     }
+
     // jnt_trq_cmd_out << 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
     port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
     iteration_count_++;
@@ -272,8 +279,8 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose)
     static_transformStamped_.transform.translation.y = pose[1];
     static_transformStamped_.transform.translation.z = pose[2];
     
-    tf2::Matrix3x3 desired_matrix = tf2::Matrix3x3(pose[3], pose[4], pose[5], // Angular: Rotation matrix
-                                                   pose[6], pose[7], pose[8],
+    tf2::Matrix3x3 desired_matrix = tf2::Matrix3x3(pose[3], pose[4],  pose[5], // Angular: Rotation matrix
+                                                   pose[6], pose[7],  pose[8],
                                                    pose[9], pose[10], pose[11]);
 
     tf2::Quaternion quaternion_rotation;
@@ -288,44 +295,76 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose)
     // Publish once
     static_broadcaster_.sendTransform(static_transformStamped_);
 
-    ros::NodeHandle handle;
-    ros::Publisher vis_pub = handle.advertise<visualization_msgs::Marker>( "visualization_marker", 1);
-    sleep(2);
+    if(desired_task_model_ == task_model::moveTo || desired_task_model_ == task_model::moveGuarded)
+    {
+        ros::NodeHandle handle;
+        ros::Publisher vis_pub = handle.advertise<visualization_msgs::Marker>( "visualization_marker", 1);
+        sleep(2);
 
-    visualization_msgs::Marker marker;
-    marker.header.frame_id = "link_0";
-    marker.header.stamp = ros::Time::now();
-    marker.ns = "tube";
-    marker.id = 0;
-    marker.type = visualization_msgs::Marker::CYLINDER;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.pose.position.x = pose[0];
-    marker.pose.position.y = pose[1];
-    marker.pose.position.z = pose[2];
+        visualization_msgs::Marker marker_1, marker_2;
+        marker_1.header.frame_id = "link_0";
+        marker_1.header.stamp = ros::Time::now();
+        marker_1.ns = "tube";
+        marker_1.id = 0;
+        marker_1.type = visualization_msgs::Marker::CYLINDER;
+        marker_1.action = visualization_msgs::Marker::ADD;
+        marker_1.pose.position.x = pose[0];
+        marker_1.pose.position.y = pose[1];
+        marker_1.pose.position.z = pose[2];
 
-    desired_matrix = desired_matrix * tf2::Matrix3x3(0.0, 0.0, -1.0, // Rotate frame: Y axis -90deg
-                                                     0.0, 1.0,  0.0,
-                                                     1.0, 0.0,  0.0);
-    desired_matrix.getRotation(quaternion_rotation);
-    quaternion_rotation.normalize();
-    marker.pose.orientation.x = quaternion_rotation[0];
-    marker.pose.orientation.y = quaternion_rotation[1];
-    marker.pose.orientation.z = quaternion_rotation[2];
-    marker.pose.orientation.w = quaternion_rotation[3];
+        desired_matrix = desired_matrix * tf2::Matrix3x3(0.0, 0.0, -1.0, // Rotate frame: Y axis -90deg
+                                                         0.0, 1.0,  0.0,
+                                                         1.0, 0.0,  0.0);
+        desired_matrix.getRotation(quaternion_rotation);
+        quaternion_rotation.normalize();
+        marker_1.pose.orientation.x = quaternion_rotation[0];
+        marker_1.pose.orientation.y = quaternion_rotation[1];
+        marker_1.pose.orientation.z = quaternion_rotation[2];
+        marker_1.pose.orientation.w = quaternion_rotation[3];
 
-    marker.scale.x = 0.1;
-    marker.scale.y = 0.1;
-    marker.scale.z = 1.5;
-    marker.color.a = 0.2; // Don't forget to set the alpha!
-    marker.color.r = 255.0;
-    marker.color.g = 255.0;
-    marker.color.b = 255.0;
-    //only if using a MESH_RESOURCE marker type:
-    marker.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae";
-    marker.lifetime = ros::Duration(1000);
+        marker_1.scale.x = tube_tolerances_[1];
+        marker_1.scale.y = tube_tolerances_[2];
+        marker_1.scale.z = 1.5;
+        marker_1.color.a = 0.2; // Don't forget to set the alpha!
+        marker_1.color.r = 255.0;
+        marker_1.color.g = 255.0;
+        marker_1.color.b = 255.0;
+        //only if using a MESH_RESOURCE marker type:
+        marker_1.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae";
+        marker_1.lifetime = ros::Duration(1000);
 
-    // Publish the marker
-    vis_pub.publish(marker);
+        // Publish the marker
+        vis_pub.publish(marker_1);
+
+        marker_2.header.frame_id = "link_0";
+        marker_2.header.stamp = ros::Time::now();
+        marker_2.ns = "goal_area";
+        marker_2.id = 0;
+        marker_2.type = visualization_msgs::Marker::CYLINDER;
+        marker_2.action = visualization_msgs::Marker::ADD;
+        marker_2.pose.position.x = pose[0];
+        marker_2.pose.position.y = pose[1];
+        marker_2.pose.position.z = pose[2];
+
+        marker_2.pose.orientation.x = quaternion_rotation[0];
+        marker_2.pose.orientation.y = quaternion_rotation[1];
+        marker_2.pose.orientation.z = quaternion_rotation[2];
+        marker_2.pose.orientation.w = quaternion_rotation[3];
+
+        marker_2.scale.x = tube_tolerances_[1];
+        marker_2.scale.y = tube_tolerances_[2];
+        marker_2.scale.z = tube_tolerances_[0];
+        marker_2.color.a = 0.2; // Don't forget to set the alpha!
+        marker_2.color.r = 102.0;
+        marker_2.color.g = 178.0;
+        marker_2.color.b = 255.0;
+        //only if using a MESH_RESOURCE marker type:
+        marker_2.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae";
+        marker_2.lifetime = ros::Duration(1000);
+
+        vis_pub.publish(marker_2);
+        sleep(1);
+    }
 }
 
 // Let orocos know how to create the component

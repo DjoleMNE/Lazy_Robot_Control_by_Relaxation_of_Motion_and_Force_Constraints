@@ -178,7 +178,7 @@ void Solver_Vereshchagin::initial_upwards_sweep(const JntArray &q,
         //It is variable type of ArticulatedBodyInertia!!!
         s.H = segment.getInertia();
 
-        //wrench of the rigid body bias forces and the external forces on the segment (in body coordinates, tip)
+        //wrench of the rigid body bias forces and external forces on the segment (in body coordinates, tip)
         //external forces are taken into account through s.U.
         Wrench FextLocal = F_total.M.Inverse() * (f_ext_natural[i] + f_ext_virtual[i]);
         s.U = s.v * (s.H * s.v) - FextLocal; //f_ext[i];

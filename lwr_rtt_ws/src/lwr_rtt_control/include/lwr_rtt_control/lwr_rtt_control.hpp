@@ -88,10 +88,10 @@ class LwrRttControl : public RTT::TaskContext{
 
         //General Control Parameters
         bool krc_compensate_gravity_, use_transformed_driver_;
-        int desired_control_mode_, desired_dynamics_interface_, desired_pose_;
+        int desired_task_model_, desired_control_mode_, desired_dynamics_interface_, desired_pose_;
         double damper_amplitude_, damper_slope_;
         std::vector<bool> control_dims_;
-        std::vector<double> desired_ee_pose_;
+        std::vector<double> desired_ee_pose_, tube_tolerances_;
         Eigen::VectorXd max_command_; 
 
         // ABAG Parameters
