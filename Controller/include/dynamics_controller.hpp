@@ -161,8 +161,8 @@ class dynamics_controller
     } moveTo_task_;
 
     KDL::Twist current_error_twist_;
-    Eigen::VectorXd predicted_error_twist_, transformed_error_;
-    double horizon_amplitude_, horizon_slope_;
+    Eigen::VectorXd abag_error_vector_, predicted_error_twist_;
+    double tube_speed_error_, horizon_amplitude_, horizon_slope_;
     Eigen::VectorXd abag_command_, transformed_abag_command_, max_command_, motion_profile_;
     KDL::Wrenches cart_force_command_;
 
@@ -182,7 +182,10 @@ class dynamics_controller
     void reset_state(state_specification &state);
     void update_dynamics_interfaces();
     void update_current_state();
+    void compute_moveTo_task_error();
+    void compute_full_pose_task_error();
     void compute_control_error();
+    void transform_force_driver();
     void transform_motion_driver();
     void make_predictions(const double dt_sec, const int num_steps);
     void compute_cart_control_commands();

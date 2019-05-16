@@ -42,9 +42,9 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     CTRL_DIM_(NUM_OF_CONSTRAINTS_, false),
     JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
     current_error_twist_(KDL::Twist::Zero()),
+    abag_error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     predicted_error_twist_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
-    transformed_error_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
-    use_transformed_driver_(true),
+    use_transformed_driver_(true), tube_speed_error_(0.0),
     horizon_amplitude_(1.0), horizon_slope_(4.5),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     transformed_abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
@@ -246,16 +246,6 @@ void dynamics_controller::write_to_file()
     log_file_cart_ << abag_.get_command().transpose().format(dynamics_parameter::WRITE_FORMAT);
     
     log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
-
-    if(use_transformed_driver_)
-    {
-        log_file_transformed_ << transformed_error_.transpose().format(dynamics_parameter::WRITE_FORMAT);
-        log_file_transformed_ << abag_.get_error().transpose().format(dynamics_parameter::WRITE_FORMAT);
-        log_file_transformed_ << abag_.get_bias().transpose().format(dynamics_parameter::WRITE_FORMAT);
-        log_file_transformed_ << abag_.get_gain().transpose().format(dynamics_parameter::WRITE_FORMAT);
-        log_file_transformed_ << abag_.get_command().transpose().format(dynamics_parameter::WRITE_FORMAT);
-        log_file_transformed_ << abag_command_.transpose().format(dynamics_parameter::WRITE_FORMAT);
-    }
 }
 
 // Set all values of desired state to 0 - public method
@@ -346,7 +336,7 @@ void dynamics_controller::define_desired_ee_pose(
                             const std::vector<double> &cartesian_pose)
 {
     assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
-    assert(cartesian_pose.size() == NUM_OF_CONSTRAINTS_ * 2);
+    assert(cartesian_pose.size()       == NUM_OF_CONSTRAINTS_ * 2);
     
     CTRL_DIM_ = constraint_direction;
     
@@ -571,95 +561,138 @@ double dynamics_controller::kinetic_energy(const KDL::Twist &twist,
 }
 
 /**
- * Compute the error between desired Cartesian state 
- * and predicted (integrated) Cartesian state.
+ * Compute the control error for tube deviations and velocity setpoint.
+ * Error function for moveTo task.
 */
-void dynamics_controller::compute_control_error()
+void dynamics_controller::compute_moveTo_task_error()
 {
-    current_error_twist_ = finite_displacement_twist(desired_state_, robot_state_);
+    //Change the reference frame of the robot state, from base frame to task frame
+    robot_state_.frame_pose[END_EFF_]     = moveTo_task_.tf_pose.Inverse()   * robot_state_.frame_pose[END_EFF_];
+    robot_state_.frame_velocity[END_EFF_] = moveTo_task_.tf_pose.M.Inverse() * robot_state_.frame_velocity[END_EFF_];
 
-    // KDL::Twist total_twist = current_error_twist_ + robot_state_.frame_velocity[END_EFF_];
+    current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
 
-    // for(int i = 0; i < 6; i++)
-    //     if(!CTRL_DIM_[i]) total_twist(i) = 0.0;
+    make_predictions(horizon_amplitude_, 1);
+    predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
 
-    // double energy = kinetic_energy(total_twist, END_EFF_);
+    /*
+     * See if the robot has reached goal area in X linear direction.
+     * If yes command zero speed, to keep it in that area.
+     * Else go with initially commanded speed tube.
+    */
+    if ( std::fabs(predicted_error_twist_(0)) <= moveTo_task_.tube_tolerances[0] ) 
+        abag_error_vector_(0) = 0.0 - robot_state_.frame_velocity[END_EFF_].vel(0);
 
-
-
-    // double time_horizon_sec = fsm_.tanh_decision_map(energy, 
-    //                                                  horizon_amplitude_, 
-    //                                                  horizon_slope_);
-
-    // double time_horizon_sec = fsm_.tanh_inverse_decision_map(energy,
-    //                                                          0.1, 2.4, 1.0);
-
-    // double time_horizon_sec = fsm_.step_decision_map(energy, 
-    //                                                  3.5, 0.2, 
-    //                                                  0.03, 0.01);
-
-    double energy = 0.0; 
-    double time_horizon_sec = horizon_amplitude_;
-
-#ifndef NDEBUG
-    for(int i = 0; i < 3; i++) 
-        log_file_predictions_ << robot_state_.frame_velocity[END_EFF_].vel(i) << " ";
+    else if ( predicted_error_twist_(0) < (-1 * moveTo_task_.tube_tolerances[0]) ) 
+        abag_error_vector_(0) = -1 * desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
     
-    log_file_predictions_ << energy << " " << time_horizon_sec << std::endl;
-#endif
+    else 
+        abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
-    make_predictions(time_horizon_sec, 1);
+    // Other parts of the ABAG error are position errors
+    for(int i = 1; i < NUM_OF_CONSTRAINTS_; i++)
+    {
+        if ( std::fabs(predicted_error_twist_(i)) <= moveTo_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
+        else abag_error_vector_(i) = predicted_error_twist_(i);        
+    }
 
-    KDL::Twist error_twist = finite_displacement_twist(desired_state_, predicted_state_);
-    transformed_error_(0) = error_twist.vel.Norm();
-    transformed_error_(3) = error_twist.rot.Norm();
-    
-    predicted_error_twist_ = conversions::kdl_twist_to_eigen(error_twist);
-
+    // abag_error_vector_ = predicted_error_twist_;
 #ifndef NDEBUG
-        // std::cout << "\nLinear Error: " << predicted_error_twist_.head(3).transpose() << "    Linear norm: " << predicted_error_twist_.head(3).norm() << std::endl;
-        // std::cout << "Angular Error: " << predicted_error_twist_.tail(3).transpose() << "         Angular norm: " << predicted_error_twist_.tail(3).norm() << std::endl;
+    // std::cout << predicted_error_twist_ << std::endl;
+    // std::cout  << std::endl;
+    // std::cout << "\nLinear Error: " << predicted_error_twist_.head(3).transpose() << "    Linear norm: " << predicted_error_twist_.head(3).norm() << std::endl;
+    // std::cout << "Angular Error: " << predicted_error_twist_.tail(3).transpose() << "         Angular norm: " << predicted_error_twist_.tail(3).norm() << std::endl;
 #endif
 }
 
+/**
+ * Compute the error between desired Cartesian state 
+ * and predicted (integrated) Cartesian state.
+ * Error function for full_pose task
+*/
+void dynamics_controller::compute_full_pose_task_error()
+{
+    current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
+
+    make_predictions(horizon_amplitude_, 1);
+    predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
+    
+    abag_error_vector_     = predicted_error_twist_;
+
+#ifndef NDEBUG
+    // std::cout << "\nLinear Error: " << predicted_error_twist_.head(3).transpose() << "    Linear norm: " << predicted_error_twist_.head(3).norm() << std::endl;
+    // std::cout << "Angular Error: " << predicted_error_twist_.tail(3).transpose() << "         Angular norm: " << predicted_error_twist_.tail(3).norm() << std::endl;
+#endif
+}
+
+/**
+ * Compute the general control error. 
+ * Internally an error function will be called for each selected task
+*/
+void dynamics_controller::compute_control_error()
+{    
+    switch (desired_task_model_)
+    {
+        case task_model::moveTo:
+            compute_moveTo_task_error();
+            break;
+
+        case task_model::full_pose:
+            compute_full_pose_task_error(); 
+            break;
+
+        default:
+            assert(("Unsupported task model", false));
+            break;
+    }
+}
+
+//Change the reference frame of external (virtual) forces, from task frame to base frame
+void dynamics_controller::transform_force_driver()
+{
+    cart_force_command_[END_EFF_] = moveTo_task_.tf_pose.M * cart_force_command_[END_EFF_];
+    // std::cout << cart_force_command_[END_EFF_] << std::endl;
+}
+
+//Change the reference frame of constraint forces and acceleration energy, from task frame to base frame
 void dynamics_controller::transform_motion_driver()
 {
-    transformed_abag_command_ = abag_.update_state(transformed_error_).transpose();
-    double filter_alpha = 0.9;
+    KDL::Wrench wrench_column;
+    KDL::Twist twist_column;
+    KDL::Jacobian alpha = robot_state_.ee_unit_constraint_force;
 
-    // Transform to Linear 3D command
-    if (transformed_error_(0) >= MIN_NORM)
+    //Change the reference frame of constraint forces, from task frame to base frame
+    for (int c = 0; c < NUM_OF_CONSTRAINTS_; c++)
     {
-        for(int i = 0; i < 3; i++)
-            abag_command_(i) = filter_alpha * abag_command_(i) \
-                               + (1 - filter_alpha) * (predicted_error_twist_(i) / transformed_error_(0)) * transformed_abag_command_(0);
-    }
-    else
-    {
-        for(int i = 0; i < 3; i++) 
-            abag_command_(i) = 0.0;
-    }
+        wrench_column = KDL::Wrench(KDL::Vector(alpha(0, c), alpha(1, c), alpha(2, c)),
+                                    KDL::Vector(alpha(3, c), alpha(4, c), alpha(5, c)));
+        wrench_column = moveTo_task_.tf_pose.M * wrench_column;
 
-    // Transform to Angular 3D command
-    if (transformed_error_(3) >= MIN_NORM)
-    {
-        for(int i = 3; i < 6; i++)
-            abag_command_(i) = filter_alpha * abag_command_(i) \
-                               + (1 - filter_alpha) * (predicted_error_twist_(i) / transformed_error_(3)) * transformed_abag_command_(3);
+        // Change Data Type to fit Vereshchagin
+        twist_column = KDL::Twist(wrench_column.force, wrench_column.torque);
+        robot_state_.ee_unit_constraint_force.setColumn(c, twist_column);
     }
-    else
-    {
-        for(int i = 3; i < 6; i++) 
-            abag_command_(i) = 0.0;
-    }
+    
+    // Change Data Type of Acceleration Energy to fit General KDL type
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+        twist_column(i) = robot_state_.ee_acceleration_energy(i);
 
+    //Change the reference frame of Acceleration Energy, from task frame to base frame
+    twist_column = moveTo_task_.tf_pose.M * twist_column;
+
+    // Change Data Type again, to fit Vereshchagin
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+        robot_state_.ee_acceleration_energy(i) = twist_column(i);
+
+    // Change the reference frame of External Force from the task frame to the base frame
+    // std::cout << cart_force_command_[END_EFF_] << std::endl;
+    // cart_force_command_[END_EFF_] = moveTo_task_.tf_pose.M * cart_force_command_[END_EFF_];
 }
 
 void dynamics_controller::compute_cart_control_commands()
 {   
-    if (use_transformed_driver_) transform_motion_driver();
-    else abag_command_ = abag_.update_state(predicted_error_twist_).transpose();
-    
+    abag_command_ = abag_.update_state(abag_error_vector_).transpose();
+
     bool use_motion_profile = false;
     if(use_motion_profile) for(int i = 0; i < 3; i++)
         motion_profile_(i) = motion_profile::negative_step_decision_map(current_error_twist_.vel.Norm(), 
@@ -669,13 +702,19 @@ void dynamics_controller::compute_cart_control_commands()
     switch (desired_task_inteface_)
     {
         case dynamics_interface::CART_FORCE:
-            // Set additional (virtual) force computed by the ABAG controller
+            // Set virtual forces computed by the ABAG controller
             for(int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
                 cart_force_command_[END_EFF_](i) = CTRL_DIM_[i]? abag_command_(i) * motion_profile_(i) : 0.0;
+            
+            if(desired_task_model_ == task_model::moveTo || \
+               desired_task_model_ == task_model::moveGuarded) transform_force_driver();
+
             break;
 
         case dynamics_interface::CART_ACCELERATION:
-            // Overwrite the existing Cart Acc Constraints on the End-Effector
+            // CTRL_DIM_[0] = false;
+
+            // Set Cartesian Acceleration Constraints on the End-Effector
             set_ee_acc_constraints(robot_state_,
                                    std::vector<bool>{CTRL_DIM_[0], CTRL_DIM_[1], CTRL_DIM_[2], // Linear
                                                      CTRL_DIM_[3], CTRL_DIM_[4], CTRL_DIM_[5]}, // Angular
@@ -685,13 +724,19 @@ void dynamics_controller::compute_cart_control_commands()
                                                        abag_command_(3) * motion_profile_(3), // Angular
                                                        abag_command_(4) * motion_profile_(4), // Angular
                                                        abag_command_(5) * motion_profile_(5)}); // Angular
+
+            // KDL::SetToZero(cart_force_command_[END_EFF_]);
+            // cart_force_command_[END_EFF_](0) = abag_command_(0) * motion_profile_(0);
+
+            if(desired_task_model_ == task_model::moveTo || \
+               desired_task_model_ == task_model::moveGuarded) transform_motion_driver();
+            
             break;
 
         default:
             assert(("Unsupported interface!", false));
             break;
     }
-
 
 #ifndef NDEBUG
     // std::cout << "ABAG Commands:         "<< abag_command_.transpose() << std::endl;
@@ -984,11 +1029,6 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
         // std::cout << "End-effector Velocity:                \n" 
         //           << robot_state_.frame_velocity[END_EFF_] << std::endl;
     #endif 
-
-    #ifdef NDEBUG
-        // std::cout << "End-effector Velocity:   \n" 
-        //           << robot_state_.frame_velocity[END_EFF_] << std::endl;
-    #endif
 
     compute_control_error();
     
