@@ -163,7 +163,7 @@ class dynamics_controller
     KDL::Twist current_error_twist_;
     Eigen::VectorXd abag_error_vector_, predicted_error_twist_;
     double tube_speed_error_, horizon_amplitude_, horizon_slope_;
-    Eigen::VectorXd abag_command_, transformed_abag_command_, max_command_, motion_profile_;
+    Eigen::VectorXd abag_command_, max_command_, motion_profile_;
     KDL::Wrenches cart_force_command_;
 
     KDL::Solver_Vereshchagin hd_solver_;
