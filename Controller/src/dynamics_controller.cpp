@@ -326,7 +326,6 @@ void dynamics_controller::define_moveTo_task(
     moveTo_task_.time_limit                = time_limit;
 
     desired_state_.frame_pose[END_EFF_]            = KDL::Frame::Identity();
-    desired_state_.frame_velocity[END_EFF_].vel(0) = moveTo_task_.tube_speed;
     desired_task_model_                            = task_model::moveTo;
 }
 
@@ -579,14 +578,19 @@ void dynamics_controller::compute_moveTo_task_error()
      * If yes command zero speed, to keep it in that area.
      * Else go with initially commanded speed tube.
     */
-    if ( std::fabs(predicted_error_twist_(0)) <= moveTo_task_.tube_tolerances[0] ) 
-        abag_error_vector_(0) = 0.0 - robot_state_.frame_velocity[END_EFF_].vel(0);
+    if ( std::fabs(predicted_error_twist_(0)) <= moveTo_task_.tube_tolerances[0] )
+    {
+        desired_state_.frame_velocity[END_EFF_].vel(0) = 0.0;
+    }
 
-    else if ( predicted_error_twist_(0) < (-1 * moveTo_task_.tube_tolerances[0]) ) 
-        abag_error_vector_(0) = -1 * desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
+    else if ( predicted_error_twist_(0) < (-1 * moveTo_task_.tube_tolerances[0]) )
+    {
+        desired_state_.frame_velocity[END_EFF_].vel(0) = -1 * moveTo_task_.tube_speed;
+    } 
     
-    else 
-        abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
+    else desired_state_.frame_velocity[END_EFF_].vel(0) = moveTo_task_.tube_speed;
+
+    abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
     // Other parts of the ABAG error are position errors
     for(int i = 1; i < NUM_OF_CONSTRAINTS_; i++)
@@ -918,7 +922,7 @@ void dynamics_controller::initialize(const int desired_control_mode,
     assert(desired_control_mode_.interface != control_mode::STOP_MOTION); 
 
     desired_task_inteface_ = desired_task_inteface;
-    use_mixed_driver_ = use_mixed_driver;
+    use_mixed_driver_      = use_mixed_driver;
 
     if (desired_task_model_ == task_model::moveTo || desired_task_model_ == task_model::moveGuarded)
     {
