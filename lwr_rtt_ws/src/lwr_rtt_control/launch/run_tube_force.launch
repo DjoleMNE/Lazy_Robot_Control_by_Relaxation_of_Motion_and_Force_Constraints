@@ -31,7 +31,7 @@
     <arg name="krc_compensate_gravity" default="false"/>
     
     <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) ==-->
-    <arg name="desired_task_model" default="0"/>
+    <arg name="desired_task_model" default="2"/>
 
     <!-- ========= Use Joint Torque Commands ===============-->
     <arg name="desired_control_mode" default="0"/>
@@ -69,7 +69,7 @@
     <!-- <arg name="tube_start_position" default="[0.0, -0.1, 1.165]"/> -->
 
     <!-- ========= Tube speed ===============-->
-    <arg name="tube_speed" default="0.2"/>
+    <arg name="tube_speed" default="0.1"/>
     <!-- <arg name="tube_speed" default="0.4"/> -->
 
 
@@ -79,11 +79,11 @@
                                        false, false, false]"/>
 
     <!-- === Damping decision map parameters: Error Sign =======-->
-    <arg name="damper_amplitude" default="2.0"/>
+    <arg name="damper_amplitude" default="3.0"/>
     <arg name="damper_slope"     default="2.05"/>
   
     <!-- ========= Max Cart force excerted on the End-Effector ===============-->
-    <arg name="max_command" default="[100.0, 100.0, 200.0, 
+    <arg name="max_command" default="[200.0, 200.0, 200.0, 
                                       20.0, 20.0, 20.0]"/>
 
     

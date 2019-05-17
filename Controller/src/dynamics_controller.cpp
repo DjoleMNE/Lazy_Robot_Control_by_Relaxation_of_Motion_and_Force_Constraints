@@ -44,7 +44,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     current_error_twist_(KDL::Twist::Zero()),
     abag_error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     predicted_error_twist_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
-    use_transformed_driver_(true), tube_speed_error_(0.0),
+    use_mixed_driver_(false), tube_speed_error_(0.0),
     horizon_amplitude_(1.0), horizon_slope_(4.5),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     transformed_abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
@@ -653,7 +653,7 @@ void dynamics_controller::transform_force_driver()
     cart_force_command_[END_EFF_] = moveTo_task_.tf_pose.M * cart_force_command_[END_EFF_];
 }
 
-//Change the reference frame of constraint forces and acceleration energy, from task frame to base frame
+//Change the reference frame of constraint forces, from task frame to base frame
 void dynamics_controller::transform_motion_driver()
 {
     KDL::Wrench wrench_column;
@@ -672,9 +672,6 @@ void dynamics_controller::transform_motion_driver()
         twist_column = KDL::Twist(wrench_column.force, wrench_column.torque);
         robot_state_.ee_unit_constraint_force.setColumn(c, twist_column);
     }
-
-    // Change the reference frame of External Force from the task frame to the base frame
-    // cart_force_command_[END_EFF_] = moveTo_task_.tf_pose.M * cart_force_command_[END_EFF_];
 }
 
 void dynamics_controller::compute_cart_control_commands()
@@ -700,8 +697,6 @@ void dynamics_controller::compute_cart_control_commands()
             break;
 
         case dynamics_interface::CART_ACCELERATION:
-            // CTRL_DIM_[0] = false;
-
             // Set Cartesian Acceleration Constraints on the End-Effector
             set_ee_acc_constraints(robot_state_,
                                    std::vector<bool>{CTRL_DIM_[0], CTRL_DIM_[1], CTRL_DIM_[2], // Linear
@@ -713,12 +708,22 @@ void dynamics_controller::compute_cart_control_commands()
                                                        abag_command_(4) * motion_profile_(4), // Angular
                                                        abag_command_(5) * motion_profile_(5)}); // Angular
 
-            // KDL::SetToZero(cart_force_command_[END_EFF_]);
-            // cart_force_command_[END_EFF_](0) = abag_command_(0) * motion_profile_(0);
-
             if(desired_task_model_ == task_model::moveTo || \
-               desired_task_model_ == task_model::moveGuarded) transform_motion_driver();
-            
+               desired_task_model_ == task_model::moveGuarded)
+            {
+                //Change the reference frame of constraint forces, from task frame to base frame
+                transform_motion_driver();
+
+                // Change the reference frame of External Forces from the task frame to the base frame
+                if(use_mixed_driver_)
+                {
+                    // Use external force interace for only X linear direction, to control tube speed
+                    KDL::SetToZero(cart_force_command_[END_EFF_]);
+                    cart_force_command_[END_EFF_](0) = abag_command_(0) * motion_profile_(0);
+                    transform_force_driver();
+                } 
+            }
+
             break;
 
         default:
@@ -904,7 +909,7 @@ int dynamics_controller::control(const int desired_control_mode,
 
 void dynamics_controller::initialize(const int desired_control_mode, 
                                      const int desired_task_inteface,
-                                     const bool use_transformed_driver,
+                                     const bool use_mixed_driver,
                                      const bool store_control_data)
 {
     // Save current selection of desire control mode
@@ -914,8 +919,13 @@ void dynamics_controller::initialize(const int desired_control_mode,
     assert(desired_control_mode_.interface != control_mode::STOP_MOTION); 
 
     desired_task_inteface_ = desired_task_inteface;
-    use_transformed_driver_ = use_transformed_driver;
-    
+    use_mixed_driver_ = use_mixed_driver;
+
+    if (desired_task_model_ == task_model::moveTo || desired_task_model_ == task_model::moveGuarded)
+    {
+        if(use_mixed_driver_) CTRL_DIM_[0] = false;
+    } 
+
     // First make sure that the robot is not moving
     // stop_robot_motion();
 

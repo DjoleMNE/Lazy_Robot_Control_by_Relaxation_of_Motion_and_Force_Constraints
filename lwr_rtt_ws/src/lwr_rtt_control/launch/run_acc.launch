@@ -31,14 +31,13 @@
     <arg name="krc_compensate_gravity" default="false"/>
 
     <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) ==-->
-    <arg name="desired_task_model" default="2"/>
-    <!-- <arg name="desired_task_model" default="0"/> -->
+    <arg name="desired_task_model" default="0"/>
     
     <!-- ========= Use Joint Torque Commands ===============-->
     <arg name="desired_control_mode" default="0"/>
 
-    <!-- ========= Use Transformed Motion Driver ===============-->
-    <arg name="use_transformed_driver" default="false"/>
+    <!-- ========= Use Mixed Motion Driver ===============-->
+    <arg name="use_mixed_driver" default="false"/>
 
     <!-- ========= Use Cart Acc Constraint Interface ===============-->
     <arg name="desired_dynamics_interface" default="0"/>
@@ -131,7 +130,7 @@
         <param name="robot_model" value="$(arg robot_model)"/>
         <param name="krc_compensate_gravity" value="$(arg krc_compensate_gravity)"/>
         <param name="desired_task_model" value="$(arg desired_task_model)"/>
-        <param name="use_transformed_driver" value="$(arg use_transformed_driver)"/>
+        <param name="use_mixed_driver" value="$(arg use_mixed_driver)"/>
         <param name="desired_control_mode" value="$(arg desired_control_mode)"/>
         <param name="desired_dynamics_interface" value="$(arg desired_dynamics_interface)"/>
         <param name="desired_pose" value="$(arg desired_pose)"/>

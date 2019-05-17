@@ -96,7 +96,7 @@ class dynamics_controller
                         const Eigen::VectorXd &min_command_sat);
     void initialize(const int desired_control_mode, 
                     const int desired_task_inteface,
-                    const bool use_transformed_driver, 
+                    const bool use_mixed_driver, 
                     const bool store_control_data);
     void deinitialize();
     void stop_robot_motion();
@@ -147,7 +147,7 @@ class dynamics_controller
     const int END_EFF_;
     const std::vector<double> JOINT_TORQUE_LIMITS_;
     std::vector<bool> CTRL_DIM_;
-    bool use_transformed_driver_;
+    bool use_mixed_driver_;
     
     struct moveTo_task
     {

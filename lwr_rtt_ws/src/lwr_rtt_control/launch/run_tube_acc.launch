@@ -29,18 +29,18 @@
     <arg name="environment" default="1"/>
     <arg name="robot_model" default="0"/>
     <arg name="krc_compensate_gravity" default="false"/>
-    
-    <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) ==-->
-    <arg name="desired_task_model" default="0"/>
 
+    <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) ==-->
+    <arg name="desired_task_model" default="2"/>
+    
     <!-- ========= Use Joint Torque Commands ===============-->
     <arg name="desired_control_mode" default="0"/>
 
     <!-- ========= Use Mixed Motion Driver ===============-->
     <arg name="use_mixed_driver" default="false"/>
 
-    <!-- ========= Use Cart Virtual Force Interface ===============-->
-    <arg name="desired_dynamics_interface" default="1"/>
+    <!-- ========= Use Cart Acc Constraint Interface ===============-->
+    <arg name="desired_dynamics_interface" default="0"/>
 
 
     
@@ -57,19 +57,19 @@
     <!-- <arg name="desired_pose" default="3"/> -->
 
 
+
     <!-- ========= Tube tolerances ===============-->
     <arg name="tube_tolerances" default="[0.05, 0.05, 0.05, 
                                           0.17, 0.17, 0.17]"/>
     <!-- <arg name="tube_tolerances" default="[0.0, 0.0, 0.0, 
                                                0.0, 0.0, 0.0]"/> -->
 
-
     <!-- ========= Tube start position ===============-->
     <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/>
-    <!-- <arg name="tube_start_position" default="[0.0, -0.1, 1.165]"/> -->
+    <!-- <arg name="tube_start_position" default="[0.3, -0.4, 1.165]"/> -->
 
     <!-- ========= Tube speed ===============-->
-    <arg name="tube_speed" default="0.2"/>
+    <arg name="tube_speed" default="0.1"/>
     <!-- <arg name="tube_speed" default="0.4"/> -->
 
 
@@ -79,12 +79,13 @@
                                        false, false, false]"/>
 
     <!-- === Damping decision map parameters: Error Sign =======-->
-    <arg name="damper_amplitude" default="2.0"/>
-    <arg name="damper_slope"     default="2.05"/>
+    <!-- <arg name="damper_amplitude" default="0.0"/> -->
+    <arg name="damper_amplitude" default="2.5"/>
+    <arg name="damper_slope"     default="9.05"/>
   
-    <!-- ========= Max Cart force excerted on the End-Effector ===============-->
-    <arg name="max_command" default="[100.0, 100.0, 200.0, 
-                                      20.0, 20.0, 20.0]"/>
+    <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
+    <arg name="max_command" default="[50.0, 50.0, 50.0, 
+                                      10.0, 10.0, 10.0]"/>
 
     
 <!-- *************** ABAG SETTINGS ******************** -->
@@ -120,25 +121,6 @@
     <arg name="GAIN_STEP" default="     [0.003152, 0.003152, 0.003152, 
                                          0.015152, 0.015152, 0.655152]"/>
 
-
-    <!-- ABAG PARAMETERS(Error Sign): Robust but high Gain, high chattering in motors  -->
-    <!-- <arg name="ERROR_ALPHA"    default="[0.650000, 0.650000, 0.650000, 
-                                         0.650000, 0.850000, 0.178001]"/>
-
-    <arg name="BIAS_THRESHOLD" default="[0.001007, 0.001007, 0.001007, 
-                                         0.001007, 0.001007, 0.724277]"/>
-
-    <arg name="BIAS_STEP"      default="[0.003495, 0.003495, 0.003495, 
-                                         0.003495, 0.003495, 0.503495]"/>
-
-    <arg name="GAIN_THRESHOLD" default="[0.252492, 0.252492, 0.252492, 
-                                         0.252492, 0.252492, 0.432492]"/>
-
-    <arg name="GAIN_STEP"      default="[0.015152, 0.015152, 0.015152, 
-                                         0.015152, 0.015152, 0.655152]"/> -->
-
-
-
 <!--============ LwrRttControl Params ============-->
     <!-- Set some parameters for LwrRttControl
     You can get them using rtt_ros_kdl_tools::getAllPropertiesFromROSParam(this)
@@ -151,7 +133,7 @@
         <param name="use_mixed_driver" value="$(arg use_mixed_driver)"/>
         <param name="desired_control_mode" value="$(arg desired_control_mode)"/>
         <param name="desired_dynamics_interface" value="$(arg desired_dynamics_interface)"/>
-        <param name="desired_pose" value="$(arg desired_pose)"/>        
+        <param name="desired_pose" value="$(arg desired_pose)"/>
         <rosparam param="tube_tolerances" subst_value="True">$(arg tube_tolerances)</rosparam>
         <rosparam param="tube_start_position" subst_value="True">$(arg tube_start_position)</rosparam>
         <rosparam param="tube_speed" subst_value="True">$(arg tube_speed)</rosparam>

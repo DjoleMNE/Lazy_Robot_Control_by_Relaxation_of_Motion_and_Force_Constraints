@@ -87,7 +87,7 @@ class LwrRttControl : public RTT::TaskContext{
         std::chrono::steady_clock::time_point loop_end_time_;
 
         //General Control Parameters
-        bool krc_compensate_gravity_, use_transformed_driver_;
+        bool krc_compensate_gravity_, use_mixed_driver_;
         int desired_task_model_, desired_control_mode_, desired_dynamics_interface_, desired_pose_;
         double damper_amplitude_, damper_slope_, tube_speed_;
         std::vector<bool> control_dims_;

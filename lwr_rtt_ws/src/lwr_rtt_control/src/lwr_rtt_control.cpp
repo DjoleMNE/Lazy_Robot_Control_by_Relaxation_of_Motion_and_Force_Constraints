@@ -32,7 +32,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     environment_(lwr_environment::LWR_SIMULATION), 
     robot_model_(lwr_model::LWR_URDF), iteration_count_(0),
     loop_total_time_(0.0),
-    krc_compensate_gravity_(false), use_transformed_driver_(true),
+    krc_compensate_gravity_(false), use_mixed_driver_(false),
     desired_task_model_(2), desired_control_mode_(0), desired_dynamics_interface_(1),
     desired_pose_(1), damper_amplitude_(1.0), damper_slope_(4.0), tube_speed_(0.2),
     control_dims_(NUM_OF_CONSTRAINTS_, false),
@@ -58,10 +58,8 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addPort("JointVelocityCommand",port_joint_velocity_cmd_out).doc("Command joint velocities");
     this->addPort("JointTorqueCommand",port_joint_torque_cmd_out).doc("Command joint torques");
 
-//     this->addProperty("environment", environment_).doc("environment");
-//     this->addProperty("robot_model", robot_model_).doc("robot_model");
     this->addProperty("krc_compensate_gravity", krc_compensate_gravity_).doc("KRC compensate gravity");
-    this->addProperty("use_transformed_driver", use_transformed_driver_).doc("use_transformed_driver");
+    this->addProperty("use_mixed_driver", use_mixed_driver_).doc("use_mixed_driver");
     this->addProperty("desired_task_model", desired_task_model_).doc("desired_task_model");
     this->addProperty("desired_control_mode", desired_control_mode_).doc("desired_control_mode");
     this->addProperty("desired_dynamics_interface", desired_dynamics_interface_).doc("desired_dynamics_interface");
@@ -202,18 +200,18 @@ bool LwrRttControl::configureHook()
 
     controller_->initialize(desired_control_mode_, 
                             desired_dynamics_interface_,
-                            use_transformed_driver_, 
+                            use_mixed_driver_, 
                             true);
 
-    // sleep(2); // wait for gazebo to load completely        
     this->visualize_pose(desired_ee_pose_);
+    sleep(1);
     return true;
 }
 
 
 void LwrRttControl::updateHook()
 {
-    if(iteration_count_ > 12000) 
+    if(iteration_count_ > 15000) 
     {
         // std::cout << "Loop time: " << loop_total_time_ / iteration_count_ << std::endl;
         RTT::TaskContext::stop();
@@ -364,7 +362,6 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose)
         marker_2.lifetime = ros::Duration(1000);
 
         vis_pub.publish(marker_2);
-        sleep(1);
     }
 }
 
