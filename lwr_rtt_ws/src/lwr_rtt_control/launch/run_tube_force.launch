@@ -79,7 +79,7 @@
                                        false, false, false]"/>
 
     <!-- === Damping decision map parameters: Error Sign =======-->
-    <arg name="damper_amplitude" default="5.50"/>
+    <arg name="damper_amplitude" default="4.50"/>
     <arg name="damper_slope"     default="2.05"/>
   
     <!-- ========= Max Cart force excerted on the End-Effector ===============-->
