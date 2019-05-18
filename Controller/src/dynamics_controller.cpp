@@ -159,6 +159,8 @@ void dynamics_controller::print_settings_info()
             break;
     }
 
+    if(use_mixed_driver_) std::cout<< "\nMixed driver used!"<< std::endl;
+
     std::cout<< "\nInitial joint state: "<< std::endl;
     std::cout<< "Joint positions: "<< robot_state_.q << std::endl;
     std::cout<< "Joint velocities:"<< robot_state_.qd << "\n" << std::endl;
@@ -234,8 +236,9 @@ void dynamics_controller::write_to_file()
         
     log_file_cart_ << desired_state_.frame_velocity[END_EFF_].vel(0) << std::endl;
 
-    for(int i = 0; i < 6; i++) 
-        log_file_cart_ << predicted_error_twist_(i) << " ";
+    log_file_cart_ << predicted_error_twist_(0) << " ";
+    for(int i = 1; i < 6; i++) 
+        log_file_cart_ << abag_error_vector_(i) << " ";
     log_file_cart_ << abag_error_vector_(0) << std::endl;
 
     log_file_cart_ << abag_.get_error().transpose().format(dynamics_parameter::WRITE_FORMAT);
