@@ -225,19 +225,18 @@ void dynamics_controller::write_to_file()
         log_file_cart_ << robot_state_.frame_pose[END_EFF_].p(i) << " ";
     for(int i = 3; i < 6; i++) 
         log_file_cart_ << 0.0 << " ";
-
-    log_file_cart_ << std::endl;
+    log_file_cart_ << robot_state_.frame_velocity[END_EFF_].vel(0) << std::endl;
 
     for(int i = 0; i < 3; i++) 
         log_file_cart_ << desired_state_.frame_pose[END_EFF_].p(i) << " ";
     for(int i = 3; i < 6; i++) 
         log_file_cart_ << 0.0 << " ";
         
-    log_file_cart_ << std::endl;
+    log_file_cart_ << desired_state_.frame_velocity[END_EFF_].vel(0) << std::endl;
 
     for(int i = 0; i < 6; i++) 
         log_file_cart_ << predicted_error_twist_(i) << " ";
-    log_file_cart_ << std::endl;
+    log_file_cart_ << abag_error_vector_(0) << std::endl;
 
     log_file_cart_ << abag_.get_error().transpose().format(dynamics_parameter::WRITE_FORMAT);
     log_file_cart_ << abag_.get_bias().transpose().format(dynamics_parameter::WRITE_FORMAT);
@@ -940,6 +939,10 @@ void dynamics_controller::initialize(const int desired_control_mode,
     {
         log_file_cart_.open(dynamics_parameter::LOG_FILE_CART_PATH);
         assert(log_file_cart_.is_open());
+
+        for(int i = 0; i < NUM_OF_CONSTRAINTS_; i++) 
+            log_file_cart_ << moveTo_task_.tube_tolerances[i] << " ";
+        log_file_cart_ << std::endl;      
 
         log_file_joint_.open(dynamics_parameter::LOG_FILE_JOINT_PATH);
         assert(log_file_joint_.is_open());
