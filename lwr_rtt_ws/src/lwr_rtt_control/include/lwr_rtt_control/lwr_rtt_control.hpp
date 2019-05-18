@@ -78,8 +78,7 @@ class LwrRttControl : public RTT::TaskContext{
         const int NUM_OF_SEGMENTS_;
         const int NUM_OF_JOINTS_;
         const int NUM_OF_CONSTRAINTS_;
-        int environment_, robot_model_;
-        int iteration_count_;
+        int environment_, robot_model_, iteration_count_, simulation_loop_iterations_;
         
         //Timer
         double loop_total_time_;

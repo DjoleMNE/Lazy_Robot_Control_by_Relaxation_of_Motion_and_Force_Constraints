@@ -28,6 +28,7 @@
 <!-- ***************** General Control PARAMETERS ********************** -->
     <arg name="environment" default="1"/>
     <arg name="robot_model" default="0"/>
+    <arg name="simulation_loop_iterations" default="17000"/>
     <arg name="krc_compensate_gravity" default="false"/>
 
     <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) ==-->
@@ -80,7 +81,7 @@
 
     <!-- === Damping decision map parameters: Error Sign =======-->
     <!-- <arg name="damper_amplitude" default="0.0"/> -->
-    <arg name="damper_amplitude" default="4.5"/>
+    <arg name="damper_amplitude" default="5.5"/>
     <arg name="damper_slope"     default="9.05"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
@@ -128,6 +129,7 @@
     <node name="lwr_rtt_control" pkg="rtt_ros" type="deployer" args="-s $(find lwr_rtt_control)/scripts/run.ops --" output="screen">
         <param name="environment" value="$(arg environment)"/>
         <param name="robot_model" value="$(arg robot_model)"/>
+        <param name="simulation_loop_iterations" value="$(arg simulation_loop_iterations)"/>
         <param name="krc_compensate_gravity" value="$(arg krc_compensate_gravity)"/>
         <param name="desired_task_model" value="$(arg desired_task_model)"/>
         <param name="use_mixed_driver" value="$(arg use_mixed_driver)"/>

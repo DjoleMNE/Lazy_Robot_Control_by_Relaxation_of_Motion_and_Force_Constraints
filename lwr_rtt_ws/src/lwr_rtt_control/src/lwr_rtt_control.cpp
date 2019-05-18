@@ -31,7 +31,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     NUM_OF_JOINTS_(7), NUM_OF_CONSTRAINTS_(6), 
     environment_(lwr_environment::LWR_SIMULATION), 
     robot_model_(lwr_model::LWR_URDF), iteration_count_(0),
-    loop_total_time_(0.0),
+    simulation_loop_iterations_(10000), loop_total_time_(0.0),
     krc_compensate_gravity_(false), use_mixed_driver_(false),
     desired_task_model_(2), desired_control_mode_(0), desired_dynamics_interface_(1),
     desired_pose_(1), damper_amplitude_(1.0), damper_slope_(4.0), tube_speed_(0.2),
@@ -57,7 +57,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addPort("JointPositionCommand",port_joint_position_cmd_out).doc("Command joint positions");
     this->addPort("JointVelocityCommand",port_joint_velocity_cmd_out).doc("Command joint velocities");
     this->addPort("JointTorqueCommand",port_joint_torque_cmd_out).doc("Command joint torques");
-
+    this->addProperty("simulation_loop_iterations", simulation_loop_iterations_).doc("simulation_loop_iterations");
     this->addProperty("krc_compensate_gravity", krc_compensate_gravity_).doc("KRC compensate gravity");
     this->addProperty("use_mixed_driver", use_mixed_driver_).doc("use_mixed_driver");
     this->addProperty("desired_task_model", desired_task_model_).doc("desired_task_model");
@@ -211,7 +211,7 @@ bool LwrRttControl::configureHook()
 
 void LwrRttControl::updateHook()
 {
-    if(iteration_count_ > 17000) 
+    if(iteration_count_ > simulation_loop_iterations_) 
     {
         // std::cout << "Loop time: " << loop_total_time_ / iteration_count_ << std::endl;
         RTT::TaskContext::stop();
