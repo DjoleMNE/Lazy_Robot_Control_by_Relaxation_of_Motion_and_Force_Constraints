@@ -74,7 +74,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     desired_control_mode_.is_safe = false;
 
     desired_task_inteface_ = dynamics_interface::CART_FORCE;
-    desired_task_model_    = task_model::stop_motion;
+    desired_task_model_    = task_model::full_pose;
 
     KDL::SetToZero(cart_force_command_[END_EFF_]);
 
@@ -580,12 +580,12 @@ void dynamics_controller::compute_moveTo_task_error()
      * If yes command zero speed, to keep it in that area.
      * Else go with initially commanded speed tube.
     */
-    if ( std::fabs(predicted_error_twist_(0)) <= moveTo_task_.tube_tolerances[0] )
+    if ( std::fabs(current_error_twist_(0)) <= moveTo_task_.tube_tolerances[0] )
     {
         desired_state_.frame_velocity[END_EFF_].vel(0) = 0.0;
     }
 
-    else if ( predicted_error_twist_(0) < (-1 * moveTo_task_.tube_tolerances[0]) )
+    else if ( current_error_twist_(0) < (-1 * moveTo_task_.tube_tolerances[0]) )
     {
         desired_state_.frame_velocity[END_EFF_].vel(0) = -1 * moveTo_task_.tube_speed;
     } 

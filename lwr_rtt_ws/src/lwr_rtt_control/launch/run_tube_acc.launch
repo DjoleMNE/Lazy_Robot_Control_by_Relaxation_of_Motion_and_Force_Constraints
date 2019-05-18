@@ -62,7 +62,7 @@
     <arg name="tube_tolerances" default="[0.01, 0.01, 0.01, 
                                           0.17, 0.17, 0.17]"/>
     <!-- <arg name="tube_tolerances" default="[0.0, 0.0, 0.0, 
-                                               0.0, 0.0, 0.0]"/> -->
+                                          0.0, 0.0, 0.0]"/> -->
 
     <!-- ========= Tube start position ===============-->
     <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/>
@@ -84,7 +84,7 @@
     <arg name="damper_slope"     default="9.05"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
-    <arg name="max_command" default="[50.0, 50.0, 50.0, 
+    <arg name="max_command" default="[100.0, 100.0, 100.0, 
                                       10.0, 10.0, 10.0]"/>
 
     

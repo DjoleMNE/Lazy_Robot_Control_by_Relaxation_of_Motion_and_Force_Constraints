@@ -57,7 +57,6 @@ enum dynamics_interface
 
 enum task_model
 {
-  stop_motion = -1,
   full_pose = 0,
   moveGuarded = 1,
   moveTo = 2

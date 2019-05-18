@@ -241,8 +241,8 @@ void LwrRttControl::updateHook()
         gravity_solver_->JntToGravity(robot_state_.q, jnt_gravity_trq_out);
         jnt_trq_cmd_out = robot_state_.control_torque.data - jnt_gravity_trq_out.data;
     }
-
     // jnt_trq_cmd_out << 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+
     port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
     iteration_count_++;
 
