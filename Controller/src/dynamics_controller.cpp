@@ -53,7 +53,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     hd_solver_(robot_chain_, robot_driver->get_joint_inertia(),
                robot_driver->get_root_acceleration(), NUM_OF_CONSTRAINTS_),
     fk_vereshchagin_(robot_chain_),
-    safety_control_(robot_driver, true), fsm_(),
+    safety_control_(robot_driver, true), 
+    fsm_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     abag_(abag_parameter::DIMENSIONS, abag_parameter::USE_ERROR_SIGN),
     predictor_(robot_chain_),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
@@ -99,23 +100,23 @@ void dynamics_controller::print_settings_info()
     printf("Selected controller settings:\n");
     printf("Control Loop Frequency: %d Hz\n", RATE_HZ_);
 
-    printf("Control Mode: ");
+    printf("Joint Interface: ");
     switch(desired_control_mode_.interface) 
     {
         case control_mode::STOP_MOTION:
-            printf("STOP MOTION \n Stopping the robot!\n");
+            printf("STOP JOINTS \n Stopping the robot!\n");
             break;
 
         case control_mode::POSITION:
-            printf("Joint Position Control\n");
+            printf("Joint Position \n");
             break;
 
         case control_mode::VELOCITY:
-            printf("Joint Velocity Control\n");
+            printf("Joint Velocity \n");
             break;
 
         case control_mode::TORQUE:
-            printf("Joint Torque Control\n");
+            printf("Joint Torque \n");
             break;
     }
 
@@ -320,6 +321,7 @@ void dynamics_controller::define_moveTo_task(
     }
 
     moveTo_task_.tf_pose                   = KDL::Frame(tf_orientation, tf_position);
+    moveTo_task_.goal_pose                 = KDL::Frame::Identity();
     moveTo_task_.tube_start_position       = tube_start_position;
     moveTo_task_.tube_tolerances           = tube_tolerances;
     moveTo_task_.tube_speed                = tube_speed;
@@ -327,7 +329,7 @@ void dynamics_controller::define_moveTo_task(
     moveTo_task_.contact_threshold_angular = contact_threshold_angular;
     moveTo_task_.time_limit                = time_limit;
 
-    desired_state_.frame_pose[END_EFF_]            = KDL::Frame::Identity();
+    desired_state_.frame_pose[END_EFF_]            = moveTo_task_.goal_pose;
     desired_task_model_                            = task_model::moveTo;
 }
 

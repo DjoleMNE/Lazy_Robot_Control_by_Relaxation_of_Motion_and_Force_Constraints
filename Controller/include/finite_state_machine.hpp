@@ -25,16 +25,23 @@ SOFTWARE.
 
 #ifndef FINITE_STATE_MACHINE_HPP
 #define FINITE_STATE_MACHINE_HPP
-// #include <state_specification.hpp>
-// #include <constants.hpp>
-// #include <fk_vereshchagin.hpp>
-// #include <kdl_eigen_conversions.hpp>
+#include <state_specification.hpp>
+#include <constants.hpp>
+#include <fk_vereshchagin.hpp>
+#include <kdl_eigen_conversions.hpp>
 #include <iostream>
 #include <sstream>
 #include <fstream>
 #include <unistd.h>
 #include <cmath>
 #include <stdlib.h>     /* abs */
+
+enum task_model
+{
+  full_pose = 0,
+  moveGuarded = 1,
+  moveTo = 2
+};
 
 enum control_status
 {
@@ -44,16 +51,51 @@ enum control_status
     CRUISE_TO_STOP = 2,
     CRUISE_THROUGH_TUBE = 3,
     CRUISE = 4,
-    STOP_MOTION = 5
+    STOP_ROBOT = 5
+};
+
+struct moveTo_task
+{
+    KDL::Frame tf_pose, goal_pose;
+    std::vector<double> tube_start_position{std::vector<double>(3, 0.0)};
+    std::vector<double> tube_tolerances{std::vector<double>(6, 0.0)};
+    double tube_speed = 0.0;
+    double contact_threshold_linear = 0.0;
+    double contact_threshold_angular = 0.0;
+    double time_limit = 0.0;
+};
+
+struct full_pose_task
+{
+    KDL::Frame tf_pose, goal_pose;
+    double contact_threshold_linear = 0.0;
+    double contact_threshold_angular = 0.0;
+    double time_limit = 0.0;
 };
 
 class finite_state_machine
 {
     public:
-        finite_state_machine();
+        finite_state_machine(const int num_of_joints,
+                             const int num_of_segments,
+                             const int num_of_frames,
+                             const int num_of_constraints);
         ~finite_state_machine(){};
 
+        int initialize_with_moveTo(const moveTo_task &task);
+        int initialize_with_full_pose(const full_pose_task &task);
+
+        int update(const state_specification &robot_state,
+                   const state_specification &desired_state,
+                   const double time_passed);
+
     private:
-        int method_;
+        const int NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_;
+        int desired_task_model_;
+        double total_control_time_;
+        bool goal_reached_, time_limit_reached_, contact_detected_;
+        state_specification robot_state_, desired_state_;
+        moveTo_task moveTo_task_;
+        full_pose_task full_pose_task_;
 };
 #endif /* FINITE_STATE_MACHINE_HPP */

@@ -55,14 +55,6 @@ enum dynamics_interface
   FF_JOINT_TORQUE = 2
 };
 
-enum task_model
-{
-  full_pose = 0,
-  moveGuarded = 1,
-  moveTo = 2
-};
-
-
 class dynamics_controller
 {
   public:
@@ -148,16 +140,7 @@ class dynamics_controller
     std::vector<bool> CTRL_DIM_;
     bool use_mixed_driver_;
     
-    struct moveTo_task
-    {
-      KDL::Frame tf_pose;
-      std::vector<double> tube_start_position{std::vector<double>(3, 0.0)};
-      std::vector<double> tube_tolerances{std::vector<double>(6, 0.0)};
-      double tube_speed = 0.0;
-      double contact_threshold_linear = 0.0;
-      double contact_threshold_angular = 0.0;
-      double time_limit = 0.0;
-    } moveTo_task_;
+    moveTo_task  moveTo_task_;
 
     KDL::Twist current_error_twist_;
     Eigen::VectorXd abag_error_vector_, predicted_error_twist_;

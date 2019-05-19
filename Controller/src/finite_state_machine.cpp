@@ -25,6 +25,38 @@ SOFTWARE.
 
 #include <finite_state_machine.hpp>
 
-finite_state_machine::finite_state_machine()
+finite_state_machine::finite_state_machine(const int num_of_joints,
+                                           const int num_of_segments,
+                                           const int num_of_frames,
+                                           const int num_of_constraints):
+    NUM_OF_JOINTS_(num_of_joints), NUM_OF_SEGMENTS_(num_of_segments),
+    NUM_OF_FRAMES_(num_of_frames), NUM_OF_CONSTRAINTS_(num_of_constraints), 
+    desired_task_model_(task_model::full_pose), total_control_time_(0.0),
+    goal_reached_(false), time_limit_reached_(false), contact_detected_(false),
+    robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
+    desired_state_(robot_state_)
 {
+}
+
+int finite_state_machine::initialize_with_moveTo(const moveTo_task &task)
+{
+    desired_task_model_ = task_model::moveTo;
+    return control_status::NOMINAL;
+}
+
+int finite_state_machine::initialize_with_full_pose(const full_pose_task &task)
+{
+    desired_task_model_ = task_model::full_pose;
+    return control_status::NOMINAL;
+}
+
+int finite_state_machine::update(const state_specification &robot_state,
+                                 const state_specification &desired_state,
+                                 const double time_passed)
+{
+    robot_state_        = robot_state;
+    desired_state_      = desired_state;
+    total_control_time_ = time_passed;
+
+    return control_status::NOMINAL;
 }
