@@ -36,35 +36,22 @@ SOFTWARE.
 #include <cmath>
 #include <stdlib.h>     /* abs */
 
-// enum decision_map 
-// {
-//     S_CURVE = 0,
-//     TANH = 1
-// };
+enum control_status
+{
+    STOP_CONTROL = -1,
+    NOMINAL = 0,
+    START_TO_CRUISE = 1,
+    CRUISE_TO_STOP = 2,
+    CRUISE_THROUGH_TUBE = 3,
+    CRUISE = 4,
+    STOP_MOTION = 5
+};
 
 class finite_state_machine
 {
     public:
         finite_state_machine();
         ~finite_state_machine(){};
-
-        double tanh_decision_map(const double state,
-                                 const double amplitude,
-                                 const double slope);
-        double tanh_inverse_decision_map(const double state,
-                                         const double offset,
-                                         const double amplitude,
-                                         const double slope);
-        double step_decision_map(const double state,
-                                 const double magnitude,
-                                 const double delta_slope,
-                                 const double upper_limit,
-                                 const double lower_limit);
-        double negative_step_decision_map(const double state,
-                                          const double magnitude,
-                                          const double delta_slope,
-                                          const double upper_limit,
-                                          const double lower_limit);
 
     private:
         int method_;
