@@ -109,11 +109,14 @@ int Solver_Vereshchagin::CartToJnt(const JntArray &q, const JntArray &q_dot,
 
     //do an upward recursion for position(X) and velocities(X_dot)
     this->initial_upwards_sweep(q, q_dot, q_dotdot, f_ext_natural, f_ext_virtual);
+
     //do an inward recursion for inertia(H), forces(F) and constraints (U and L)
     this->downwards_sweep(alfa, torques);
+
     //Solve for the constraint forces(b_N-> beta = ...)
     //equation f) in paper: nu = M_0_inverse*(beta_N - E0_tilde`*acc0 - G0)
     this->constraint_calculation(beta);
+
     //do an upward recursion to propagate the result
     this->final_upwards_sweep(q_dotdot, torques);
     return (error = E_NOERROR);
@@ -214,6 +217,7 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
         //M is the (unit) acceleration energy already generated at link i (L)
         //G is the (unit) magnitude of the constraint forces at link i (U)
         //E are the (unit) constraint forces due to the constraints (A or alpha here)
+
         if (i == (int)ns)
         {
             s.P_tilde = s.H;
@@ -230,6 +234,7 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
                     s.E_tilde(r, c) = alfa(r + 3, c);
                     s.E_tilde(r + 3, c) = alfa(r, c);
                 }
+        
             //Change the reference frame of alfa to the segmentN tip frame
             //F_Total holds end effector frame, if done per segment bases then constraints could be extended to all segments
             Rotation base_to_end = F_total.M.Inverse();
@@ -423,6 +428,7 @@ void Solver_Vereshchagin::constraint_calculation(const JntArray& beta)
     //results[0].M.computeInverse(&M_0_inverse);
     Vector6d acc;
     acc << Vector3d::Map(acc_root.rot.data), Vector3d::Map(acc_root.vel.data);
+
     nu_sum.noalias() = -(results[0].E_tilde.transpose() * acc);
     //nu_sum.setZero();
     nu_sum += total_beta.data;
