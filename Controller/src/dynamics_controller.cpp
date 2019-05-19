@@ -24,7 +24,7 @@ SOFTWARE.
 */
 
 #include <dynamics_controller.hpp>
-#define SECOND 1000000
+#define SECOND 1000000 // 1sec = 1 000 000 us
 const double MIN_NORM = 1e-10;
 
 dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
@@ -39,7 +39,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     NUM_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
     NUM_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
     END_EFF_(NUM_OF_SEGMENTS_ - 1),
-    CTRL_DIM_(NUM_OF_CONSTRAINTS_, false),
+    CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), fsm_result_(control_status::STOP_ROBOT),
     JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
     current_error_twist_(KDL::Twist::Zero()),
     abag_error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
@@ -351,7 +351,12 @@ void dynamics_controller::define_desired_ee_pose(
                       cartesian_pose[6], cartesian_pose[7], cartesian_pose[8],
                       cartesian_pose[9], cartesian_pose[10], cartesian_pose[11]);
     
-    desired_task_model_ = task_model::full_pose;
+    full_pose_task_.tf_pose                   = KDL::Frame::Identity();
+    full_pose_task_.goal_pose                 = desired_state_.frame_pose[END_EFF_];
+    full_pose_task_.contact_threshold_linear  = 0.1;
+    full_pose_task_.contact_threshold_angular = 0.1;
+    full_pose_task_.time_limit                = 15.0;
+    desired_task_model_                       = task_model::full_pose;
 }
 
 // Define Cartesian Acceleration task on the end-effector - Public Method
@@ -649,7 +654,7 @@ void dynamics_controller::compute_control_error()
             break;
 
         default:
-            assert(("Unsupported task model", false));
+            assert(("Unsupported task model\n", false));
             break;
     }
 }
@@ -914,10 +919,10 @@ int dynamics_controller::control(const int desired_control_mode,
     return 0;
 }
 
-void dynamics_controller::initialize(const int desired_control_mode, 
-                                     const int desired_task_inteface,
-                                     const bool use_mixed_driver,
-                                     const bool store_control_data)
+int dynamics_controller::initialize(const int desired_control_mode, 
+                                    const int desired_task_inteface,
+                                    const bool use_mixed_driver,
+                                    const bool store_control_data)
 {
     // Save current selection of desire control mode
     desired_control_mode_.interface = desired_control_mode;
@@ -927,6 +932,22 @@ void dynamics_controller::initialize(const int desired_control_mode,
 
     desired_task_inteface_ = desired_task_inteface;
     use_mixed_driver_      = use_mixed_driver;
+
+    switch (desired_task_model_)
+    {
+        case task_model::moveTo:
+            fsm_.initialize_with_moveTo(moveTo_task_);
+            break;
+        
+        case task_model::full_pose:
+            fsm_.initialize_with_full_pose(full_pose_task_);
+            break;
+            
+        default:
+            assert(("Unsupported task model\n", false));
+            return -1;
+            break;
+    }
 
     if (desired_task_model_ == task_model::moveTo || desired_task_model_ == task_model::moveGuarded)
     {
@@ -964,6 +985,7 @@ void dynamics_controller::initialize(const int desired_control_mode,
     }
 
     print_settings_info();
+    return 0;
 }
 
 void dynamics_controller::set_parameters(const double horizon_amplitude,
@@ -1007,7 +1029,8 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
 */
 int dynamics_controller::step(const KDL::JntArray &q_input,
                               const KDL::JntArray &qd_input,
-                              Eigen::VectorXd &tau_output)
+                              Eigen::VectorXd &tau_output,
+                              const double time_passed_sec)
 {
     robot_state_.q  = q_input;
     robot_state_.qd = qd_input;
@@ -1038,6 +1061,20 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
         // std::cout << "End-effector Velocity:                \n" 
         //           << robot_state_.frame_velocity[END_EFF_] << std::endl;
     #endif 
+
+    fsm_result_ = fsm_.update(robot_state_, desired_state_, time_passed_sec);
+
+    switch (fsm_result_)
+    {
+        case control_status::NOMINAL:
+            printf("Everthing file\n");
+            break;
+        
+        default:
+            printf("stop!");
+            return -1;
+            break;
+    }
 
     compute_control_error();
     

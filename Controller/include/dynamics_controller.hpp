@@ -72,7 +72,8 @@ class dynamics_controller
     */
     int step(const KDL::JntArray &q_input,
              const KDL::JntArray &qd_input, 
-             Eigen::VectorXd &tau_output);
+             Eigen::VectorXd &tau_output,
+             const double time_passed_sec);
     
     void set_parameters(const double damper_amplitude,
                         const double damper_slope,
@@ -85,10 +86,10 @@ class dynamics_controller
                         const Eigen::VectorXd &gain_step,
                         const Eigen::VectorXd &min_bias_sat,
                         const Eigen::VectorXd &min_command_sat);
-    void initialize(const int desired_control_mode, 
-                    const int desired_task_inteface,
-                    const bool use_mixed_driver, 
-                    const bool store_control_data);
+    int initialize(const int desired_control_mode, 
+                   const int desired_task_inteface,
+                   const bool use_mixed_driver, 
+                   const bool store_control_data);
     void deinitialize();
     void stop_robot_motion();
 
@@ -138,9 +139,11 @@ class dynamics_controller
     const int END_EFF_;
     const std::vector<double> JOINT_TORQUE_LIMITS_;
     std::vector<bool> CTRL_DIM_;
+    int fsm_result_;
     bool use_mixed_driver_;
     
-    moveTo_task  moveTo_task_;
+    moveTo_task moveTo_task_;
+    full_pose_task full_pose_task_;
 
     KDL::Twist current_error_twist_;
     Eigen::VectorXd abag_error_vector_, predicted_error_twist_;

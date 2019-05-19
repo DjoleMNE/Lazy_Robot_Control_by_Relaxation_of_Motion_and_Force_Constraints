@@ -86,13 +86,13 @@ class finite_state_machine
         int initialize_with_full_pose(const full_pose_task &task);
 
         int update(const state_specification &robot_state,
-                   const state_specification &desired_state,
-                   const double time_passed);
+                   state_specification &desired_state,
+                   const double time_passed_sec);
 
     private:
         const int NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_;
         int desired_task_model_;
-        double total_control_time_;
+        double total_control_time_sec_;
         bool goal_reached_, time_limit_reached_, contact_detected_;
         state_specification robot_state_, desired_state_;
         moveTo_task moveTo_task_;

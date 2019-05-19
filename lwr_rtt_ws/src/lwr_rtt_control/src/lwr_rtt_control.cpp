@@ -31,7 +31,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     NUM_OF_JOINTS_(7), NUM_OF_CONSTRAINTS_(6), 
     environment_(lwr_environment::LWR_SIMULATION), 
     robot_model_(lwr_model::LWR_URDF), iteration_count_(0),
-    simulation_loop_iterations_(10000), loop_total_time_(0.0),
+    simulation_loop_iterations_(10000), total_time_(0.0),
     krc_compensate_gravity_(false), use_mixed_driver_(false),
     desired_task_model_(2), desired_control_mode_(0), desired_dynamics_interface_(1),
     desired_pose_(1), damper_amplitude_(1.0), damper_slope_(4.0), tube_speed_(0.2),
@@ -198,10 +198,11 @@ bool LwrRttControl::configureHook()
                                 bias_threshold_, bias_step_, gain_threshold_,
                                 gain_step_, min_bias_sat_, min_command_sat_);
 
-    controller_->initialize(desired_control_mode_, 
-                            desired_dynamics_interface_,
-                            use_mixed_driver_, 
-                            true);
+    int initial_result = controller_->initialize(desired_control_mode_, 
+                                                 desired_dynamics_interface_,
+                                                 use_mixed_driver_, 
+                                                 true);
+    if(initial_result != 0) return false;
 
     this->visualize_pose(desired_ee_pose_);
     sleep(1);
@@ -218,7 +219,9 @@ void LwrRttControl::updateHook()
     }
 
     // Save current time point
-    // loop_start_time_ = std::chrono::steady_clock::now();
+    if(iteration_count_ == 0) start_time_ = std::chrono::steady_clock::now();
+    total_time_ = std::chrono::duration<double, std::micro>\
+                  (std::chrono::steady_clock::now() - start_time_).count();
 
     // Read status from robot
     port_joint_position_in.read(jnt_pos_in);
@@ -230,7 +233,8 @@ void LwrRttControl::updateHook()
     
     int controller_result = controller_->step(robot_state_.q, 
                                               robot_state_.qd, 
-                                              robot_state_.control_torque.data);
+                                              robot_state_.control_torque.data, 
+                                              total_time_ / SECOND);
 
     if(!controller_result == 0) RTT::TaskContext::stop();
     //  RTT::TaskContext::stop();
@@ -245,10 +249,6 @@ void LwrRttControl::updateHook()
 
     port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
     iteration_count_++;
-
-    // loop_total_time_ += std::chrono::duration<double, std::micro>\
-    //         (std::chrono::steady_clock::now() -\
-    //                                         loop_start_time_).count();
 }
 
 void LwrRttControl::stopHook()

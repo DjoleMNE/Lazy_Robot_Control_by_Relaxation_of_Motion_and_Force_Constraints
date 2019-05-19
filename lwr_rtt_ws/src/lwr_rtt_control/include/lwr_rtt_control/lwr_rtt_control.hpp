@@ -81,9 +81,9 @@ class LwrRttControl : public RTT::TaskContext{
         int environment_, robot_model_, iteration_count_, simulation_loop_iterations_;
         
         //Timer
-        double loop_total_time_;
-        std::chrono::steady_clock::time_point loop_start_time_;
-        std::chrono::steady_clock::time_point loop_end_time_;
+        double total_time_;
+        std::chrono::steady_clock::time_point start_time_;
+        std::chrono::steady_clock::time_point end_time_;
 
         //General Control Parameters
         bool krc_compensate_gravity_, use_mixed_driver_;
