@@ -130,6 +130,7 @@ class dynamics_controller
     std::chrono::steady_clock::time_point loop_start_time_;
     std::chrono::steady_clock::time_point loop_end_time_;
     std::chrono::duration <double, std::micro> loop_interval_{};
+    double total_time_sec_;
 
     const KDL::Chain robot_chain_;
     const int NUM_OF_JOINTS_;
@@ -139,7 +140,7 @@ class dynamics_controller
     const int END_EFF_;
     const std::vector<double> JOINT_TORQUE_LIMITS_;
     std::vector<bool> CTRL_DIM_;
-    int fsm_result_;
+    int fsm_result_, previous_control_status_;
     bool use_mixed_driver_;
     
     moveTo_task moveTo_task_;

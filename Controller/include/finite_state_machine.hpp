@@ -29,6 +29,7 @@ SOFTWARE.
 #include <constants.hpp>
 #include <fk_vereshchagin.hpp>
 #include <kdl_eigen_conversions.hpp>
+#include <motion_profile.hpp>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -91,11 +92,15 @@ class finite_state_machine
 
     private:
         const int NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_;
+        const int END_EFF_;
         int desired_task_model_;
         double total_control_time_sec_;
         bool goal_reached_, time_limit_reached_, contact_detected_;
         state_specification robot_state_, desired_state_;
         moveTo_task moveTo_task_;
         full_pose_task full_pose_task_;
+
+        int update_full_pose_task(state_specification &desired_state);
+        int update_moveTo_task(state_specification &desired_state);
 };
 #endif /* FINITE_STATE_MACHINE_HPP */

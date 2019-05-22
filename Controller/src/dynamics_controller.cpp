@@ -33,13 +33,14 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     // Time period defined in microseconds: 1s = 1 000 000us
     DT_MICRO_(SECOND / RATE_HZ_),  DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
     loop_start_time_(), loop_end_time_(), //Not sure if required to init
-    robot_chain_(robot_driver->get_robot_model()),
+    total_time_sec_(0.0),  robot_chain_(robot_driver->get_robot_model()),
     NUM_OF_JOINTS_(robot_chain_.getNrOfJoints()),
     NUM_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
     NUM_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
     NUM_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
     END_EFF_(NUM_OF_SEGMENTS_ - 1),
-    CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), fsm_result_(control_status::STOP_ROBOT),
+    CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), fsm_result_(control_status::NOMINAL),
+    previous_control_status_(fsm_result_),
     JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
     current_error_twist_(KDL::Twist::Zero()),
     abag_error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
@@ -582,22 +583,7 @@ void dynamics_controller::compute_moveTo_task_error()
     make_predictions(horizon_amplitude_, 1);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
 
-    /*
-     * See if the robot has reached goal area in X linear direction.
-     * If yes command zero speed, to keep it in that area.
-     * Else go with initially commanded speed tube.
-    */
-    if ( std::fabs(current_error_twist_(0)) <= moveTo_task_.tube_tolerances[0] )
-    {
-        desired_state_.frame_velocity[END_EFF_].vel(0) = 0.0;
-    }
-
-    else if ( current_error_twist_(0) < (-1 * moveTo_task_.tube_tolerances[0]) )
-    {
-        desired_state_.frame_velocity[END_EFF_].vel(0) = -1 * moveTo_task_.tube_speed;
-    } 
-    
-    else desired_state_.frame_velocity[END_EFF_].vel(0) = moveTo_task_.tube_speed;
+    fsm_result_ = fsm_.update(robot_state_, desired_state_, total_time_sec_);
 
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
@@ -624,6 +610,8 @@ void dynamics_controller::compute_moveTo_task_error()
 */
 void dynamics_controller::compute_full_pose_task_error()
 {
+    fsm_result_            = fsm_.update(robot_state_, desired_state_, total_time_sec_);
+
     current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
 
     make_predictions(horizon_amplitude_, 1);
@@ -654,7 +642,7 @@ void dynamics_controller::compute_control_error()
             break;
 
         default:
-            assert(("Unsupported task model\n", false));
+            assert(("Unsupported task model", false));
             break;
     }
 }
@@ -690,18 +678,12 @@ void dynamics_controller::compute_cart_control_commands()
 {   
     abag_command_ = abag_.update_state(abag_error_vector_).transpose();
 
-    bool use_motion_profile = false;
-    if(use_motion_profile) for(int i = 0; i < 3; i++)
-        motion_profile_(i) = motion_profile::negative_step_decision_map(current_error_twist_.vel.Norm(), 
-                                                                        max_command_(i), 0.25, 0.4, 0.1);
-    else motion_profile_ = max_command_;
-
     switch (desired_task_inteface_)
     {
         case dynamics_interface::CART_FORCE:
             // Set virtual forces computed by the ABAG controller
             for(int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
-                cart_force_command_[END_EFF_](i) = CTRL_DIM_[i]? abag_command_(i) * motion_profile_(i) : 0.0;
+                cart_force_command_[END_EFF_](i) = CTRL_DIM_[i]? abag_command_(i) * max_command_(i) : 0.0;
             
             if(desired_task_model_ == task_model::moveTo || \
                desired_task_model_ == task_model::moveGuarded) transform_force_driver();
@@ -713,12 +695,12 @@ void dynamics_controller::compute_cart_control_commands()
             set_ee_acc_constraints(robot_state_,
                                    std::vector<bool>{CTRL_DIM_[0], CTRL_DIM_[1], CTRL_DIM_[2], // Linear
                                                      CTRL_DIM_[3], CTRL_DIM_[4], CTRL_DIM_[5]}, // Angular
-                                   std::vector<double>{abag_command_(0) * motion_profile_(0), // Linear
-                                                       abag_command_(1) * motion_profile_(1), // Linear
-                                                       abag_command_(2) * motion_profile_(2), // Linear
-                                                       abag_command_(3) * motion_profile_(3), // Angular
-                                                       abag_command_(4) * motion_profile_(4), // Angular
-                                                       abag_command_(5) * motion_profile_(5)}); // Angular
+                                   std::vector<double>{abag_command_(0) * max_command_(0), // Linear
+                                                       abag_command_(1) * max_command_(1), // Linear
+                                                       abag_command_(2) * max_command_(2), // Linear
+                                                       abag_command_(3) * max_command_(3), // Angular
+                                                       abag_command_(4) * max_command_(4), // Angular
+                                                       abag_command_(5) * max_command_(5)}); // Angular
 
             if(desired_task_model_ == task_model::moveTo || \
                desired_task_model_ == task_model::moveGuarded)
@@ -731,7 +713,7 @@ void dynamics_controller::compute_cart_control_commands()
                 {
                     // Use external force interace for only X linear direction, to control tube speed
                     KDL::SetToZero(cart_force_command_[END_EFF_]);
-                    cart_force_command_[END_EFF_](0) = abag_command_(0) * motion_profile_(0);
+                    cart_force_command_[END_EFF_](0) = abag_command_(0) * max_command_(0);
                     transform_force_driver();
                 } 
             }
@@ -944,7 +926,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
             break;
             
         default:
-            assert(("Unsupported task model\n", false));
+            printf("Unsupported task model\n");
             return -1;
             break;
     }
@@ -1034,6 +1016,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
 {
     robot_state_.q  = q_input;
     robot_state_.qd = qd_input;
+    total_time_sec_ = time_passed_sec;
 
     // Get Cart poses and velocities
     int fk_solver_result = fk_vereshchagin_.JntToCart(robot_state_.q, 
@@ -1062,23 +1045,49 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
         //           << robot_state_.frame_velocity[END_EFF_] << std::endl;
     #endif 
 
-    fsm_result_ = fsm_.update(robot_state_, desired_state_, time_passed_sec);
-
     switch (fsm_result_)
     {
         case control_status::NOMINAL:
-            printf("Everthing file\n");
+            if(previous_control_status_ != control_status::NOMINAL) printf("Control status changed to NOMINAL\n");
+            break;
+        
+        case control_status::START_TO_CRUISE:
+            if(previous_control_status_ != control_status::START_TO_CRUISE) printf("Control status changed to START_TO_CRUISE\n");
+            break;
+
+        case control_status::CRUISE_TO_STOP:
+            if(previous_control_status_ != control_status::CRUISE_TO_STOP) printf("Control status changed to CRUISE_TO_STOP\n");
+            break;
+
+        case control_status::CRUISE_THROUGH_TUBE:
+            if(previous_control_status_ != control_status::CRUISE_THROUGH_TUBE) printf("Control status changed to CRUISE_THROUGH_TUBE\n");
+            break;
+        
+        case control_status::CRUISE:
+            if(previous_control_status_ != control_status::CRUISE) printf("Control status changed to CRUISE\n");
+            break;
+        
+        case control_status::STOP_ROBOT:
+            if(previous_control_status_ != control_status::STOP_ROBOT) printf("Control status changed to STOP_ROBOT\n");
             break;
         
         default:
-            printf("stop!");
+            printf("Stop the robot!");
             return -1;
             break;
     }
 
-    compute_control_error();
-    
-    compute_cart_control_commands();
+    previous_control_status_ = fsm_result_;
+
+    static int steps = 0;
+
+    if (steps % 1 == 0)
+    {
+        compute_control_error();
+        compute_cart_control_commands();
+    }
+    steps++;
+
     if (store_control_data_) write_to_file();   
 
     // Calculate robot dynamics using the Vereshchagin HD solver

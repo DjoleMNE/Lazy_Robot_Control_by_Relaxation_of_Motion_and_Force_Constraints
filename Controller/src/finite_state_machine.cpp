@@ -30,7 +30,8 @@ finite_state_machine::finite_state_machine(const int num_of_joints,
                                            const int num_of_frames,
                                            const int num_of_constraints):
     NUM_OF_JOINTS_(num_of_joints), NUM_OF_SEGMENTS_(num_of_segments),
-    NUM_OF_FRAMES_(num_of_frames), NUM_OF_CONSTRAINTS_(num_of_constraints), 
+    NUM_OF_FRAMES_(num_of_frames), NUM_OF_CONSTRAINTS_(num_of_constraints),
+    END_EFF_(NUM_OF_SEGMENTS_ - 1), 
     desired_task_model_(task_model::full_pose), total_control_time_sec_(0.0),
     goal_reached_(false), time_limit_reached_(false), contact_detected_(false),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
@@ -54,13 +55,93 @@ int finite_state_machine::initialize_with_full_pose(const full_pose_task &task)
     return control_status::NOMINAL;
 }
 
+int finite_state_machine::update_moveTo_task(state_specification &desired_state)
+{
+    if(total_control_time_sec_ > moveTo_task_.time_limit) 
+    {
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        #ifndef NDEBUG       
+            if(!time_limit_reached_) printf("Time limit reached\n");
+            time_limit_reached_ = true;
+        #endif
+        return control_status::STOP_ROBOT;
+    }
+
+    double x_error = desired_state_.frame_pose[END_EFF_].p(0) -\
+                     robot_state_.frame_pose[END_EFF_].p(0);
+
+    /*
+     * See if the robot has reached goal area in X linear direction.
+     * If yes command zero speed, to keep it in that area.
+     * Else go with initially commanded speed tube.
+    */
+    if ( std::fabs(x_error) <= moveTo_task_.tube_tolerances[0] )
+    {
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        #ifndef NDEBUG       
+            if(!goal_reached_) printf("Goal area reached\n");
+            goal_reached_ = true;
+        #endif
+        return control_status::STOP_ROBOT;
+    }
+
+    else if ( x_error < (-1 * moveTo_task_.tube_tolerances[0]) )
+    {
+        // desired_state.frame_velocity[END_EFF_].vel(0) = \
+        //         -1 * motion_profile::negative_step_function(std::fabs(x_error), 
+        //                                                     moveTo_task_.tube_speed, 
+        //                                                     0.25, 0.4, 0.1);
+        desired_state.frame_velocity[END_EFF_].vel(0) = -1 * moveTo_task_.tube_speed;
+    } 
+    
+    else
+    {
+        // desired_state.frame_velocity[END_EFF_].vel(0) = \
+        //         motion_profile::s_curve_function(std::fabs(x_error), 
+        //                                          0.05, 0.15, 5.0);
+
+        desired_state.frame_velocity[END_EFF_].vel(0) = moveTo_task_.tube_speed;              
+    } 
+    return control_status::NOMINAL;
+}
+
+int finite_state_machine::update_full_pose_task(state_specification &desired_state)
+{
+    if(total_control_time_sec_ > full_pose_task_.time_limit) 
+    {
+        desired_state.frame_pose[END_EFF_] = robot_state_.frame_pose[END_EFF_];
+        #ifndef NDEBUG
+            if(!time_limit_reached_) printf("Time limit reached\n");
+            time_limit_reached_ = true;
+        #endif
+
+        return control_status::STOP_ROBOT;
+    }
+
+    return control_status::NOMINAL;
+}
+
 int finite_state_machine::update(const state_specification &robot_state,
                                  state_specification &desired_state,
                                  const double time_passed_sec)
 {
-    robot_state_        = robot_state;
-    desired_state_      = desired_state;
+    robot_state_            = robot_state;
+    desired_state_          = desired_state;
     total_control_time_sec_ = time_passed_sec;
 
-    return control_status::NOMINAL;
+    switch (desired_task_model_)
+    {
+        case task_model::moveTo:
+            return update_moveTo_task(desired_state);
+            break;
+        
+        case task_model::full_pose:
+            return update_full_pose_task(desired_state);
+            break;
+            
+        default:
+            printf("Unsupported task model\n");
+            return control_status::STOP_CONTROL;
+            break;
+    }
 }
