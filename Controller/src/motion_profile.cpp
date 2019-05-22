@@ -27,43 +27,55 @@ SOFTWARE.
 
 namespace motion_profile
 {
-    double tanh_decision_map(const double state,
-                             const double amplitude,
-                             const double slope)
+    double tanh_function(const double state,
+                         const double offset,
+                         const double amplitude,
+                         const double slope)
     {
         // Two-parameter-scaled tanh function
-        return amplitude * std::tanh(slope * state);
+        return offset + amplitude * std::tanh(slope * state);
     }
 
-    double tanh_inverse_decision_map(const double state,
-                                     const double offset,
-                                     const double amplitude,
-                                     const double slope)
+    double tanh_inverse_function(const double state,
+                                 const double offset,
+                                 const double amplitude,
+                                 const double slope)
     {
         // Three-parameter-scaled tanh function
         if(state < 0.001) return offset + amplitude * std::tanh(slope / 0.001);
         else return offset + amplitude * std::tanh(slope / state);
     }
 
-    double step_decision_map(const double state,
-                             const double magnitude,
-                             const double delta_slope,
-                             const double upper_limit,
-                             const double lower_limit)
+    double step_function(const double state,
+                         const double magnitude,
+                         const double delta_slope,
+                         const double upper_limit,
+                         const double lower_limit)
     {
         if(state >= upper_limit) return magnitude;
         else if (state < upper_limit && state > lower_limit) return (1.0 + delta_slope) * magnitude;
         else return (1.0 + 2 * delta_slope) * magnitude;
     }
 
-    double negative_step_decision_map(const double state,
-                                      const double magnitude,
-                                      const double delta_slope,
-                                      const double upper_limit,
-                                      const double lower_limit)
+    double negative_step_function(const double state,
+                                  const double magnitude,
+                                  const double delta_slope,
+                                  const double upper_limit,
+                                  const double lower_limit)
     {
         if(state >= upper_limit) return magnitude;
         else if (state < upper_limit && state > lower_limit) return (1.0 - delta_slope) * magnitude;
         else return (1.0 - 2 * delta_slope) * magnitude;
+    }
+
+
+    double s_curve_function(const double state,
+                            const double offset,
+                            const double amplitude,
+                            const double slope)
+    {
+        // if(state > 0.61) return offset + amplitude * std::sin(slope * 0.61);
+        // else return offset + amplitude * std::sin(slope * state);
+        return offset + amplitude * std::sin(slope * state);
     }
 }

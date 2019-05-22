@@ -87,20 +87,19 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 
     else if ( x_error < (-1 * moveTo_task_.tube_tolerances[0]) )
     {
-        // desired_state.frame_velocity[END_EFF_].vel(0) = \
-        //         -1 * motion_profile::negative_step_function(std::fabs(x_error), 
-        //                                                     moveTo_task_.tube_speed, 
-        //                                                     0.25, 0.4, 0.1);
-        desired_state.frame_velocity[END_EFF_].vel(0) = -1 * moveTo_task_.tube_speed;
+        desired_state.frame_velocity[END_EFF_].vel(0) = \
+                -1 * motion_profile::s_curve_function(std::fabs(x_error), 
+                                                 0.05, 0.15, 5.0);
+        // desired_state.frame_velocity[END_EFF_].vel(0) = -1 * moveTo_task_.tube_speed;
     } 
     
     else
     {
-        // desired_state.frame_velocity[END_EFF_].vel(0) = \
-        //         motion_profile::s_curve_function(std::fabs(x_error), 
-        //                                          0.05, 0.15, 5.0);
+        desired_state.frame_velocity[END_EFF_].vel(0) = \
+                motion_profile::s_curve_function(std::fabs(x_error), 
+                                                 0.05, 0.15, 5.0);
 
-        desired_state.frame_velocity[END_EFF_].vel(0) = moveTo_task_.tube_speed;              
+        // desired_state.frame_velocity[END_EFF_].vel(0) = moveTo_task_.tube_speed;              
     } 
     return control_status::NOMINAL;
 }

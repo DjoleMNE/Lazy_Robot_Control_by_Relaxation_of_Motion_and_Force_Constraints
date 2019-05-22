@@ -36,30 +36,36 @@ SOFTWARE.
 #include <cmath>
 #include <stdlib.h>     /* abs */
 
-// enum profile 
-// {
-//     S_CURVE = 0,
-//     TANH = 1
-// };
+enum m_profile 
+{
+    CONSTANT = -1,
+    S_CURVE = 0,
+    TANH = 1
+};
 
 namespace motion_profile
 {
-        double tanh_decision_map(const double state,
-                                 const double amplitude,
-                                 const double slope);
-        double tanh_inverse_decision_map(const double state,
-                                         const double offset,
-                                         const double amplitude,
-                                         const double slope);
-        double step_decision_map(const double state,
-                                 const double magnitude,
-                                 const double delta_slope,
-                                 const double upper_limit,
-                                 const double lower_limit);
-        double negative_step_decision_map(const double state,
-                                          const double magnitude,
-                                          const double delta_slope,
-                                          const double upper_limit,
-                                          const double lower_limit);
+        double tanh_function(const double state,
+                             const double offset,
+                             const double amplitude,
+                             const double slope);
+        double tanh_inverse_function(const double state,
+                                     const double offset,
+                                     const double amplitude,
+                                     const double slope);
+        double step_function(const double state,
+                             const double magnitude,
+                             const double delta_slope,
+                             const double upper_limit,
+                             const double lower_limit);
+        double negative_step_function(const double state,
+                                      const double magnitude,
+                                      const double delta_slope,
+                                      const double upper_limit,
+                                      const double lower_limit);
+        double s_curve_function(const double state,
+                                const double offset,
+                                const double amplitude,
+                                const double slope);
 };
 #endif /* MOTION_PROFILE_HPP */
