@@ -236,7 +236,7 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
 
             // Save input matrix of constraint forces. Expressed w.r.t. base frame. 
             // Required for transformation of root_acc (in constraint magnitude calculation).  
-            // E_input = s.E_tilde;
+            E_input = s.E_tilde;
 
             //Change the reference frame of alfa to the segmentN tip frame
             //F_Total holds end effector frame, if done per segment bases then constraints could be extended to all segments
@@ -250,15 +250,15 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
             }
 
             // Gravity acceleration expressed in end-effector frame. First linear than angular part.
-            Twist gravity_acc = base_to_end * acc_root;
+            // Twist gravity_acc = base_to_end * acc_root;
 
             // Gravity acceleration expressed in base frame. First angular than linear part.
-            Vector6d gravity_acc_swap;
-            gravity_acc_swap << Vector3d::Map(gravity_acc.rot.data), Vector3d::Map(gravity_acc.vel.data);
+            // Vector6d gravity_acc_swap;
+            // gravity_acc_swap << Vector3d::Map(gravity_acc.rot.data), Vector3d::Map(gravity_acc.vel.data);
 
             // Djordje: Initializing G matrix with gravitational effects. Compensation for gravity forces on end-effector
             // Djordje: See Popov and Vereshchagin book from 1978, Moscow 
-            s.G.noalias() = -1 * (s.E_tilde.transpose() * gravity_acc_swap);
+            // s.G.noalias() = -1 * (s.E_tilde.transpose() * gravity_acc_swap);
         }
 
         else
@@ -441,8 +441,8 @@ void Solver_Vereshchagin::constraint_calculation(const JntArray& beta)
     // Djordje: Compute and add additional contribution to beta from gravity acceleration
     // Djordje: Required for properly compansating for gravity effects at end-effector.
     // Djordje: See Popov and Vereshchagin book from 1978, Moscow 
-    // nu_sum += E_input.transpose() * acc;
-    
+    nu_sum += E_input.transpose() * acc;
+
     nu_sum -= results[0].G;
 
     //equation f) nu = M_0_inverse*(beta_N - E0_tilde`*acc0 - G0)
