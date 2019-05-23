@@ -59,6 +59,11 @@
 
 
 
+    <!-- ========= Task time limit in seconds ==============-->
+    <arg name="task_time_limit_sec" default="12.0"/>
+
+
+
     <!-- ========= Tube tolerances ===============-->
     <arg name="tube_tolerances" default="[0.03, 0.01, 0.01, 
                                           0.17, 0.17, 0.17]"/>
@@ -85,7 +90,7 @@
     <arg name="damper_slope"     default="9.05"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
-    <arg name="max_command" default="[100.0, 100.0, 100.0, 
+    <arg name="max_command" default="[60.0, 60.0, 60.0, 
                                       10.0, 10.0, 10.0]"/>
 
     
@@ -136,6 +141,7 @@
         <param name="desired_control_mode" value="$(arg desired_control_mode)"/>
         <param name="desired_dynamics_interface" value="$(arg desired_dynamics_interface)"/>
         <param name="desired_pose" value="$(arg desired_pose)"/>
+        <param name="task_time_limit_sec" value="$(arg task_time_limit_sec)"/>
         <rosparam param="tube_tolerances" subst_value="True">$(arg tube_tolerances)</rosparam>
         <rosparam param="tube_start_position" subst_value="True">$(arg tube_start_position)</rosparam>
         <rosparam param="tube_speed" subst_value="True">$(arg tube_speed)</rosparam>

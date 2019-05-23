@@ -81,7 +81,7 @@ class LwrRttControl : public RTT::TaskContext{
         int environment_, robot_model_, iteration_count_, simulation_loop_iterations_;
         
         //Timer
-        double total_time_;
+        double total_time_, task_time_limit_sec_;
         std::chrono::steady_clock::time_point start_time_;
         std::chrono::steady_clock::time_point end_time_;
 

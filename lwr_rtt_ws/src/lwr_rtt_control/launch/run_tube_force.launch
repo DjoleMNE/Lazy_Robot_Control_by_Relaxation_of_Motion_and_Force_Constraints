@@ -58,6 +58,11 @@
     <!-- <arg name="desired_pose" default="3"/> -->
 
 
+
+    <!-- ========= Task time limit in seconds ==============-->
+    <arg name="task_time_limit_sec" default="2.0"/>
+
+
     <!-- ========= Tube tolerances ===============-->
     <arg name="tube_tolerances" default="[0.03, 0.01, 0.01, 
                                           0.17, 0.17, 0.17]"/>
@@ -153,7 +158,8 @@
         <param name="use_mixed_driver" value="$(arg use_mixed_driver)"/>
         <param name="desired_control_mode" value="$(arg desired_control_mode)"/>
         <param name="desired_dynamics_interface" value="$(arg desired_dynamics_interface)"/>
-        <param name="desired_pose" value="$(arg desired_pose)"/>        
+        <param name="desired_pose" value="$(arg desired_pose)"/>   
+        <param name="task_time_limit_sec" value="$(arg task_time_limit_sec)"/>     
         <rosparam param="tube_tolerances" subst_value="True">$(arg tube_tolerances)</rosparam>
         <rosparam param="tube_start_position" subst_value="True">$(arg tube_start_position)</rosparam>
         <rosparam param="tube_speed" subst_value="True">$(arg tube_speed)</rosparam>

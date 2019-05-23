@@ -277,7 +277,7 @@ void dynamics_controller::define_moveTo_task(
                                 const double tube_speed,
                                 const double contact_threshold_linear,
                                 const double contact_threshold_angular,
-                                const double time_limit,
+                                const double task_time_limit_sec,
                                 std::vector<double> &task_frame_pose)
 {
     assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
@@ -328,7 +328,7 @@ void dynamics_controller::define_moveTo_task(
     moveTo_task_.tube_speed                = tube_speed;
     moveTo_task_.contact_threshold_linear  = contact_threshold_linear;
     moveTo_task_.contact_threshold_angular = contact_threshold_angular;
-    moveTo_task_.time_limit                = time_limit;
+    moveTo_task_.time_limit                = task_time_limit_sec;
 
     desired_state_.frame_pose[END_EFF_]            = moveTo_task_.goal_pose;
     desired_task_model_                            = task_model::moveTo;
@@ -336,7 +336,10 @@ void dynamics_controller::define_moveTo_task(
 
 void dynamics_controller::define_desired_ee_pose(
                             const std::vector<bool> &constraint_direction,
-                            const std::vector<double> &cartesian_pose)
+                            const std::vector<double> &cartesian_pose,
+                            const double contact_threshold_linear,
+                            const double contact_threshold_angular,
+                            const double task_time_limit_sec)
 {
     assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
     assert(cartesian_pose.size()       == NUM_OF_CONSTRAINTS_ * 2);
@@ -354,9 +357,9 @@ void dynamics_controller::define_desired_ee_pose(
     
     full_pose_task_.tf_pose                   = KDL::Frame::Identity();
     full_pose_task_.goal_pose                 = desired_state_.frame_pose[END_EFF_];
-    full_pose_task_.contact_threshold_linear  = 0.1;
-    full_pose_task_.contact_threshold_angular = 0.1;
-    full_pose_task_.time_limit                = 15.0;
+    full_pose_task_.contact_threshold_linear  = contact_threshold_linear;
+    full_pose_task_.contact_threshold_angular = contact_threshold_angular;
+    full_pose_task_.time_limit                = task_time_limit_sec;
     desired_task_model_                       = task_model::full_pose;
 }
 

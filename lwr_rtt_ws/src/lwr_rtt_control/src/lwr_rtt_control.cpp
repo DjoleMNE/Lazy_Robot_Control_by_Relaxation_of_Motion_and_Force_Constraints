@@ -31,7 +31,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     NUM_OF_JOINTS_(7), NUM_OF_CONSTRAINTS_(6), 
     environment_(lwr_environment::LWR_SIMULATION), 
     robot_model_(lwr_model::LWR_URDF), iteration_count_(0),
-    simulation_loop_iterations_(10000), total_time_(0.0),
+    simulation_loop_iterations_(10000), total_time_(0.0), task_time_limit_sec_(0.0),
     krc_compensate_gravity_(false), use_mixed_driver_(false),
     desired_task_model_(2), desired_control_mode_(0), desired_dynamics_interface_(1),
     desired_pose_(1), damper_amplitude_(1.0), damper_slope_(4.0), tube_speed_(0.2),
@@ -64,6 +64,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addProperty("desired_control_mode", desired_control_mode_).doc("desired_control_mode");
     this->addProperty("desired_dynamics_interface", desired_dynamics_interface_).doc("desired_dynamics_interface");
     this->addProperty("desired_pose", desired_pose_).doc("desired pose");
+    this->addProperty("task_time_limit_sec", task_time_limit_sec_).doc("task_time_limit_sec");
     this->addProperty("tube_tolerances", tube_tolerances_).doc("tube_tolerances");
     this->addProperty("tube_start_position", tube_start_position_).doc("tube_start_position");
     this->addProperty("tube_speed", tube_speed_).doc("tube_speed");
@@ -177,14 +178,16 @@ bool LwrRttControl::configureHook()
                                     tube_tolerances_,
                                     tube_speed_,
                                     0.1, 0.1, //contact_threshold linear and angular
-                                    15.0,// time_limit
+                                    task_time_limit_sec_,// time_limit
                                     desired_ee_pose_); // TF pose
             break;
 
         case task_model::full_pose:
             controller_->define_desired_ee_pose(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
                                                                   control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
-                                                desired_ee_pose_);
+                                                desired_ee_pose_,
+                                                0.1, 0.1, //contact_threshold linear and angular
+                                                task_time_limit_sec_);
             break;
 
         default:
