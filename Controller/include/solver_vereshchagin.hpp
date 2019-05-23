@@ -126,6 +126,7 @@ private:
     JntArray ext_torque;
     JntArray controlTorque;
     JntArray constraintTorque;
+    Matrix6Xd E_input; // Input matrix of constraint forces. Expressed w.r.t. base frame. 
     Eigen::VectorXd nu;
     Eigen::VectorXd nu_sum;
     Eigen::VectorXd Sm;

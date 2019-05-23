@@ -195,7 +195,6 @@ void Solver_Vereshchagin::initial_upwards_sweep(const JntArray &q,
 
 }
 
-
 /**
  *  F_bias in upward sweep??? Can be computed in first but also in second sweep check explanation in Azamat's thesis!
  *  This method is a force balance sweep. It calculates articulated body inertias and bias forces.
@@ -234,7 +233,11 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
                     s.E_tilde(r, c) = alfa(r + 3, c);
                     s.E_tilde(r + 3, c) = alfa(r, c);
                 }
-        
+
+            // Save input matrix of constraint forces. Expressed w.r.t. base frame. 
+            // Required for transformation of root_acc (in constraint magnitude calculation).  
+            E_input = s.E_tilde;
+
             //Change the reference frame of alfa to the segmentN tip frame
             //F_Total holds end effector frame, if done per segment bases then constraints could be extended to all segments
             Rotation base_to_end = F_total.M.Inverse();
@@ -351,11 +354,8 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
  */
 void Solver_Vereshchagin::constraint_calculation(const JntArray& beta)
 {
-    JntArray total_beta(6);
-    for (int i = 0; i < 6; i++)
-        total_beta(i) = beta(i);// + acc_root(i);     
-    
     //equation f) nu = M_0_inverse*(beta_N - E0_tilde`*acc0 - G0)
+
     //M_0_inverse, always nc*nc symmetric matrix
     //std::cout<<"M0: "<<results[0].M<<std::endl;
     //results[0].M-=MatrixXd::Identity(nc,nc);
@@ -426,12 +426,19 @@ void Solver_Vereshchagin::constraint_calculation(const JntArray& beta)
     M_0_inverse.noalias() = results[0].M * Um.transpose();
     //results[0].M.ldlt().solve(MatrixXd::Identity(nc,nc),&M_0_inverse);
     //results[0].M.computeInverse(&M_0_inverse);
+
     Vector6d acc;
     acc << Vector3d::Map(acc_root.rot.data), Vector3d::Map(acc_root.vel.data);
-
-    nu_sum.noalias() = -(results[0].E_tilde.transpose() * acc);
+    
     //nu_sum.setZero();
-    nu_sum += total_beta.data;
+    nu_sum.noalias() = -(results[0].E_tilde.transpose() * acc);
+    nu_sum += beta.data;
+
+    // Djordje: Compute and add additional contribution to beta from gravity acceleration
+    // Djordje: Required for properly compansating for gravity effects at end-effector.
+    // Djordje: See Popov and Vereshchagin book from 1978, Moscow 
+    nu_sum += E_input.transpose() * acc;
+    
     nu_sum -= results[0].G;
 
     //equation f) nu = M_0_inverse*(beta_N - E0_tilde`*acc0 - G0)
