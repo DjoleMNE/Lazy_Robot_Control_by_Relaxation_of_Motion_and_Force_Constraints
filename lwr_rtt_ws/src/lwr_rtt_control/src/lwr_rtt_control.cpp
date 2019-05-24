@@ -34,7 +34,8 @@ LwrRttControl::LwrRttControl(const std::string& name):
     simulation_loop_iterations_(10000), total_time_(0.0), task_time_limit_sec_(0.0),
     krc_compensate_gravity_(false), use_mixed_driver_(false),
     desired_task_model_(2), desired_control_mode_(0), desired_dynamics_interface_(1),
-    desired_pose_(1), damper_amplitude_(1.0), damper_slope_(4.0), tube_speed_(0.2),
+    desired_pose_(1), motion_profile_(0),
+    damper_amplitude_(1.0), damper_slope_(4.0), tube_speed_(0.2),
     control_dims_(NUM_OF_CONSTRAINTS_, false),
     desired_ee_pose_(12, 0.0), tube_tolerances_(6, 0.0), tube_start_position_(3, 0.0),
     max_command_(Eigen::VectorXd::Constant(6, 0.0)),
@@ -68,6 +69,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addProperty("tube_tolerances", tube_tolerances_).doc("tube_tolerances");
     this->addProperty("tube_start_position", tube_start_position_).doc("tube_start_position");
     this->addProperty("tube_speed", tube_speed_).doc("tube_speed");
+    this->addProperty("motion_profile", motion_profile_).doc("motion_profile");
     this->addProperty("control_dims", control_dims_).doc("control dimensions");
     this->addProperty("damper_amplitude", damper_amplitude_).doc("damper_amplitude");
     this->addProperty("damper_slope", damper_slope_).doc("damper_slope");
@@ -204,7 +206,8 @@ bool LwrRttControl::configureHook()
     int initial_result = controller_->initialize(desired_control_mode_, 
                                                  desired_dynamics_interface_,
                                                  use_mixed_driver_, 
-                                                 true);
+                                                 true,
+                                                 motion_profile_);
     if(initial_result != 0) return false;
 
     this->visualize_pose(desired_ee_pose_);

@@ -89,7 +89,8 @@ class dynamics_controller
     int initialize(const int desired_control_mode, 
                    const int desired_task_inteface,
                    const bool use_mixed_driver, 
-                   const bool store_control_data);
+                   const bool store_control_data,
+                   const int motion_profile);
     void deinitialize();
     void stop_robot_motion();
 

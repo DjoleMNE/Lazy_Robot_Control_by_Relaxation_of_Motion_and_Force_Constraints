@@ -87,7 +87,8 @@ class LwrRttControl : public RTT::TaskContext{
 
         //General Control Parameters
         bool krc_compensate_gravity_, use_mixed_driver_;
-        int desired_task_model_, desired_control_mode_, desired_dynamics_interface_, desired_pose_;
+        int desired_task_model_, desired_control_mode_, desired_dynamics_interface_;
+        int desired_pose_, motion_profile_;
         double damper_amplitude_, damper_slope_, tube_speed_;
         std::vector<bool> control_dims_;
         std::vector<double> desired_ee_pose_, tube_tolerances_, tube_start_position_;

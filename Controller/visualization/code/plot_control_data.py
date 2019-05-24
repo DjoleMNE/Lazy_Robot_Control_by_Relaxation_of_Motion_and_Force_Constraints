@@ -89,8 +89,8 @@ plt.margins(0,0)
 
 plt.subplot(4, 1, 1)
 if(desired_dim < 3 or desired_dim == 6):
-    plt.plot(measured, c = 'magenta', label='Measured', linewidth = 2, zorder = 3)
-    plt.plot(desired, label='Desired', linewidth = 2, color = 'black', zorder = 2)
+    plt.plot(measured, c = 'magenta', label='Measured', linewidth = 2, zorder = 2)
+    plt.plot(desired, label='Desired', linewidth = 2, color = 'black', zorder = 3)
 
 if(show_tube):
     tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim] )))

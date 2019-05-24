@@ -907,7 +907,8 @@ int dynamics_controller::control(const int desired_control_mode,
 int dynamics_controller::initialize(const int desired_control_mode, 
                                     const int desired_task_inteface,
                                     const bool use_mixed_driver,
-                                    const bool store_control_data)
+                                    const bool store_control_data,
+                                    const int motion_profile)
 {
     // Save current selection of desire control mode
     desired_control_mode_.interface = desired_control_mode;
@@ -921,11 +922,11 @@ int dynamics_controller::initialize(const int desired_control_mode,
     switch (desired_task_model_)
     {
         case task_model::moveTo:
-            fsm_.initialize_with_moveTo(moveTo_task_);
+            fsm_.initialize_with_moveTo(moveTo_task_, motion_profile);
             break;
         
         case task_model::full_pose:
-            fsm_.initialize_with_full_pose(full_pose_task_);
+            fsm_.initialize_with_full_pose(full_pose_task_, motion_profile);
             break;
             
         default:

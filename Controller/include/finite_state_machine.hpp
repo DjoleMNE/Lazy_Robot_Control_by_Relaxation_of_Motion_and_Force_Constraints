@@ -83,8 +83,8 @@ class finite_state_machine
                              const int num_of_constraints);
         ~finite_state_machine(){};
 
-        int initialize_with_moveTo(const moveTo_task &task);
-        int initialize_with_full_pose(const full_pose_task &task);
+        int initialize_with_moveTo(const moveTo_task &task, const int motion_profile);
+        int initialize_with_full_pose(const full_pose_task &task, const int motion_profile);
 
         int update(const state_specification &robot_state,
                    state_specification &desired_state,
@@ -93,7 +93,7 @@ class finite_state_machine
     private:
         const int NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_;
         const int END_EFF_;
-        int desired_task_model_;
+        int desired_task_model_, motion_profile_;
         double total_control_time_sec_;
         bool goal_reached_, time_limit_reached_, contact_detected_;
         state_specification robot_state_, desired_state_;
@@ -102,5 +102,6 @@ class finite_state_machine
 
         int update_full_pose_task(state_specification &desired_state);
         int update_moveTo_task(state_specification &desired_state);
+        int sign(double x);
 };
 #endif /* FINITE_STATE_MACHINE_HPP */

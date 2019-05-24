@@ -31,26 +31,30 @@ finite_state_machine::finite_state_machine(const int num_of_joints,
                                            const int num_of_constraints):
     NUM_OF_JOINTS_(num_of_joints), NUM_OF_SEGMENTS_(num_of_segments),
     NUM_OF_FRAMES_(num_of_frames), NUM_OF_CONSTRAINTS_(num_of_constraints),
-    END_EFF_(NUM_OF_SEGMENTS_ - 1), 
-    desired_task_model_(task_model::full_pose), total_control_time_sec_(0.0),
+    END_EFF_(NUM_OF_SEGMENTS_ - 1), desired_task_model_(task_model::full_pose),
+    motion_profile_(m_profile::CONSTANT), total_control_time_sec_(0.0),
     goal_reached_(false), time_limit_reached_(false), contact_detected_(false),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     desired_state_(robot_state_)
 {
 }
 
-int finite_state_machine::initialize_with_moveTo(const moveTo_task &task)
+int finite_state_machine::initialize_with_moveTo(const moveTo_task &task,
+                                                 const int motion_profile)
 {
     desired_task_model_ = task_model::moveTo;
     moveTo_task_ = task;
+    motion_profile_ = motion_profile;
 
     return control_status::NOMINAL;
 }
 
-int finite_state_machine::initialize_with_full_pose(const full_pose_task &task)
+int finite_state_machine::initialize_with_full_pose(const full_pose_task &task,
+                                                    const int motion_profile)
 {
     desired_task_model_ = task_model::full_pose;
     full_pose_task_ = task;
+    motion_profile_ = motion_profile;
 
     return control_status::NOMINAL;
 }
@@ -84,23 +88,32 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         #endif
         return control_status::STOP_ROBOT;
     }
-
-    else if ( x_error < (-1 * moveTo_task_.tube_tolerances[0]) )
-    {
-        desired_state.frame_velocity[END_EFF_].vel(0) = \
-                -1 * motion_profile::s_curve_function(std::fabs(x_error), 
-                                                 0.05, 0.15, 5.0);
-        // desired_state.frame_velocity[END_EFF_].vel(0) = -1 * moveTo_task_.tube_speed;
-    } 
     
     else
     {
-        desired_state.frame_velocity[END_EFF_].vel(0) = \
-                motion_profile::s_curve_function(std::fabs(x_error), 
-                                                 0.05, 0.15, 5.0);
+        double speed;
+        switch (motion_profile_)
+        {
+            case m_profile::STEP:
+                speed = motion_profile::negative_step_function(std::fabs(x_error), 
+                                                               moveTo_task_.tube_speed, 
+                                                               0.25, 0.4, 0.2);
+                break;
 
-        // desired_state.frame_velocity[END_EFF_].vel(0) = moveTo_task_.tube_speed;              
-    } 
+            case m_profile::S_CURVE:
+                speed = motion_profile::s_curve_function(std::fabs(x_error), 
+                                                         0.05, moveTo_task_.tube_speed, 5.0);
+                break;
+
+            default:
+                speed = moveTo_task_.tube_speed;
+                break;
+        }
+
+        if (sign(x_error) == -1) desired_state.frame_velocity[END_EFF_].vel(0) = -1 * speed;      
+        else desired_state.frame_velocity[END_EFF_].vel(0) = speed;              
+    }
+     
     return control_status::NOMINAL;
 }
 
@@ -143,4 +156,12 @@ int finite_state_machine::update(const state_specification &robot_state,
             return control_status::STOP_CONTROL;
             break;
     }
+}
+
+
+int finite_state_machine::sign(double x)
+{
+    if (x > 0.0) return 1;
+    else if (x < 0.0) return -1;
+    else return 0;
 }
