@@ -69,6 +69,7 @@ struct moveTo_task
 struct full_pose_task
 {
     KDL::Frame tf_pose, goal_pose;
+    std::vector<double> goal_area{std::vector<double>(6, 0.0)};
     double contact_threshold_linear = 0.0;
     double contact_threshold_angular = 0.0;
     double time_limit = 0.0;
@@ -88,6 +89,7 @@ class finite_state_machine
 
         int update(const state_specification &robot_state,
                    state_specification &desired_state,
+                   const KDL::Twist &current_error,
                    const double time_passed_sec);
 
     private:
@@ -97,6 +99,7 @@ class finite_state_machine
         double total_control_time_sec_;
         bool goal_reached_, time_limit_reached_, contact_detected_;
         state_specification robot_state_, desired_state_;
+        KDL::Twist current_error_;
         moveTo_task moveTo_task_;
         full_pose_task full_pose_task_;
 

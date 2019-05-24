@@ -357,6 +357,7 @@ void dynamics_controller::define_desired_ee_pose(
     
     full_pose_task_.tf_pose                   = KDL::Frame::Identity();
     full_pose_task_.goal_pose                 = desired_state_.frame_pose[END_EFF_];
+    full_pose_task_.goal_area                 = std::vector<double>(6, 0.01);
     full_pose_task_.contact_threshold_linear  = contact_threshold_linear;
     full_pose_task_.contact_threshold_angular = contact_threshold_angular;
     full_pose_task_.time_limit                = task_time_limit_sec;
@@ -586,7 +587,10 @@ void dynamics_controller::compute_moveTo_task_error()
     make_predictions(horizon_amplitude_, 1);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
 
-    fsm_result_ = fsm_.update(robot_state_, desired_state_, total_time_sec_);
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+        current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
+
+    fsm_result_ = fsm_.update(robot_state_, desired_state_, current_error_twist_, total_time_sec_);
 
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
@@ -598,12 +602,6 @@ void dynamics_controller::compute_moveTo_task_error()
     }
 
     // abag_error_vector_ = predicted_error_twist_;
-#ifndef NDEBUG
-    // std::cout << predicted_error_twist_ << std::endl;
-    // std::cout  << std::endl;
-    // std::cout << "\nLinear Error: " << predicted_error_twist_.head(3).transpose() << "    Linear norm: " << predicted_error_twist_.head(3).norm() << std::endl;
-    // std::cout << "Angular Error: " << predicted_error_twist_.tail(3).transpose() << "         Angular norm: " << predicted_error_twist_.tail(3).norm() << std::endl;
-#endif
 }
 
 /**
@@ -613,13 +611,15 @@ void dynamics_controller::compute_moveTo_task_error()
 */
 void dynamics_controller::compute_full_pose_task_error()
 {
-    fsm_result_            = fsm_.update(robot_state_, desired_state_, total_time_sec_);
-
     current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
 
     make_predictions(horizon_amplitude_, 1);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
     
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+        current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
+
+    fsm_result_            = fsm_.update(robot_state_, desired_state_, current_error_twist_, total_time_sec_);
     abag_error_vector_     = predicted_error_twist_;
 
 #ifndef NDEBUG
@@ -1049,6 +1049,16 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
         //           << robot_state_.frame_velocity[END_EFF_] << std::endl;
     #endif 
 
+    // static int steps = 0;
+
+    // if (steps % 1 == 0)
+    // {
+    //     compute_control_error();
+    //     compute_cart_control_commands();
+    // }
+
+    compute_control_error();
+
     switch (fsm_result_)
     {
         case control_status::NOMINAL:
@@ -1073,24 +1083,20 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
         
         case control_status::STOP_ROBOT:
             if(previous_control_status_ != control_status::STOP_ROBOT) printf("Control status changed to STOP_ROBOT\n");
+            // stop_robot_motion();
             break;
         
         default:
-            printf("Stop the robot!");
+            printf("Stop control!\n");
             return -1;
             break;
     }
 
     previous_control_status_ = fsm_result_;
 
-    static int steps = 0;
+    compute_cart_control_commands();
 
-    if (steps % 1 == 0)
-    {
-        compute_control_error();
-        compute_cart_control_commands();
-    }
-    steps++;
+    // steps++;
 
     if (store_control_data_) write_to_file();   
 

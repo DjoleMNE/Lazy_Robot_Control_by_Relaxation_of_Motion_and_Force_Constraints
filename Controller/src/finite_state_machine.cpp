@@ -35,7 +35,7 @@ finite_state_machine::finite_state_machine(const int num_of_joints,
     motion_profile_(m_profile::CONSTANT), total_control_time_sec_(0.0),
     goal_reached_(false), time_limit_reached_(false), contact_detected_(false),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
-    desired_state_(robot_state_)
+    desired_state_(robot_state_), current_error_()
 {
 }
 
@@ -43,8 +43,8 @@ int finite_state_machine::initialize_with_moveTo(const moveTo_task &task,
                                                  const int motion_profile)
 {
     desired_task_model_ = task_model::moveTo;
-    moveTo_task_ = task;
-    motion_profile_ = motion_profile;
+    moveTo_task_        = task;
+    motion_profile_     = motion_profile;
 
     return control_status::NOMINAL;
 }
@@ -53,8 +53,8 @@ int finite_state_machine::initialize_with_full_pose(const full_pose_task &task,
                                                     const int motion_profile)
 {
     desired_task_model_ = task_model::full_pose;
-    full_pose_task_ = task;
-    motion_profile_ = motion_profile;
+    full_pose_task_     = task;
+    motion_profile_     = motion_profile;
 
     return control_status::NOMINAL;
 }
@@ -66,42 +66,55 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         #ifndef NDEBUG       
             if(!time_limit_reached_) printf("Time limit reached\n");
-            time_limit_reached_ = true;
         #endif
-        return control_status::STOP_ROBOT;
+        time_limit_reached_ = true;
+        return control_status::STOP_CONTROL;
     }
+    else time_limit_reached_ = false;
 
-    double x_error = desired_state_.frame_pose[END_EFF_].p(0) -\
-                     robot_state_.frame_pose[END_EFF_].p(0);
-
-    /*
-     * See if the robot has reached goal area in X linear direction.
-     * If yes command zero speed, to keep it in that area.
-     * Else go with initially commanded speed tube.
-    */
-    if ( std::fabs(x_error) <= moveTo_task_.tube_tolerances[0] )
+    int count = 0;
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
     {
-        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-        #ifndef NDEBUG       
-            if(!goal_reached_) printf("Goal area reached\n");
-            goal_reached_ = true;
-        #endif
-        return control_status::STOP_ROBOT;
+        if (std::fabs(current_error_(i)) <= moveTo_task_.tube_tolerances[i]) count++;
     }
     
+    if(count == NUM_OF_CONSTRAINTS_) 
+    {
+        #ifndef NDEBUG       
+            if(!goal_reached_) printf("Goal area reached\n");
+        #endif
+        goal_reached_ = true;
+    }
+    else goal_reached_ = false;
+
+    /*
+     * The robot has reached goal area?
+     * If yes command zero X linear velocity, to keep it in that area.
+     * Else go with initially commanded tube speed.
+    */
+    if (goal_reached_)
+    {
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        return control_status::STOP_ROBOT;
+    }
+    else if ( std::fabs(current_error_(0)) <= moveTo_task_.tube_tolerances[0] )
+    {
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        return control_status::NOMINAL;
+    }
     else
     {
-        double speed;
+        double speed = 0.0;
         switch (motion_profile_)
         {
             case m_profile::STEP:
-                speed = motion_profile::negative_step_function(std::fabs(x_error), 
+                speed = motion_profile::negative_step_function(std::fabs(current_error_(0)), 
                                                                moveTo_task_.tube_speed, 
                                                                0.25, 0.4, 0.2);
                 break;
 
             case m_profile::S_CURVE:
-                speed = motion_profile::s_curve_function(std::fabs(x_error), 
+                speed = motion_profile::s_curve_function(std::fabs(current_error_(0)), 
                                                          0.05, moveTo_task_.tube_speed, 5.0);
                 break;
 
@@ -110,10 +123,10 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
                 break;
         }
 
-        if (sign(x_error) == -1) desired_state.frame_velocity[END_EFF_].vel(0) = -1 * speed;      
+        if (sign(current_error_(0)) == -1) desired_state.frame_velocity[END_EFF_].vel(0) = -1 * speed;      
         else desired_state.frame_velocity[END_EFF_].vel(0) = speed;              
     }
-     
+   
     return control_status::NOMINAL;
 }
 
@@ -124,21 +137,41 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
         desired_state.frame_pose[END_EFF_] = robot_state_.frame_pose[END_EFF_];
         #ifndef NDEBUG
             if(!time_limit_reached_) printf("Time limit reached\n");
-            time_limit_reached_ = true;
+        #endif
+        time_limit_reached_ = true;
+        return control_status::STOP_CONTROL;
+    }
+    else time_limit_reached_ = false;
+
+    int count = 0;
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+    {
+        if (std::fabs(current_error_(i)) <= full_pose_task_.goal_area[i]) count++;
+    }
+    
+    if(count == NUM_OF_CONSTRAINTS_) 
+    {
+        #ifndef NDEBUG       
+            if(!goal_reached_) printf("Goal area reached\n");
         #endif
 
+        goal_reached_ = true;
+        desired_state.frame_pose[END_EFF_] = robot_state_.frame_pose[END_EFF_];
         return control_status::STOP_ROBOT;
     }
+    else goal_reached_ = false;
 
     return control_status::NOMINAL;
 }
 
 int finite_state_machine::update(const state_specification &robot_state,
                                  state_specification &desired_state,
+                                 const KDL::Twist &current_error,
                                  const double time_passed_sec)
 {
     robot_state_            = robot_state;
     desired_state_          = desired_state;
+    current_error_          = current_error;
     total_control_time_sec_ = time_passed_sec;
 
     switch (desired_task_model_)
