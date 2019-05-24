@@ -38,9 +38,10 @@ SOFTWARE.
 
 enum m_profile 
 {
-    CONSTANT = -1,
-    S_CURVE = 0,
-    TANH = 1
+    CONSTANT = 0,
+    TANH = 1,
+    S_CURVE = 2,
+    STEP = 3
 };
 
 namespace motion_profile
