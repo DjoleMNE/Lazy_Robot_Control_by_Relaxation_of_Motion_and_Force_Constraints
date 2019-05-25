@@ -135,7 +135,8 @@ class LwrRttControl : public RTT::TaskContext{
                             const std::vector<std::vector<double>> &path);
         void draw_sine(std::vector< std::vector<double> > &path_points,
                        const double frequency, const double amplitude, 
-                       const double x_scale);
+                       const double x_scale, const double offset_x, 
+                       const double offset_y, const double offset_z);
 };
 
 #endif

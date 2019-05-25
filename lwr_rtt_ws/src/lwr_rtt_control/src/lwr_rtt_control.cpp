@@ -172,7 +172,8 @@ bool LwrRttControl::configureHook()
     }
 
     std::vector< std::vector<double> > tube_path_points(20, std::vector<double>(3, 0.0));
-    this->draw_sine(tube_path_points, 1.0, 0.05, 0.02);
+    this->draw_sine(tube_path_points, 1.0, 0.05, 0.02, desired_ee_pose_[0], 
+                    desired_ee_pose_[1], desired_ee_pose_[2]);
  
     // controller_->define_moveTo_follow_path_task();
 
@@ -402,9 +403,9 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose,
         for (uint32_t i = 0; i < path.size(); ++i)
         {
             geometry_msgs::Point p;
-            p.x = path[i][0] + pose[0];
-            p.y = path[i][1] + pose[1];
-            p.z = path[i][2] + pose[2];
+            p.x = path[i][0];
+            p.y = path[i][1];
+            p.z = path[i][2];
 
             points.points.push_back(p);
         }
@@ -441,7 +442,8 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose,
 
 void LwrRttControl::draw_sine(std::vector< std::vector<double> > &path_points,
                               const double frequency, const double amplitude,
-                              const double x_scale)
+                              const double x_scale, const double offset_x, 
+                              const double offset_y, const double offset_z)
 {
     double x_y, z;
 
@@ -453,9 +455,9 @@ void LwrRttControl::draw_sine(std::vector< std::vector<double> > &path_points,
         // the sine function is plotted along the z-axis
         z = amplitude * std::sin(2 * M_PI * frequency * (x_y / path_points.size()));
 
-        path_points[i][0] = x_y * x_scale;
-        path_points[i][1] = 0.0;
-        path_points[i][2] = z;
+        path_points[i][0] = x_y * x_scale + offset_x;
+        path_points[i][1] = 0.0           + offset_y;
+        path_points[i][2] = z             + offset_z;
     }
 }
 
