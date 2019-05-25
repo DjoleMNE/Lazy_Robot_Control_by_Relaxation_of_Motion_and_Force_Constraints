@@ -31,7 +31,7 @@
     <arg name="simulation_loop_iterations" default="17000"/>
     <arg name="krc_compensate_gravity" default="false"/>
 
-    <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) ==-->
+    <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) or MoveTo_follow_path(3) ==-->
     <arg name="desired_task_model" default="2"/>
     
     <!-- ========= Use Joint Torque Commands ===============-->

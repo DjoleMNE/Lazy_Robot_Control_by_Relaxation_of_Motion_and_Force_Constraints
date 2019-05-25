@@ -131,7 +131,11 @@ class LwrRttControl : public RTT::TaskContext{
                         jnt_trq_cmd_out;
         KDL::JntArray jnt_gravity_trq_out;
 
-        void visualize_pose(const std::vector<double> &pose);
+        void visualize_pose(const std::vector<double> &pose, 
+                            const std::vector<std::vector<double>> &path);
+        void draw_sine(std::vector< std::vector<double> > &path_points,
+                       const double frequency, const double amplitude, 
+                       const double x_scale);
 };
 
 #endif
