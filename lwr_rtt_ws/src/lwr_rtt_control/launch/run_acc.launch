@@ -28,7 +28,7 @@
 <!-- ***************** General Control PARAMETERS ********************** -->
     <arg name="environment" default="1"/>
     <arg name="robot_model" default="0"/>
-    <arg name="simulation_loop_iterations" default="17000"/>
+    <arg name="simulation_loop_iterations" default="20000"/>
     <arg name="krc_compensate_gravity" default="false"/>
 
     <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) ==-->
@@ -59,7 +59,7 @@
 
 
     <!-- ========= Task time limit in seconds ==============-->
-    <arg name="task_time_limit_sec" default="12.0"/>
+    <arg name="task_time_limit_sec" default="16.0"/>
 
 
 
