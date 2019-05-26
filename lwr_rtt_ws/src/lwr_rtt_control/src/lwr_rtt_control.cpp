@@ -171,11 +171,22 @@ bool LwrRttControl::configureHook()
             break;
     }
 
-    std::vector< std::vector<double> > tube_path_points(20, std::vector<double>(3, 0.0));
+    int num_of_points = 20;
+
+    std::vector< std::vector<double> > tube_path_points(num_of_points, std::vector<double>(3, 0.0));
     this->draw_sine(tube_path_points, 1.0, 0.05, 0.02, desired_ee_pose_[0], 
                     desired_ee_pose_[1], desired_ee_pose_[2]);
- 
-    // controller_->define_moveTo_follow_path_task();
+
+    std::vector< std::vector<double> > path_poses(num_of_points - 1, std::vector<double>(12, 0.0));
+
+    controller_->define_moveTo_follow_path_task(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
+                                                                  control_dims_[3], control_dims_[4], control_dims_[5]},// Angular
+                                                tube_path_points,
+                                                tube_tolerances_,
+                                                tube_speed_,
+                                                0.1, 0.1, //contact_threshold linear and angular
+                                                task_time_limit_sec_,// time_limit
+                                                path_poses); // TF pose
 
     switch (desired_task_model_)
     {
@@ -216,8 +227,7 @@ bool LwrRttControl::configureHook()
                                                  motion_profile_);
     if(initial_result != 0) return false;
 
-    this->visualize_pose(desired_ee_pose_, tube_path_points);
-    sleep(1);
+    this->visualize_pose(desired_ee_pose_, path_poses);
     return true;
 }
 
@@ -270,7 +280,7 @@ void LwrRttControl::stopHook()
 }
 
 void LwrRttControl::visualize_pose(const std::vector<double> &pose,
-                                   const std::vector<std::vector<double>> &path)
+                                   const std::vector<std::vector<double>> &path_poses)
 {
     // Create Temp ROS Node
     if (!ros::isInitialized())
@@ -344,7 +354,6 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose,
         //only if using a MESH_RESOURCE marker type:
         marker_1.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae";
         marker_1.lifetime = ros::Duration(1000);
-
         // Publish the marker
         vis_pub.publish(marker_1);
 
@@ -373,8 +382,8 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose,
         //only if using a MESH_RESOURCE marker type:
         marker_2.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae";
         marker_2.lifetime = ros::Duration(1000);
-
         vis_pub.publish(marker_2);
+        sleep(1);
     }
 
     // else if(desired_task_model_ == task_model::moveTo_follow_path)
@@ -400,42 +409,59 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose,
         points.color.a = 1.0;
 
         // Create the vertices for the points and lines
-        for (uint32_t i = 0; i < path.size(); ++i)
+        for (uint32_t i = 0; i < path_poses.size(); ++i)
         {
             geometry_msgs::Point p;
-            p.x = path[i][0];
-            p.y = path[i][1];
-            p.z = path[i][2];
+            p.x = path_poses[i][0];
+            p.y = path_poses[i][1];
+            p.z = path_poses[i][2];
 
             points.points.push_back(p);
         }
         vis_pub.publish(points);
-        sleep(2);
+        sleep(1);    
 
-        // marker_1.pose.position.x = pose[0];
-        // marker_1.pose.position.y = pose[1];
-        // marker_1.pose.position.z = pose[2];
+        for (uint32_t i = 0; i < path_poses.size(); ++i)
+        {
+            visualization_msgs::Marker marker_1;
+            marker_1.header.frame_id = "link_0";
+            marker_1.header.stamp = ros::Time::now();
+            marker_1.ns = "path_tube";
+            marker_1.id = i+2;
+            marker_1.type = visualization_msgs::Marker::CYLINDER;
+            marker_1.action = visualization_msgs::Marker::ADD;
+            marker_1.pose.position.x = path_poses[i][0];
+            marker_1.pose.position.y = path_poses[i][1];
+            marker_1.pose.position.z = path_poses[i][2];
 
-        // desired_matrix = desired_matrix * tf2::Matrix3x3(0.0, 0.0, -1.0, // Rotate frame: Y axis -90deg
-        //                                                  0.0, 1.0,  0.0,
-        //                                                  1.0, 0.0,  0.0);
-        // desired_matrix.getRotation(quaternion_rotation);
-        // quaternion_rotation.normalize();
-        // marker_1.pose.orientation.x = quaternion_rotation[0];
-        // marker_1.pose.orientation.y = quaternion_rotation[1];
-        // marker_1.pose.orientation.z = quaternion_rotation[2];
-        // marker_1.pose.orientation.w = quaternion_rotation[3];
+            tf2::Matrix3x3 desired_path_matrix = tf2::Matrix3x3(path_poses[i][3], path_poses[i][4],  path_poses[i][5], // Angular: Rotation matrix
+                                                                path_poses[i][6], path_poses[i][7],  path_poses[i][8],
+                                                                path_poses[i][9], path_poses[i][10], path_poses[i][11]);
 
-        // marker_1.scale.x = tube_tolerances_[1] * 2;
-        // marker_1.scale.y = tube_tolerances_[2] * 2;
-        // marker_1.scale.z = 1.5;
-        // marker_1.color.a = 0.2; // Don't forget to set the alpha!
-        // marker_1.color.r = 255.0;
-        // marker_1.color.g = 255.0;
-        // marker_1.color.b = 255.0;
-        // //only if using a MESH_RESOURCE marker type:
-        // marker_1.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae";
-        // marker_1.lifetime = ros::Duration(1000);
+            desired_path_matrix = desired_path_matrix * tf2::Matrix3x3(0.0, 0.0, -1.0, // Rotate frame: Y axis -90deg
+                                                                       0.0, 1.0,  0.0,
+                                                                       1.0, 0.0,  0.0);
+            desired_path_matrix.getRotation(quaternion_rotation);
+            quaternion_rotation.normalize();
+            marker_1.pose.orientation.x = quaternion_rotation[0];
+            marker_1.pose.orientation.y = quaternion_rotation[1];
+            marker_1.pose.orientation.z = quaternion_rotation[2];
+            marker_1.pose.orientation.w = quaternion_rotation[3];
+
+            marker_1.scale.x = tube_tolerances_[1] * 2;
+            marker_1.scale.y = tube_tolerances_[2] * 2;
+            marker_1.scale.z = tube_tolerances_[0] * 2;
+            marker_1.color.a = 0.2; // Don't forget to set the alpha!
+            marker_1.color.r = 255.0;
+            marker_1.color.g = 255.0;
+            marker_1.color.b = 255.0;
+            //only if using a MESH_RESOURCE marker type:
+            marker_1.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae";
+            marker_1.lifetime = ros::Duration(1000);
+            // Publish the marker
+            vis_pub.publish(marker_1);
+            sleep(0.5);
+        }
     }
 }
 
