@@ -103,6 +103,14 @@ class dynamics_controller
                             const double contact_threshold_angular,
                             const double task_time_limit_sec,
                             std::vector<double> &task_frame_pose);
+    void define_moveTo_follow_path_task(const std::vector<bool> &constraint_direction,
+                                        const std::vector< std::vector<double> > &tube_path_points,
+                                        const std::vector<double> &tube_tolerances,
+                                        const double tube_speed,
+                                        const double contact_threshold_linear,
+                                        const double contact_threshold_angular,
+                                        const double task_time_limit_sec,
+                                        std::vector< std::vector<double> > &task_frame_poses);
     void define_desired_ee_pose(const std::vector<bool> &constraint_direction,
                                 const std::vector<double> &cartesian_pose,
                                 const double contact_threshold_linear,
@@ -144,11 +152,12 @@ class dynamics_controller
     const int END_EFF_;
     const std::vector<double> JOINT_TORQUE_LIMITS_;
     std::vector<bool> CTRL_DIM_;
-    int fsm_result_, previous_control_status_;
+    int fsm_result_, previous_control_status_, tube_section_count_;
     bool use_mixed_driver_;
     
     moveTo_task moveTo_task_;
     full_pose_task full_pose_task_;
+    moveTo_follow_path_task moveTo_follow_path_task_;
 
     KDL::Twist current_error_twist_;
     Eigen::VectorXd abag_error_vector_, predicted_error_twist_;
@@ -172,6 +181,7 @@ class dynamics_controller
     void reset_state(state_specification &state);
     void update_dynamics_interfaces();
     void update_current_state();
+    void compute_moveTo_follow_path_task_error();
     void compute_moveTo_task_error();
     void compute_full_pose_task_error();
     void compute_control_error();

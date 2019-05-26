@@ -41,7 +41,8 @@ enum task_model
 {
   full_pose = 0,
   moveGuarded = 1,
-  moveTo = 2
+  moveTo = 2,
+  moveTo_follow_path = 3
 };
 
 enum control_status
@@ -53,6 +54,17 @@ enum control_status
     CRUISE_THROUGH_TUBE = 3,
     CRUISE = 4,
     STOP_ROBOT = 5
+};
+
+struct moveTo_follow_path_task
+{
+    std::vector<KDL::Frame> tf_poses, goal_poses;
+    std::vector< std::vector<double> > tube_path_points{1, std::vector<double>(3, 0.0)};
+    std::vector<double> tube_tolerances{std::vector<double>(6, 0.0)};
+    double tube_speed = 0.0;
+    double contact_threshold_linear = 0.0;
+    double contact_threshold_angular = 0.0;
+    double time_limit = 0.0;
 };
 
 struct moveTo_task
@@ -102,6 +114,7 @@ class finite_state_machine
         KDL::Twist current_error_;
         moveTo_task moveTo_task_;
         full_pose_task full_pose_task_;
+        moveTo_follow_path_task moveTo_follow_path_task_;
 
         int update_full_pose_task(state_specification &desired_state);
         int update_moveTo_task(state_specification &desired_state);

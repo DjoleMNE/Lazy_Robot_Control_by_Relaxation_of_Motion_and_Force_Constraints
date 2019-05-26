@@ -40,7 +40,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     NUM_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
     END_EFF_(NUM_OF_SEGMENTS_ - 1),
     CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), fsm_result_(control_status::NOMINAL),
-    previous_control_status_(fsm_result_),
+    previous_control_status_(fsm_result_), tube_section_count_(0),
     JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
     current_error_twist_(KDL::Twist::Zero()),
     abag_error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
@@ -270,6 +270,87 @@ void dynamics_controller::stop_robot_motion()
 }
 
 
+void dynamics_controller::define_moveTo_follow_path_task(
+                                const std::vector<bool> &constraint_direction,
+                                const std::vector< std::vector<double> > &tube_path_points,
+                                const std::vector<double> &tube_tolerances,
+                                const double tube_speed,
+                                const double contact_threshold_linear,
+                                const double contact_threshold_angular,
+                                const double task_time_limit_sec,
+                                std::vector< std::vector<double> > &task_frame_poses)
+{
+    assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
+    assert(tube_tolerances.size()      == NUM_OF_CONSTRAINTS_);
+    assert(task_frame_poses.size()     == tube_path_points.size() - 1);
+    assert(tube_path_points[0].size()  == 3);
+    assert(task_frame_poses[0].size()  == 12);
+
+    moveTo_follow_path_task_.tf_poses   = std::vector<KDL::Frame>(tube_path_points.size() - 1);
+    moveTo_follow_path_task_.goal_poses = moveTo_follow_path_task_.tf_poses;
+
+    CTRL_DIM_ = constraint_direction;
+
+    // X-Y-Z linear
+    KDL::Vector x_world(1.0, 0.0, 0.0);
+    std::vector<double> task_frame_pose(12, 0.0);
+
+    for (int i = 0; i < tube_path_points.size() - 1; i++)
+    {
+        KDL::Vector tf_position         = KDL::Vector(tube_path_points[i + 1][0], tube_path_points[i + 1][1], tube_path_points[i + 1][2]);
+        KDL::Vector tube_start_position = KDL::Vector(tube_path_points[i][0], tube_path_points[i][1], tube_path_points[i][2]);
+        KDL::Vector x_task              = tf_position - tube_start_position;
+        x_task.Normalize();
+
+        KDL::Vector cross_product = x_world * x_task;
+        double cosine             = dot(x_world, x_task);
+        double sine               = cross_product.Norm();
+        double angle              = atan2(sine, cosine);
+
+        task_frame_pose[0] = tf_position[0]; 
+        task_frame_pose[1] = tf_position[1]; 
+        task_frame_pose[2] = tf_position[2];
+
+        KDL::Rotation tf_orientation;
+        if(cosine < (-1 + 1e-6))
+        {
+            tf_orientation = KDL::Rotation::EulerZYZ(M_PI, 0.0, 0.0);
+            task_frame_pose[3] = -1.0; task_frame_pose[4]  =  0.0; task_frame_pose[5]  = 0.0;
+            task_frame_pose[6] =  0.0; task_frame_pose[7]  = -1.0; task_frame_pose[8]  = 0.0;
+            task_frame_pose[9] =  0.0; task_frame_pose[10] =  0.0; task_frame_pose[11] = 1.0;
+        }
+        else if(sine < 1e-6)
+        {
+            tf_orientation = KDL::Rotation::Identity();
+            task_frame_pose[3] = 1.0; task_frame_pose[4]  = 0.0; task_frame_pose[5]  = 0.0;
+            task_frame_pose[6] = 0.0; task_frame_pose[7]  = 1.0; task_frame_pose[8]  = 0.0;
+            task_frame_pose[9] = 0.0; task_frame_pose[10] = 0.0; task_frame_pose[11] = 1.0;
+        }
+        else
+        {
+            tf_orientation = geometry::exp_map_so3(cross_product / sine * angle);
+            task_frame_pose[3] = tf_orientation.data[0]; task_frame_pose[4]  = tf_orientation.data[1]; task_frame_pose[5]  = tf_orientation.data[2];
+            task_frame_pose[6] = tf_orientation.data[3]; task_frame_pose[7]  = tf_orientation.data[4]; task_frame_pose[8]  = tf_orientation.data[5];
+            task_frame_pose[9] = tf_orientation.data[6]; task_frame_pose[10] = tf_orientation.data[7]; task_frame_pose[11] = tf_orientation.data[8];
+        }
+
+        task_frame_poses[i]                        = task_frame_pose;
+        moveTo_follow_path_task_.tf_poses[i]       = KDL::Frame(tf_orientation, tf_position);
+        moveTo_follow_path_task_.goal_poses[i]     = KDL::Frame::Identity();
+    }
+
+    moveTo_follow_path_task_.tube_path_points          = tube_path_points;
+    moveTo_follow_path_task_.tube_tolerances           = tube_tolerances;
+    moveTo_follow_path_task_.tube_speed                = tube_speed;
+    moveTo_follow_path_task_.contact_threshold_linear  = contact_threshold_linear;
+    moveTo_follow_path_task_.contact_threshold_angular = contact_threshold_angular;
+    moveTo_follow_path_task_.time_limit                = task_time_limit_sec;
+
+    desired_state_.frame_pose[END_EFF_]    = moveTo_follow_path_task_.goal_poses[0];
+    desired_task_model_                    = task_model::moveTo_follow_path;
+}
+
+
 void dynamics_controller::define_moveTo_task(
                                 const std::vector<bool> &constraint_direction,
                                 const std::vector<double> &tube_start_position,
@@ -330,8 +411,8 @@ void dynamics_controller::define_moveTo_task(
     moveTo_task_.contact_threshold_angular = contact_threshold_angular;
     moveTo_task_.time_limit                = task_time_limit_sec;
 
-    desired_state_.frame_pose[END_EFF_]            = moveTo_task_.goal_pose;
-    desired_task_model_                            = task_model::moveTo;
+    desired_state_.frame_pose[END_EFF_]    = moveTo_task_.goal_pose;
+    desired_task_model_                    = task_model::moveTo;
 }
 
 void dynamics_controller::define_desired_ee_pose(
@@ -572,6 +653,40 @@ double dynamics_controller::kinetic_energy(const KDL::Twist &twist,
     return 0.5 * dot(twist, robot_chain_.getSegment(segment_index).getInertia() * twist);
 }
 
+
+/**
+ * Compute the control error for tube deviations and velocity setpoint.
+ * Error function for moveTo_follow_path task.
+*/
+void dynamics_controller::compute_moveTo_follow_path_task_error()
+{
+    //Change the reference frame of the robot state, from base frame to task frame
+    robot_state_.frame_pose[END_EFF_]     = moveTo_follow_path_task_.tf_poses[tube_section_count_].Inverse()   * robot_state_.frame_pose[END_EFF_];
+    robot_state_.frame_velocity[END_EFF_] = moveTo_follow_path_task_.tf_poses[tube_section_count_].M.Inverse() * robot_state_.frame_velocity[END_EFF_];
+
+    current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
+
+    make_predictions(horizon_amplitude_, 1);
+    predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
+
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+        current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
+
+    fsm_result_ = fsm_.update(robot_state_, desired_state_, current_error_twist_, total_time_sec_);
+
+    abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
+
+    // Other parts of the ABAG error are position errors
+    for(int i = 1; i < NUM_OF_CONSTRAINTS_; i++)
+    {
+        if ( std::fabs(predicted_error_twist_(i)) <= moveTo_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
+        else abag_error_vector_(i) = predicted_error_twist_(i);        
+    }
+
+    // abag_error_vector_ = predicted_error_twist_;
+}
+
+
 /**
  * Compute the control error for tube deviations and velocity setpoint.
  * Error function for moveTo task.
@@ -636,6 +751,10 @@ void dynamics_controller::compute_control_error()
 {    
     switch (desired_task_model_)
     {
+        case task_model::moveTo_follow_path:
+            compute_moveTo_follow_path_task_error();
+            break;
+
         case task_model::moveTo:
             compute_moveTo_task_error();
             break;

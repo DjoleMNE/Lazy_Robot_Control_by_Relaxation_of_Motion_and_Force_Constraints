@@ -401,8 +401,8 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose,
         points.pose.orientation.w = 1.0;
 
         // POINTS markers use x and y scale for width/height respectively
-        points.scale.x = 0.01;
-        points.scale.y = 0.01;
+        points.scale.x = 0.005;
+        points.scale.y = 0.005;
 
         // Points are green
         points.color.g = 1.0f;
