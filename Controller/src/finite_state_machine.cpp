@@ -134,7 +134,6 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
 {
     if(total_control_time_sec_ > full_pose_task_.time_limit) 
     {
-        desired_state.frame_pose[END_EFF_] = robot_state_.frame_pose[END_EFF_];
         #ifndef NDEBUG
             if(!time_limit_reached_) printf("Time limit reached\n");
         #endif
@@ -156,7 +155,6 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
         #endif
 
         goal_reached_ = true;
-        desired_state.frame_pose[END_EFF_] = robot_state_.frame_pose[END_EFF_];
         return control_status::STOP_ROBOT;
     }
     else goal_reached_ = false;
