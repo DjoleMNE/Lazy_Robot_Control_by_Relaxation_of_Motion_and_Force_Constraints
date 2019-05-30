@@ -69,14 +69,109 @@ int finite_state_machine::initialize_with_full_pose(const full_pose_task &task,
     return control_status::NOMINAL;
 }
 
+int finite_state_machine::update_moveTo_follow_path_task(state_specification &desired_state,
+                                                         const int tube_section_count)
+{
+    if (total_control_time_sec_ > moveTo_follow_path_task_.time_limit) 
+    {
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+
+        #ifndef NDEBUG       
+            if (!time_limit_reached_) printf("Time limit reached\n");
+        #endif
+
+        time_limit_reached_ = true;
+        return control_status::STOP_CONTROL;
+    }
+    else time_limit_reached_ = false;
+
+    // Check if the current pose of the robot satisfies all 6D tolerances
+    int count = 0;
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+    {
+        if (std::fabs(current_error_(i)) <= moveTo_follow_path_task_.tube_tolerances[i]) count++;
+    }
+
+    bool final_section_selected = false;
+    if (tube_section_count == moveTo_follow_path_task_.tf_poses.size() - 1) final_section_selected = true;
+    
+    bool change_tube_section = false;
+    // Robot has reached some tube section
+    if (count == NUM_OF_CONSTRAINTS_) 
+    {   
+        // Check if the robot has reached end of the tube path
+        if (final_section_selected)
+        {
+            #ifndef NDEBUG       
+                if(!goal_reached_) printf("Whole path covered\n");
+            #endif
+
+            goal_reached_ = true;
+            desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+            return control_status::STOP_ROBOT;
+        }
+
+        change_tube_section = true;
+    }
+    goal_reached_ = false;
+
+    /*
+     * The robot has reached goal x axis area but it is out of y and z area?
+     * If yes command zero X linear velocity, to keep it in that x area.
+     * Else go with initially commanded tube speed.
+    */
+    if ((std::fabs(current_error_(0)) <= moveTo_follow_path_task_.tube_tolerances[0])\
+        && final_section_selected)
+    {
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+
+        #ifndef NDEBUG
+            printf("Out of the tube\n");
+        #endif
+
+        return control_status::NOMINAL;
+    }
+    else
+    {
+        double speed = 0.0;
+        switch (motion_profile_)
+        {
+            case m_profile::STEP:
+                speed = motion_profile::negative_step_function(std::fabs(current_error_(0)), 
+                                                               moveTo_follow_path_task_.tube_speed, 
+                                                               0.25, 0.4, 0.2);
+                break;
+
+            case m_profile::S_CURVE:
+                speed = motion_profile::s_curve_function(std::fabs(current_error_(0)), 
+                                                         0.05, 
+                                                         moveTo_follow_path_task_.tube_speed, 5.0);
+                break;
+
+            default:
+                speed = moveTo_follow_path_task_.tube_speed;
+                break;
+        }
+
+        if (sign(current_error_(0)) == -1) desired_state.frame_velocity[END_EFF_].vel(0) = -1 * speed;      
+        else desired_state.frame_velocity[END_EFF_].vel(0) = speed;              
+    }
+    
+    if(change_tube_section) return control_status::CHANGE_TUBE_SECTION;
+    return control_status::NOMINAL;
+}
+
+
 int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 {
     if(total_control_time_sec_ > moveTo_task_.time_limit) 
     {
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+
         #ifndef NDEBUG       
             if(!time_limit_reached_) printf("Time limit reached\n");
         #endif
+
         time_limit_reached_ = true;
         return control_status::STOP_CONTROL;
     }
