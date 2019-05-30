@@ -95,20 +95,17 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         #endif
 
         goal_reached_ = true;
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        return control_status::STOP_ROBOT;
     }
     else goal_reached_ = false;
 
     /*
-     * The robot has reached goal area?
+     * The robot has reached goal x area?
      * If yes command zero X linear velocity, to keep it in that area.
      * Else go with initially commanded tube speed.
     */
-    if (goal_reached_)
-    {
-        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-        return control_status::STOP_ROBOT;
-    }
-    else if ( std::fabs(current_error_(0)) <= moveTo_task_.tube_tolerances[0] )
+    if ( std::fabs(current_error_(0)) <= moveTo_task_.tube_tolerances[0] )
     {
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         return control_status::NOMINAL;

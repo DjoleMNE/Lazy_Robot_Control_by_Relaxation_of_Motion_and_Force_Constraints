@@ -728,11 +728,6 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
 
     fsm_result_ = fsm_.update(robot_state_, desired_state_, current_error_twist_, total_time_sec_, tube_section_count_);
     
-    // if (fsm_result_ == control_status::CHANGE_TUBE_SECTION)
-    // {
-    //     predicted_error_twist_ = Eigen::VectorXd::Zero(predicted_error_twist_.size());
-    // }
-
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
     // Other parts of the ABAG error are position errors
