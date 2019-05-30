@@ -156,6 +156,10 @@ void dynamics_controller::print_settings_info()
             printf("moveTo\n");
             break;
 
+        case task_model::moveTo_follow_path:
+            printf("moveTo_follow_path\n");
+            break;
+
         default:
             printf("Stopping the robot!\n");
             break;
@@ -297,8 +301,8 @@ void dynamics_controller::define_moveTo_follow_path_task(
 
     for (int i = 0; i < tube_path_points.size() - 1; i++)
     {
-        KDL::Vector tf_position         = KDL::Vector(tube_path_points[i + 1][0], tube_path_points[i + 1][1], tube_path_points[i + 1][2]);
         KDL::Vector tube_start_position = KDL::Vector(tube_path_points[i][0], tube_path_points[i][1], tube_path_points[i][2]);
+        KDL::Vector tf_position         = KDL::Vector(tube_path_points[i + 1][0], tube_path_points[i + 1][1], tube_path_points[i + 1][2]);
         KDL::Vector x_task              = tf_position - tube_start_position;
         x_task.Normalize();
 
@@ -1199,7 +1203,11 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
         case control_status::CRUISE:
             if(previous_control_status_ != control_status::CRUISE) printf("Control status changed to CRUISE\n");
             break;
-        
+
+        case control_status::CHANGE_TUBE_SECTION:
+            if(previous_control_status_ != control_status::CHANGE_TUBE_SECTION) printf("Control status changed to CHANGE_TUBE_SECTION\n");
+            break;
+
         case control_status::STOP_ROBOT:
             if(previous_control_status_ != control_status::STOP_ROBOT) printf("Control status changed to STOP_ROBOT\n");
             // stop_robot_motion();

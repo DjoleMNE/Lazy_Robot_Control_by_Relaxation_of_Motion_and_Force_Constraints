@@ -47,13 +47,14 @@ enum task_model
 
 enum control_status
 {
-    STOP_CONTROL = -1,
-    NOMINAL = 0,
-    START_TO_CRUISE = 1,
-    CRUISE_TO_STOP = 2,
-    CRUISE_THROUGH_TUBE = 3,
-    CRUISE = 4,
-    STOP_ROBOT = 5
+    STOP_CONTROL        = -1,
+    NOMINAL             =  0,
+    START_TO_CRUISE     =  1,
+    CRUISE_TO_STOP      =  2,
+    CRUISE_THROUGH_TUBE =  3,
+    CRUISE              =  4,
+    CHANGE_TUBE_SECTION =  5,
+    STOP_ROBOT          =  6
 };
 
 struct moveTo_follow_path_task
