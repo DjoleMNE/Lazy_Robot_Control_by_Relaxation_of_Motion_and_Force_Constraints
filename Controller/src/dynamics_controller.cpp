@@ -177,6 +177,56 @@ void dynamics_controller::print_settings_info()
     std::cout<< "End-effector velocity:"<< robot_state_.frame_velocity[END_EFF_] << "\n" << std::endl;
 }
 
+
+int dynamics_controller::check_control_status()
+{
+    switch (fsm_result_)
+    {
+        case control_status::NOMINAL:
+            if(previous_control_status_ != control_status::NOMINAL) printf("Control status changed to NOMINAL\n");
+            return 0;
+            break;
+        
+        case control_status::START_TO_CRUISE:
+            if(previous_control_status_ != control_status::START_TO_CRUISE) printf("Control status changed to START_TO_CRUISE\n");
+            return 0;
+            break;
+
+        case control_status::CRUISE_TO_STOP:
+            if(previous_control_status_ != control_status::CRUISE_TO_STOP) printf("Control status changed to CRUISE_TO_STOP\n");
+            return 0;
+            break;
+
+        case control_status::CRUISE_THROUGH_TUBE:
+            if(previous_control_status_ != control_status::CRUISE_THROUGH_TUBE) printf("Control status changed to CRUISE_THROUGH_TUBE\n");
+            return 0;
+            break;
+        
+        case control_status::CRUISE:
+            if(previous_control_status_ != control_status::CRUISE) printf("Control status changed to CRUISE\n");
+            return 0;
+            break;
+
+        case control_status::CHANGE_TUBE_SECTION:
+            if(previous_control_status_ != control_status::CHANGE_TUBE_SECTION) printf("Control status changed to CHANGE_TUBE_SECTION\n");
+            return 0;
+            break;
+
+        case control_status::STOP_ROBOT:
+            if(previous_control_status_ != control_status::STOP_ROBOT) printf("Control status changed to STOP_ROBOT\n");
+            // stop_robot_motion();
+            return 1;
+            break;
+        
+        default:
+            printf("Stop control!\n");
+            return -1;
+            break;
+    }
+
+    previous_control_status_ = fsm_result_;
+}
+
 /* 
     If it is working on the real robot get sensor data from the driver 
     or if simulation is on, replace current state with 
@@ -676,9 +726,7 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
 
-    fsm_result_ = fsm_.update(robot_state_, desired_state_, 
-                              current_error_twist_, total_time_sec_, 
-                              tube_section_count_);
+    fsm_result_ = fsm_.update(robot_state_, desired_state_, current_error_twist_, total_time_sec_, tube_section_count_);
     
     // if (fsm_result_ == control_status::CHANGE_TUBE_SECTION)
     // {
@@ -831,7 +879,7 @@ void dynamics_controller::compute_cart_control_commands()
                desired_task_model_ == task_model::moveTo_follow_path)
             {
                 transform_force_driver();
-                
+
                 if(fsm_result_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
                 if(tube_section_count_ > moveTo_follow_path_task_.tf_poses.size() - 1)
                 {
@@ -1224,44 +1272,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
 
     compute_control_error();
 
-    switch (fsm_result_)
-    {
-        case control_status::NOMINAL:
-            if(previous_control_status_ != control_status::NOMINAL) printf("Control status changed to NOMINAL\n");
-            break;
-        
-        case control_status::START_TO_CRUISE:
-            if(previous_control_status_ != control_status::START_TO_CRUISE) printf("Control status changed to START_TO_CRUISE\n");
-            break;
-
-        case control_status::CRUISE_TO_STOP:
-            if(previous_control_status_ != control_status::CRUISE_TO_STOP) printf("Control status changed to CRUISE_TO_STOP\n");
-            break;
-
-        case control_status::CRUISE_THROUGH_TUBE:
-            if(previous_control_status_ != control_status::CRUISE_THROUGH_TUBE) printf("Control status changed to CRUISE_THROUGH_TUBE\n");
-            break;
-        
-        case control_status::CRUISE:
-            if(previous_control_status_ != control_status::CRUISE) printf("Control status changed to CRUISE\n");
-            break;
-
-        case control_status::CHANGE_TUBE_SECTION:
-            if(previous_control_status_ != control_status::CHANGE_TUBE_SECTION) printf("Control status changed to CHANGE_TUBE_SECTION\n");
-            break;
-
-        case control_status::STOP_ROBOT:
-            if(previous_control_status_ != control_status::STOP_ROBOT) printf("Control status changed to STOP_ROBOT\n");
-            // stop_robot_motion();
-            break;
-        
-        default:
-            printf("Stop control!\n");
-            return -1;
-            break;
-    }
-
-    previous_control_status_ = fsm_result_;
+    if (check_control_status() == -1) return -1;
 
     compute_cart_control_commands();
 

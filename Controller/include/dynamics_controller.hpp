@@ -176,6 +176,7 @@ class dynamics_controller
     state_specification desired_state_;
     state_specification predicted_state_;
 
+    int check_control_status();
     void print_settings_info();
     void write_to_file();
     void reset_state(state_specification &state);
