@@ -828,7 +828,16 @@ void dynamics_controller::compute_cart_control_commands()
                 cart_force_command_[END_EFF_](i) = CTRL_DIM_[i]? abag_command_(i) * max_command_(i) : 0.0;
             
             if(desired_task_model_ == task_model::moveTo || \
-               desired_task_model_ == task_model::moveTo_follow_path) transform_force_driver();
+               desired_task_model_ == task_model::moveTo_follow_path)
+            {
+                transform_force_driver();
+                
+                if(fsm_result_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
+                if(tube_section_count_ > moveTo_follow_path_task_.tf_poses.size() - 1)
+                {
+                    tube_section_count_ = moveTo_follow_path_task_.tf_poses.size() - 1;
+                }
+            } 
 
             break;
 
