@@ -171,25 +171,28 @@ bool LwrRttControl::configureHook()
             break;
     }
 
-    int num_of_points = 20;
+    int num_of_points = 25;
 
     std::vector< std::vector<double> > tube_path_points(num_of_points, std::vector<double>(3, 0.0));
-    this->draw_sine(tube_path_points, 1.0, 0.05, 0.02, desired_ee_pose_[0], 
+    this->draw_sine(tube_path_points, 1.0, 0.05, 0.015, desired_ee_pose_[0], 
                     desired_ee_pose_[1], desired_ee_pose_[2]);
 
     std::vector< std::vector<double> > path_poses(num_of_points - 1, std::vector<double>(12, 0.0));
 
-    controller_->define_moveTo_follow_path_task(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
-                                                                  control_dims_[3], control_dims_[4], control_dims_[5]},// Angular
-                                                tube_path_points,
-                                                tube_tolerances_,
-                                                tube_speed_,
-                                                0.1, 0.1, //contact_threshold linear and angular
-                                                task_time_limit_sec_,// time_limit
-                                                path_poses); // TF pose
 
     switch (desired_task_model_)
     {
+        case task_model::moveTo_follow_path:
+            controller_->define_moveTo_follow_path_task(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
+                                                                          control_dims_[3], control_dims_[4], control_dims_[5]},// Angular
+                                                        tube_path_points,
+                                                        tube_tolerances_,
+                                                        tube_speed_,
+                                                        0.1, 0.1, //contact_threshold linear and angular
+                                                        task_time_limit_sec_,// time_limit
+                                                        path_poses); // TF pose
+            break;
+
         case task_model::moveTo:
             controller_->define_moveTo_task(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
                                                               control_dims_[3], control_dims_[4], control_dims_[5]},// Angular

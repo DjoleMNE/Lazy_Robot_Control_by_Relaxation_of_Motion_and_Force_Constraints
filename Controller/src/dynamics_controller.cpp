@@ -676,14 +676,21 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
 
-    fsm_result_ = fsm_.update(robot_state_, desired_state_, current_error_twist_, total_time_sec_);
+    fsm_result_ = fsm_.update(robot_state_, desired_state_, 
+                              current_error_twist_, total_time_sec_, 
+                              tube_section_count_);
+    
+    // if (fsm_result_ == control_status::CHANGE_TUBE_SECTION)
+    // {
+    //     predicted_error_twist_ = Eigen::VectorXd::Zero(predicted_error_twist_.size());
+    // }
 
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
     // Other parts of the ABAG error are position errors
     for(int i = 1; i < NUM_OF_CONSTRAINTS_; i++)
     {
-        if ( std::fabs(predicted_error_twist_(i)) <= moveTo_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
+        if ( std::fabs(predicted_error_twist_(i)) <= moveTo_follow_path_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
         else abag_error_vector_(i) = predicted_error_twist_(i);        
     }
 
@@ -709,7 +716,7 @@ void dynamics_controller::compute_moveTo_task_error()
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
 
-    fsm_result_ = fsm_.update(robot_state_, desired_state_, current_error_twist_, total_time_sec_);
+    fsm_result_ = fsm_.update(robot_state_, desired_state_, current_error_twist_, total_time_sec_, tube_section_count_);
 
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
@@ -738,7 +745,7 @@ void dynamics_controller::compute_full_pose_task_error()
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
 
-    fsm_result_            = fsm_.update(robot_state_, desired_state_, current_error_twist_, total_time_sec_);
+    fsm_result_            = fsm_.update(robot_state_, desired_state_, current_error_twist_, total_time_sec_, tube_section_count_);
     abag_error_vector_     = predicted_error_twist_;
 
 #ifndef NDEBUG
@@ -776,7 +783,11 @@ void dynamics_controller::compute_control_error()
 //Change the reference frame of external (virtual) forces, from task frame to base frame
 void dynamics_controller::transform_force_driver()
 {
-    cart_force_command_[END_EFF_] = moveTo_task_.tf_pose.M * cart_force_command_[END_EFF_];
+    if (desired_task_model_ == task_model::moveTo_follow_path)
+    {
+        cart_force_command_[END_EFF_] = moveTo_follow_path_task_.tf_poses[tube_section_count_].M * cart_force_command_[END_EFF_];
+    }
+    else cart_force_command_[END_EFF_] = moveTo_task_.tf_pose.M * cart_force_command_[END_EFF_];
 }
 
 //Change the reference frame of constraint forces, from task frame to base frame
@@ -792,7 +803,12 @@ void dynamics_controller::transform_motion_driver()
         // Change Data Type of constraint forces to fit General KDL type
         wrench_column = KDL::Wrench(KDL::Vector(alpha(0, c), alpha(1, c), alpha(2, c)),
                                     KDL::Vector(alpha(3, c), alpha(4, c), alpha(5, c)));
-        wrench_column = moveTo_task_.tf_pose.M * wrench_column;
+        
+        if (desired_task_model_ == task_model::moveTo_follow_path)
+        {
+            wrench_column = moveTo_follow_path_task_.tf_poses[tube_section_count_].M * wrench_column;
+        }
+        else wrench_column = moveTo_task_.tf_pose.M * wrench_column;
 
         // Change Data Type to fit Vereshchagin
         twist_column = KDL::Twist(wrench_column.force, wrench_column.torque);
@@ -812,7 +828,7 @@ void dynamics_controller::compute_cart_control_commands()
                 cart_force_command_[END_EFF_](i) = CTRL_DIM_[i]? abag_command_(i) * max_command_(i) : 0.0;
             
             if(desired_task_model_ == task_model::moveTo || \
-               desired_task_model_ == task_model::moveGuarded) transform_force_driver();
+               desired_task_model_ == task_model::moveTo_follow_path) transform_force_driver();
 
             break;
 
@@ -829,7 +845,7 @@ void dynamics_controller::compute_cart_control_commands()
                                                        abag_command_(5) * max_command_(5)}); // Angular
 
             if(desired_task_model_ == task_model::moveTo || \
-               desired_task_model_ == task_model::moveGuarded)
+               desired_task_model_ == task_model::moveTo_follow_path)
             {
                 //Change the reference frame of constraint forces, from task frame to base frame
                 transform_motion_driver();
@@ -842,6 +858,12 @@ void dynamics_controller::compute_cart_control_commands()
                     cart_force_command_[END_EFF_](0) = abag_command_(0) * max_command_(0);
                     transform_force_driver();
                 } 
+                
+                if(fsm_result_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
+                if(tube_section_count_ > moveTo_follow_path_task_.tf_poses.size() - 1)
+                {
+                    tube_section_count_ = moveTo_follow_path_task_.tf_poses.size() - 1;
+                }
             }
 
             break;
@@ -1044,6 +1066,11 @@ int dynamics_controller::initialize(const int desired_control_mode,
 
     switch (desired_task_model_)
     {
+        case task_model::moveTo_follow_path:
+            fsm_.initialize_with_moveTo_follow_path(moveTo_follow_path_task_, 
+                                                    motion_profile);
+            break;
+
         case task_model::moveTo:
             fsm_.initialize_with_moveTo(moveTo_task_, motion_profile);
             break;
@@ -1058,7 +1085,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
             break;
     }
 
-    if (desired_task_model_ == task_model::moveTo || desired_task_model_ == task_model::moveGuarded)
+    if (desired_task_model_ == task_model::moveTo || desired_task_model_ == task_model::moveTo_follow_path)
     {
         if(use_mixed_driver_) CTRL_DIM_[0] = false;
     } 
@@ -1075,8 +1102,14 @@ int dynamics_controller::initialize(const int desired_control_mode,
         log_file_cart_.open(dynamics_parameter::LOG_FILE_CART_PATH);
         assert(log_file_cart_.is_open());
 
-        for(int i = 0; i < NUM_OF_CONSTRAINTS_; i++) 
-            log_file_cart_ << moveTo_task_.tube_tolerances[i] << " ";
+        for(int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+        {
+            if (desired_task_model_ == task_model::moveTo_follow_path)
+            {
+                log_file_cart_ << moveTo_follow_path_task_.tube_tolerances[i] << " ";
+            }
+            else log_file_cart_ << moveTo_task_.tube_tolerances[i] << " ";
+        }
         log_file_cart_ << std::endl;      
 
         log_file_joint_.open(dynamics_parameter::LOG_FILE_JOINT_PATH);

@@ -97,13 +97,15 @@ class finite_state_machine
                              const int num_of_constraints);
         ~finite_state_machine(){};
 
+        int initialize_with_moveTo_follow_path(const moveTo_follow_path_task &task, const int motion_profile);
         int initialize_with_moveTo(const moveTo_task &task, const int motion_profile);
         int initialize_with_full_pose(const full_pose_task &task, const int motion_profile);
 
         int update(const state_specification &robot_state,
                    state_specification &desired_state,
                    const KDL::Twist &current_error,
-                   const double time_passed_sec);
+                   const double time_passed_sec,
+                   const int tube_section_count);
 
     private:
         const int NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_;

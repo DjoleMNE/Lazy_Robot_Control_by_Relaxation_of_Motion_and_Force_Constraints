@@ -39,6 +39,16 @@ finite_state_machine::finite_state_machine(const int num_of_joints,
 {
 }
 
+int finite_state_machine::initialize_with_moveTo_follow_path(const moveTo_follow_path_task &task,
+                                                             const int motion_profile)
+{
+    desired_task_model_      = task_model::moveTo_follow_path;
+    moveTo_follow_path_task_ = task;
+    motion_profile_          = motion_profile;
+
+    return control_status::NOMINAL;
+}
+
 int finite_state_machine::initialize_with_moveTo(const moveTo_task &task,
                                                  const int motion_profile)
 {
@@ -83,6 +93,7 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         #ifndef NDEBUG       
             if(!goal_reached_) printf("Goal area reached\n");
         #endif
+
         goal_reached_ = true;
     }
     else goal_reached_ = false;
@@ -137,6 +148,7 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
         #ifndef NDEBUG
             if(!time_limit_reached_) printf("Time limit reached\n");
         #endif
+
         time_limit_reached_ = true;
         return control_status::STOP_CONTROL;
     }
@@ -165,7 +177,8 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
 int finite_state_machine::update(const state_specification &robot_state,
                                  state_specification &desired_state,
                                  const KDL::Twist &current_error,
-                                 const double time_passed_sec)
+                                 const double time_passed_sec,
+                                 const int tube_section_count)
 {
     robot_state_            = robot_state;
     desired_state_          = desired_state;
@@ -174,6 +187,10 @@ int finite_state_machine::update(const state_specification &robot_state,
 
     switch (desired_task_model_)
     {
+        case task_model::moveTo_follow_path:
+            return update_moveTo_follow_path_task(desired_state, tube_section_count);
+            break;
+
         case task_model::moveTo:
             return update_moveTo_task(desired_state);
             break;

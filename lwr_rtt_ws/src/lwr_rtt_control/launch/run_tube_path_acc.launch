@@ -28,7 +28,7 @@
 <!-- ***************** General Control PARAMETERS ********************** -->
     <arg name="environment" default="1"/>
     <arg name="robot_model" default="0"/>
-    <arg name="simulation_loop_iterations" default="20000"/>
+    <arg name="simulation_loop_iterations" default="200000"/>
     <arg name="krc_compensate_gravity" default="false"/>
 
     <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) or MoveTo_follow_path(3) ==-->
@@ -60,12 +60,12 @@
 
 
     <!-- ========= Task time limit in seconds ==============-->
-    <arg name="task_time_limit_sec" default="19.0"/>
+    <arg name="task_time_limit_sec" default="600.0"/>
 
 
 
     <!-- ========= Tube tolerances ===============-->
-    <arg name="tube_tolerances" default="[0.002, 0.01, 0.01, 
+    <arg name="tube_tolerances" default="[0.003, 0.03, 0.03, 
                                           0.17, 0.17, 0.17]"/>
     <!-- <arg name="tube_tolerances" default="[0.0, 0.0, 0.0, 
                                           0.0, 0.0, 0.0]"/> -->
@@ -75,7 +75,7 @@
     <arg name="tube_start_position" default="[0.2,  0.3, 0.632811]"/>
 
     <!-- ========= Tube speed ===============-->
-    <arg name="tube_speed" default="0.1"/>
+    <arg name="tube_speed" default="0.02"/>
     <!-- <arg name="tube_speed" default="0.7"/> -->
 
 
