@@ -184,37 +184,44 @@ int dynamics_controller::check_control_status()
     {
         case control_status::NOMINAL:
             if(previous_control_status_ != control_status::NOMINAL) printf("Control status changed to NOMINAL\n");
+            previous_control_status_ = fsm_result_;
             return 0;
             break;
         
         case control_status::START_TO_CRUISE:
             if(previous_control_status_ != control_status::START_TO_CRUISE) printf("Control status changed to START_TO_CRUISE\n");
+            previous_control_status_ = fsm_result_;
             return 0;
             break;
 
         case control_status::CRUISE_TO_STOP:
             if(previous_control_status_ != control_status::CRUISE_TO_STOP) printf("Control status changed to CRUISE_TO_STOP\n");
+            previous_control_status_ = fsm_result_;
             return 0;
             break;
 
         case control_status::CRUISE_THROUGH_TUBE:
             if(previous_control_status_ != control_status::CRUISE_THROUGH_TUBE) printf("Control status changed to CRUISE_THROUGH_TUBE\n");
+            previous_control_status_ = fsm_result_;
             return 0;
             break;
         
         case control_status::CRUISE:
             if(previous_control_status_ != control_status::CRUISE) printf("Control status changed to CRUISE\n");
+            previous_control_status_ = fsm_result_;
             return 0;
             break;
 
         case control_status::CHANGE_TUBE_SECTION:
             if(previous_control_status_ != control_status::CHANGE_TUBE_SECTION) printf("Control status changed to CHANGE_TUBE_SECTION\n");
+            previous_control_status_ = fsm_result_;
             return 0;
             break;
 
         case control_status::STOP_ROBOT:
             if(previous_control_status_ != control_status::STOP_ROBOT) printf("Control status changed to STOP_ROBOT\n");
             // stop_robot_motion();
+            previous_control_status_ = fsm_result_;
             return 1;
             break;
         
@@ -223,8 +230,6 @@ int dynamics_controller::check_control_status()
             return -1;
             break;
     }
-
-    previous_control_status_ = fsm_result_;
 }
 
 /* 
