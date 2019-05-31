@@ -60,18 +60,19 @@
 
 
     <!-- ========= Task time limit in seconds ==============-->
-    <arg name="task_time_limit_sec" default="12.0"/>
+    <arg name="task_time_limit_sec" default="20.0"/>
 
 
 
     <!-- ========= Tube tolerances ===============-->
-    <arg name="tube_tolerances" default="[0.03, 0.01, 0.01, 
+    <arg name="tube_tolerances" default="[0.03, 0.02, 0.02, 
                                           0.17, 0.17, 0.17]"/>
     <!-- <arg name="tube_tolerances" default="[0.0, 0.0, 0.0, 
                                           0.0, 0.0, 0.0]"/> -->
 
     <!-- ========= Tube start position ===============-->
-    <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/>
+    <!-- <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/> -->
+    <arg name="tube_start_position" default="[0.1, 0.2, 1.0]"/>
     <!-- <arg name="tube_start_position" default="[0.3, -0.4, 1.165]"/> -->
 
     <!-- ========= Tube speed ===============-->
@@ -98,11 +99,11 @@
 
     <!-- === Damping decision map parameters: Error Sign =======-->
     <!-- <arg name="damper_amplitude" default="0.0"/> -->
-    <arg name="damper_amplitude" default="5.5"/>
+    <arg name="damper_amplitude" default="3.5"/>
     <arg name="damper_slope"     default="9.05"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
-    <arg name="max_command" default="[60.0, 60.0, 60.0, 
+    <arg name="max_command" default="[70.0, 70.0, 70.0, 
                                       10.0, 10.0, 10.0]"/>
 
     

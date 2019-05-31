@@ -83,8 +83,11 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
         time_limit_reached_ = true;
         return control_status::STOP_CONTROL;
     }
-    else time_limit_reached_ = false;
+    time_limit_reached_ = false;
 
+    bool final_section_reached = false;
+    if (tube_section_count == moveTo_follow_path_task_.tf_poses.size() - 1) final_section_reached = true;
+    
     // Check if the current pose of the robot satisfies all 6D tolerances
     int count = 0;
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
@@ -92,16 +95,9 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
         if (std::fabs(current_error_(i)) <= moveTo_follow_path_task_.tube_tolerances[i]) count++;
     }
 
-    bool final_section_selected = false;
-    if (tube_section_count == moveTo_follow_path_task_.tf_poses.size() - 1) final_section_selected = true;
-    
-    bool change_tube_section = false;
-    // Robot has reached some tube section
-    if (count == NUM_OF_CONSTRAINTS_) 
+    // Check if the robot has reached end of the tube path
+    if (count == NUM_OF_CONSTRAINTS_ && final_section_reached) 
     {   
-        // Check if the robot has reached end of the tube path
-        if (final_section_selected)
-        {
             #ifndef NDEBUG       
                 if(!goal_reached_) printf("Whole path covered\n");
             #endif
@@ -109,9 +105,6 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
             goal_reached_ = true;
             desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
             return control_status::STOP_ROBOT;
-        }
-
-        change_tube_section = true;
     }
     goal_reached_ = false;
 
@@ -120,15 +113,10 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
      * If yes command zero X linear velocity, to keep it in that x area.
      * Else go with initially commanded tube speed.
     */
-    if ((std::fabs(current_error_(0)) <= moveTo_follow_path_task_.tube_tolerances[0])\
-        && final_section_selected)
+    if ((std::fabs(current_error_(0)) <= moveTo_follow_path_task_.tube_tolerances[0] && final_section_reached) || \
+        (std::fabs(current_error_(0)) > moveTo_follow_path_task_.tube_tolerances[0] && count < NUM_OF_CONSTRAINTS_ - 1))
     {
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-
-        #ifndef NDEBUG
-            printf("Out of the tube\n");
-        #endif
-
         return control_status::NOMINAL;
     }
     else
@@ -153,11 +141,12 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
                 break;
         }
 
-        if (sign(current_error_(0)) == -1) desired_state.frame_velocity[END_EFF_].vel(0) = -1 * speed;      
+        if (sign(current_error_(0)) == -1 && final_section_reached) desired_state.frame_velocity[END_EFF_].vel(0) = -1 * speed;      
         else desired_state.frame_velocity[END_EFF_].vel(0) = speed;              
     }
     
-    if(change_tube_section) return control_status::CHANGE_TUBE_SECTION;
+    // Robot has reached some tube section? If yes, switch to next one.
+    if(std::fabs(current_error_(0)) <= moveTo_follow_path_task_.tube_tolerances[0]) return control_status::CHANGE_TUBE_SECTION;
     return control_status::NOMINAL;
 }
 
@@ -175,7 +164,7 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         time_limit_reached_ = true;
         return control_status::STOP_CONTROL;
     }
-    else time_limit_reached_ = false;
+    time_limit_reached_ = false;
 
     int count = 0;
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
@@ -193,7 +182,7 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         return control_status::STOP_ROBOT;
     }
-    else goal_reached_ = false;
+    goal_reached_ = false;
 
     /*
      * The robot has reached goal x area?
@@ -204,7 +193,6 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
          (std::fabs(current_error_(0)) > moveTo_task_.tube_tolerances[0] && count < 5) )
     {
 
-        if (count  < 3) printf("CDount: %d \n", count);
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         return control_status::NOMINAL;
     }
