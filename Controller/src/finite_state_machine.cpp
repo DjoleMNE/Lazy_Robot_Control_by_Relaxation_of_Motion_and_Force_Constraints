@@ -164,7 +164,7 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
 
 int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 {
-    if(total_control_time_sec_ > moveTo_task_.time_limit) 
+    if (total_control_time_sec_ > moveTo_task_.time_limit) 
     {
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
 
@@ -183,7 +183,7 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         if (std::fabs(current_error_(i)) <= moveTo_task_.tube_tolerances[i]) count++;
     }
     
-    if(count == NUM_OF_CONSTRAINTS_) 
+    if (count == NUM_OF_CONSTRAINTS_) 
     {
         #ifndef NDEBUG       
             if(!goal_reached_) printf("Goal area reached\n");
@@ -200,8 +200,11 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
      * If yes command zero X linear velocity, to keep it in that area.
      * Else go with initially commanded tube speed.
     */
-    if ( std::fabs(current_error_(0)) <= moveTo_task_.tube_tolerances[0] )
+    if ( std::fabs(current_error_(0)) <= moveTo_task_.tube_tolerances[0] || \
+         (std::fabs(current_error_(0)) > moveTo_task_.tube_tolerances[0] && count < 5) )
     {
+
+        if (count  < 3) printf("CDount: %d \n", count);
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         return control_status::NOMINAL;
     }
