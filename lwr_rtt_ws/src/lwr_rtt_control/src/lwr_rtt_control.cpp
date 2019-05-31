@@ -389,7 +389,7 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose,
         sleep(1);
     }
 
-    // else if(desired_task_model_ == task_model::moveTo_follow_path)
+    else if(desired_task_model_ == task_model::moveTo_follow_path)
     {
         ros::NodeHandle handle;
         ros::Publisher vis_pub = handle.advertise<visualization_msgs::Marker>( "visualization_marker", 1);
