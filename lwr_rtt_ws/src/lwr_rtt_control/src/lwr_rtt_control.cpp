@@ -32,7 +32,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     environment_(lwr_environment::LWR_SIMULATION), 
     robot_model_(lwr_model::LWR_URDF), iteration_count_(0), gazebo_arm_eef_(0),
     simulation_loop_iterations_(10000), total_time_(0.0), task_time_limit_sec_(0.0),
-    krc_compensate_gravity_(false), use_mixed_driver_(false),
+    krc_compensate_gravity_(false), use_mixed_driver_(false), load_ati_sensor_(false),
     desired_task_model_(2), desired_control_mode_(0), desired_dynamics_interface_(1),
     desired_pose_(1), motion_profile_(0),
     damper_amplitude_(1.0), damper_slope_(4.0), tube_speed_(0.2),
@@ -59,6 +59,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addPort("JointVelocityCommand",port_joint_velocity_cmd_out).doc("Command joint velocities");
     this->addPort("JointTorqueCommand",port_joint_torque_cmd_out).doc("Command joint torques");
 
+    this->addProperty("load_ati_sensor", load_ati_sensor_).doc("load_ati_sensor");
     this->addProperty("simulation_loop_iterations", simulation_loop_iterations_).doc("simulation_loop_iterations");
     this->addProperty("krc_compensate_gravity", krc_compensate_gravity_).doc("KRC compensate gravity");
     this->addProperty("use_mixed_driver", use_mixed_driver_).doc("use_mixed_driver");
@@ -239,20 +240,22 @@ bool LwrRttControl::configureHook()
 
     this->visualize_pose(desired_ee_pose_, path_poses);
 
-    log_file_ext_force_.open("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/ext_force_data.txt");
-    assert(log_file_ext_force_.is_open());
-
+    if(load_ati_sensor_)
+    {
+        log_file_ext_force_.open("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/ext_force_data.txt");
+        assert(log_file_ext_force_.is_open());
+    }
     return true;
 }
 
 
 void LwrRttControl::updateHook()
 {
-    if(iteration_count_ > simulation_loop_iterations_) 
-    {
-        // std::cout << "Loop time: " << loop_total_time_ / iteration_count_ << std::endl;
-        RTT::TaskContext::stop();
-    }
+    // if(iteration_count_ > simulation_loop_iterations_) 
+    // {
+    //     // std::cout << "Loop time: " << loop_total_time_ / iteration_count_ << std::endl;
+    //     RTT::TaskContext::stop();
+    // }
 
     // Save current time point
     if(iteration_count_ == 0) start_time_ = std::chrono::steady_clock::now();
@@ -262,8 +265,12 @@ void LwrRttControl::updateHook()
     port_joint_position_in.read(jnt_pos_in);
     port_joint_velocity_in.read(jnt_vel_in);
     port_joint_torque_in.read(jnt_trq_in);
-    if(port_ext_force_in.read(wrench_msg_) == RTT::NoData) RTT::log(RTT::Error) << "No Force-Torque sensor data:" << iteration_count_ << RTT::endlog(); 
-    tf::wrenchMsgToKDL(wrench_msg_.wrench, ext_wrench_kdl_);
+
+    if(load_ati_sensor_)
+    {
+        if(port_ext_force_in.read(wrench_msg_) == RTT::NoData) RTT::log(RTT::Error) << "No Force-Torque sensor data:" << iteration_count_ << RTT::endlog(); 
+        tf::wrenchMsgToKDL(wrench_msg_.wrench, ext_wrench_kdl_);
+    }
 
     robot_state_.q.data  = jnt_pos_in;
     robot_state_.qd.data = jnt_vel_in;
@@ -287,10 +294,13 @@ void LwrRttControl::updateHook()
         RTT::TaskContext::stop();
     }
 
-    ext_wrench_kdl_ = robot_state_.frame_pose[gazebo_arm_eef_].M  * ext_wrench_kdl_;
-    for(int i = 0; i < 6; i++) 
-        log_file_ext_force_ << ext_wrench_kdl_(i) << " ";
-    log_file_ext_force_ << std::endl;
+    if(load_ati_sensor_)
+    {
+        ext_wrench_kdl_ = robot_state_.frame_pose[gazebo_arm_eef_].M  * ext_wrench_kdl_;
+        for(int i = 0; i < 6; i++) 
+            log_file_ext_force_ << ext_wrench_kdl_(i) << " ";
+        log_file_ext_force_ << std::endl;
+    }
 
     if(krc_compensate_gravity_) jnt_trq_cmd_out = robot_state_.control_torque.data;
     else
@@ -316,7 +326,8 @@ void LwrRttControl::stopHook()
 {
     controller_->deinitialize();
     RTT::log(RTT::Error) << "Robot stopped!" << RTT::endlog();
-    log_file_ext_force_.close();
+    
+    if(load_ati_sensor_) log_file_ext_force_.close();
 }
 
 void LwrRttControl::visualize_pose(const std::vector<double> &pose,
