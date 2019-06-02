@@ -239,6 +239,9 @@ bool LwrRttControl::configureHook()
 
     this->visualize_pose(desired_ee_pose_, path_poses);
 
+    log_file_ext_force_.open("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/ext_force_data.txt");
+    assert(log_file_ext_force_.is_open());
+
     return true;
 }
 
@@ -266,9 +269,9 @@ void LwrRttControl::updateHook()
     robot_state_.qd.data = jnt_vel_in;
     
     int function_result = controller_->step(robot_state_.q, 
-                                              robot_state_.qd, 
-                                              robot_state_.control_torque.data, 
-                                              total_time_ / SECOND);
+                                            robot_state_.qd, 
+                                            robot_state_.control_torque.data, 
+                                            total_time_ / SECOND);
 
     if(!function_result == 0)
     {
@@ -284,8 +287,10 @@ void LwrRttControl::updateHook()
         RTT::TaskContext::stop();
     }
 
-    ext_wrench_kdl_ =  robot_state_.frame_pose[gazebo_arm_eef_].M  * ext_wrench_kdl_;
-    std::cout << ext_wrench_kdl_ << std::endl;
+    ext_wrench_kdl_ = robot_state_.frame_pose[gazebo_arm_eef_].M  * ext_wrench_kdl_;
+    for(int i = 0; i < 6; i++) 
+        log_file_ext_force_ << ext_wrench_kdl_(i) << " ";
+    log_file_ext_force_ << std::endl;
 
     if(krc_compensate_gravity_) jnt_trq_cmd_out = robot_state_.control_torque.data;
     else
@@ -311,6 +316,7 @@ void LwrRttControl::stopHook()
 {
     controller_->deinitialize();
     RTT::log(RTT::Error) << "Robot stopped!" << RTT::endlog();
+    log_file_ext_force_.close();
 }
 
 void LwrRttControl::visualize_pose(const std::vector<double> &pose,
