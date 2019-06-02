@@ -38,6 +38,7 @@ connectPeers("lwr_rtt_control", getRobotName())
 
 // Connects corresponding ports from your controller to the robot component
 connectStandardPorts(getRobotName(), "lwr_rtt_control", ConnPolicy())
+connectToAtiFTSensorPort("lwr_rtt_control", "ExtCartForce", ConnPolicy())
 
 configureComponent("lwr_rtt_control")
 

@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
     cmake_modules
     roscpp
     tf
+    tf_conversions
     tf2_ros
     tf2
     geometry_msgs

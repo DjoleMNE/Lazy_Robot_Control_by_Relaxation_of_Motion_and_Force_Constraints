@@ -46,10 +46,13 @@ SOFTWARE.
 #include <tf2/transform_datatypes.h>
 #include <tf2/LinearMath/Transform.h>
 #include <tf2/convert.h>
+#include <geometry_msgs/Wrench.h>
+#include <geometry_msgs/WrenchStamped.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/Transform.h>
+#include <kdl_conversions/kdl_msg.h>
 #include <visualization_msgs/Marker.h>
 
 // Custom Controller code
@@ -79,7 +82,8 @@ class LwrRttControl : public RTT::TaskContext{
         const int NUM_OF_JOINTS_;
         const int NUM_OF_CONSTRAINTS_;
         int environment_, robot_model_, iteration_count_, simulation_loop_iterations_;
-        
+        int gazebo_arm_eef_;
+
         //Timer
         double total_time_, task_time_limit_sec_;
         std::chrono::steady_clock::time_point start_time_;
@@ -106,6 +110,9 @@ class LwrRttControl : public RTT::TaskContext{
         //Solvers
         std::shared_ptr<dynamics_controller> controller_;
         std::shared_ptr<KDL::ChainDynParam> gravity_solver_;
+        std::shared_ptr<KDL::ChainFkSolverPos_recursive> fk_solver_;
+
+        rtt_ros_kdl_tools::ChainUtils gazebo_arm_;
 
         // ROS components 
         std::shared_ptr<ros::NodeHandle> rosnode_;
@@ -117,10 +124,19 @@ class LwrRttControl : public RTT::TaskContext{
         RTT::InputPort<Eigen::VectorXd>  port_joint_position_in,
                                          port_joint_velocity_in,
                                          port_joint_torque_in;
+
+        // Port for reading data from Force-Torque sensor on the end-effector
+        RTT::InputPort<geometry_msgs::WrenchStamped> port_ext_force_in;
+        
         // Some input variables
         Eigen::VectorXd jnt_pos_in,
                         jnt_vel_in,
                         jnt_trq_in;
+
+        // data from Force-Torque sensor on the end-effector        
+        geometry_msgs::WrenchStamped wrench_msg_;
+        KDL::Wrench ext_wrench_kdl_;
+        
         // Output ports
         RTT::OutputPort<Eigen::VectorXd> port_joint_position_cmd_out,
                                          port_joint_velocity_cmd_out,

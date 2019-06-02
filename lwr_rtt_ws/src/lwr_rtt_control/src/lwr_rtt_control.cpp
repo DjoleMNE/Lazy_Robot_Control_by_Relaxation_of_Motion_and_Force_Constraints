@@ -30,7 +30,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     RTT::TaskContext(name), RATE_HZ_(999), NUM_OF_SEGMENTS_(7), 
     NUM_OF_JOINTS_(7), NUM_OF_CONSTRAINTS_(6), 
     environment_(lwr_environment::LWR_SIMULATION), 
-    robot_model_(lwr_model::LWR_URDF), iteration_count_(0),
+    robot_model_(lwr_model::LWR_URDF), iteration_count_(0), gazebo_arm_eef_(0),
     simulation_loop_iterations_(10000), total_time_(0.0), task_time_limit_sec_(0.0),
     krc_compensate_gravity_(false), use_mixed_driver_(false),
     desired_task_model_(2), desired_control_mode_(0), desired_dynamics_interface_(1),
@@ -54,10 +54,11 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addPort("JointPosition",port_joint_position_in).doc("Current joint positions");
     this->addPort("JointVelocity",port_joint_velocity_in).doc("Current joint velocities");
     this->addPort("JointTorque",port_joint_torque_in).doc("Current joint torques");
-
+    this->addPort("ExtCartForce", port_ext_force_in).doc("ExtCartForce from ATI sensor");
     this->addPort("JointPositionCommand",port_joint_position_cmd_out).doc("Command joint positions");
     this->addPort("JointVelocityCommand",port_joint_velocity_cmd_out).doc("Command joint velocities");
     this->addPort("JointTorqueCommand",port_joint_torque_cmd_out).doc("Command joint torques");
+
     this->addProperty("simulation_loop_iterations", simulation_loop_iterations_).doc("simulation_loop_iterations");
     this->addProperty("krc_compensate_gravity", krc_compensate_gravity_).doc("KRC compensate gravity");
     this->addProperty("use_mixed_driver", use_mixed_driver_).doc("use_mixed_driver");
@@ -86,8 +87,13 @@ LwrRttControl::LwrRttControl(const std::string& name):
 
 bool LwrRttControl::configureHook()
 {
+    if( !gazebo_arm_.init() )
+     {
+        RTT::log(RTT::Error) << "Could not init chain utils !" << RTT::endlog();
+        return false;
+    }
     rtt_ros_kdl_tools::getAllPropertiesFromROSParam(this);
-
+    
     jnt_pos_in.setZero(NUM_OF_JOINTS_);
     jnt_vel_in.setZero(NUM_OF_JOINTS_);
     jnt_trq_in.setZero(NUM_OF_JOINTS_);
@@ -110,6 +116,8 @@ bool LwrRttControl::configureHook()
         return false;
     }
 
+    if (!port_ext_force_in.connected()) RTT::log(RTT::Fatal) << "No EXT Force input connection!" << RTT::endlog();
+
     if ( !port_joint_position_cmd_out.connected() ||
          !port_joint_torque_cmd_out.connected()) 
     {
@@ -119,10 +127,11 @@ bool LwrRttControl::configureHook()
     robot_driver_.initialize(robot_model_, environment_, krc_compensate_gravity_);
     assert(NUM_OF_JOINTS_ == robot_driver_.get_robot_model().getNrOfSegments());
 
-    this->gravity_solver_ = std::make_shared<KDL::ChainDynParam>(robot_driver_.get_robot_model(), 
-                                                                 KDL::Vector(0.0, 0.0, -9.81289)); 
-
-    this->controller_ = std::make_shared<dynamics_controller>(&robot_driver_, RATE_HZ_);
+    this->gravity_solver_ = std::make_shared<KDL::ChainDynParam>(gazebo_arm_.Chain(), 
+                                                                 KDL::Vector(0.0, 0.0, -9.81289));
+    this->fk_solver_      = std::make_shared<KDL::ChainFkSolverPos_recursive>(gazebo_arm_.Chain());
+    gazebo_arm_eef_       = gazebo_arm_.Chain().getNrOfSegments() - 1;
+    this->controller_     = std::make_shared<dynamics_controller>(&robot_driver_, RATE_HZ_);
 
     //Create End_effector Cartesian Acceleration task 
     controller_->define_ee_acc_constraint(std::vector<bool>{false, false, false, // Linear
@@ -132,7 +141,7 @@ bool LwrRttControl::configureHook()
     //Create External Forces task 
     controller_->define_ee_external_force(std::vector<double>{0.0, 0.0, 0.0, // Linear
                                                               0.0, 0.0, 0.0}); // Angular
-    //Create Feedforward torques task s
+    //Create Feedforward torques task
     controller_->define_feedforward_torque(std::vector<double>{0.0, 0.0, 
                                                                0.0, 0.0, 
                                                                0.0, 0.0, 0.0});
@@ -174,11 +183,9 @@ bool LwrRttControl::configureHook()
     int num_of_points = 25;
 
     std::vector< std::vector<double> > tube_path_points(num_of_points, std::vector<double>(3, 0.0));
-    this->draw_sine(tube_path_points, 1.0, 0.05, 0.015, desired_ee_pose_[0], 
-                    desired_ee_pose_[1], desired_ee_pose_[2]);
+    this->draw_sine(tube_path_points, 1.0, 0.05, 0.015, desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
 
     std::vector< std::vector<double> > path_poses(num_of_points - 1, std::vector<double>(12, 0.0));
-
 
     switch (desired_task_model_)
     {
@@ -231,6 +238,7 @@ bool LwrRttControl::configureHook()
     if(initial_result != 0) return false;
 
     this->visualize_pose(desired_ee_pose_, path_poses);
+
     return true;
 }
 
@@ -245,34 +253,45 @@ void LwrRttControl::updateHook()
 
     // Save current time point
     if(iteration_count_ == 0) start_time_ = std::chrono::steady_clock::now();
-    total_time_ = std::chrono::duration<double, std::micro>\
-                  (std::chrono::steady_clock::now() - start_time_).count();
+    total_time_ = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - start_time_).count();
 
     // Read status from robot
     port_joint_position_in.read(jnt_pos_in);
     port_joint_velocity_in.read(jnt_vel_in);
     port_joint_torque_in.read(jnt_trq_in);
+    if(port_ext_force_in.read(wrench_msg_) == RTT::NoData) RTT::log(RTT::Error) << "No Force-Torque sensor data:" << iteration_count_ << RTT::endlog(); 
+    tf::wrenchMsgToKDL(wrench_msg_.wrench, ext_wrench_kdl_);
 
     robot_state_.q.data  = jnt_pos_in;
     robot_state_.qd.data = jnt_vel_in;
     
-    int controller_result = controller_->step(robot_state_.q, 
+    int function_result = controller_->step(robot_state_.q, 
                                               robot_state_.qd, 
                                               robot_state_.control_torque.data, 
                                               total_time_ / SECOND);
 
-    if(!controller_result == 0) RTT::TaskContext::stop();
+    if(!function_result == 0) RTT::TaskContext::stop();
     //  RTT::TaskContext::stop();
+
+    function_result = fk_solver_->JntToCart(robot_state_.q, robot_state_.frame_pose[gazebo_arm_eef_]);
+    if(!function_result == 0) RTT::TaskContext::stop();
+
+    ext_wrench_kdl_ =  robot_state_.frame_pose[gazebo_arm_eef_].M  * ext_wrench_kdl_;
+    std::cout << ext_wrench_kdl_ << std::endl;
 
     if(krc_compensate_gravity_) jnt_trq_cmd_out = robot_state_.control_torque.data;
     else
     {
-        gravity_solver_->JntToGravity(robot_state_.q, jnt_gravity_trq_out);
+        function_result = gravity_solver_->JntToGravity(robot_state_.q, jnt_gravity_trq_out);
+        if(!function_result == 0) RTT::TaskContext::stop();
+
         jnt_trq_cmd_out = robot_state_.control_torque.data - jnt_gravity_trq_out.data;
     }
-    // jnt_trq_cmd_out << 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
-    port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
+    // jnt_trq_cmd_out << 0.0, M_PI/1.5, 0.0, 0.0, 0.0, 0.0, 0.0;
+    //     port_joint_position_cmd_out.write(jnt_trq_cmd_out);
+
+    // port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
     iteration_count_++;
 }
 
