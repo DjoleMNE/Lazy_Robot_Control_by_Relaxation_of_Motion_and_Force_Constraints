@@ -20,6 +20,7 @@
     <arg name="load_base" default="false" />
     <arg name="load_ati_sensor" default="false" />
     <arg name="load_handle" default="false" />
+    <arg name="load_table" default="true" />
     <!-- Gazebo -->
     <arg name="gazebo_gui" default="false"/>
 
@@ -163,6 +164,7 @@
     in your component's configureHook() -->
     <node name="lwr_rtt_control" pkg="rtt_ros" type="deployer" args="-s $(find lwr_rtt_control)/scripts/run.ops --" output="screen">
         <param name="environment" value="$(arg environment)"/>
+        <param name="load_ati_sensor" value="$(arg load_ati_sensor)" />
         <param name="robot_model" value="$(arg robot_model)"/>
         <param name="simulation_loop_iterations" value="$(arg simulation_loop_iterations)"/>
         <param name="krc_compensate_gravity" value="$(arg krc_compensate_gravity)"/>
@@ -201,6 +203,7 @@
         <arg name="load_base" value="$(arg load_base)" />
         <arg name="load_ati_sensor" value="$(arg load_ati_sensor)" />
         <arg name="load_handle" value="$(arg load_handle)" />
+        <arg name="load_table" value="$(arg load_table)" />
         <arg name="gazebo_gui" value="$(arg gazebo_gui)"/>
     </include>
 </launch>
