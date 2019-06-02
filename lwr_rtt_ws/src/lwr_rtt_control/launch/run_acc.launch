@@ -4,9 +4,9 @@
 
     <!-- The end effector frame (you'll be able to use frames <= tip_link for cartesian position, jacobians etc.) -->
     <!-- 7 joints, 7 links, 8 frames. frames from link 0 to link 7-->
-    <arg name="tip_link" default="link_7"/>
+    <!-- <arg name="tip_link" default="link_7"/> -->
     <!-- arm as usual: 7 joints & 7 links, ati sensor additional 2 (fixed-not counted in kdl)joints and 2 links  -->
-    <!-- <arg name="tip_link" default="ati_link"/> -->
+    <arg name="tip_link" default="ati_link"/>
 
     <!-- Run Simulated robot -->
     <arg name="sim" default="true" />
@@ -18,8 +18,9 @@
     <arg name="log_level" default="error" />
     <!-- Tools -->
     <arg name="load_base" default="false" />
-    <arg name="load_ati_sensor" default="false" />
+    <arg name="load_ati_sensor" default="true" />
     <arg name="load_handle" default="false" />
+    <arg name="load_table" default="true" />
     <!-- Gazebo -->
     <arg name="gazebo_gui" default="false"/>
 
@@ -59,7 +60,7 @@
 
 
     <!-- ========= Task time limit in seconds ==============-->
-    <arg name="task_time_limit_sec" default="16.0"/>
+    <arg name="task_time_limit_sec" default="60000.0"/>
 
 
 
@@ -182,6 +183,7 @@
         <arg name="load_base" value="$(arg load_base)" />
         <arg name="load_ati_sensor" value="$(arg load_ati_sensor)" />
         <arg name="load_handle" value="$(arg load_handle)" />
+        <arg name="load_table" value="$(arg load_table)" />
         <arg name="gazebo_gui" value="$(arg gazebo_gui)"/>
     </include>
 </launch>
