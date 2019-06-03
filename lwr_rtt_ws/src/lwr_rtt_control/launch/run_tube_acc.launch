@@ -20,7 +20,7 @@
     <arg name="load_base" default="false" />
     <arg name="load_ati_sensor" default="true" />
     <arg name="load_handle" default="false" />
-    <arg name="load_table" default="true" />
+    <arg name="load_table" default="false" />
     <!-- Gazebo -->
     <arg name="gazebo_gui" default="false"/>
 
@@ -72,12 +72,13 @@
                                           0.0, 0.0, 0.0]"/> -->
 
     <!-- ========= Tube start position ===============-->
-    <!-- <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/> -->
-    <arg name="tube_start_position" default="[0.1, 0.2, 1.0]"/>
+    <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/>
+    <!-- <arg name="tube_start_position" default="[0.1, 0.2, 1.0]"/> -->
     <!-- <arg name="tube_start_position" default="[0.3, -0.4, 1.165]"/> -->
+    <!-- <arg name="tube_start_position" default="[-0.200785, -0.308278,  0.632811]"/> -->
 
     <!-- ========= Tube speed ===============-->
-    <arg name="tube_speed" default="0.1"/>
+    <arg name="tube_speed" default="0.091"/>
     <!-- <arg name="tube_speed" default="0.7"/> -->
 
 
@@ -100,11 +101,11 @@
 
     <!-- === Damping decision map parameters: Error Sign =======-->
     <!-- <arg name="damper_amplitude" default="0.0"/> -->
-    <arg name="damper_amplitude" default="3.5"/>
+    <arg name="damper_amplitude" default="2.5"/>
     <arg name="damper_slope"     default="9.05"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
-    <arg name="max_command" default="[70.0, 70.0, 70.0, 
+    <arg name="max_command" default="[60.0, 60.0, 60.0, 
                                       10.0, 10.0, 10.0]"/>
 
     
