@@ -19,7 +19,7 @@
     <!-- Tools -->
     <arg name="load_base" default="false" />
     <arg name="load_ati_sensor" default="false" />
-    <arg name="load_table" default="true" />
+    <arg name="load_table" default="false" />
     <arg name="load_handle" default="false" />
     <!-- Gazebo -->
     <arg name="gazebo_gui" default="false"/>
@@ -66,7 +66,7 @@
 
 
     <!-- ========= Tube tolerances ===============-->
-    <arg name="tube_tolerances" default="[0.001, 0.02, 0.02, 
+    <arg name="tube_tolerances" default="[0.002, 0.02, 0.02, 
                                           0.17, 0.17, 0.17]"/>
     <!-- <arg name="tube_tolerances" default="[0.0, 0.0, 0.0, 
                                           0.0, 0.0, 0.0]"/> -->
@@ -76,7 +76,7 @@
     <arg name="tube_start_position" default="[0.2,  0.3, 0.632811]"/>
 
     <!-- ========= Tube speed ===============-->
-    <arg name="tube_speed" default="0.02"/>
+    <arg name="tube_speed" default="0.03"/>
     <!-- <arg name="tube_speed" default="0.7"/> -->
 
 
@@ -99,7 +99,7 @@
 
     <!-- === Damping decision map parameters: Error Sign =======-->
     <!-- <arg name="damper_amplitude" default="0.0"/> -->
-    <arg name="damper_amplitude" default="3.5"/>
+    <arg name="damper_amplitude" default="2.5"/>
     <arg name="damper_slope"     default="9.05"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
