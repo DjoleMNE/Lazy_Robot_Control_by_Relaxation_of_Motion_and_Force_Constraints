@@ -71,7 +71,8 @@ class dynamics_controller
     * Required for RTT's updateHook method
     */
     int step(const KDL::JntArray &q_input,
-             const KDL::JntArray &qd_input, 
+             const KDL::JntArray &qd_input,
+             const KDL::Wrench &ext_force, 
              Eigen::VectorXd &tau_output,
              const double time_passed_sec);
     
@@ -164,6 +165,7 @@ class dynamics_controller
     double tube_speed_error_, horizon_amplitude_, horizon_slope_;
     Eigen::VectorXd abag_command_, max_command_, motion_profile_;
     KDL::Wrenches cart_force_command_;
+    KDL::Wrench ext_wrench_;
 
     KDL::Solver_Vereshchagin hd_solver_;
     KDL::FK_Vereshchagin fk_vereshchagin_;

@@ -85,6 +85,32 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
     }
     time_limit_reached_ = false;
 
+    for (int i = 0; i < 3; i++)
+    {
+        if (std::fabs(ext_wrench_(i)) > moveTo_follow_path_task_.contact_threshold_linear) 
+        {
+            #ifndef NDEBUG       
+                printf("Contact occurred\n");
+            #endif
+
+            desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+            return control_status::STOP_ROBOT;
+        }
+    }
+
+    for (int i = 3; i < 6; i++)
+    {
+        if (std::fabs(ext_wrench_(i)) > moveTo_follow_path_task_.contact_threshold_angular) 
+        {
+            #ifndef NDEBUG       
+                printf("Contact occurred\n");
+            #endif
+
+            desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+            return control_status::STOP_ROBOT;
+        }
+    }    
+
     bool final_section_reached = false;
     if (tube_section_count == moveTo_follow_path_task_.tf_poses.size() - 1) final_section_reached = true;
     
@@ -166,6 +192,32 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
     }
     time_limit_reached_ = false;
 
+    for (int i = 0; i < 3; i++)
+    {
+        if (std::fabs(ext_wrench_(i)) > moveTo_task_.contact_threshold_linear) 
+        {
+            #ifndef NDEBUG       
+                printf("Contact occurred\n");
+            #endif
+
+            desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+            return control_status::STOP_ROBOT;
+        }
+    }
+
+    for (int i = 3; i < 6; i++)
+    {
+        if (std::fabs(ext_wrench_(i)) > moveTo_task_.contact_threshold_angular) 
+        {
+            #ifndef NDEBUG       
+                printf("Contact occurred\n");
+            #endif
+
+            desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+            return control_status::STOP_ROBOT;
+        }
+    }    
+
     int count = 0;
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
     {
@@ -237,6 +289,30 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
     }
     else time_limit_reached_ = false;
 
+    for (int i = 0; i < 3; i++)
+    {
+        if (std::fabs(ext_wrench_(i)) > full_pose_task_.contact_threshold_linear) 
+        {
+            #ifndef NDEBUG       
+                printf("Contact occurred\n");
+            #endif
+
+            return control_status::STOP_ROBOT;
+        }
+    }
+
+    for (int i = 3; i < 6; i++)
+    {
+        if (std::fabs(ext_wrench_(i)) > full_pose_task_.contact_threshold_angular) 
+        {
+            #ifndef NDEBUG       
+                printf("Contact occurred\n");
+            #endif
+
+            return control_status::STOP_ROBOT;
+        }
+    }    
+
     int count = 0;
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
     {
@@ -260,12 +336,14 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
 int finite_state_machine::update(const state_specification &robot_state,
                                  state_specification &desired_state,
                                  const KDL::Twist &current_error,
+                                 const KDL::Wrench &ext_force,
                                  const double time_passed_sec,
                                  const int tube_section_count)
 {
     robot_state_            = robot_state;
     desired_state_          = desired_state;
     current_error_          = current_error;
+    ext_wrench_             = ext_force;
     total_control_time_sec_ = time_passed_sec;
 
     switch (desired_task_model_)

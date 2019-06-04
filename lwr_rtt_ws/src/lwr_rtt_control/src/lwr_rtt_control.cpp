@@ -245,6 +245,7 @@ bool LwrRttControl::configureHook()
         log_file_ext_force_.open("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/ext_force_data.txt");
         assert(log_file_ext_force_.is_open());
     }
+    else KDL::SetToZero(ext_wrench_kdl_);
     return true;
 }
 
@@ -274,20 +275,8 @@ void LwrRttControl::updateHook()
 
     robot_state_.q.data  = jnt_pos_in;
     robot_state_.qd.data = jnt_vel_in;
-    
-    int function_result = controller_->step(robot_state_.q, 
-                                            robot_state_.qd, 
-                                            robot_state_.control_torque.data, 
-                                            total_time_ / SECOND);
 
-    if(!function_result == 0)
-    {
-        RTT::log(RTT::Error) << "RTT: Controller returned error." << RTT::endlog(); 
-        RTT::TaskContext::stop();
-    }
-    //  RTT::TaskContext::stop();
-
-    function_result = fk_solver_->JntToCart(robot_state_.q, robot_state_.frame_pose[gazebo_arm_eef_]);
+    int function_result = fk_solver_->JntToCart(robot_state_.q, robot_state_.frame_pose[gazebo_arm_eef_]);
     if(!function_result == 0)
     {
         RTT::log(RTT::Error) << "RTT: FK solver returned error." << RTT::endlog(); 
@@ -301,6 +290,19 @@ void LwrRttControl::updateHook()
             log_file_ext_force_ << ext_wrench_kdl_(i) << " ";
         log_file_ext_force_ << std::endl;
     }
+    
+    function_result = controller_->step(robot_state_.q, 
+                                        robot_state_.qd, 
+                                        ext_wrench_kdl_, 
+                                        robot_state_.control_torque.data,
+                                        total_time_ / SECOND);
+
+    if(!function_result == 0)
+    {
+        RTT::log(RTT::Error) << "RTT: Controller returned error." << RTT::endlog(); 
+        RTT::TaskContext::stop();
+    }
+    //  RTT::TaskContext::stop();
 
     if(krc_compensate_gravity_) jnt_trq_cmd_out = robot_state_.control_torque.data;
     else

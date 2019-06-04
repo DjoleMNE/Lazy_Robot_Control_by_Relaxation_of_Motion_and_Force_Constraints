@@ -731,7 +731,8 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
 
-    fsm_result_ = fsm_.update(robot_state_, desired_state_, current_error_twist_, total_time_sec_, tube_section_count_);
+    fsm_result_ = fsm_.update(robot_state_, desired_state_, current_error_twist_, 
+                              ext_wrench_, total_time_sec_, tube_section_count_);
     
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
@@ -764,7 +765,8 @@ void dynamics_controller::compute_moveTo_task_error()
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
 
-    fsm_result_ = fsm_.update(robot_state_, desired_state_, current_error_twist_, total_time_sec_, tube_section_count_);
+    fsm_result_ = fsm_.update(robot_state_, desired_state_, current_error_twist_, 
+                              ext_wrench_, total_time_sec_, tube_section_count_);
 
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
@@ -793,7 +795,8 @@ void dynamics_controller::compute_full_pose_task_error()
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
 
-    fsm_result_            = fsm_.update(robot_state_, desired_state_, current_error_twist_, total_time_sec_, tube_section_count_);
+    fsm_result_            = fsm_.update(robot_state_, desired_state_, current_error_twist_, 
+                                         ext_wrench_, total_time_sec_, tube_section_count_);
     abag_error_vector_     = predicted_error_twist_;
 
 #ifndef NDEBUG
@@ -1228,11 +1231,13 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
 */
 int dynamics_controller::step(const KDL::JntArray &q_input,
                               const KDL::JntArray &qd_input,
+                              const KDL::Wrench &ext_force,
                               Eigen::VectorXd &tau_output,
                               const double time_passed_sec)
 {
     robot_state_.q  = q_input;
     robot_state_.qd = qd_input;
+    ext_wrench_     = ext_force;
     total_time_sec_ = time_passed_sec;
 
     // Get Cart poses and velocities

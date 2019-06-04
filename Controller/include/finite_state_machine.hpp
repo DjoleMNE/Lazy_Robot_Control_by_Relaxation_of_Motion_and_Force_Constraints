@@ -104,6 +104,7 @@ class finite_state_machine
         int update(const state_specification &robot_state,
                    state_specification &desired_state,
                    const KDL::Twist &current_error,
+                   const KDL::Wrench &ext_force,
                    const double time_passed_sec,
                    const int tube_section_count);
 
@@ -115,6 +116,7 @@ class finite_state_machine
         bool goal_reached_, time_limit_reached_, contact_detected_;
         state_specification robot_state_, desired_state_;
         KDL::Twist current_error_;
+        KDL::Wrench ext_wrench_;
         moveTo_task moveTo_task_;
         full_pose_task full_pose_task_;
         moveTo_follow_path_task moveTo_follow_path_task_;
