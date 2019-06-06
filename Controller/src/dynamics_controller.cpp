@@ -340,7 +340,7 @@ void dynamics_controller::define_moveTo_follow_path_task(
                                 std::vector< std::vector<double> > &task_frame_poses)
 {
     assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
-    assert(tube_tolerances.size()      == NUM_OF_CONSTRAINTS_);
+    assert(tube_tolerances.size()      == NUM_OF_CONSTRAINTS_ + 1);
     assert(task_frame_poses.size()     == tube_path_points.size() - 1);
     assert(tube_path_points[0].size()  == 3);
     assert(task_frame_poses[0].size()  == 12);
@@ -421,7 +421,7 @@ void dynamics_controller::define_moveTo_task(
                                 std::vector<double> &task_frame_pose)
 {
     assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
-    assert(tube_tolerances.size()      == NUM_OF_CONSTRAINTS_);
+    assert(tube_tolerances.size()      == NUM_OF_CONSTRAINTS_ + 1);
     assert(task_frame_pose.size()      == 12);
     assert(tube_start_position.size()  == 3);
 
@@ -735,6 +735,13 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
                               ext_wrench_, total_time_sec_, tube_section_count_);
     
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
+    
+    // Check for tube on velocity
+    if ((desired_state_.frame_velocity[END_EFF_].vel(0) != 0.0) && \
+        (std::fabs(abag_error_vector_(0)) <= moveTo_follow_path_task_.tube_tolerances[6]))
+    {
+        abag_error_vector_(0) = 0.0;
+    }
 
     // Other parts of the ABAG error are position errors
     for(int i = 1; i < NUM_OF_CONSTRAINTS_; i++)
@@ -769,6 +776,13 @@ void dynamics_controller::compute_moveTo_task_error()
                               ext_wrench_, total_time_sec_, tube_section_count_);
 
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
+
+    // Check for tube on velocity
+    if ((desired_state_.frame_velocity[END_EFF_].vel(0) != 0.0) && \
+        (std::fabs(abag_error_vector_(0)) <= moveTo_task_.tube_tolerances[6]))
+    {
+        abag_error_vector_(0) = 0.0;
+    }
 
     // Other parts of the ABAG error are position errors
     for(int i = 1; i < NUM_OF_CONSTRAINTS_; i++)
@@ -1162,7 +1176,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
         log_file_cart_.open(dynamics_parameter::LOG_FILE_CART_PATH);
         assert(log_file_cart_.is_open());
 
-        for(int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+        for(int i = 0; i < NUM_OF_CONSTRAINTS_ + 1; i++)
         {
             if (desired_task_model_ == task_model::moveTo_follow_path)
             {

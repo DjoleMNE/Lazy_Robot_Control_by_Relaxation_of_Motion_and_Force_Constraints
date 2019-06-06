@@ -61,7 +61,7 @@ struct moveTo_follow_path_task
 {
     std::vector<KDL::Frame> tf_poses, goal_poses;
     std::vector< std::vector<double> > tube_path_points{1, std::vector<double>(3, 0.0)};
-    std::vector<double> tube_tolerances{std::vector<double>(6, 0.0)};
+    std::vector<double> tube_tolerances{std::vector<double>(7, 0.0)};
     double tube_speed = 0.0;
     double contact_threshold_linear = 0.0;
     double contact_threshold_angular = 0.0;
@@ -72,7 +72,7 @@ struct moveTo_task
 {
     KDL::Frame tf_pose, goal_pose;
     std::vector<double> tube_start_position{std::vector<double>(3, 0.0)};
-    std::vector<double> tube_tolerances{std::vector<double>(6, 0.0)};
+    std::vector<double> tube_tolerances{std::vector<double>(7, 0.0)};
     double tube_speed = 0.0;
     double contact_threshold_linear = 0.0;
     double contact_threshold_angular = 0.0;

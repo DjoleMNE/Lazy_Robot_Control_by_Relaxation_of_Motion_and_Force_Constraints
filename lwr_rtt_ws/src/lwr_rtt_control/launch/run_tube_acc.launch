@@ -4,9 +4,9 @@
 
     <!-- The end effector frame (you'll be able to use frames <= tip_link for cartesian position, jacobians etc.) -->
     <!-- 7 joints, 7 links, 8 frames. frames from link 0 to link 7-->
-    <!-- <arg name="tip_link" default="link_7"/> -->
+    <arg name="tip_link" default="link_7"/>
     <!-- arm as usual: 7 joints & 7 links, ati sensor additional 2 (fixed-not counted in kdl)joints and 2 links  -->
-    <arg name="tip_link" default="ati_link"/>
+    <!-- <arg name="tip_link" default="ati_link"/> -->
 
     <!-- Run Simulated robot -->
     <arg name="sim" default="true" />
@@ -18,7 +18,7 @@
     <arg name="log_level" default="error" />
     <!-- Tools -->
     <arg name="load_base" default="false" />
-    <arg name="load_ati_sensor" default="true" />
+    <arg name="load_ati_sensor" default="false" />
     <arg name="load_handle" default="false" />
     <arg name="load_table" default="false" />
     <!-- Gazebo -->
@@ -66,8 +66,9 @@
 
 
     <!-- ========= Tube tolerances ===============-->
-    <arg name="tube_tolerances" default="[0.03, 0.02, 0.02, 
-                                          0.17, 0.17, 0.17]"/>
+    <arg name="tube_tolerances" default="[0.03, 0.03, 0.03, 
+                                          0.17, 0.17, 0.17, 
+                                          0.0]"/>
     <!-- <arg name="tube_tolerances" default="[0.0, 0.0, 0.0, 
                                           0.0, 0.0, 0.0]"/> -->
 
@@ -78,7 +79,7 @@
     <!-- <arg name="tube_start_position" default="[-0.200785, -0.308278,  0.632811]"/> -->
 
     <!-- ========= Tube speed ===============-->
-    <arg name="tube_speed" default="0.091"/>
+    <arg name="tube_speed" default="0.1"/>
     <!-- <arg name="tube_speed" default="0.7"/> -->
 
 
@@ -105,7 +106,7 @@
     <arg name="damper_slope"     default="9.05"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
-    <arg name="max_command" default="[60.0, 60.0, 60.0, 
+    <arg name="max_command" default="[50.0, 50.0, 50.0, 
                                       10.0, 10.0, 10.0]"/>
 
     

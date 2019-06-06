@@ -83,7 +83,6 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
         time_limit_reached_ = true;
         return control_status::STOP_CONTROL;
     }
-    time_limit_reached_ = false;
 
     for (int i = 0; i < 3; i++)
     {
@@ -143,7 +142,7 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
         (std::fabs(current_error_(0)) > moveTo_follow_path_task_.tube_tolerances[0] && count < NUM_OF_CONSTRAINTS_ - 1))
     {
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-        return control_status::NOMINAL;
+        return control_status::START_TO_CRUISE;
     }
     else
     {
@@ -173,7 +172,7 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
     
     // Robot has reached some tube section? If yes, switch to next one.
     if(std::fabs(current_error_(0)) <= moveTo_follow_path_task_.tube_tolerances[0]) return control_status::CHANGE_TUBE_SECTION;
-    return control_status::NOMINAL;
+    return control_status::CRUISE_THROUGH_TUBE;
 }
 
 
@@ -190,7 +189,6 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         time_limit_reached_ = true;
         return control_status::STOP_CONTROL;
     }
-    time_limit_reached_ = false;
 
     for (int i = 0; i < 3; i++)
     {
@@ -238,15 +236,16 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 
     /*
      * The robot has reached goal x area?
-     * If yes command zero X linear velocity, to keep it in that area.
+     * If yes, command zero X linear velocity to keep it in that area, until all DOFs gets back into tube.
      * Else go with initially commanded tube speed.
     */
-    if ( std::fabs(current_error_(0)) <= moveTo_task_.tube_tolerances[0] || \
-         (std::fabs(current_error_(0)) > moveTo_task_.tube_tolerances[0] && count < 5) )
+    if ( (std::fabs(current_error_(0)) <= moveTo_task_.tube_tolerances[0]) || \
+         ((std::fabs(current_error_(0)) >  moveTo_task_.tube_tolerances[0]) && \
+          (count < NUM_OF_CONSTRAINTS_ - 1)) 
+       )
     {
-
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-        return control_status::NOMINAL;
+        return control_status::START_TO_CRUISE;
     }
     else
     {
@@ -273,7 +272,7 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         else desired_state.frame_velocity[END_EFF_].vel(0) = speed;              
     }
    
-    return control_status::NOMINAL;
+    return control_status::CRUISE_THROUGH_TUBE;
 }
 
 int finite_state_machine::update_full_pose_task(state_specification &desired_state)
@@ -287,7 +286,6 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
         time_limit_reached_ = true;
         return control_status::STOP_CONTROL;
     }
-    else time_limit_reached_ = false;
 
     for (int i = 0; i < 3; i++)
     {
