@@ -125,6 +125,8 @@ class finite_state_machine
         int update_moveTo_task(state_specification &desired_state);
         int update_moveTo_follow_path_task(state_specification &desired_state,
                                            const int tube_section_count);
+        bool contact_detected(const double linear_force_threshold, 
+                              const double angular_force_threshold);
         int sign(double x);
 };
 #endif /* FINITE_STATE_MACHINE_HPP */

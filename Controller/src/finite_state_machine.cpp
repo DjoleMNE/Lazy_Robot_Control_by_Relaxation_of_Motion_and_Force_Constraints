@@ -84,31 +84,16 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
         return control_status::STOP_CONTROL;
     }
 
-    for (int i = 0; i < 3; i++)
+    if(contact_detected(moveTo_follow_path_task_.contact_threshold_linear, 
+                        moveTo_follow_path_task_.contact_threshold_angular))
     {
-        if (std::fabs(ext_wrench_(i)) > moveTo_follow_path_task_.contact_threshold_linear) 
-        {
-            #ifndef NDEBUG       
-                printf("Contact occurred\n");
-            #endif
+        #ifndef NDEBUG       
+            printf("Contact occurred\n");
+        #endif
 
-            desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-            return control_status::STOP_ROBOT;
-        }
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        return control_status::STOP_ROBOT;
     }
-
-    for (int i = 3; i < 6; i++)
-    {
-        if (std::fabs(ext_wrench_(i)) > moveTo_follow_path_task_.contact_threshold_angular) 
-        {
-            #ifndef NDEBUG       
-                printf("Contact occurred\n");
-            #endif
-
-            desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-            return control_status::STOP_ROBOT;
-        }
-    }    
 
     bool final_section_reached = false;
     if (tube_section_count == moveTo_follow_path_task_.tf_poses.size() - 1) final_section_reached = true;
@@ -189,32 +174,17 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         time_limit_reached_ = true;
         return control_status::STOP_CONTROL;
     }
-
-    for (int i = 0; i < 3; i++)
+    
+    if(contact_detected(moveTo_task_.contact_threshold_linear, 
+                        moveTo_task_.contact_threshold_angular))
     {
-        if (std::fabs(ext_wrench_(i)) > moveTo_task_.contact_threshold_linear) 
-        {
-            #ifndef NDEBUG       
-                printf("Contact occurred\n");
-            #endif
+        #ifndef NDEBUG       
+            printf("Contact occurred\n");
+        #endif
 
-            desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-            return control_status::STOP_ROBOT;
-        }
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        return control_status::STOP_ROBOT;
     }
-
-    for (int i = 3; i < 6; i++)
-    {
-        if (std::fabs(ext_wrench_(i)) > moveTo_task_.contact_threshold_angular) 
-        {
-            #ifndef NDEBUG       
-                printf("Contact occurred\n");
-            #endif
-
-            desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-            return control_status::STOP_ROBOT;
-        }
-    }    
 
     int count = 0;
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
@@ -287,29 +257,15 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
         return control_status::STOP_CONTROL;
     }
 
-    for (int i = 0; i < 3; i++)
+    if(contact_detected(full_pose_task_.contact_threshold_linear, 
+                        full_pose_task_.contact_threshold_angular))
     {
-        if (std::fabs(ext_wrench_(i)) > full_pose_task_.contact_threshold_linear) 
-        {
-            #ifndef NDEBUG       
-                printf("Contact occurred\n");
-            #endif
+        #ifndef NDEBUG       
+            printf("Contact occurred\n");
+        #endif
 
-            return control_status::STOP_ROBOT;
-        }
+        return control_status::STOP_ROBOT;
     }
-
-    for (int i = 3; i < 6; i++)
-    {
-        if (std::fabs(ext_wrench_(i)) > full_pose_task_.contact_threshold_angular) 
-        {
-            #ifndef NDEBUG       
-                printf("Contact occurred\n");
-            #endif
-
-            return control_status::STOP_ROBOT;
-        }
-    }    
 
     int count = 0;
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
@@ -365,6 +321,22 @@ int finite_state_machine::update(const state_specification &robot_state,
     }
 }
 
+
+bool finite_state_machine::contact_detected(const double linear_force_threshold, 
+                                            const double angular_force_threshold)
+{
+    for (int i = 0; i < 3; i++)
+    {
+        if (std::fabs(ext_wrench_(i)) > linear_force_threshold) return true;
+    }
+
+    for (int i = 3; i < 6; i++)
+    {
+        if (std::fabs(ext_wrench_(i)) > angular_force_threshold) return true;
+    }
+
+    return false;    
+}
 
 int finite_state_machine::sign(double x)
 {
