@@ -20,7 +20,7 @@
     <arg name="load_base" default="false" />
     <arg name="load_ati_sensor" default="false" />
     <arg name="load_handle" default="false" />
-    <arg name="load_table" default="true" />
+    <arg name="load_table" default="false" />
     <!-- Gazebo -->
     <arg name="gazebo_gui" default="false"/>
 
@@ -61,11 +61,11 @@
 
 
     <!-- ========= Task time limit in seconds ==============-->
-    <arg name="task_time_limit_sec" default="10.0"/>
+    <arg name="task_time_limit_sec" default="20.0"/>
 
 
     <!-- ========= Tube tolerances ===============-->
-    <arg name="tube_tolerances" default="[0.03, 0.01, 0.01, 
+    <arg name="tube_tolerances" default="[0.03, 0.05, 0.05, 
                                           0.17, 0.17, 0.17, 0.005]"/>
     <!-- <arg name="tube_tolerances" default="[0.0, 0.0, 0.0, 
                                                0.0, 0.0, 0.0]"/> -->

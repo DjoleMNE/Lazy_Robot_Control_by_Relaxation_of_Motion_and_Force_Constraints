@@ -42,7 +42,8 @@ using namespace Eigen;
  */
 
 Solver_Vereshchagin::Solver_Vereshchagin(const Chain& chain_,
-                                         const std::vector<double> joint_inertia_, 
+                                         const std::vector<double> joint_inertia_,
+                                         const std::vector<double> joint_torque_limits,  
                                          const Twist root_acc, 
                                          const unsigned int _nc) :
     chain(chain_), nj(chain.getNrOfJoints()), ns(chain.getNrOfSegments()), nc(_nc),
@@ -53,6 +54,9 @@ Solver_Vereshchagin::Solver_Vereshchagin(const Chain& chain_,
     assert(joint_inertia_.size() == nj);
     d = Eigen::VectorXd::Map(joint_inertia_.data(), joint_inertia_.size());
     
+    assert(joint_torque_limits.size() == nj);
+    joint_torque_limits_ = Eigen::VectorXd::Map(joint_torque_limits.data(), joint_torque_limits.size());
+
     //Set root acceleration
     acc_root = root_acc;
 
@@ -498,6 +502,9 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
         //Summing 2 contributions for true control torque:
         controlTorque(j) = constraintTorque(j) + ext_torque(j);
         // controlTorque(j) = ext_torque(j);
+
+        if (controlTorque(j) > joint_torque_limits_(j)) controlTorque(j) = joint_torque_limits_(j);
+        else if (controlTorque(j) < -joint_torque_limits_(j)) controlTorque(j) = -joint_torque_limits_(j);
 
         s.constAccComp = constraint_torque / s.D;
         s.nullspaceAccComp = s.u / s.D;

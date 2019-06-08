@@ -56,6 +56,7 @@ public:
      */
     Solver_Vereshchagin(const Chain& chain_, 
                         const std::vector<double> joint_inertia_,
+                        const std::vector<double> joint_torque_limits,  
                         const Twist root_acc, const unsigned int _nc);
 
     ~Solver_Vereshchagin()
@@ -132,6 +133,7 @@ private:
     Eigen::VectorXd Sm;
     Eigen::VectorXd tmpm;
     Eigen::VectorXd d; // Joint (rotor + gear) inertia: equation a) (see Vereshchagin89)
+    Eigen::VectorXd joint_torque_limits_;
     Wrench f_ext_ee;
     Wrench qdotdot_sum;
     Frame F_total;
