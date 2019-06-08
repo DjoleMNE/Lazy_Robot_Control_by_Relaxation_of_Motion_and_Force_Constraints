@@ -58,6 +58,12 @@ angular_x_force = np.array(angular_x_force)
 angular_y_force = np.array(angular_y_force)
 angular_z_force = np.array(angular_z_force)
 
+tick_freq = 1000
+if (rows > 4000): tick_freq = 500
+elif (rows < 4000 and rows > 1000): tick_freq = 200
+elif (rows < 1000 and rows > 500): tick_freq = 100
+elif (rows < 500): tick_freq = 50
+
 plt.ion()
 plt.figure(figsize = (18, 10))
 plt.suptitle('External Force-Torque', fontsize=20)
@@ -70,33 +76,39 @@ plt.margins(0,0)
 plt.subplot(6, 1, 1)
 plt.plot(linear_x_force, label='linear_x_force', c = 'red', linewidth = 2, zorder = 2)
 plt.legend(loc=4, fontsize = 'x-large')
+plt.xticks(np.arange(0, rows, tick_freq))
 plt.grid(True)
 
 plt.subplot(6, 1, 2)
 plt.plot(linear_y_force, label='linear_y_force', linewidth = 2, color = 'limegreen', zorder = 2)
 plt.legend(loc=4, fontsize = 'x-large')
+plt.xticks(np.arange(0, rows, tick_freq))
 plt.grid(True)
 
 plt.subplot(6, 1, 3)
 plt.plot(linear_z_force, label='linear_z_force', linewidth = 2, color = 'blue', zorder = 2)
 plt.legend(loc=4, fontsize = 'x-large')
+plt.xticks(np.arange(0, rows, tick_freq))
 plt.grid(True)
 
 plt.subplot(6, 1, 4)
 plt.plot(angular_x_force, label='angular_x_force', c = 'red', linewidth = 2, zorder = 2)
 plt.legend(fontsize = 'x-large')
+plt.xticks(np.arange(0, rows, tick_freq))
 plt.grid(True)
 
 
 plt.subplot(6, 1, 5)
 plt.plot(angular_y_force, label='angular_y_force', linewidth = 2, color = 'limegreen', zorder = 2)
 plt.legend(fontsize = 'x-large')
+plt.xticks(np.arange(0, rows, tick_freq))
 plt.grid(True)
 
 
 plt.subplot(6, 1, 6)
 plt.plot(angular_z_force, label='angular_z_force', linewidth = 2, color = 'blue', zorder = 2)
 plt.legend(fontsize = 'x-large')
+plt.xticks(np.arange(0, rows, tick_freq))
 plt.grid(True)
 
 

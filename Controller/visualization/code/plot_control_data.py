@@ -83,6 +83,12 @@ elif(desired_dim is 4): plt.suptitle('Angular Y', fontsize=20)
 elif(desired_dim is 5): plt.suptitle('Angular Z', fontsize=20)
 elif(desired_dim is 6): plt.suptitle('Linear Velocity X', fontsize=20)
 
+tick_freq = 1000
+if (num_samples > 4000): tick_freq = 500
+elif (num_samples < 4000 and num_samples > 1000): tick_freq = 200
+elif (num_samples < 1000 and num_samples > 500): tick_freq = 100
+elif (num_samples < 500): tick_freq = 50
+
 plt.gca().set_axis_off()
 plt.subplots_adjust(hspace = 0.02, wspace = 15)
 plt.subplots_adjust(left=0.05, right=0.99, top=0.95, bottom=0.03)
@@ -99,17 +105,20 @@ if(show_tube):
     plt.plot(desired - tube_tolerance, c = 'blue', label='tube_lower_limit', linewidth = 1.3, zorder = 2)
 
 plt.legend(loc=4, fontsize = 'x-large')
+plt.xticks(np.arange(0, num_samples, tick_freq))
 plt.grid(True)
 
 plt.subplot(4, 1, 2)
 plt.plot(raw_error, c = 'orange', label=r'raw error: $e = y_d - y_k$', linewidth=1, zorder=2)
 plt.legend(fontsize = 'x-large')
+plt.xticks(np.arange(0, num_samples, tick_freq))
 plt.grid(True)
 
 plt.subplot(4, 1, 3)
 plt.plot(error, c = 'orange', label=r'low-pass filtered error sign: $\bar{e}$', linewidth=1, zorder=2)
 plt.legend(fontsize = 'x-large')
 plt.ylim(-1.2, 1.2)
+plt.xticks(np.arange(0, num_samples, tick_freq))
 plt.grid(True)
 
 plt.subplot(4, 1, 4)
@@ -119,8 +128,8 @@ plt.plot(command, c = 'blue', label='u', linewidth = 1.0, zorder = 3)
 plt.ylim(-1.05, 1.05)
 plt.yticks(np.arange(-1.0, 1.05, 0.25))
 
-
 plt.legend(fontsize = 'x-large')
+plt.xticks(np.arange(0, num_samples, tick_freq))
 plt.grid(True)
 
 plt.draw()
