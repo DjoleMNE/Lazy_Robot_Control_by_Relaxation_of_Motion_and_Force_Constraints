@@ -64,6 +64,19 @@
     <arg name="task_time_limit_sec" default="600.0"/>
 
 
+    <!-- ========= Number of path points to follow ==============-->
+    <arg name="path_points_num" default="25"/>
+
+    <!-- ========= Path frequency: e.g. of the sine =============-->
+    <arg name="path_frequency" default="1.0"/>
+
+    <!-- ========= Path amplitude: e.g. of the sine =============-->
+    <arg name="path_amplitude" default="0.05"/>
+
+    <!-- ========= Path amplitude: e.g. of the sine =============-->
+    <arg name="path_axis_scale" default="0.015"/>
+
+
 
     <!-- ========= Tube tolerances ===============-->
     <arg name="tube_tolerances" default="[0.002, 0.03, 0.03, 
@@ -157,6 +170,10 @@
         <param name="desired_dynamics_interface" value="$(arg desired_dynamics_interface)"/>
         <param name="desired_pose" value="$(arg desired_pose)"/>
         <param name="task_time_limit_sec" value="$(arg task_time_limit_sec)"/>
+        <param name="path_points_num" value="$(arg path_points_num)"/>
+        <param name="path_frequency" value="$(arg path_frequency)"/>
+        <param name="path_amplitude" value="$(arg path_amplitude)"/>
+        <param name="path_axis_scale" value="$(arg path_axis_scale)"/>
         <rosparam param="tube_tolerances" subst_value="True">$(arg tube_tolerances)</rosparam>
         <rosparam param="tube_start_position" subst_value="True">$(arg tube_start_position)</rosparam>
         <rosparam param="tube_speed" subst_value="True">$(arg tube_speed)</rosparam>

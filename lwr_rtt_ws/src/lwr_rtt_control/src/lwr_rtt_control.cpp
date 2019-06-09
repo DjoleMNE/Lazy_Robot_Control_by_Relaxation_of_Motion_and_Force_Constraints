@@ -31,12 +31,15 @@ LwrRttControl::LwrRttControl(const std::string& name):
     NUM_OF_JOINTS_(7), NUM_OF_CONSTRAINTS_(6), 
     environment_(lwr_environment::LWR_SIMULATION), 
     robot_model_(lwr_model::LWR_URDF), iteration_count_(0), gazebo_arm_eef_(0),
+    path_points_num_(0),
     simulation_loop_iterations_(10000), total_time_(0.0), task_time_limit_sec_(0.0),
     krc_compensate_gravity_(false), use_mixed_driver_(false), load_ati_sensor_(false),
     desired_task_model_(2), desired_control_mode_(0), desired_dynamics_interface_(1),
     desired_pose_(1), motion_profile_(0),
     damper_amplitude_(1.0), damper_slope_(4.0), tube_speed_(0.2),
-    control_dims_(NUM_OF_CONSTRAINTS_, false),
+    path_frequency_(0.0), path_amplitude_(0.0), path_axis_scale_(0.0),
+    control_dims_(NUM_OF_CONSTRAINTS_, false), tube_path_points_(1, std::vector<double>(3, 0.0)),
+    path_poses_(1, std::vector<double>(12, 0.0)),
     desired_ee_pose_(12, 0.0), tube_tolerances_(7, 0.0), tube_start_position_(3, 0.0),
     max_command_(Eigen::VectorXd::Constant(6, 0.0)),
     error_alpha_(Eigen::VectorXd::Constant(6, 0.0)),
@@ -68,9 +71,13 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addProperty("desired_dynamics_interface", desired_dynamics_interface_).doc("desired_dynamics_interface");
     this->addProperty("desired_pose", desired_pose_).doc("desired pose");
     this->addProperty("task_time_limit_sec", task_time_limit_sec_).doc("task_time_limit_sec");
+    this->addProperty("path_points_num", path_points_num_).doc("path_points_num");
     this->addProperty("tube_tolerances", tube_tolerances_).doc("tube_tolerances");
     this->addProperty("tube_start_position", tube_start_position_).doc("tube_start_position");
     this->addProperty("tube_speed", tube_speed_).doc("tube_speed");
+    this->addProperty("path_frequency", path_frequency_).doc("path_frequency");
+    this->addProperty("path_amplitude", path_amplitude_).doc("path_amplitude");
+    this->addProperty("path_axis_scale", path_axis_scale_).doc("path_axis_scale_");
     this->addProperty("motion_profile", motion_profile_).doc("motion_profile");
     this->addProperty("control_dims", control_dims_).doc("control dimensions");
     this->addProperty("damper_amplitude", damper_amplitude_).doc("damper_amplitude");
@@ -181,24 +188,22 @@ bool LwrRttControl::configureHook()
             break;
     }
 
-    int num_of_points = 25;
-
-    std::vector< std::vector<double> > tube_path_points(num_of_points, std::vector<double>(3, 0.0));
-    this->draw_sine(tube_path_points, 1.0, 0.05, 0.015, desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
-
-    std::vector< std::vector<double> > path_poses(num_of_points - 1, std::vector<double>(12, 0.0));
-
     switch (desired_task_model_)
     {
         case task_model::moveTo_follow_path:
+            tube_path_points_ = std::vector< std::vector<double> > (path_points_num_, std::vector<double>(3, 0.0));
+            path_poses_ = std::vector< std::vector<double> > (path_points_num_ - 1, std::vector<double>(12, 0.0));
+            this->draw_sine(tube_path_points_, path_frequency_, path_amplitude_, path_axis_scale_, 
+                            desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
+
             controller_->define_moveTo_follow_path_task(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
                                                                           control_dims_[3], control_dims_[4], control_dims_[5]},// Angular
-                                                        tube_path_points,
+                                                        tube_path_points_,
                                                         tube_tolerances_,
                                                         tube_speed_,
                                                         1.0, 0.1, //contact_threshold linear and angular
                                                         task_time_limit_sec_,// time_limit
-                                                        path_poses); // TF pose
+                                                        path_poses_); // TF pose
             break;
 
         case task_model::moveTo:
@@ -238,7 +243,7 @@ bool LwrRttControl::configureHook()
                                                  motion_profile_);
     if(initial_result != 0) return false;
 
-    this->visualize_pose(desired_ee_pose_, path_poses);
+    this->visualize_pose(desired_ee_pose_, path_poses_);
 
     if(load_ati_sensor_)
     {

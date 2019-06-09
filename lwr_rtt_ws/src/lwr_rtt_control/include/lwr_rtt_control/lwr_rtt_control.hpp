@@ -82,7 +82,7 @@ class LwrRttControl : public RTT::TaskContext{
         const int NUM_OF_JOINTS_;
         const int NUM_OF_CONSTRAINTS_;
         int environment_, robot_model_, iteration_count_, simulation_loop_iterations_;
-        int gazebo_arm_eef_;
+        int gazebo_arm_eef_, path_points_num_;
 
         std::ofstream log_file_ext_force_;
 
@@ -96,7 +96,9 @@ class LwrRttControl : public RTT::TaskContext{
         int desired_task_model_, desired_control_mode_, desired_dynamics_interface_;
         int desired_pose_, motion_profile_;
         double damper_amplitude_, damper_slope_, tube_speed_;
+        double path_frequency_, path_amplitude_, path_axis_scale_;
         std::vector<bool> control_dims_;
+        std::vector< std::vector<double> > tube_path_points_, path_poses_;
         std::vector<double> desired_ee_pose_, tube_tolerances_, tube_start_position_;
         Eigen::VectorXd max_command_; 
 
