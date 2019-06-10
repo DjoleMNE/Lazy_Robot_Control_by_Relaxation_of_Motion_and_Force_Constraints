@@ -37,9 +37,9 @@ LwrRttControl::LwrRttControl(const std::string& name):
     desired_task_model_(2), desired_control_mode_(0), desired_dynamics_interface_(1),
     desired_pose_(1), motion_profile_(0),
     damper_amplitude_(1.0), damper_slope_(4.0), tube_speed_(0.2),
-    path_frequency_(0.0), path_amplitude_(0.0), path_axis_scale_(0.0),
+    path_amplitude_(0.0), path_axis_scale_(0.0),
     control_dims_(NUM_OF_CONSTRAINTS_, false), tube_path_points_(1, std::vector<double>(3, 0.0)),
-    path_poses_(1, std::vector<double>(12, 0.0)),
+    path_poses_(1, std::vector<double>(12, 0.0)), path_frequency_(2, 0.0),
     desired_ee_pose_(12, 0.0), tube_tolerances_(7, 0.0), tube_start_position_(3, 0.0),
     max_command_(Eigen::VectorXd::Constant(6, 0.0)),
     error_alpha_(Eigen::VectorXd::Constant(6, 0.0)),
@@ -124,7 +124,7 @@ bool LwrRttControl::configureHook()
         return false;
     }
 
-    if (!port_ext_force_in.connected()) RTT::log(RTT::Fatal) << "No EXT Force input connection!" << RTT::endlog();
+    if (load_ati_sensor_ && !port_ext_force_in.connected()) RTT::log(RTT::Fatal) << "No EXT Force input connection!" << RTT::endlog();
 
     if ( !port_joint_position_cmd_out.connected() ||
          !port_joint_torque_cmd_out.connected()) 
@@ -192,8 +192,9 @@ bool LwrRttControl::configureHook()
     {
         case task_model::moveTo_follow_path:
             tube_path_points_ = std::vector< std::vector<double> > (path_points_num_, std::vector<double>(3, 0.0));
-            path_poses_ = std::vector< std::vector<double> > (path_points_num_ - 1, std::vector<double>(12, 0.0));
-            this->draw_sine(tube_path_points_, path_frequency_, path_amplitude_, path_axis_scale_, 
+            path_poses_       = std::vector< std::vector<double> > (path_points_num_ - 1, std::vector<double>(12, 0.0));
+            this->draw_sine(tube_path_points_, path_frequency_[0], path_frequency_[1],
+                            path_amplitude_, path_axis_scale_, 
                             desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
 
             controller_->define_moveTo_follow_path_task(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
@@ -525,16 +526,22 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose,
 
 
 void LwrRttControl::draw_sine(std::vector< std::vector<double> > &path_points,
-                              const double frequency, const double amplitude,
+                              const double frequency_start,
+                              const double frequency_end, 
+                              const double amplitude,
                               const double x_scale, const double offset_x, 
                               const double offset_y, const double offset_z)
 {
     double x_y, z;
+    double frequency = 0.0;
+    double freq_step = 0.0;
+    if (frequency_end > frequency_start) freq_step = (frequency_end - frequency_start) / (static_cast<float>(path_points.size() - 1));
 
     for(int i = 0; i < path_points.size(); i++)
     {
         // the angle is plotted on the x-plane
         x_y = i;
+        frequency = frequency_start + freq_step * i;
 
         // the sine function is plotted along the z-axis
         z = amplitude * std::sin(2 * M_PI * frequency * (x_y / path_points.size()));

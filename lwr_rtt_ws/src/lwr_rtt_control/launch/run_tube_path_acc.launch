@@ -65,21 +65,21 @@
 
 
     <!-- ========= Number of path points to follow ==============-->
-    <arg name="path_points_num" default="25"/>
+    <arg name="path_points_num" default="50"/>
 
     <!-- ========= Path frequency: e.g. of the sine =============-->
-    <arg name="path_frequency" default="1.0"/>
+    <arg name="path_frequency" default="[0.5, 4.5]"/>
 
     <!-- ========= Path amplitude: e.g. of the sine =============-->
     <arg name="path_amplitude" default="0.05"/>
 
-    <!-- ========= Path amplitude: e.g. of the sine =============-->
-    <arg name="path_axis_scale" default="0.015"/>
+    <!-- ==== Path Axis scale: e.g. sine angle is along x_y plane =====-->
+    <arg name="path_axis_scale" default="0.008"/>
 
 
 
     <!-- ========= Tube tolerances ===============-->
-    <arg name="tube_tolerances" default="[0.002, 0.03, 0.03, 
+    <arg name="tube_tolerances" default="[0.001, 0.03, 0.03, 
                                           0.17, 0.17, 0.17, 
                                           0.0]"/>
     <!-- <arg name="tube_tolerances" default="[0.0, 0.0, 0.0, 
@@ -117,7 +117,7 @@
     <arg name="damper_slope"     default="9.05"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
-    <arg name="max_command" default="[50.0, 50.0, 50.0, 
+    <arg name="max_command" default="[60.0, 60.0, 60.0, 
                                       10.0, 10.0, 10.0]"/>
 
     
@@ -171,9 +171,9 @@
         <param name="desired_pose" value="$(arg desired_pose)"/>
         <param name="task_time_limit_sec" value="$(arg task_time_limit_sec)"/>
         <param name="path_points_num" value="$(arg path_points_num)"/>
-        <param name="path_frequency" value="$(arg path_frequency)"/>
         <param name="path_amplitude" value="$(arg path_amplitude)"/>
         <param name="path_axis_scale" value="$(arg path_axis_scale)"/>
+        <rosparam param="path_frequency" subst_value="True">$(arg path_frequency)</rosparam>
         <rosparam param="tube_tolerances" subst_value="True">$(arg tube_tolerances)</rosparam>
         <rosparam param="tube_start_position" subst_value="True">$(arg tube_start_position)</rosparam>
         <rosparam param="tube_speed" subst_value="True">$(arg tube_speed)</rosparam>

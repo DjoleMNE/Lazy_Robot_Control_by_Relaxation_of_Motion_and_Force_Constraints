@@ -96,10 +96,10 @@ class LwrRttControl : public RTT::TaskContext{
         int desired_task_model_, desired_control_mode_, desired_dynamics_interface_;
         int desired_pose_, motion_profile_;
         double damper_amplitude_, damper_slope_, tube_speed_;
-        double path_frequency_, path_amplitude_, path_axis_scale_;
+        double path_amplitude_, path_axis_scale_;
         std::vector<bool> control_dims_;
         std::vector< std::vector<double> > tube_path_points_, path_poses_;
-        std::vector<double> desired_ee_pose_, tube_tolerances_, tube_start_position_;
+        std::vector<double> path_frequency_, desired_ee_pose_, tube_tolerances_, tube_start_position_;
         Eigen::VectorXd max_command_; 
 
         // ABAG Parameters
@@ -154,7 +154,9 @@ class LwrRttControl : public RTT::TaskContext{
         void visualize_pose(const std::vector<double> &pose, 
                             const std::vector<std::vector<double>> &path_poses);
         void draw_sine(std::vector< std::vector<double> > &path_points,
-                       const double frequency, const double amplitude, 
+                       const double frequency_start,
+                       const double frequency_end,
+                       const double amplitude,
                        const double x_scale, const double offset_x, 
                        const double offset_y, const double offset_z);
 };
