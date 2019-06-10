@@ -84,7 +84,7 @@ elif(desired_dim is 5): plt.suptitle('Angular Z', fontsize=20)
 elif(desired_dim is 6): plt.suptitle('Linear Velocity X', fontsize=20)
 
 tick_freq = 1000
-if (num_samples > 4000): tick_freq = 500
+if (num_samples > 4000 and num_samples < 7000): tick_freq = 500
 elif (num_samples < 4000 and num_samples > 1000): tick_freq = 200
 elif (num_samples < 1000 and num_samples > 500): tick_freq = 100
 elif (num_samples < 500): tick_freq = 50

@@ -59,7 +59,7 @@ angular_y_force = np.array(angular_y_force)
 angular_z_force = np.array(angular_z_force)
 
 tick_freq = 1000
-if (rows > 4000): tick_freq = 500
+if (rows > 4000 and rows < 7000): tick_freq = 500
 elif (rows < 4000 and rows > 1000): tick_freq = 200
 elif (rows < 1000 and rows > 500): tick_freq = 100
 elif (rows < 500): tick_freq = 50

@@ -68,7 +68,7 @@ joint_5_limit = np.array(np.full((rows, ), np.float32( input_data[0][5])))
 joint_6_limit = np.array(np.full((rows, ), np.float32( input_data[0][6])))
 
 tick_freq = 1000
-if (rows > 4000): tick_freq = 500
+if (rows > 4000 and rows < 7000): tick_freq = 500
 elif (rows < 4000 and rows > 1000): tick_freq = 200
 elif (rows < 1000 and rows > 500): tick_freq = 100
 elif (rows < 500): tick_freq = 50
