@@ -159,6 +159,11 @@ class LwrRttControl : public RTT::TaskContext{
                        const double amplitude,
                        const double x_scale, const double offset_x, 
                        const double offset_y, const double offset_z);
+        void draw_inf_sign(std::vector< std::vector<double> > &path_points,
+                           const double length, const double height, 
+                           const double amplitude,
+                           const double x_scale, const double offset_x, 
+                           const double offset_y, const double offset_z);
 };
 
 #endif

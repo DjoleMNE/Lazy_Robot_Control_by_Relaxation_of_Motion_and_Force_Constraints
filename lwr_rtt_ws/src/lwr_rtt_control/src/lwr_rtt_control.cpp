@@ -193,9 +193,12 @@ bool LwrRttControl::configureHook()
         case task_model::moveTo_follow_path:
             tube_path_points_ = std::vector< std::vector<double> > (path_points_num_, std::vector<double>(3, 0.0));
             path_poses_       = std::vector< std::vector<double> > (path_points_num_ - 1, std::vector<double>(12, 0.0));
-            this->draw_sine(tube_path_points_, path_frequency_[0], path_frequency_[1],
-                            path_amplitude_, path_axis_scale_, 
-                            desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
+            // this->draw_sine(tube_path_points_, path_frequency_[0], path_frequency_[1],
+            //                 path_amplitude_, path_axis_scale_, 
+            //                 desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
+
+            this->draw_inf_sign(tube_path_points_, 0.3, 0.2, 1.0, 1.0, 
+                                desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
 
             controller_->define_moveTo_follow_path_task(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
                                                                           control_dims_[3], control_dims_[4], control_dims_[5]},// Angular
@@ -549,6 +552,28 @@ void LwrRttControl::draw_sine(std::vector< std::vector<double> > &path_points,
         path_points[i][0] = x_y * x_scale + offset_x;
         path_points[i][1] = 0.0           + offset_y;
         path_points[i][2] = z             + offset_z;
+    }
+}
+
+void LwrRttControl::draw_inf_sign(std::vector< std::vector<double> > &path_points,
+                                  const double length, const double height, 
+                                  const double amplitude,
+                                  const double x_scale, const double offset_x, 
+                                  const double offset_y, const double offset_z)
+{
+    double x_y, z;
+
+    for(int i = 0; i < path_points.size(); i++)
+    {
+        // the angle is plotted on the x-y-plane
+        x_y = x_scale * amplitude * (-length / 2.0) * std::cos(2.0 * M_PI * i / path_points.size()) + length / 2.0;
+
+        // the sine function is plotted along the z-axis
+        z = amplitude * (height / 2) * std::sin(4 * M_PI * i / path_points.size());
+
+        path_points[i][0] = x_y + offset_x;
+        path_points[i][1] = 0.0 + offset_y;
+        path_points[i][2] = z   + offset_z;
     }
 }
 
