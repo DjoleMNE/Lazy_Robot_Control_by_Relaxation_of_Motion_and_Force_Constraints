@@ -31,15 +31,13 @@ LwrRttControl::LwrRttControl(const std::string& name):
     NUM_OF_JOINTS_(7), NUM_OF_CONSTRAINTS_(6), 
     environment_(lwr_environment::LWR_SIMULATION), 
     robot_model_(lwr_model::LWR_URDF), iteration_count_(0), gazebo_arm_eef_(0),
-    path_points_num_(0),
     simulation_loop_iterations_(10000), total_time_(0.0), task_time_limit_sec_(0.0),
     krc_compensate_gravity_(false), use_mixed_driver_(false), load_ati_sensor_(false),
     desired_task_model_(2), desired_control_mode_(0), desired_dynamics_interface_(1),
-    desired_pose_(1), motion_profile_(0),
+    desired_pose_(1), motion_profile_(0), path_type_(0),
     damper_amplitude_(1.0), damper_slope_(4.0), tube_speed_(0.2),
-    path_amplitude_(0.0), path_axis_scale_(0.0),
     control_dims_(NUM_OF_CONSTRAINTS_, false), tube_path_points_(1, std::vector<double>(3, 0.0)),
-    path_poses_(1, std::vector<double>(12, 0.0)), path_frequency_(2, 0.0),
+    path_poses_(1, std::vector<double>(12, 0.0)), path_parameters_(5, 0.0),
     desired_ee_pose_(12, 0.0), tube_tolerances_(7, 0.0), tube_start_position_(3, 0.0),
     max_command_(Eigen::VectorXd::Constant(6, 0.0)),
     error_alpha_(Eigen::VectorXd::Constant(6, 0.0)),
@@ -71,13 +69,11 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addProperty("desired_dynamics_interface", desired_dynamics_interface_).doc("desired_dynamics_interface");
     this->addProperty("desired_pose", desired_pose_).doc("desired pose");
     this->addProperty("task_time_limit_sec", task_time_limit_sec_).doc("task_time_limit_sec");
-    this->addProperty("path_points_num", path_points_num_).doc("path_points_num");
+    this->addProperty("path_type", path_type_).doc("path_type");
     this->addProperty("tube_tolerances", tube_tolerances_).doc("tube_tolerances");
     this->addProperty("tube_start_position", tube_start_position_).doc("tube_start_position");
     this->addProperty("tube_speed", tube_speed_).doc("tube_speed");
-    this->addProperty("path_frequency", path_frequency_).doc("path_frequency");
-    this->addProperty("path_amplitude", path_amplitude_).doc("path_amplitude");
-    this->addProperty("path_axis_scale", path_axis_scale_).doc("path_axis_scale_");
+    this->addProperty("path_parameters", path_parameters_).doc("path_parameters");
     this->addProperty("motion_profile", motion_profile_).doc("motion_profile");
     this->addProperty("control_dims", control_dims_).doc("control dimensions");
     this->addProperty("damper_amplitude", damper_amplitude_).doc("damper_amplitude");
@@ -191,17 +187,32 @@ bool LwrRttControl::configureHook()
     switch (desired_task_model_)
     {
         case task_model::moveTo_follow_path:
-            tube_path_points_ = std::vector< std::vector<double> > (path_points_num_, std::vector<double>(3, 0.0));
-            path_poses_       = std::vector< std::vector<double> > (path_points_num_ - 1, std::vector<double>(12, 0.0));
-            // this->draw_sine(tube_path_points_, path_frequency_[0], path_frequency_[1],
-            //                 path_amplitude_, path_axis_scale_, 
-            //                 desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
+            tube_path_points_ = std::vector< std::vector<double> > (path_parameters_[4], std::vector<double>(3, 0.0));
+            path_poses_       = std::vector< std::vector<double> > (path_parameters_[4] - 1, std::vector<double>(12, 0.0));
 
-            this->draw_inf_sign(tube_path_points_, 0.3, 0.2, 1.0, 1.0, 
-                                desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
+            switch (path_type_)
+            {
+                case path_types::STEP_PATH:
+                    this->draw_step(tube_path_points_, 6, 0.005,
+                                    desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
+                    break;
+                
+                case path_types::INF_SIGN_PATH:
+                    this->draw_inf_sign(tube_path_points_, 0.3, 0.2, 1.0, 1.0, 
+                                        desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
+                    break;
 
-            this->draw_step(tube_path_points_, 6, 0.005,
-                            desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
+                case path_types::SINE_PATH:
+                    this->draw_sine(tube_path_points_, path_parameters_[0], path_parameters_[1],
+                                    path_parameters_[2], path_parameters_[3], 
+                                    desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
+                    break;
+                
+                default:
+                    printf("Unsupported path type");
+                    return false;
+                    break;
+            }
 
             controller_->define_moveTo_follow_path_task(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
                                                                           control_dims_[3], control_dims_[4], control_dims_[5]},// Angular

@@ -68,6 +68,13 @@ enum desired_pose
     FOLDED = 3  
 };
 
+enum path_types
+{
+    SINE_PATH = 0,
+    STEP_PATH = 1,
+    INF_SIGN_PATH = 2
+};
+
 class LwrRttControl : public RTT::TaskContext{
     public:
         LwrRttControl(const std::string& name);
@@ -82,7 +89,7 @@ class LwrRttControl : public RTT::TaskContext{
         const int NUM_OF_JOINTS_;
         const int NUM_OF_CONSTRAINTS_;
         int environment_, robot_model_, iteration_count_, simulation_loop_iterations_;
-        int gazebo_arm_eef_, path_points_num_;
+        int gazebo_arm_eef_;
 
         std::ofstream log_file_ext_force_;
 
@@ -94,12 +101,11 @@ class LwrRttControl : public RTT::TaskContext{
         //General Control Parameters
         bool krc_compensate_gravity_, use_mixed_driver_, load_ati_sensor_;
         int desired_task_model_, desired_control_mode_, desired_dynamics_interface_;
-        int desired_pose_, motion_profile_;
+        int desired_pose_, motion_profile_, path_type_;
         double damper_amplitude_, damper_slope_, tube_speed_;
-        double path_amplitude_, path_axis_scale_;
         std::vector<bool> control_dims_;
         std::vector< std::vector<double> > tube_path_points_, path_poses_;
-        std::vector<double> path_frequency_, desired_ee_pose_, tube_tolerances_, tube_start_position_;
+        std::vector<double> path_parameters_, desired_ee_pose_, tube_tolerances_, tube_start_position_;
         Eigen::VectorXd max_command_; 
 
         // ABAG Parameters
