@@ -200,6 +200,9 @@ bool LwrRttControl::configureHook()
             this->draw_inf_sign(tube_path_points_, 0.3, 0.2, 1.0, 1.0, 
                                 desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
 
+            this->draw_step(tube_path_points_, 6, 0.005,
+                            desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
+
             controller_->define_moveTo_follow_path_task(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
                                                                           control_dims_[3], control_dims_[4], control_dims_[5]},// Angular
                                                         tube_path_points_,
@@ -570,6 +573,30 @@ void LwrRttControl::draw_inf_sign(std::vector< std::vector<double> > &path_point
 
         // the sine function is plotted along the z-axis
         z = amplitude * (height / 2) * std::sin(4 * M_PI * i / path_points.size());
+
+        path_points[i][0] = x_y + offset_x;
+        path_points[i][1] = 0.0 + offset_y;
+        path_points[i][2] = z   + offset_z;
+    }
+}
+
+void LwrRttControl::draw_step(std::vector< std::vector<double> > &path_points,
+                              const int step_size,
+                              const double x_scale, const double offset_x, 
+                              const double offset_y, const double offset_z)
+{
+    double x_y, z;
+    int offset = int(path_points.size() / step_size);
+
+    for(int i = 0; i < path_points.size(); i++)
+    {
+        x_y = x_scale * i;
+
+        if      (i < offset)                       z =  0.0;
+        else if (i >     offset && i < 2 * offset) z =  0.07;
+        else if (i > 2 * offset && i < 3 * offset) z = -0.05;
+        else if (i > 3 * offset && i < 4 * offset) z =  0.04;
+        else                                       z =  0.01;
 
         path_points[i][0] = x_y + offset_x;
         path_points[i][1] = 0.0 + offset_y;

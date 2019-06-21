@@ -164,6 +164,10 @@ class LwrRttControl : public RTT::TaskContext{
                            const double amplitude,
                            const double x_scale, const double offset_x, 
                            const double offset_y, const double offset_z);
+        void draw_step(std::vector< std::vector<double> > &path_points,
+                       const int step_size,
+                       const double x_scale, const double offset_x, 
+                       const double offset_y, const double offset_z);
 };
 
 #endif

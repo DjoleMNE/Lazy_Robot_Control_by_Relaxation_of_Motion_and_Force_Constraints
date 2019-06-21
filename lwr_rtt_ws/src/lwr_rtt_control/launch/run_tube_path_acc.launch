@@ -65,7 +65,7 @@
 
 
     <!-- ========= Number of path points to follow ==============-->
-    <arg name="path_points_num" default="50"/>
+    <arg name="path_points_num" default="70"/>
 
     <!-- ========= Path frequency: e.g. of the sine =============-->
     <arg name="path_frequency" default="[0.5, 4.5]"/>
