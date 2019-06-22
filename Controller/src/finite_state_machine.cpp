@@ -151,8 +151,7 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
         desired_state.frame_velocity[END_EFF_].vel(0) = speed;      
 
         // Robot has crossed some tube section? If yes, switch to next one.
-        if((std::fabs(current_error_(0)) <= moveTo_follow_path_task_.tube_tolerances[0]) ||\
-           ((current_error_(0) < -1 * moveTo_follow_path_task_.tube_tolerances[0]) && !final_section_reached)) 
+        if ((current_error_(0) < moveTo_follow_path_task_.tube_tolerances[0]) && !final_section_reached)
         {
             return control_status::CHANGE_TUBE_SECTION;
         }
