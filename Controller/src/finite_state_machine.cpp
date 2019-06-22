@@ -72,10 +72,10 @@ int finite_state_machine::initialize_with_full_pose(const full_pose_task &task,
 int finite_state_machine::update_moveTo_follow_path_task(state_specification &desired_state,
                                                          const int tube_section_count)
 {
+    if (goal_reached_) return control_status::STOP_ROBOT;
+
     if (total_control_time_sec_ > moveTo_follow_path_task_.time_limit) 
     {
-        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-
         #ifndef NDEBUG       
             if (!time_limit_reached_) printf("Time limit reached\n");
         #endif
@@ -84,8 +84,8 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
         return control_status::STOP_CONTROL;
     }
 
-    if(contact_detected(moveTo_follow_path_task_.contact_threshold_linear, 
-                        moveTo_follow_path_task_.contact_threshold_angular))
+    if (contact_detected(moveTo_follow_path_task_.contact_threshold_linear, 
+                         moveTo_follow_path_task_.contact_threshold_angular))
     {
         #ifndef NDEBUG       
             printf("Contact occurred\n");
@@ -108,13 +108,13 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
     // Check if the robot has reached end of the tube path
     if (count == NUM_OF_CONSTRAINTS_ && final_section_reached) 
     {   
-            #ifndef NDEBUG       
-                if(!goal_reached_) printf("Whole path covered\n");
-            #endif
+        #ifndef NDEBUG       
+            if (!goal_reached_) printf("Whole path covered\n");
+        #endif
 
-            goal_reached_ = true;
-            desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-            return control_status::STOP_ROBOT;
+        goal_reached_ = true;
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        return control_status::STOP_ROBOT;
     }
     goal_reached_ = false;
 
@@ -123,13 +123,8 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
      * If yes command zero X linear velocity, to keep it in that x area.
      * Else go with initially commanded tube speed.
     */
-    if ((std::fabs(current_error_(0)) <= moveTo_follow_path_task_.tube_tolerances[0] && final_section_reached) || \
-        (std::fabs(current_error_(0)) > moveTo_follow_path_task_.tube_tolerances[0] && count < NUM_OF_CONSTRAINTS_ - 1))
-    {
-        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-        return control_status::START_TO_CRUISE;
-    }
-    else
+    if ((count == NUM_OF_CONSTRAINTS_) || \
+        ((count == NUM_OF_CONSTRAINTS_ - 1) && (std::fabs(current_error_(0)) > moveTo_follow_path_task_.tube_tolerances[0])))
     {
         double speed = 0.0;
         switch (motion_profile_)
@@ -151,18 +146,31 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
                 break;
         }
 
-        if (sign(current_error_(0)) == -1 && final_section_reached) desired_state.frame_velocity[END_EFF_].vel(0) = -1 * speed;      
-        else desired_state.frame_velocity[END_EFF_].vel(0) = speed;              
+        // Check for necessary direction of motion
+        if ((sign(current_error_(0)) == -1) && final_section_reached) speed = -1 * speed;      
+        desired_state.frame_velocity[END_EFF_].vel(0) = speed;      
+
+        // Robot has crossed some tube section? If yes, switch to next one.
+        if((std::fabs(current_error_(0)) <= moveTo_follow_path_task_.tube_tolerances[0]) ||\
+           ((current_error_(0) < -1 * moveTo_follow_path_task_.tube_tolerances[0]) && !final_section_reached)) 
+        {
+            return control_status::CHANGE_TUBE_SECTION;
+        }
+        return control_status::CRUISE_THROUGH_TUBE;        
     }
     
-    // Robot has reached some tube section? If yes, switch to next one.
-    if(std::fabs(current_error_(0)) <= moveTo_follow_path_task_.tube_tolerances[0]) return control_status::CHANGE_TUBE_SECTION;
-    return control_status::CRUISE_THROUGH_TUBE;
+    else
+    {
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        return control_status::START_TO_CRUISE;
+    }
 }
 
 
 int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 {
+    if (goal_reached_) return control_status::STOP_ROBOT;
+
     if (total_control_time_sec_ > moveTo_task_.time_limit) 
     {
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
@@ -247,6 +255,8 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 
 int finite_state_machine::update_full_pose_task(state_specification &desired_state)
 {
+    if (goal_reached_) return control_status::STOP_ROBOT;
+
     if(total_control_time_sec_ > full_pose_task_.time_limit) 
     {
         #ifndef NDEBUG

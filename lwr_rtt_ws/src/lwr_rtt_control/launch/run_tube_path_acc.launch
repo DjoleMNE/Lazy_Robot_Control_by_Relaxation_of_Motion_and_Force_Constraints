@@ -15,7 +15,7 @@
     <!-- Launch rviz -->
     <arg name="rviz" default="true" />
     <!-- The level of verbose (never, fatal, critical, error, warning, info, debug, realtime) -->
-    <arg name="log_level" default="error" />
+    <arg name="log_level" default="realtime" />
     <!-- Tools -->
     <arg name="load_base" default="false" />
     <arg name="load_ati_sensor" default="false" />
@@ -64,9 +64,9 @@
     <arg name="task_time_limit_sec" default="600.0"/>
 
     <!-- === Path type: 0 for sine, 1 for step, 2 for inf sign ====-->
-    <arg name="path_type" default="2"/>
+    <arg name="path_type" default="1"/>
 
-    <!-- = Path parameters =-->
+    <!-- === Path parameters. Last param: num of points ===-->
     <arg name="path_parameters" default="[0.5, 4.5, 0.05, 0.008, 70]"/>
 
 

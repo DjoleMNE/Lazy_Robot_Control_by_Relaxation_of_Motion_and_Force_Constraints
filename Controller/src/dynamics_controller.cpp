@@ -677,8 +677,8 @@ void dynamics_controller::make_predictions(const double dt_sec, const int num_st
 KDL::Twist dynamics_controller::finite_displacement_twist(const state_specification &state_a, 
                                                           const state_specification &state_b)
 {
-    /** 
-     * Difference between two poses: Decoupled calculation 
+    /**
+     * Difference between two poses: Decoupled calculation.
      * See "Modern Robotics" Book, 2017, sections 9.2.1 and 11.3.3.
     */
 
