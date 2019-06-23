@@ -996,6 +996,122 @@ int dynamics_controller::evaluate_dynamics()
     return hd_solver_result;
 }
 
+void dynamics_controller::set_parameters(const double horizon_amplitude,
+                                         const double horizon_slope,
+                                         const int abag_error_type,
+                                         const Eigen::VectorXd &max_command,
+                                         const Eigen::VectorXd &error_alpha, 
+                                         const Eigen::VectorXd &bias_threshold, 
+                                         const Eigen::VectorXd &bias_step, 
+                                         const Eigen::VectorXd &gain_threshold, 
+                                         const Eigen::VectorXd &gain_step,
+                                         const Eigen::VectorXd &min_bias_sat,
+                                         const Eigen::VectorXd &min_command_sat)
+{
+    //First check input dimensions
+    assert(max_command.size()    == NUM_OF_CONSTRAINTS_); 
+    assert(error_alpha.size()    == NUM_OF_CONSTRAINTS_); 
+    assert(bias_threshold.size() == NUM_OF_CONSTRAINTS_); 
+    assert(bias_step.size()      == NUM_OF_CONSTRAINTS_); 
+    assert(gain_threshold.size() == NUM_OF_CONSTRAINTS_); 
+    assert(gain_step.size()      == NUM_OF_CONSTRAINTS_); 
+
+    this->horizon_amplitude_  = horizon_amplitude;
+    this->horizon_slope_      = horizon_slope;
+    this->max_command_        = max_command;
+    
+    // Setting parameters of the ABAG Controller
+    abag_.set_error_alpha(error_alpha);    
+    abag_.set_bias_threshold(bias_threshold);
+    abag_.set_bias_step(bias_step);
+    abag_.set_gain_threshold(gain_threshold);
+    abag_.set_gain_step(gain_step);
+    abag_.set_min_bias_sat_limit(min_bias_sat);
+    abag_.set_min_command_sat_limit(min_command_sat);
+    abag_.set_error_type(abag_error_type);
+}
+
+int dynamics_controller::initialize(const int desired_control_mode, 
+                                    const int desired_task_inteface,
+                                    const bool use_mixed_driver,
+                                    const bool store_control_data,
+                                    const int motion_profile)
+{
+    // Save current selection of desire control mode
+    desired_control_mode_.interface = desired_control_mode;
+
+    //Exit the program if the "Stop Motion" mode is selected
+    assert(desired_control_mode_.interface != control_mode::STOP_MOTION); 
+
+    desired_task_inteface_ = desired_task_inteface;
+    use_mixed_driver_      = use_mixed_driver;
+
+    switch (desired_task_model_)
+    {
+        case task_model::moveTo_follow_path:
+            fsm_.initialize_with_moveTo_follow_path(moveTo_follow_path_task_, 
+                                                    motion_profile);
+            break;
+
+        case task_model::moveTo:
+            fsm_.initialize_with_moveTo(moveTo_task_, motion_profile);
+            break;
+        
+        case task_model::full_pose:
+            fsm_.initialize_with_full_pose(full_pose_task_, motion_profile);
+            break;
+            
+        default:
+            printf("Unsupported task model\n");
+            return -1;
+            break;
+    }
+
+    if (desired_task_model_ == task_model::moveTo || desired_task_model_ == task_model::moveTo_follow_path)
+    {
+        if(use_mixed_driver_) CTRL_DIM_[0] = false;
+    } 
+
+    // First make sure that the robot is not moving
+    // stop_robot_motion();
+
+    // Update current constraints, external forces, and feedforward torques
+    update_dynamics_interfaces();
+    store_control_data_ = store_control_data;
+
+    if (store_control_data_) 
+    {
+        log_file_cart_.open(dynamics_parameter::LOG_FILE_CART_PATH);
+        assert(log_file_cart_.is_open());
+
+        for(int i = 0; i < NUM_OF_CONSTRAINTS_ + 1; i++)
+        {
+            if (desired_task_model_ == task_model::moveTo_follow_path)
+            {
+                log_file_cart_ << moveTo_follow_path_task_.tube_tolerances[i] << " ";
+            }
+            else log_file_cart_ << moveTo_task_.tube_tolerances[i] << " ";
+        }
+        log_file_cart_ << std::endl;      
+
+        log_file_joint_.open(dynamics_parameter::LOG_FILE_JOINT_PATH);
+        assert(log_file_joint_.is_open());
+
+        log_file_predictions_.open(dynamics_parameter::LOG_FILE_PREDICTIONS_PATH);
+        assert(log_file_predictions_.is_open());
+
+        log_file_transformed_.open(dynamics_parameter::LOG_FILE_TRANSFORMED_PATH);
+        assert(log_file_transformed_.is_open());
+
+        for(int i = 0; i < NUM_OF_JOINTS_; i++) 
+            log_file_joint_ << JOINT_TORQUE_LIMITS_[i] << " ";
+        log_file_joint_ << std::endl;
+    }
+
+    print_settings_info();
+    return 0;
+}
+
 //Main control loop
 int dynamics_controller::control(const int desired_control_mode,
                                  const bool store_control_data)
@@ -1124,121 +1240,6 @@ int dynamics_controller::control(const int desired_control_mode,
     return 0;
 }
 
-int dynamics_controller::initialize(const int desired_control_mode, 
-                                    const int desired_task_inteface,
-                                    const bool use_mixed_driver,
-                                    const bool store_control_data,
-                                    const int motion_profile)
-{
-    // Save current selection of desire control mode
-    desired_control_mode_.interface = desired_control_mode;
-
-    //Exit the program if the "Stop Motion" mode is selected
-    assert(desired_control_mode_.interface != control_mode::STOP_MOTION); 
-
-    desired_task_inteface_ = desired_task_inteface;
-    use_mixed_driver_      = use_mixed_driver;
-
-    switch (desired_task_model_)
-    {
-        case task_model::moveTo_follow_path:
-            fsm_.initialize_with_moveTo_follow_path(moveTo_follow_path_task_, 
-                                                    motion_profile);
-            break;
-
-        case task_model::moveTo:
-            fsm_.initialize_with_moveTo(moveTo_task_, motion_profile);
-            break;
-        
-        case task_model::full_pose:
-            fsm_.initialize_with_full_pose(full_pose_task_, motion_profile);
-            break;
-            
-        default:
-            printf("Unsupported task model\n");
-            return -1;
-            break;
-    }
-
-    if (desired_task_model_ == task_model::moveTo || desired_task_model_ == task_model::moveTo_follow_path)
-    {
-        if(use_mixed_driver_) CTRL_DIM_[0] = false;
-    } 
-
-    // First make sure that the robot is not moving
-    // stop_robot_motion();
-
-    // Update current constraints, external forces, and feedforward torques
-    update_dynamics_interfaces();
-    store_control_data_ = store_control_data;
-
-    if (store_control_data_) 
-    {
-        log_file_cart_.open(dynamics_parameter::LOG_FILE_CART_PATH);
-        assert(log_file_cart_.is_open());
-
-        for(int i = 0; i < NUM_OF_CONSTRAINTS_ + 1; i++)
-        {
-            if (desired_task_model_ == task_model::moveTo_follow_path)
-            {
-                log_file_cart_ << moveTo_follow_path_task_.tube_tolerances[i] << " ";
-            }
-            else log_file_cart_ << moveTo_task_.tube_tolerances[i] << " ";
-        }
-        log_file_cart_ << std::endl;      
-
-        log_file_joint_.open(dynamics_parameter::LOG_FILE_JOINT_PATH);
-        assert(log_file_joint_.is_open());
-
-        log_file_predictions_.open(dynamics_parameter::LOG_FILE_PREDICTIONS_PATH);
-        assert(log_file_predictions_.is_open());
-
-        log_file_transformed_.open(dynamics_parameter::LOG_FILE_TRANSFORMED_PATH);
-        assert(log_file_transformed_.is_open());
-
-        for(int i = 0; i < NUM_OF_JOINTS_; i++) 
-            log_file_joint_ << JOINT_TORQUE_LIMITS_[i] << " ";
-        log_file_joint_ << std::endl;
-    }
-
-    print_settings_info();
-    return 0;
-}
-
-void dynamics_controller::set_parameters(const double horizon_amplitude,
-                                         const double horizon_slope,
-                                         const int abag_error_type,
-                                         const Eigen::VectorXd &max_command,
-                                         const Eigen::VectorXd &error_alpha, 
-                                         const Eigen::VectorXd &bias_threshold, 
-                                         const Eigen::VectorXd &bias_step, 
-                                         const Eigen::VectorXd &gain_threshold, 
-                                         const Eigen::VectorXd &gain_step,
-                                         const Eigen::VectorXd &min_bias_sat,
-                                         const Eigen::VectorXd &min_command_sat)
-{
-    //First check input dimensions
-    assert(max_command.size()    == NUM_OF_CONSTRAINTS_); 
-    assert(error_alpha.size()    == NUM_OF_CONSTRAINTS_); 
-    assert(bias_threshold.size() == NUM_OF_CONSTRAINTS_); 
-    assert(bias_step.size()      == NUM_OF_CONSTRAINTS_); 
-    assert(gain_threshold.size() == NUM_OF_CONSTRAINTS_); 
-    assert(gain_step.size()      == NUM_OF_CONSTRAINTS_); 
-
-    this->horizon_amplitude_  = horizon_amplitude;
-    this->horizon_slope_      = horizon_slope;
-    this->max_command_        = max_command;
-    
-    // Setting parameters of the ABAG Controller
-    abag_.set_error_alpha(error_alpha);    
-    abag_.set_bias_threshold(bias_threshold);
-    abag_.set_bias_step(bias_step);
-    abag_.set_gain_threshold(gain_threshold);
-    abag_.set_gain_step(gain_step);
-    abag_.set_min_bias_sat_limit(min_bias_sat);
-    abag_.set_min_command_sat_limit(min_command_sat);
-    abag_.set_error_type(abag_error_type);
-}
 
 /**
  * Perform single step of the control loop, given current robot joint state
