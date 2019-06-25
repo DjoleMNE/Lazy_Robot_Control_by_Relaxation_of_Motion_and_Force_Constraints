@@ -499,11 +499,12 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
         //The result should be the torque at this joint.
         constraintTorque(j) = constraint_torque;
 
-        //Summing 2 contributions for true control torque:
+        // Summing 2 contributions for true control torque:
         controlTorque(j) = constraintTorque(j) + ext_torque(j);
         // controlTorque(j) = ext_torque(j);
 
-        if (controlTorque(j) > joint_torque_limits_(j)) controlTorque(j) = joint_torque_limits_(j);
+        // Torque saturation
+        if      (controlTorque(j) >  joint_torque_limits_(j)) controlTorque(j) =  joint_torque_limits_(j);
         else if (controlTorque(j) < -joint_torque_limits_(j)) controlTorque(j) = -joint_torque_limits_(j);
 
         s.constAccComp = constraint_torque / s.D;
