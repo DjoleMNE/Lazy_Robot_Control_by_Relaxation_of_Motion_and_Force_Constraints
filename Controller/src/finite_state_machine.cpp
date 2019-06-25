@@ -72,7 +72,7 @@ int finite_state_machine::initialize_with_full_pose(const full_pose_task &task,
 int finite_state_machine::update_moveTo_follow_path_task(state_specification &desired_state,
                                                          const int tube_section_count)
 {
-    if (goal_reached_) return control_status::STOP_ROBOT;
+    if (goal_reached_ || contact_detected_) return control_status::STOP_ROBOT;
 
     if (total_control_time_sec_ > moveTo_follow_path_task_.time_limit) 
     {
@@ -92,8 +92,10 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
         #endif
 
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        contact_detected_ = true;
         return control_status::STOP_ROBOT;
     }
+    contact_detected_ = false;
 
     bool final_section_reached = false;
     if (tube_section_count == moveTo_follow_path_task_.tf_poses.size() - 1) final_section_reached = true;
@@ -168,7 +170,7 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
 
 int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 {
-    if (goal_reached_) return control_status::STOP_ROBOT;
+    if (goal_reached_ || contact_detected_) return control_status::STOP_ROBOT;
 
     if (total_control_time_sec_ > moveTo_task_.time_limit) 
     {
@@ -190,8 +192,10 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         #endif
 
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        contact_detected_ = true;
         return control_status::STOP_ROBOT;
     }
+    contact_detected_ = false;
 
     int count = 0;
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
@@ -254,7 +258,7 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 
 int finite_state_machine::update_full_pose_task(state_specification &desired_state)
 {
-    if (goal_reached_) return control_status::STOP_ROBOT;
+    if (goal_reached_ || contact_detected_) return control_status::STOP_ROBOT;
 
     if(total_control_time_sec_ > full_pose_task_.time_limit) 
     {
@@ -272,9 +276,10 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
         #ifndef NDEBUG       
             printf("Contact occurred\n");
         #endif
-
+        contact_detected_ = true;
         return control_status::STOP_ROBOT;
     }
+    contact_detected_ = false;
 
     int count = 0;
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
