@@ -38,9 +38,6 @@
     <!-- ========= Use Joint Torque Commands ===============-->
     <arg name="desired_control_mode" default="0"/>
 
-    <!-- ========= Use Mixed Motion Driver ===============-->
-    <arg name="use_mixed_driver" default="false"/>
-
     <!-- ========= Use Cart Acc Constraint Interface ===============-->
     <arg name="desired_dynamics_interface" default="0"/>
 
@@ -100,10 +97,8 @@
     <arg name="control_dims" default="[true, true, true, 
                                        false, false, false]"/>
 
-    <!-- === Damping decision map parameters: Error Sign =======-->
-    <!-- <arg name="damper_amplitude" default="0.5"/> -->
+    <!-- === Prediction Horizion =======-->
     <arg name="damper_amplitude" default="2.5"/>
-    <arg name="damper_slope"     default="9.05"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
     <arg name="max_command" default="[50.0, 50.0, 50.0, 
