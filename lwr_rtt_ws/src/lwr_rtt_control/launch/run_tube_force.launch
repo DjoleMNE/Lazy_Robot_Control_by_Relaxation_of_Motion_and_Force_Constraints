@@ -166,7 +166,6 @@
         <param name="simulation_loop_iterations" value="$(arg simulation_loop_iterations)"/>
         <param name="krc_compensate_gravity" value="$(arg krc_compensate_gravity)"/>
         <param name="desired_task_model" value="$(arg desired_task_model)"/>
-        <param name="use_mixed_driver" value="$(arg use_mixed_driver)"/>
         <param name="desired_control_mode" value="$(arg desired_control_mode)"/>
         <param name="desired_dynamics_interface" value="$(arg desired_dynamics_interface)"/>
         <param name="desired_pose" value="$(arg desired_pose)"/>   
@@ -177,7 +176,6 @@
         <rosparam param="motion_profile" subst_value="True">$(arg motion_profile)</rosparam>
         <rosparam param="control_dims" subst_value="True">$(arg control_dims)</rosparam>
         <rosparam param="damper_amplitude" subst_value="True">$(arg damper_amplitude)</rosparam>
-        <rosparam param="damper_slope" subst_value="True">$(arg damper_slope)</rosparam>
         <rosparam param="max_command" subst_value="True">$(arg max_command)</rosparam>
         <rosparam param="ERROR_ALPHA" subst_value="True">$(arg ERROR_ALPHA)</rosparam>
         <rosparam param="BIAS_THRESHOLD" subst_value="True">$(arg BIAS_THRESHOLD)</rosparam>

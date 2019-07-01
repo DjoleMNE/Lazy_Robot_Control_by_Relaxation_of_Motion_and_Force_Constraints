@@ -64,23 +64,6 @@
     <arg name="task_time_limit_sec" default="2.0"/>
 
 
-
-    <!-- ========= Tube tolerances ===============-->
-    <arg name="tube_tolerances" default="[0.05, 0.05, 0.05, 
-                                          0.17, 0.17, 0.17, 0.005]"/>
-    <!-- <arg name="tube_tolerances" default="[0.0, 0.0, 0.0, 
-                                               0.0, 0.0, 0.0]"/> -->
-
-
-    <!-- ========= Tube start position ===============-->
-    <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/>
-    <!-- <arg name="tube_start_position" default="[0.0, -0.1, 1.165]"/> -->
-
-    <!-- ========= Tube speed ===============-->
-    <arg name="tube_speed" default="0.2"/>
-    <!-- <arg name="tube_speed" default="0.4"/> -->
-
-
     <!-- ========= Motion profile: constant velocity ===============-->
     <arg name="motion_profile" default="0"/>
     
@@ -99,7 +82,6 @@
 
     <!-- === Damping decision map parameters: Error Sign =======-->
     <arg name="damper_amplitude" default="2.0"/>
-    <arg name="damper_slope"     default="2.05"/>
   
     <!-- ========= Max Cart force excerted on the End-Effector ===============-->
     <arg name="max_command" default="[100.0, 100.0, 200.0, 
@@ -169,18 +151,13 @@
         <param name="simulation_loop_iterations" value="$(arg simulation_loop_iterations)"/>
         <param name="krc_compensate_gravity" value="$(arg krc_compensate_gravity)"/>
         <param name="desired_task_model" value="$(arg desired_task_model)"/>
-        <param name="use_mixed_driver" value="$(arg use_mixed_driver)"/>
         <param name="desired_control_mode" value="$(arg desired_control_mode)"/>
         <param name="desired_dynamics_interface" value="$(arg desired_dynamics_interface)"/>
         <param name="desired_pose" value="$(arg desired_pose)"/> 
         <param name="task_time_limit_sec" value="$(arg task_time_limit_sec)"/>       
-        <rosparam param="tube_tolerances" subst_value="True">$(arg tube_tolerances)</rosparam>
-        <rosparam param="tube_start_position" subst_value="True">$(arg tube_start_position)</rosparam>
-        <rosparam param="tube_speed" subst_value="True">$(arg tube_speed)</rosparam>
         <rosparam param="motion_profile" subst_value="True">$(arg motion_profile)</rosparam>
         <rosparam param="control_dims" subst_value="True">$(arg control_dims)</rosparam>
         <rosparam param="damper_amplitude" subst_value="True">$(arg damper_amplitude)</rosparam>
-        <rosparam param="damper_slope" subst_value="True">$(arg damper_slope)</rosparam>
         <rosparam param="max_command" subst_value="True">$(arg max_command)</rosparam>
         <rosparam param="ERROR_ALPHA" subst_value="True">$(arg ERROR_ALPHA)</rosparam>
         <rosparam param="BIAS_THRESHOLD" subst_value="True">$(arg BIAS_THRESHOLD)</rosparam>
