@@ -104,6 +104,17 @@ class dynamics_controller
                             const double contact_threshold_angular,
                             const double task_time_limit_sec,
                             std::vector<double> &task_frame_pose);
+
+    void define_moveConstrained_follow_path_task(const std::vector<bool> &constraint_direction,
+                                                 const std::vector< std::vector<double> > &tube_path_points,
+                                                 const std::vector<double> &tube_tolerances,
+                                                 const double tube_speed,
+                                                 const double tube_force,
+                                                 const double contact_threshold_linear,
+                                                 const double contact_threshold_angular,
+                                                 const double task_time_limit_sec,
+                                                 std::vector< std::vector<double> > &task_frame_poses);
+
     void define_moveTo_follow_path_task(const std::vector<bool> &constraint_direction,
                                         const std::vector< std::vector<double> > &tube_path_points,
                                         const std::vector<double> &tube_tolerances,
@@ -159,10 +170,11 @@ class dynamics_controller
     moveTo_task moveTo_task_;
     full_pose_task full_pose_task_;
     moveTo_follow_path_task moveTo_follow_path_task_;
+    moveConstrained_follow_path_task moveConstrained_follow_path_task_;
 
     KDL::Twist current_error_twist_;
     Eigen::VectorXd abag_error_vector_, predicted_error_twist_;
-    double tube_speed_error_, horizon_amplitude_, horizon_slope_;
+    double tube_speed_error_, horizon_amplitude_;
     Eigen::VectorXd abag_command_, max_command_, motion_profile_;
     KDL::Wrenches cart_force_command_;
     KDL::Wrench ext_wrench_;

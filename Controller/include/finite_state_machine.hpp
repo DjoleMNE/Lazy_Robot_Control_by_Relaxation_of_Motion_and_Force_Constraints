@@ -42,7 +42,9 @@ enum task_model
   full_pose = 0,
   moveGuarded = 1,
   moveTo = 2,
-  moveTo_follow_path = 3
+  moveTo_follow_path = 3,
+  moveConstrained = 4,
+  moveConstrained_follow_path = 5
 };
 
 enum control_status
@@ -56,6 +58,20 @@ enum control_status
     CHANGE_TUBE_SECTION =  5,
     STOP_ROBOT          =  6
 };
+
+
+struct moveConstrained_follow_path_task
+{
+    std::vector<KDL::Frame> tf_poses, goal_poses;
+    std::vector< std::vector<double> > tube_path_points{1, std::vector<double>(3, 0.0)};
+    std::vector<double> tube_tolerances{std::vector<double>(8, 0.0)};
+    double tube_speed = 0.0;
+    double tube_force = 0.0;
+    double contact_threshold_linear = 0.0;
+    double contact_threshold_angular = 0.0;
+    double time_limit = 0.0;
+};
+
 
 struct moveTo_follow_path_task
 {

@@ -65,18 +65,18 @@
     <!-- ========= Tube tolerances ===============-->
     <arg name="tube_tolerances" default="[0.03, 0.03, 0.03, 
                                           0.17, 0.17, 0.17, 
-                                          0.0]"/>
+                                          0.0, 0.1]"/>
     <!-- <arg name="tube_tolerances" default="[0.0, 0.0, 0.0, 
                                           0.0, 0.0, 0.0]"/> -->
 
     <!-- ========= Tube start position ===============-->
-    <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/>
-    <!-- <arg name="tube_start_position" default="[0.1, 0.2, 1.0]"/> -->
+    <!-- <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/> -->
+    <arg name="tube_start_position" default="[0.1, 0.2, 1.0]"/>
     <!-- <arg name="tube_start_position" default="[0.3, -0.4, 1.165]"/> -->
     <!-- <arg name="tube_start_position" default="[-0.200785, -0.308278,  0.632811]"/> -->
 
     <!-- ========= Tube speed ===============-->
-    <arg name="tube_speed" default="0.1"/>
+    <arg name="tube_speed" default="2.5"/>
     <!-- <arg name="tube_speed" default="0.7"/> -->
 
 

@@ -102,7 +102,7 @@ class LwrRttControl : public RTT::TaskContext{
         bool krc_compensate_gravity_, use_mixed_driver_, load_ati_sensor_;
         int desired_task_model_, desired_control_mode_, desired_dynamics_interface_;
         int desired_pose_, motion_profile_, path_type_;
-        double damper_amplitude_, damper_slope_, tube_speed_;
+        double damper_amplitude_, damper_slope_, tube_speed_, tube_force_;
         std::vector<bool> control_dims_;
         std::vector< std::vector<double> > tube_path_points_, path_poses_;
         std::vector<double> path_parameters_, desired_ee_pose_, tube_tolerances_, tube_start_position_;

@@ -4,9 +4,9 @@
 
     <!-- The end effector frame (you'll be able to use frames <= tip_link for cartesian position, jacobians etc.) -->
     <!-- 7 joints, 7 links, 8 frames. frames from link 0 to link 7-->
-    <arg name="tip_link" default="link_7"/>
+    <!-- <arg name="tip_link" default="link_7"/> -->
     <!-- arm as usual: 7 joints & 7 links, ati sensor additional 2 (fixed-not counted in kdl)joints and 2 links  -->
-    <!-- <arg name="tip_link" default="ati_link"/> -->
+    <arg name="tip_link" default="ati_link"/>
 
     <!-- Run Simulated robot -->
     <arg name="sim" default="true" />
@@ -15,12 +15,12 @@
     <!-- Launch rviz -->
     <arg name="rviz" default="true" />
     <!-- The level of verbose (never, fatal, critical, error, warning, info, debug, realtime) -->
-    <arg name="log_level" default="error" />
+    <arg name="log_level" default="realtime" />
     <!-- Tools -->
     <arg name="load_base" default="false" />
-    <arg name="load_ati_sensor" default="false" />
+    <arg name="load_ati_sensor" default="true" />
+    <arg name="load_table" default="false" />
     <arg name="load_handle" default="false" />
-    <arg name="load_table" default="true" />
     <!-- Gazebo -->
     <arg name="gazebo_gui" default="false"/>
 
@@ -29,17 +29,14 @@
 <!-- ***************** General Control PARAMETERS ********************** -->
     <arg name="environment" default="1"/>
     <arg name="robot_model" default="0"/>
-    <arg name="simulation_loop_iterations" default="20000"/>
+    <arg name="simulation_loop_iterations" default="200000"/>
     <arg name="krc_compensate_gravity" default="false"/>
 
-    <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) ==-->
-    <arg name="desired_task_model" default="2"/>
+    <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) or MoveTo_follow_path(3) or MoveConstrained_follow_path(5)==-->
+    <arg name="desired_task_model" default="5"/>
     
     <!-- ========= Use Joint Torque Commands ===============-->
     <arg name="desired_control_mode" default="0"/>
-
-    <!-- ========= Use Mixed Motion Driver ===============-->
-    <arg name="use_mixed_driver" default="true"/>
 
     <!-- ========= Use Cart Acc Constraint Interface ===============-->
     <arg name="desired_dynamics_interface" default="0"/>
@@ -61,23 +58,33 @@
 
 
     <!-- ========= Task time limit in seconds ==============-->
-    <arg name="task_time_limit_sec" default="10.0"/>
+    <arg name="task_time_limit_sec" default="600.0"/>
 
+    <!-- === Path type: 0 for sine, 1 for step, 2 for inf sign ====-->
+    <arg name="path_type" default="1"/>
+
+    <!-- === Path parameters. Last param: num of points ===-->
+    <arg name="path_parameters" default="[0.5, 0.5, 0.05, 0.008, 70]"/>
 
 
     <!-- ========= Tube tolerances ===============-->
-    <arg name="tube_tolerances" default="[0.03, 0.01, 0.01, 
-                                          0.17, 0.17, 0.17, 0.005]"/>
+    <arg name="tube_tolerances" default="[0.001, 0.03, 0.03, 
+                                          0.17, 0.17, 0.17, 
+                                          0.0, 0.1]"/>
     <!-- <arg name="tube_tolerances" default="[0.0, 0.0, 0.0, 
-                                               0.0, 0.0, 0.0]"/> -->
+                                          0.0, 0.0, 0.0]"/> -->
 
     <!-- ========= Tube start position ===============-->
-    <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/>
-    <!-- <arg name="tube_start_position" default="[0.3, -0.4, 1.165]"/> -->
+    <!-- <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/> -->
+    <arg name="tube_start_position" default="[0.2,  0.3, 0.632811]"/>
 
     <!-- ========= Tube speed ===============-->
-    <arg name="tube_speed" default="0.1"/>
-    <!-- <arg name="tube_speed" default="0.4"/> -->
+    <arg name="tube_speed" default="0.03"/>
+    <!-- <arg name="tube_speed" default="0.7"/> -->
+
+    <!-- ========= Tube force N ===============-->
+    <arg name="tube_force" default="10.0"/>
+    <!-- <arg name="tube_force" default="0.9"/> -->
 
 
     <!-- ========= Motion profile: constant velocity ===============-->
@@ -97,13 +104,11 @@
     <arg name="control_dims" default="[true, true, true, 
                                        false, false, false]"/>
 
-    <!-- === Damping decision map parameters: Error Sign =======-->
-    <!-- <arg name="damper_amplitude" default="0.0"/> -->
-    <arg name="damper_amplitude" default="4.5"/>
-    <arg name="damper_slope"     default="9.05"/>
+    <!-- === Prediction Horizion =======-->
+    <arg name="damper_amplitude" default="2.5"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
-    <arg name="max_command" default="[200.0, 50.0, 50.0, 
+    <arg name="max_command" default="[60.0, 60.0, 60.0, 
                                       10.0, 10.0, 10.0]"/>
 
     
@@ -125,19 +130,19 @@
 
 
     <!-- ABAG PARAMETERS (Error Sign): Low Gain, low chattering but less robust -->
-    <arg name="ERROR_ALPHA" default="   [0.900000, 0.900000, 0.900000, 
+    <arg name="ERROR_ALPHA" default="   [0.800000, 0.900000, 0.900000, 
                                          0.650000, 0.850000, 0.178001]"/>
 
-    <arg name="BIAS_THRESHOLD" default="[0.000407, 0.000407, 0.000407, 
+    <arg name="BIAS_THRESHOLD" default="[0.000507, 0.000407, 0.000407, 
                                          0.001007, 0.001007, 0.724277]"/>
 
     <arg name="BIAS_STEP" default="     [0.000495, 0.000495, 0.000495, 
                                          0.003495, 0.003495, 0.503495]"/>
 
-    <arg name="GAIN_THRESHOLD" default="[0.552492, 0.552492, 0.552492, 
+    <arg name="GAIN_THRESHOLD" default="[0.452492, 0.552492, 0.552492, 
                                          0.252492, 0.252492, 0.432492]"/>
 
-    <arg name="GAIN_STEP" default="     [0.003152, 0.003152, 0.003152, 
+    <arg name="GAIN_STEP" default="     [0.002052, 0.003152, 0.003152, 
                                          0.015152, 0.015152, 0.655152]"/>
 
 <!--============ LwrRttControl Params ============-->
@@ -151,18 +156,19 @@
         <param name="simulation_loop_iterations" value="$(arg simulation_loop_iterations)"/>
         <param name="krc_compensate_gravity" value="$(arg krc_compensate_gravity)"/>
         <param name="desired_task_model" value="$(arg desired_task_model)"/>
-        <param name="use_mixed_driver" value="$(arg use_mixed_driver)"/>
         <param name="desired_control_mode" value="$(arg desired_control_mode)"/>
         <param name="desired_dynamics_interface" value="$(arg desired_dynamics_interface)"/>
         <param name="desired_pose" value="$(arg desired_pose)"/>
         <param name="task_time_limit_sec" value="$(arg task_time_limit_sec)"/>
+        <param name="path_type" value="$(arg path_type)"/>
+        <rosparam param="path_parameters" subst_value="True">$(arg path_parameters)</rosparam>
         <rosparam param="tube_tolerances" subst_value="True">$(arg tube_tolerances)</rosparam>
         <rosparam param="tube_start_position" subst_value="True">$(arg tube_start_position)</rosparam>
         <rosparam param="tube_speed" subst_value="True">$(arg tube_speed)</rosparam>
+        <rosparam param="tube_force" subst_value="True">$(arg tube_force)</rosparam>
         <rosparam param="motion_profile" subst_value="True">$(arg motion_profile)</rosparam>
         <rosparam param="control_dims" subst_value="True">$(arg control_dims)</rosparam>
         <rosparam param="damper_amplitude" subst_value="True">$(arg damper_amplitude)</rosparam>
-        <rosparam param="damper_slope" subst_value="True">$(arg damper_slope)</rosparam>
         <rosparam param="max_command" subst_value="True">$(arg max_command)</rosparam>
         <rosparam param="ERROR_ALPHA" subst_value="True">$(arg ERROR_ALPHA)</rosparam>
         <rosparam param="BIAS_THRESHOLD" subst_value="True">$(arg BIAS_THRESHOLD)</rosparam>
