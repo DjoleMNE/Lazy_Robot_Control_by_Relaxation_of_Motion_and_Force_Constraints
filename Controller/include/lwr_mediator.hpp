@@ -34,8 +34,9 @@ SOFTWARE.
 
 enum lwr_model 
 {
-    LWR_URDF,
-    LWR_KDL   
+    LWR_URDF = 0,
+	LWR_WITH_ATI = 1,
+    LWR_KDL = 2  
 };
 
 enum lwr_environment 
@@ -118,6 +119,7 @@ class lwr_mediator: public robot_mediator
 
         //Extract LWR model from urdf file
         int get_model_from_urdf();
+        int get_model_with_ati_from_urdf();
 		//Extract LWR model from KDL parameters
 		void get_kdl_model();
 };

@@ -190,6 +190,29 @@ KDL::Chain lwr_mediator::get_robot_model()
     return lwr_chain_; 
 }
 
+//Extract lwr model with ATI FT sensor from URDF file
+int lwr_mediator::get_model_with_ati_from_urdf()
+{
+    if (!lwr_urdf_model_.initFile(lwr_constants::urdf_with_ati_path))
+    {
+        printf("ERROR: Failed to parse urdf robot model \n");
+        return -1;
+    }
+
+    //Extract KDL tree from the URDF file
+    if (!kdl_parser::treeFromUrdfModel(lwr_urdf_model_, lwr_tree_))
+    {
+        printf("ERROR: Failed to construct kdl tree \n");
+        return -1;
+    }
+
+    //Extract KDL chain from KDL tree
+    lwr_tree_.getChain(lwr_constants::root_name, 
+                       lwr_constants::tooltip_name, 
+                       lwr_chain_);
+    return 0;
+}
+
 //Extract lwr model from URDF file
 int lwr_mediator::get_model_from_urdf()
 {
@@ -244,12 +267,23 @@ void lwr_mediator::initialize(const int robot_model,
     is_initialized_ = false;
     add_offsets_ = false;
     int parser_result = 0;
-    
-    //Extract LWR model from KDL parameters
-    if(lwr_model_ == lwr_model::LWR_KDL) get_kdl_model();
-    
-    //Extract lwr model from the URDF file
-    else parser_result = get_model_from_urdf();
+
+    switch (lwr_model_)
+    {
+        //Extract LWR model from KDL parameters
+        case lwr_model::LWR_KDL:
+            get_kdl_model();
+            break;
+            
+        case lwr_model::LWR_WITH_ATI:
+            parser_result = get_model_with_ati_from_urdf();
+            break;
+
+        //Extract lwr model from the URDF file
+        default:
+            parser_result = get_model_from_urdf();
+            break;
+    }
     
     if(parser_result != 0) printf("Cannot create the LWR model! \n");
     else

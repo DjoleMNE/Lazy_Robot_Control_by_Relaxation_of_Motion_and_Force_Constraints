@@ -104,6 +104,8 @@ namespace lwr_constants
    const std::vector<double> joint_inertia {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
    const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/lwr.urdf";
+   const std::string urdf_with_ati_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/lwr_with_ati.urdf";
+
    const std::string root_name = "link_0";   
    //   7 joints, 7 links, 8 frames. frames from link 0 to link 7
    const std::string tooltip_name = "link_7";

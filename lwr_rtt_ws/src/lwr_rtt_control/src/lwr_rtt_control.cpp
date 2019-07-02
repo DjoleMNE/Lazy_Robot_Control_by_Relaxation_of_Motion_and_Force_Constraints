@@ -27,7 +27,7 @@ const long MILLISECOND = 1000;
 const long SECOND = 1000000;
 
 LwrRttControl::LwrRttControl(const std::string& name):
-    RTT::TaskContext(name), RATE_HZ_(999), NUM_OF_SEGMENTS_(7), 
+    RTT::TaskContext(name), RATE_HZ_(999), NUM_OF_SEGMENTS_(8), 
     NUM_OF_JOINTS_(7), NUM_OF_CONSTRAINTS_(6), 
     environment_(lwr_environment::LWR_SIMULATION), 
     robot_model_(lwr_model::LWR_URDF), iteration_count_(0), gazebo_arm_eef_(0),

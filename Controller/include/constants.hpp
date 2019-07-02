@@ -96,6 +96,7 @@ namespace lwr_constants
    extern const std::vector<double> joint_inertia;
 
    extern const std::string urdf_path;
+   extern const std::string urdf_with_ati_path;
    extern const std::string root_name;
    extern const std::string tooltip_name;
 }
