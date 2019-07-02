@@ -280,13 +280,13 @@
     </collision>
   </link>
   <!-- joint between lwr_6_link and lwr_7_link -->
-  <!-- Link 7 has been extended with ATI Sensor links: 0.0486m along Z, 0.0486rad around Z axis-->
+  <!-- Link 7 has been extended with ATI Sensor links: 0.0486m along Z, 0.349066rad around Z axis-->
   <joint name="joint_6" type="revolute">
     <parent link="link_6"/>
     <child link="link_7"/>
     <limit effort="300.0" lower="-2.96705972839" upper="2.96705972839" velocity="1.96349540849"/>
     <dynamics damping="0.1" friction="0.1"/>
-    <origin rpy="0 0 0" xyz="0 0 0.1266"/>
+    <origin rpy="0 0 0.349066" xyz="0 0 0.1266"/>
     <axis xyz="0 0 1"/>
   </joint>
   <link name="link_7">
