@@ -101,7 +101,7 @@
     <arg name="damper_amplitude" default="2.5"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
-    <arg name="max_command" default="[50.0, 50.0, 50.0, 
+    <arg name="max_command" default="[60.0, 60.0, 60.0, 
                                       10.0, 10.0, 10.0]"/>
 
     
