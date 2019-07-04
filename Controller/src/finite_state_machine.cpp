@@ -339,14 +339,26 @@ int finite_state_machine::update(const state_specification &robot_state,
 bool finite_state_machine::contact_detected(const double linear_force_threshold, 
                                             const double angular_force_threshold)
 {
-    for (int i = 0; i < 3; i++)
+
+    if (desired_task_model_ == task_model::moveConstrained_follow_path)
     {
-        if (std::fabs(ext_wrench_(i)) > linear_force_threshold) return true;
+        for (int i = 0; i < 2; i++)
+        {
+            if (std::fabs(ext_wrench_(i)) > linear_force_threshold) return true;
+        }
     }
 
-    for (int i = 3; i < 6; i++)
+    else 
     {
-        if (std::fabs(ext_wrench_(i)) > angular_force_threshold) return true;
+        for (int i = 0; i < 3; i++)
+        {
+            if (std::fabs(ext_wrench_(i)) > linear_force_threshold) return true;
+        }
+
+        for (int i = 3; i < 6; i++)
+        {
+            if (std::fabs(ext_wrench_(i)) > angular_force_threshold) return true;
+        }
     }
 
     return false;    
