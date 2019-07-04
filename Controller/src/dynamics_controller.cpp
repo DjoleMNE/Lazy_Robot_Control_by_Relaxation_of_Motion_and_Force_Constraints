@@ -166,8 +166,6 @@ void dynamics_controller::print_settings_info()
             break;
     }
 
-    if(use_mixed_driver_) std::cout<< "\nMixed driver used!"<< std::endl;
-
     std::cout<< "\nInitial joint state: "<< std::endl;
     std::cout<< "Joint positions: "<< robot_state_.q << std::endl;
     std::cout<< "Joint velocities:"<< robot_state_.qd << "\n" << std::endl;
@@ -1124,7 +1122,6 @@ int dynamics_controller::initialize(const int desired_control_mode,
     assert(desired_control_mode_.interface != control_mode::STOP_MOTION); 
 
     desired_task_inteface_ = desired_task_inteface;
-    use_mixed_driver_      = use_mixed_driver;
 
     switch (desired_task_model_)
     {
@@ -1151,11 +1148,6 @@ int dynamics_controller::initialize(const int desired_control_mode,
             return -1;
             break;
     }
-
-    if (desired_task_model_ == task_model::moveTo || desired_task_model_ == task_model::moveTo_follow_path)
-    {
-        if(use_mixed_driver_) CTRL_DIM_[0] = false;
-    } 
 
     // First make sure that the robot is not moving
     // stop_robot_motion();
