@@ -159,21 +159,40 @@ class LwrRttControl : public RTT::TaskContext{
 
         void visualize_pose(const std::vector<double> &pose, 
                             const std::vector<std::vector<double>> &path_poses);
-        void draw_sine(std::vector< std::vector<double> > &path_points,
-                       const double frequency_start,
-                       const double frequency_end,
-                       const double amplitude,
-                       const double x_scale, const double offset_x, 
-                       const double offset_y, const double offset_z);
-        void draw_inf_sign(std::vector< std::vector<double> > &path_points,
-                           const double length, const double height, 
-                           const double amplitude,
-                           const double x_scale, const double offset_x, 
-                           const double offset_y, const double offset_z);
-        void draw_step(std::vector< std::vector<double> > &path_points,
-                       const int step_size,
-                       const double x_scale, const double offset_x, 
-                       const double offset_y, const double offset_z);
+        
+        // Path generators for X-Z plane
+        void draw_sine_xz(std::vector< std::vector<double> > &path_points,
+                          const double frequency_start,
+                          const double frequency_end,
+                          const double amplitude,
+                          const double x_scale, const double offset_x, 
+                          const double offset_y, const double offset_z);
+        void draw_inf_sign_xz(std::vector< std::vector<double> > &path_points,
+                              const double length, const double height, 
+                              const double amplitude,
+                              const double x_scale, const double offset_x, 
+                              const double offset_y, const double offset_z);
+        void draw_step_xz(std::vector< std::vector<double> > &path_points,
+                          const int step_size,
+                          const double x_scale, const double offset_x, 
+                          const double offset_y, const double offset_z);
+
+        // Path generators for X-Y plane
+        void draw_sine_xy(std::vector< std::vector<double> > &path_points,
+                          const double frequency_start,
+                          const double frequency_end,
+                          const double amplitude,
+                          const double x_scale, const double offset_x, 
+                          const double offset_y, const double offset_z);
+        void draw_inf_sign_xy(std::vector< std::vector<double> > &path_points,
+                              const double length, const double height, 
+                              const double amplitude,
+                              const double x_scale, const double offset_x, 
+                              const double offset_y, const double offset_z);
+        void draw_step_xy(std::vector< std::vector<double> > &path_points,
+                          const int step_size,
+                          const double x_scale, const double offset_x, 
+                          const double offset_y, const double offset_z);
 };
 
 #endif

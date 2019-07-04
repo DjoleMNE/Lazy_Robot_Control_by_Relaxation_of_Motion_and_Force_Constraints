@@ -193,19 +193,19 @@ bool LwrRttControl::configureHook()
             switch (path_type_)
             {
                 case path_types::STEP_PATH:
-                    this->draw_step(tube_path_points_, 6, 0.005,
-                                    desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
+                    this->draw_step_xy(tube_path_points_, 6, 0.005,
+                                       desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
                     break;
                 
                 case path_types::INF_SIGN_PATH:
-                    this->draw_inf_sign(tube_path_points_, 0.3, 0.2, 1.0, 1.0, 
-                                        desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
+                    this->draw_inf_sign_xy(tube_path_points_, 0.3, 0.2, 1.0, 1.0, 
+                                           desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
                     break;
 
                 case path_types::SINE_PATH:
-                    this->draw_sine(tube_path_points_, path_parameters_[0], path_parameters_[1],
-                                    path_parameters_[2], path_parameters_[3], 
-                                    desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
+                    this->draw_sine_xy(tube_path_points_, path_parameters_[0], path_parameters_[1],
+                                       path_parameters_[2], path_parameters_[3], 
+                                       desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
                     break;
                 
                 default:
@@ -232,19 +232,19 @@ bool LwrRttControl::configureHook()
             switch (path_type_)
             {
                 case path_types::STEP_PATH:
-                    this->draw_step(tube_path_points_, 6, 0.005,
-                                    desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
+                    this->draw_step_xz(tube_path_points_, 6, 0.005,
+                                       desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
                     break;
                 
                 case path_types::INF_SIGN_PATH:
-                    this->draw_inf_sign(tube_path_points_, 0.3, 0.2, 1.0, 1.0, 
-                                        desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
+                    this->draw_inf_sign_xz(tube_path_points_, 0.3, 0.2, 1.0, 1.0, 
+                                           desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
                     break;
 
                 case path_types::SINE_PATH:
-                    this->draw_sine(tube_path_points_, path_parameters_[0], path_parameters_[1],
-                                    path_parameters_[2], path_parameters_[3], 
-                                    desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
+                    this->draw_sine_xz(tube_path_points_, path_parameters_[0], path_parameters_[1],
+                                       path_parameters_[2], path_parameters_[3], 
+                                       desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
                     break;
                 
                 default:
@@ -581,12 +581,12 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose,
 }
 
 
-void LwrRttControl::draw_sine(std::vector< std::vector<double> > &path_points,
-                              const double frequency_start,
-                              const double frequency_end, 
-                              const double amplitude,
-                              const double x_scale, const double offset_x, 
-                              const double offset_y, const double offset_z)
+void LwrRttControl::draw_sine_xz(std::vector< std::vector<double> > &path_points,
+                                 const double frequency_start,
+                                 const double frequency_end, 
+                                 const double amplitude,
+                                 const double x_scale, const double offset_x, 
+                                 const double offset_y, const double offset_z)
 {
     double x_y, z;
     double frequency = 0.0;
@@ -608,11 +608,11 @@ void LwrRttControl::draw_sine(std::vector< std::vector<double> > &path_points,
     }
 }
 
-void LwrRttControl::draw_inf_sign(std::vector< std::vector<double> > &path_points,
-                                  const double length, const double height, 
-                                  const double amplitude,
-                                  const double x_scale, const double offset_x, 
-                                  const double offset_y, const double offset_z)
+void LwrRttControl::draw_inf_sign_xz(std::vector< std::vector<double> > &path_points,
+                                     const double length, const double height, 
+                                     const double amplitude,
+                                     const double x_scale, const double offset_x, 
+                                     const double offset_y, const double offset_z)
 {
     double x_y, z;
 
@@ -630,10 +630,10 @@ void LwrRttControl::draw_inf_sign(std::vector< std::vector<double> > &path_point
     }
 }
 
-void LwrRttControl::draw_step(std::vector< std::vector<double> > &path_points,
-                              const int step_size,
-                              const double x_scale, const double offset_x, 
-                              const double offset_y, const double offset_z)
+void LwrRttControl::draw_step_xz(std::vector< std::vector<double> > &path_points,
+                                 const int step_size,
+                                 const double x_scale, const double offset_x, 
+                                 const double offset_y, const double offset_z)
 {
     double x_y, z;
     int offset = int(path_points.size() / step_size);
@@ -653,6 +653,82 @@ void LwrRttControl::draw_step(std::vector< std::vector<double> > &path_points,
         path_points[i][2] = z   + offset_z;
     }
 }
+
+
+
+void LwrRttControl::draw_sine_xy(std::vector< std::vector<double> > &path_points,
+                                 const double frequency_start,
+                                 const double frequency_end, 
+                                 const double amplitude,
+                                 const double x_scale, const double offset_x, 
+                                 const double offset_y, const double offset_z)
+{
+    double x, y;
+    double frequency = 0.0;
+    double freq_step = 0.0;
+    if (frequency_end > frequency_start) freq_step = (frequency_end - frequency_start) / (static_cast<float>(path_points.size() - 1));
+
+    for(int i = 0; i < path_points.size(); i++)
+    {
+        // the angle is plotted on the x-plane
+        x = i;
+        frequency = frequency_start + freq_step * i;
+
+        // the sine function is plotted along the z-axis
+        y = amplitude * std::sin(2 * M_PI * frequency * (x / path_points.size()));
+
+        path_points[i][0] = x * x_scale + offset_x;
+        path_points[i][1] = y           + offset_y;
+        path_points[i][2] = 0.0         + offset_z;
+    }
+}
+
+void LwrRttControl::draw_inf_sign_xy(std::vector< std::vector<double> > &path_points,
+                                     const double length, const double height, 
+                                     const double amplitude,
+                                     const double x_scale, const double offset_x, 
+                                     const double offset_y, const double offset_z)
+{
+    double x, y;
+
+    for(int i = 0; i < path_points.size(); i++)
+    {
+        // the angle is plotted on the x-y-plane
+        x = x_scale * amplitude * (-length / 2.0) * std::cos(2.0 * M_PI * i / path_points.size()) + length / 2.0;
+
+        // the sine function is plotted along the y-axis
+        y = amplitude * (height / 2) * std::sin(4 * M_PI * i / path_points.size());
+
+        path_points[i][0] = x    + offset_x;
+        path_points[i][1] = y    + offset_y;
+        path_points[i][2] = 0.0  + offset_z;
+    }
+}
+
+void LwrRttControl::draw_step_xy(std::vector< std::vector<double> > &path_points,
+                                 const int step_size,
+                                 const double x_scale, const double offset_x, 
+                                 const double offset_y, const double offset_z)
+{
+    double x, y;
+    int offset = int(path_points.size() / step_size);
+
+    for(int i = 0; i < path_points.size(); i++)
+    {
+        x = x_scale * i;
+
+        if      (i < offset)                       y =  0.0;
+        else if (i >     offset && i < 2 * offset) y =  0.07;
+        else if (i > 2 * offset && i < 3 * offset) y = -0.05;
+        else if (i > 3 * offset && i < 4 * offset) y =  0.04;
+        else                                       y =  0.01;
+
+        path_points[i][0] = x   + offset_x;
+        path_points[i][1] = y   + offset_y;
+        path_points[i][2] = 0.0 + offset_z;
+    }
+}
+
 
 // Let orocos know how to create the component
 ORO_CREATE_COMPONENT(LwrRttControl)
