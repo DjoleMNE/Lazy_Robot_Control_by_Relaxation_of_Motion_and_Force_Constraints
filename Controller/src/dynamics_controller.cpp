@@ -1079,7 +1079,6 @@ int dynamics_controller::evaluate_dynamics()
 }
 
 void dynamics_controller::set_parameters(const double horizon_amplitude,
-                                         const double horizon_slope,
                                          const int abag_error_type,
                                          const Eigen::VectorXd &max_command,
                                          const Eigen::VectorXd &error_alpha, 

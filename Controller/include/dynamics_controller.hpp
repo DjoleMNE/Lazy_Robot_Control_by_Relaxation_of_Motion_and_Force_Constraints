@@ -77,7 +77,6 @@ class dynamics_controller
              const double time_passed_sec);
     
     void set_parameters(const double damper_amplitude,
-                        const double damper_slope,
                         const int abag_error_type,
                         const Eigen::VectorXd &max_command,
                         const Eigen::VectorXd &error_alpha, 

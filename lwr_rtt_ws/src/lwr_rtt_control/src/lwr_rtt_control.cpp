@@ -288,8 +288,8 @@ bool LwrRttControl::configureHook()
     }
  
 
-    controller_->set_parameters(damper_amplitude_, damper_slope_, 
-                                abag_error_type_, max_command_, error_alpha_,
+    controller_->set_parameters(damper_amplitude_, abag_error_type_, 
+                                max_command_, error_alpha_,
                                 bias_threshold_, bias_step_, gain_threshold_,
                                 gain_step_, min_bias_sat_, min_command_sat_);
 
