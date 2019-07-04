@@ -39,6 +39,16 @@ finite_state_machine::finite_state_machine(const int num_of_joints,
 {
 }
 
+int finite_state_machine::initialize_with_moveConstrained_follow_path(const moveConstrained_follow_path_task &task,
+                                                                      const int motion_profile)
+{
+    desired_task_model_               = task_model::moveConstrained_follow_path;
+    moveConstrained_follow_path_task_ = task;
+    motion_profile_                   = motion_profile;
+
+    return control_status::NOMINAL;
+}
+
 int finite_state_machine::initialize_with_moveTo_follow_path(const moveTo_follow_path_task &task,
                                                              const int motion_profile)
 {

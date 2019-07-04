@@ -112,7 +112,7 @@ class finite_state_machine
                              const int num_of_frames,
                              const int num_of_constraints);
         ~finite_state_machine(){};
-
+        int initialize_with_moveConstrained_follow_path(const moveConstrained_follow_path_task &task, const int motion_profile);
         int initialize_with_moveTo_follow_path(const moveTo_follow_path_task &task, const int motion_profile);
         int initialize_with_moveTo(const moveTo_task &task, const int motion_profile);
         int initialize_with_full_pose(const full_pose_task &task, const int motion_profile);

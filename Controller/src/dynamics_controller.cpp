@@ -1128,6 +1128,11 @@ int dynamics_controller::initialize(const int desired_control_mode,
 
     switch (desired_task_model_)
     {
+        case task_model::moveConstrained_follow_path:
+            fsm_.initialize_with_moveConstrained_follow_path(moveConstrained_follow_path_task_, 
+                                                             motion_profile);
+            break;
+
         case task_model::moveTo_follow_path:
             fsm_.initialize_with_moveTo_follow_path(moveTo_follow_path_task_, 
                                                     motion_profile);
