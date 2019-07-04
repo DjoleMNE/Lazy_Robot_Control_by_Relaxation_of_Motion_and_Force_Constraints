@@ -829,8 +829,6 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
         if ( std::fabs(predicted_error_twist_(i)) <= moveTo_follow_path_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
         else abag_error_vector_(i) = predicted_error_twist_(i);        
     }
-
-    // abag_error_vector_ = predicted_error_twist_;
 }
 
 
@@ -865,13 +863,11 @@ void dynamics_controller::compute_moveTo_task_error()
     }
 
     // Other parts of the ABAG error are position errors
-    for(int i = 1; i < NUM_OF_CONSTRAINTS_; i++)
+    for (int i = 1; i < NUM_OF_CONSTRAINTS_; i++)
     {
         if ( std::fabs(predicted_error_twist_(i)) <= moveTo_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
         else abag_error_vector_(i) = predicted_error_twist_(i);        
     }
-
-    // abag_error_vector_ = predicted_error_twist_;
 }
 
 /**
@@ -892,11 +888,6 @@ void dynamics_controller::compute_full_pose_task_error()
     fsm_result_            = fsm_.update(robot_state_, desired_state_, current_error_twist_, 
                                          ext_wrench_, total_time_sec_, tube_section_count_);
     abag_error_vector_     = predicted_error_twist_;
-
-#ifndef NDEBUG
-    // std::cout << "\nLinear Error: " << predicted_error_twist_.head(3).transpose() << "    Linear norm: " << predicted_error_twist_.head(3).norm() << std::endl;
-    // std::cout << "Angular Error: " << predicted_error_twist_.tail(3).transpose() << "         Angular norm: " << predicted_error_twist_.tail(3).norm() << std::endl;
-#endif
 }
 
 /**

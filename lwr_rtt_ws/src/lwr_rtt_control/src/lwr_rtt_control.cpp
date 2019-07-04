@@ -359,7 +359,7 @@ void LwrRttControl::updateHook()
                                         robot_state_.control_torque.data,
                                         total_time_ / SECOND);
 
-    if(!function_result == 0)
+    if (!function_result == 0)
     {
         RTT::log(RTT::Error) << "RTT: Controller returned error." << RTT::endlog(); 
         RTT::TaskContext::stop();
