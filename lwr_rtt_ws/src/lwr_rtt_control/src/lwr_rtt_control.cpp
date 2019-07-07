@@ -330,7 +330,7 @@ void LwrRttControl::updateHook()
     // }
 
     // Save current time point
-    if(iteration_count_ == 0) start_time_ = std::chrono::steady_clock::now();
+    if (iteration_count_ == 0) start_time_ = std::chrono::steady_clock::now();
     total_time_ = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - start_time_).count();
 
     // Read status from robot
@@ -338,28 +338,33 @@ void LwrRttControl::updateHook()
     port_joint_velocity_in.read(jnt_vel_in);
     port_joint_torque_in.read(jnt_trq_in);
 
-    if(load_ati_sensor_)
-    {
-        if(port_ext_force_in.read(wrench_msg_) == RTT::NoData) RTT::log(RTT::Error) << "No Force-Torque sensor data:" << iteration_count_ << RTT::endlog(); 
-        tf::wrenchMsgToKDL(wrench_msg_.wrench, ext_wrench_kdl_);
-    }
-
     robot_state_.q.data  = jnt_pos_in;
     robot_state_.qd.data = jnt_vel_in;
+    
+    int function_result = 0;
+    if (load_ati_sensor_)
+    {        
+        if (port_ext_force_in.read(wrench_msg_) == RTT::NoData) RTT::log(RTT::Error) << "No Force-Torque sensor data:" << iteration_count_ << RTT::endlog(); 
+        else
+        {
+            tf::wrenchMsgToKDL(wrench_msg_.wrench, ext_wrench_kdl_);
 
-    int function_result = fk_solver_->JntToCart(robot_state_.q, robot_state_.frame_pose[gazebo_arm_eef_]);
-    if(!function_result == 0)
-    {
-        RTT::log(RTT::Error) << "RTT: FK solver returned error." << RTT::endlog(); 
-        RTT::TaskContext::stop();
-    }
+            if (robot_model_ != lwr_model::LWR_WITH_ATI)
+            { 
+                function_result = fk_solver_->JntToCart(robot_state_.q, robot_state_.frame_pose[gazebo_arm_eef_]);
+                if (function_result != 0)
+                {
+                    RTT::log(RTT::Error) << "RTT: FK solver returned error." << RTT::endlog(); 
+                    RTT::TaskContext::stop();
+                }
 
-    if(load_ati_sensor_)
-    {
-        ext_wrench_kdl_ = robot_state_.frame_pose[gazebo_arm_eef_].M  * ext_wrench_kdl_;
-        for(int i = 0; i < 6; i++) 
-            log_file_ext_force_ << ext_wrench_kdl_(i) << " ";
-        log_file_ext_force_ << std::endl;
+                ext_wrench_kdl_ = robot_state_.frame_pose[gazebo_arm_eef_].M  * ext_wrench_kdl_;
+            }
+
+            for (int i = 0; i < 6; i++) 
+                log_file_ext_force_ << ext_wrench_kdl_(i) << " ";
+            log_file_ext_force_ << std::endl;
+        }
     }
     
     function_result = controller_->step(robot_state_.q, 
@@ -368,18 +373,18 @@ void LwrRttControl::updateHook()
                                         robot_state_.control_torque.data,
                                         total_time_ / SECOND);
 
-    if (!function_result == 0)
+    if (function_result != 0)
     {
         RTT::log(RTT::Error) << "RTT: Controller returned error." << RTT::endlog(); 
         RTT::TaskContext::stop();
     }
     //  RTT::TaskContext::stop();
 
-    if(krc_compensate_gravity_) jnt_trq_cmd_out = robot_state_.control_torque.data;
+    if (krc_compensate_gravity_) jnt_trq_cmd_out = robot_state_.control_torque.data;
     else
     {
         function_result = gravity_solver_->JntToGravity(robot_state_.q, jnt_gravity_trq_out);
-        if(!function_result == 0)
+        if (function_result != 0)
         {
             RTT::log(RTT::Error) << "RTT: Gravity solver returned error." << RTT::endlog(); 
             RTT::TaskContext::stop();
