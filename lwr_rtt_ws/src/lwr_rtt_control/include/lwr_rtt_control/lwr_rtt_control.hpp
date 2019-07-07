@@ -62,10 +62,11 @@ SOFTWARE.
 
 enum desired_pose 
 {
-    CANDLE = 0,
-    NAVIGATION = 1,
+    CANDLE       = 0,
+    NAVIGATION   = 1,
     NAVIGATION_2 = 2,
-    FOLDED = 3  
+    FOLDED       = 3,
+    TABLE        = 4  
 };
 
 enum path_types

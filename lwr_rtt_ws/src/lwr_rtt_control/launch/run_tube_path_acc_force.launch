@@ -19,7 +19,7 @@
     <!-- Tools -->
     <arg name="load_base" default="false" />
     <arg name="load_ati_sensor" default="true" />
-    <arg name="load_table" default="false" />
+    <arg name="load_table" default="true" />
     <arg name="load_handle" default="false" />
     <!-- Gazebo -->
     <arg name="gazebo_gui" default="false"/>
@@ -30,7 +30,7 @@
     <arg name="environment" default="1"/>
     <arg name="robot_model" default="1"/>
     <arg name="simulation_loop_iterations" default="200000"/>
-    <arg name="krc_compensate_gravity" default="false"/>
+    <arg name="krc_compensate_gravity" default="true"/>
 
     <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) or MoveTo_follow_path(3) or MoveConstrained_follow_path(5)==-->
     <arg name="desired_task_model" default="5"/>
@@ -47,7 +47,7 @@
     <!-- <arg name="desired_pose" default="0"/> -->
 
     <!-- ========= navigation pose ===============-->
-    <arg name="desired_pose" default="1"/>
+    <!-- <arg name="desired_pose" default="1"/> -->
 
     <!-- ========= navigation 2 pose ===============-->
     <!-- <arg name="desired_pose" default="2"/> -->
@@ -55,6 +55,8 @@
     <!-- ========= folded pose ===============-->
     <!-- <arg name="desired_pose" default="3"/> -->
 
+    <!-- ========= table pose ===============-->
+    <arg name="desired_pose" default="4"/>
 
 
     <!-- ========= Task time limit in seconds ==============-->
@@ -102,16 +104,16 @@
 
     <!-- ========= Dimensions to be controlled ===============-->
     <arg name="control_dims" default="[true, true, true, 
-                                       false, false, false]"/>
+                                       true, true, true]"/>
 
     <!-- === Prediction Horizion =======-->
     <arg name="damper_amplitude" default="2.5"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
-    <arg name="max_command" default="[60.0, 60.0, 60.0, 
-                                      10.0, 10.0, 10.0]"/>
+    <arg name="max_command" default="[60.0, 60.0, 100.0, 
+                                      20.0, 20.0, 10.0]"/>
 
-    
+
 <!-- *************** ABAG SETTINGS ******************** -->
     <!-- ==== Raw error is 0, sign is 1 flag ======-->
     <arg name="abag_error_type"   default="1"/>

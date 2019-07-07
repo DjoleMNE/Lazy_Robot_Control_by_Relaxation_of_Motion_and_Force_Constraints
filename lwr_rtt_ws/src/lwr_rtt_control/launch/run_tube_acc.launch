@@ -55,11 +55,13 @@
     <!-- ========= folded pose ===============-->
     <!-- <arg name="desired_pose" default="3"/> -->
 
+    <!-- ========= table pose ===============-->
+    <!-- <arg name="desired_pose" default="4"/> -->
+
 
 
     <!-- ========= Task time limit in seconds ==============-->
     <arg name="task_time_limit_sec" default="20.0"/>
-
 
 
     <!-- ========= Tube tolerances ===============-->
