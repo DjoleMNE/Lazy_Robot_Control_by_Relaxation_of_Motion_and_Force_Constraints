@@ -61,6 +61,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addPort("JointTorqueCommand",port_joint_torque_cmd_out).doc("Command joint torques");
 
     this->addProperty("load_ati_sensor", load_ati_sensor_).doc("load_ati_sensor");
+    this->addProperty("robot_model", robot_model_).doc("robot_model");
     this->addProperty("simulation_loop_iterations", simulation_loop_iterations_).doc("simulation_loop_iterations");
     this->addProperty("krc_compensate_gravity", krc_compensate_gravity_).doc("KRC compensate gravity");
     this->addProperty("desired_task_model", desired_task_model_).doc("desired_task_model");
@@ -501,7 +502,7 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose,
         sleep(1);
     }
 
-    else if(desired_task_model_ == task_model::moveTo_follow_path)
+    else if (desired_task_model_ == task_model::moveTo_follow_path)
     {
         ros::NodeHandle handle;
         ros::Publisher vis_pub = handle.advertise<visualization_msgs::Marker>( "visualization_marker", 1);

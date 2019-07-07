@@ -160,6 +160,10 @@ void dynamics_controller::print_settings_info()
             printf("moveTo_follow_path\n");
             break;
 
+        case task_model::moveConstrained_follow_path:
+            printf("moveConstrained_follow_path\n");
+            break;
+
         default:
             printf("Stopping the robot!\n");
             break;
@@ -216,6 +220,12 @@ int dynamics_controller::check_control_status()
             return 0;
             break;
 
+        case control_status::APPROACH:
+            if(previous_control_status_ != control_status::APPROACH) printf("Control status changed to APPROACH\n");
+            previous_control_status_ = fsm_result_;
+            return 0;
+            break;
+
         case control_status::STOP_ROBOT:
             if(previous_control_status_ != control_status::STOP_ROBOT) printf("Control status changed to STOP_ROBOT\n");
             // stop_robot_motion();
@@ -247,9 +257,6 @@ void dynamics_controller::update_current_state()
                                                       robot_state_.frame_velocity);
     if(fk_solver_result != 0) 
         printf("Warning: FK solver returned an error! %d \n", fk_solver_result);
-
-    // Update current constraints, external forces, and feedforward torques
-    // update_dynamics_interfaces();
 
     // Print Current robot state in Debug mode
 #ifndef NDEBUG
@@ -304,7 +311,7 @@ void dynamics_controller::write_to_file()
     log_file_cart_ << abag_.get_bias().transpose().format(dynamics_parameter::WRITE_FORMAT);
     log_file_cart_ << abag_.get_gain().transpose().format(dynamics_parameter::WRITE_FORMAT);
     log_file_cart_ << abag_.get_command().transpose().format(dynamics_parameter::WRITE_FORMAT);
-    
+
     log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
 }
 
@@ -871,8 +878,7 @@ void dynamics_controller::compute_moveTo_task_error()
 }
 
 /**
- * Compute the error between desired Cartesian state 
- * and predicted (integrated) Cartesian state.
+ * Compute the error between desired Cartesian state and predicted (integrated) Cartesian state.
  * Error function for full_pose task
 */
 void dynamics_controller::compute_full_pose_task_error()
