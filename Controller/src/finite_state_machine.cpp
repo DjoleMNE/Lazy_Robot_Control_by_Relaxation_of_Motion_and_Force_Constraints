@@ -82,7 +82,7 @@ int finite_state_machine::initialize_with_full_pose(const full_pose_task &task,
 int finite_state_machine::update_moveConstrained_follow_path_task(state_specification &desired_state,
                                                                   const int tube_section_count)
 {
-    if (goal_reached_ || contact_detected_ || time_limit_reached_) return control_status::STOP_ROBOT;
+    if (goal_reached_ || contact_detected_) return control_status::STOP_ROBOT;
 
     if (total_control_time_sec_ > moveConstrained_follow_path_task_.time_limit) 
     {
@@ -221,7 +221,7 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
     if (count == NUM_OF_CONSTRAINTS_ && final_section_reached) 
     {   
         #ifndef NDEBUG       
-            if (!goal_reached_) printf("Whole path covered\n");
+            printf("Whole path covered\n");
         #endif
 
         goal_reached_ = true;
@@ -316,7 +316,7 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
     if (count == NUM_OF_CONSTRAINTS_) 
     {
         #ifndef NDEBUG       
-            if(!goal_reached_) printf("Goal area reached\n");
+            printf("Goal area reached\n");
         #endif
 
         goal_reached_ = true;
@@ -400,7 +400,7 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
     if(count == NUM_OF_CONSTRAINTS_) 
     {
         #ifndef NDEBUG       
-            if(!goal_reached_) printf("Goal area reached\n");
+            printf("Goal area reached\n");
         #endif
 
         goal_reached_ = true;
