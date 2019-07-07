@@ -177,7 +177,7 @@ bool LwrRttControl::configureHook()
 
         case desired_pose::TABLE:
             // Table pose 1
-            desired_ee_pose_ = {-0.200785, -0.308278,  0.1632811, // Linear: Vector
+            desired_ee_pose_ = {-0.200785, -0.308278,  0.1502811, // Linear: Vector
                                 -0.540302, -0.841471, -0.000860, // Angular: Rotation matrix
                                 -0.841470,  0.540302, -0.001340,
                                  0.001592,  0.000000, -0.999999};
@@ -574,6 +574,85 @@ void LwrRttControl::visualize_pose(const std::vector<double> &pose,
 
             marker_1.scale.x = tube_tolerances_[1] * 2;
             marker_1.scale.y = tube_tolerances_[2] * 2;
+            marker_1.scale.z = tube_tolerances_[0] * 2;
+            marker_1.color.a = 0.2; // Don't forget to set the alpha!
+            marker_1.color.r = 255.0;
+            marker_1.color.g = 255.0;
+            marker_1.color.b = 255.0;
+            //only if using a MESH_RESOURCE marker type:
+            marker_1.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae";
+            marker_1.lifetime = ros::Duration(1000);
+            // Publish the marker
+            vis_pub.publish(marker_1);
+            sleep(0.5);
+        }
+    }
+
+
+    else if (desired_task_model_ == task_model::moveConstrained_follow_path)
+    {
+        ros::NodeHandle handle;
+        ros::Publisher vis_pub = handle.advertise<visualization_msgs::Marker>( "visualization_marker", 1);
+        sleep(2);
+        visualization_msgs::Marker points;
+        points.header.frame_id = "link_0";
+        points.header.stamp = ros::Time::now();
+        points.ns = "path";
+        points.id = 0;
+        points.type = visualization_msgs::Marker::POINTS;
+        points.action = visualization_msgs::Marker::ADD;
+        points.pose.orientation.w = 1.0;
+
+        // POINTS markers use x and y scale for width/height respectively
+        points.scale.x = 0.005;
+        points.scale.y = 0.005;
+
+        // Points are green
+        points.color.g = 1.0f;
+        points.color.a = 1.0;
+
+        // Create the vertices for the points and lines
+        for (uint32_t i = 0; i < path_poses.size(); ++i)
+        {
+            geometry_msgs::Point p;
+            p.x = path_poses[i][0];
+            p.y = path_poses[i][1];
+            p.z = path_poses[i][2];
+
+            points.points.push_back(p);
+        }
+        vis_pub.publish(points);
+        sleep(1);    
+
+        for (uint32_t i = 0; i < path_poses.size(); ++i)
+        {
+            visualization_msgs::Marker marker_1;
+            marker_1.header.frame_id = "link_0";
+            marker_1.header.stamp = ros::Time::now();
+            marker_1.ns = "path_tube";
+            marker_1.id = i+2;
+            marker_1.type = visualization_msgs::Marker::CYLINDER;
+            marker_1.action = visualization_msgs::Marker::ADD;
+            marker_1.pose.position.x = path_poses[i][0];
+            marker_1.pose.position.y = path_poses[i][1];
+            marker_1.pose.position.z = path_poses[i][2];
+
+            tf2::Matrix3x3 desired_path_matrix = tf2::Matrix3x3(path_poses[i][3], path_poses[i][4],  path_poses[i][5], // Angular: Rotation matrix
+                                                                path_poses[i][6], path_poses[i][7],  path_poses[i][8],
+                                                                path_poses[i][9], path_poses[i][10], path_poses[i][11]);
+
+            desired_path_matrix = desired_path_matrix * tf2::Matrix3x3(0.0, 0.0, -1.0, // Rotate frame: Y axis -90deg
+                                                                       0.0, 1.0,  0.0,
+                                                                       1.0, 0.0,  0.0);
+            desired_path_matrix.getRotation(quaternion_rotation);
+            quaternion_rotation.normalize();
+            marker_1.pose.orientation.x = quaternion_rotation[0];
+            marker_1.pose.orientation.y = quaternion_rotation[1];
+            marker_1.pose.orientation.z = quaternion_rotation[2];
+            marker_1.pose.orientation.w = quaternion_rotation[3];
+
+            marker_1.scale.x = tube_tolerances_[1] * 2;
+            marker_1.scale.y = 0.03 * 2;
             marker_1.scale.z = tube_tolerances_[0] * 2;
             marker_1.color.a = 0.2; // Don't forget to set the alpha!
             marker_1.color.r = 255.0;
