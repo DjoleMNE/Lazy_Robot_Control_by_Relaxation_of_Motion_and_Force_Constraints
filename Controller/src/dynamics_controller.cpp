@@ -293,14 +293,21 @@ void dynamics_controller::write_to_file()
         log_file_cart_ << robot_state_.frame_pose[END_EFF_].p(i) << " ";
     for(int i = 3; i < 6; i++) 
         log_file_cart_ << 0.0 << " ";
-    log_file_cart_ << robot_state_.frame_velocity[END_EFF_].vel(0) << std::endl;
+    log_file_cart_ << robot_state_.frame_velocity[END_EFF_](0) << " "; 
+    log_file_cart_ << robot_state_.frame_velocity[END_EFF_](5) << " ";
+    for (int i = 2; i < 5; i++)
+        log_file_cart_ << ext_wrench_(i) << " ";
+    log_file_cart_ << std::endl;
 
     for(int i = 0; i < 3; i++) 
         log_file_cart_ << desired_state_.frame_pose[END_EFF_].p(i) << " ";
     for(int i = 3; i < 6; i++) 
-        log_file_cart_ << 0.0 << " ";
-        
-    log_file_cart_ << desired_state_.frame_velocity[END_EFF_].vel(0) << std::endl;
+        log_file_cart_ << 0.0 << " ";        
+    log_file_cart_ << desired_state_.frame_velocity[END_EFF_](0) << " ";
+    log_file_cart_ << desired_state_.frame_velocity[END_EFF_](5) << " ";
+    for (int i = 2; i < 5; i++)
+        log_file_cart_ << desired_state_.external_force[END_EFF_](i) << " ";
+    log_file_cart_ << std::endl;
 
     log_file_cart_ << predicted_error_twist_(0) << " ";
     for(int i = 1; i < 6; i++) 

@@ -49,16 +49,46 @@ bias      = []
 gain      = []
 command   = []
 
-for sample_ in range(1, rows - 1, variable_num):
+for sample_ in range (1, rows - 1, variable_num):
     measured.append(    np.float32( input_data[    sample_][desired_dim]) )
     desired.append(     np.float32( input_data[1 + sample_][desired_dim]) )
-    raw_error.append(   np.float32( input_data[2 + sample_][desired_dim]) )
-    if(desired_dim == 6):
+    if (desired_dim == 6):
+        raw_error.append(   np.float32( input_data[2 + sample_][6] ) )
         error.append(       np.float32( input_data[3 + sample_][0] ) )
         bias.append(        np.float32( input_data[4 + sample_][0] ) )
         gain.append(        np.float32( input_data[5 + sample_][0] ) )
         command.append(     np.float32( input_data[6 + sample_][0] ) )
+
+    elif (desired_dim == 7):
+        raw_error.append(   np.float32( input_data[2 + sample_][5] ) )
+        error.append(       np.float32( input_data[3 + sample_][5] ) )
+        bias.append(        np.float32( input_data[4 + sample_][5] ) )
+        gain.append(        np.float32( input_data[5 + sample_][5] ) )
+        command.append(     np.float32( input_data[6 + sample_][5] ) )
+    
+    elif (desired_dim == 8):
+        raw_error.append(   np.float32( input_data[2 + sample_][2] ) )
+        error.append(       np.float32( input_data[3 + sample_][2] ) )
+        bias.append(        np.float32( input_data[4 + sample_][2] ) )
+        gain.append(        np.float32( input_data[5 + sample_][2] ) )
+        command.append(     np.float32( input_data[6 + sample_][2] ) )
+
+    elif (desired_dim == 9):
+        raw_error.append(   np.float32( input_data[2 + sample_][3] ) )
+        error.append(       np.float32( input_data[3 + sample_][3] ) )
+        bias.append(        np.float32( input_data[4 + sample_][3] ) )
+        gain.append(        np.float32( input_data[5 + sample_][3] ) )
+        command.append(     np.float32( input_data[6 + sample_][3] ) )
+
+    elif (desired_dim == 10):
+        raw_error.append(   np.float32( input_data[2 + sample_][4] ) )
+        error.append(       np.float32( input_data[3 + sample_][4] ) )
+        bias.append(        np.float32( input_data[4 + sample_][4] ) )
+        gain.append(        np.float32( input_data[5 + sample_][4] ) )
+        command.append(     np.float32( input_data[6 + sample_][4] ) )
+ 
     else:
+        raw_error.append(   np.float32( input_data[2 + sample_][desired_dim] ) )
         error.append(       np.float32( input_data[3 + sample_][desired_dim] ) )
         bias.append(        np.float32( input_data[4 + sample_][desired_dim] ) )
         gain.append(        np.float32( input_data[5 + sample_][desired_dim] ) )
@@ -82,6 +112,10 @@ elif(desired_dim is 3): plt.suptitle('Angular X', fontsize=20)
 elif(desired_dim is 4): plt.suptitle('Angular Y', fontsize=20)
 elif(desired_dim is 5): plt.suptitle('Angular Z', fontsize=20)
 elif(desired_dim is 6): plt.suptitle('Linear Velocity X', fontsize=20)
+elif(desired_dim is 7): plt.suptitle('Angular Velocity Z', fontsize=20)
+elif(desired_dim is 8): plt.suptitle('Linear Force Z', fontsize=20)
+elif(desired_dim is 9): plt.suptitle('Angular Force X', fontsize=20)
+elif(desired_dim is 10): plt.suptitle('Angular Force Y', fontsize=20)
 
 tick_freq = 1000
 if (num_samples > 4000 and num_samples < 7000): tick_freq = 500
@@ -95,14 +129,17 @@ plt.subplots_adjust(left=0.05, right=0.99, top=0.95, bottom=0.03)
 plt.margins(0,0)
 
 plt.subplot(4, 1, 1)
-if(desired_dim < 3 or desired_dim == 6):
+if(desired_dim < 3 or desired_dim > 5):
     plt.plot(measured, c = 'limegreen', label='Measured', linewidth = 2, zorder = 2)
     plt.plot(desired, label='Desired', linewidth = 2, color = 'black', zorder = 3)
 
 if(show_tube):
-    tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim] )))
-    plt.plot(desired + tube_tolerance, c = 'red', label='tube_upper_limit', linewidth = 1.3, zorder = 2)
-    plt.plot(desired - tube_tolerance, c = 'blue', label='tube_lower_limit', linewidth = 1.3, zorder = 2)
+    if (desired_dim > 7):
+        tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim-6] )))
+    else:
+        tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim] )))
+    plt.plot(desired + tube_tolerance, c = 'red', label='tube_upper_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
+    plt.plot(desired - tube_tolerance, c = 'blue', label='tube_lower_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
 
 plt.legend(loc=4, fontsize = 'x-large')
 plt.xticks(np.arange(0, num_samples, tick_freq))
@@ -141,4 +178,9 @@ elif(desired_dim is 3): plt.savefig('../x_angular_control.pdf')
 elif(desired_dim is 4): plt.savefig('../y_angular_control.pdf')
 elif(desired_dim is 5): plt.savefig('../z_angular_control.pdf')
 elif(desired_dim is 6): plt.savefig('../x_linear_velocity_control.pdf')
+elif(desired_dim is 7): plt.savefig('../z_angular_velocity_control.pdf')
+elif(desired_dim is 8): plt.savefig('../z_linear_force_control.pdf')
+elif(desired_dim is 9): plt.savefig('../x_angular_force_control.pdf')
+elif(desired_dim is 10): plt.savefig('../y_angular_force_control.pdf')
+
 notifier.loop()
