@@ -56,6 +56,7 @@ enum control_status
     CRUISE_THROUGH_TUBE =  3,
     CRUISE              =  4,
     CHANGE_TUBE_SECTION =  5,
+    APPROACH            =  7,
     STOP_ROBOT          =  6
 };
 
@@ -116,13 +117,13 @@ class finite_state_machine
         int initialize_with_moveTo_follow_path(const moveTo_follow_path_task &task, const int motion_profile);
         int initialize_with_moveTo(const moveTo_task &task, const int motion_profile);
         int initialize_with_full_pose(const full_pose_task &task, const int motion_profile);
-
-        int update(const state_specification &robot_state,
-                   state_specification &desired_state,
-                   const KDL::Twist &current_error,
-                   const KDL::Wrench &ext_force,
-                   const double time_passed_sec,
-                   const int tube_section_count);
+        int update_force_task_status(const KDL::Wrench &desired_force, const KDL::Wrench &ext_force);
+        int update_motion_task_status(const state_specification &robot_state,
+                                      state_specification &desired_state,
+                                      const KDL::Twist &current_error,
+                                      const KDL::Wrench &ext_force,
+                                      const double time_passed_sec,
+                                      const int tube_section_count);
 
     private:
         const int NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_;
@@ -136,13 +137,20 @@ class finite_state_machine
         moveTo_task moveTo_task_;
         full_pose_task full_pose_task_;
         moveTo_follow_path_task moveTo_follow_path_task_;
-
+        moveConstrained_follow_path_task moveConstrained_follow_path_task_;
+        
         int update_full_pose_task(state_specification &desired_state);
         int update_moveTo_task(state_specification &desired_state);
         int update_moveTo_follow_path_task(state_specification &desired_state,
                                            const int tube_section_count);
+        int update_moveConstrained_follow_path_task(state_specification &desired_state,
+                                                    const int tube_section_count);
         bool contact_detected(const double linear_force_threshold, 
                               const double angular_force_threshold);
+        bool contact_secured(const KDL::Wrench &desired_force,
+                             const KDL::Wrench &ext_force);
+        bool force_goal_maintained(const KDL::Wrench &desired_force,
+                                   const KDL::Wrench &ext_force);
         int sign(double x);
 };
 #endif /* FINITE_STATE_MACHINE_HPP */

@@ -311,12 +311,12 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
     return control_status::NOMINAL;
 }
 
-int finite_state_machine::update(const state_specification &robot_state,
-                                 state_specification &desired_state,
-                                 const KDL::Twist &current_error,
-                                 const KDL::Wrench &ext_force,
-                                 const double time_passed_sec,
-                                 const int tube_section_count)
+int finite_state_machine::update_motion_task_status(const state_specification &robot_state,
+                                                    state_specification &desired_state,
+                                                    const KDL::Twist &current_error,
+                                                    const KDL::Wrench &ext_force,
+                                                    const double time_passed_sec,
+                                                    const int tube_section_count)
 {
     robot_state_            = robot_state;
     desired_state_          = desired_state;
@@ -326,6 +326,10 @@ int finite_state_machine::update(const state_specification &robot_state,
 
     switch (desired_task_model_)
     {
+        case task_model::moveConstrained_follow_path:
+            return update_moveConstrained_follow_path_task(desired_state, tube_section_count);
+            break;
+
         case task_model::moveTo_follow_path:
             return update_moveTo_follow_path_task(desired_state, tube_section_count);
             break;
@@ -345,6 +349,12 @@ int finite_state_machine::update(const state_specification &robot_state,
     }
 }
 
+int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_force,
+                                                   const KDL::Wrench &ext_force)
+{
+    if (!contact_secured(desired_force, ext_force)) return control_status::APPROACH;
+    return control_status::CRUISE;
+}
 
 bool finite_state_machine::contact_detected(const double linear_force_threshold, 
                                             const double angular_force_threshold)
@@ -372,6 +382,34 @@ bool finite_state_machine::contact_detected(const double linear_force_threshold,
     }
 
     return false;    
+}
+
+bool finite_state_machine::contact_secured(const KDL::Wrench &desired_force,
+                                           const KDL::Wrench &ext_force)
+{
+    for (int i = 3; i < 5; i++)
+    {
+        double error = desired_force(i) - ext_force(i);
+        if (std::fabs(error) > moveConstrained_follow_path_task_.tube_tolerances[i]) return false;
+    }
+
+    std::cout << desired_force(2) << " " << desired_force(3) << " " << desired_force(4)<< std::endl;
+    std::cout << ext_force(2) << " " << ext_force(3) << " " << ext_force(4)<< std::endl;
+    return true;
+}
+
+bool finite_state_machine::force_goal_maintained(const KDL::Wrench &desired_force,
+                                                 const KDL::Wrench &ext_force)
+{
+    for (int i = 2; i < 5; i++)
+    {
+        double error = desired_force(i) - ext_force(i);
+        if (std::fabs(error) > moveConstrained_follow_path_task_.tube_tolerances[i]) return false;
+    }
+
+    std::cout << desired_force(2) << " " << desired_force(3) << " " << desired_force(4)<< std::endl;
+    std::cout << ext_force(2) << " " << ext_force(3) << " " << ext_force(4)<< std::endl;
+    return true;
 }
 
 int finite_state_machine::sign(double x)
