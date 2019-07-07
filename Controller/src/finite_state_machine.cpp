@@ -79,6 +79,106 @@ int finite_state_machine::initialize_with_full_pose(const full_pose_task &task,
     return control_status::NOMINAL;
 }
 
+int finite_state_machine::update_moveConstrained_follow_path_task(state_specification &desired_state,
+                                                                  const int tube_section_count)
+{
+    if (goal_reached_ || contact_detected_ || time_limit_reached_) return control_status::STOP_ROBOT;
+
+    if (total_control_time_sec_ > moveConstrained_follow_path_task_.time_limit) 
+    {
+        #ifndef NDEBUG       
+            printf("Time limit reached\n");
+        #endif
+
+        time_limit_reached_ = true;
+        return control_status::STOP_CONTROL;
+    }
+    time_limit_reached_ = false;
+
+    if (contact_detected(moveConstrained_follow_path_task_.contact_threshold_linear, 
+                         moveConstrained_follow_path_task_.contact_threshold_angular))
+    {
+        #ifndef NDEBUG       
+            printf("Contact occurred\n");
+        #endif
+
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        contact_detected_ = true;
+        return control_status::STOP_ROBOT;
+    }
+    contact_detected_ = false;
+
+    bool final_section_reached = false;
+    if (tube_section_count == moveConstrained_follow_path_task_.tf_poses.size() - 1) final_section_reached = true;
+    
+    // Check if the current pose of the robot satisfies all 6D tolerances
+    int count = 0;
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+    {
+        if (std::fabs(current_error_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[i]) count++;
+    }
+
+    // Check if the robot has reached end of the tube path
+    if (count == NUM_OF_CONSTRAINTS_ && final_section_reached) 
+    {   
+        #ifndef NDEBUG       
+            printf("Whole path covered\n");
+        #endif
+
+        goal_reached_ = true;
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        return control_status::STOP_ROBOT;
+    }
+    goal_reached_ = false;
+
+    /*
+     * The robot has reached goal x axis area but it is out of y and z area?
+     * If yes command zero X linear velocity, to keep it in that x area.
+     * Else go with initially commanded tube speed.
+    */
+    if ((count == NUM_OF_CONSTRAINTS_) || \
+        ((count == NUM_OF_CONSTRAINTS_ - 1) && (std::fabs(current_error_(0)) > moveConstrained_follow_path_task_.tube_tolerances[0])))
+    {
+        double speed = 0.0;
+        switch (motion_profile_)
+        {
+            case m_profile::STEP:
+                speed = motion_profile::negative_step_function(std::fabs(current_error_(0)), 
+                                                               moveConstrained_follow_path_task_.tube_speed, 
+                                                               0.25, 0.4, 0.2);
+                break;
+
+            case m_profile::S_CURVE:
+                speed = motion_profile::s_curve_function(std::fabs(current_error_(0)), 
+                                                         0.05, 
+                                                         moveConstrained_follow_path_task_.tube_speed, 5.0);
+                break;
+
+            default:
+                speed = moveConstrained_follow_path_task_.tube_speed;
+                break;
+        }
+
+        // Check for necessary direction of motion
+        if ((sign(current_error_(0)) == -1) && final_section_reached) speed = -1 * speed;      
+        desired_state.frame_velocity[END_EFF_].vel(0) = speed;      
+
+        // Robot has crossed some tube section? If yes, switch to next one.
+        if ((current_error_(0) < moveConstrained_follow_path_task_.tube_tolerances[0]) && !final_section_reached)
+        {
+            return control_status::CHANGE_TUBE_SECTION;
+        }
+        return control_status::CRUISE_THROUGH_TUBE;        
+    }
+    
+    else
+    {
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        return control_status::START_TO_CRUISE;
+    }
+}
+
+
 int finite_state_machine::update_moveTo_follow_path_task(state_specification &desired_state,
                                                          const int tube_section_count)
 {
@@ -387,6 +487,7 @@ bool finite_state_machine::contact_detected(const double linear_force_threshold,
 bool finite_state_machine::contact_secured(const KDL::Wrench &desired_force,
                                            const KDL::Wrench &ext_force)
 {
+    std::cout << " " << moveConstrained_follow_path_task_.tube_tolerances[3] << std::endl;
     for (int i = 3; i < 5; i++)
     {
         double error = desired_force(i) - ext_force(i);
