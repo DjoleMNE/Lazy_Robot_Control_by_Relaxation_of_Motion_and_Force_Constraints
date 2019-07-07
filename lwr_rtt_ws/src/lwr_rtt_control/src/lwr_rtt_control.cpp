@@ -27,7 +27,7 @@ const long MILLISECOND = 1000;
 const long SECOND = 1000000;
 
 LwrRttControl::LwrRttControl(const std::string& name):
-    RTT::TaskContext(name), RATE_HZ_(999), NUM_OF_SEGMENTS_(8), 
+    RTT::TaskContext(name), RATE_HZ_(999), NUM_OF_SEGMENTS_(7), 
     NUM_OF_JOINTS_(7), NUM_OF_CONSTRAINTS_(6), 
     environment_(lwr_environment::LWR_SIMULATION), 
     robot_model_(lwr_model::LWR_URDF), iteration_count_(0), gazebo_arm_eef_(0),
@@ -35,17 +35,17 @@ LwrRttControl::LwrRttControl(const std::string& name):
     krc_compensate_gravity_(false), use_mixed_driver_(false), load_ati_sensor_(false),
     desired_task_model_(2), desired_control_mode_(0), desired_dynamics_interface_(1),
     desired_pose_(1), motion_profile_(0), path_type_(0),
-    damper_amplitude_(1.0), damper_slope_(4.0), tube_speed_(0.0), tube_force_(0.0),
+    damper_amplitude_(1.0), tube_speed_(0.0), tube_force_(0.0),
     control_dims_(NUM_OF_CONSTRAINTS_, false), tube_path_points_(1, std::vector<double>(3, 0.0)),
     path_poses_(1, std::vector<double>(12, 0.0)), path_parameters_(5, 0.0),
     desired_ee_pose_(12, 0.0), tube_tolerances_(8, 0.0), tube_start_position_(3, 0.0),
-    max_command_(Eigen::VectorXd::Constant(6, 0.0)),
-    error_alpha_(Eigen::VectorXd::Constant(6, 0.0)),
+    max_command_(Eigen::VectorXd::Constant(6, 0.0)), gazebo_ee_frame_(KDL::Frame::Identity()),
+    ext_wrench_kdl_(KDL::Wrench::Zero()), error_alpha_(Eigen::VectorXd::Constant(6, 0.0)),
     bias_threshold_(Eigen::VectorXd::Constant(6, 0.0)),
     bias_step_(Eigen::VectorXd::Constant(6, 0.0)),
     gain_threshold_(Eigen::VectorXd::Constant(6, 0.0)),
     gain_step_(Eigen::VectorXd::Constant(6, 0.0)),
-    abag_error_type_(1), 
+    abag_error_type_(1),
     min_bias_sat_(Eigen::VectorXd::Constant(6, -1.0)), 
     min_command_sat_(Eigen::VectorXd::Constant(6, -1.0)),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_SEGMENTS_ + 1, NUM_OF_CONSTRAINTS_)
@@ -316,7 +316,6 @@ bool LwrRttControl::configureHook()
         log_file_ext_force_.open("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/ext_force_data.txt");
         assert(log_file_ext_force_.is_open());
     }
-    else KDL::SetToZero(ext_wrench_kdl_);
     return true;
 }
 
@@ -351,14 +350,14 @@ void LwrRttControl::updateHook()
 
             if (robot_model_ != lwr_model::LWR_WITH_ATI)
             { 
-                function_result = fk_solver_->JntToCart(robot_state_.q, robot_state_.frame_pose[gazebo_arm_eef_]);
+                function_result = fk_solver_->JntToCart(robot_state_.q, gazebo_ee_frame_);
                 if (function_result != 0)
                 {
                     RTT::log(RTT::Error) << "RTT: FK solver returned error." << RTT::endlog(); 
                     RTT::TaskContext::stop();
                 }
 
-                ext_wrench_kdl_ = robot_state_.frame_pose[gazebo_arm_eef_].M  * ext_wrench_kdl_;
+                ext_wrench_kdl_ = gazebo_ee_frame_.M  * ext_wrench_kdl_;
             }
 
             for (int i = 0; i < 6; i++) 

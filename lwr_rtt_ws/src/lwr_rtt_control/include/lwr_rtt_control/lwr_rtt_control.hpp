@@ -103,11 +103,13 @@ class LwrRttControl : public RTT::TaskContext{
         bool krc_compensate_gravity_, use_mixed_driver_, load_ati_sensor_;
         int desired_task_model_, desired_control_mode_, desired_dynamics_interface_;
         int desired_pose_, motion_profile_, path_type_;
-        double damper_amplitude_, damper_slope_, tube_speed_, tube_force_;
+        double damper_amplitude_, tube_speed_, tube_force_;
         std::vector<bool> control_dims_;
         std::vector< std::vector<double> > tube_path_points_, path_poses_;
         std::vector<double> path_parameters_, desired_ee_pose_, tube_tolerances_, tube_start_position_;
         Eigen::VectorXd max_command_; 
+        KDL::Frame gazebo_ee_frame_;
+        KDL::Wrench ext_wrench_kdl_;
 
         // ABAG Parameters
         Eigen::VectorXd error_alpha_, bias_threshold_, bias_step_, 
@@ -146,7 +148,6 @@ class LwrRttControl : public RTT::TaskContext{
 
         // data from Force-Torque sensor on the end-effector        
         geometry_msgs::WrenchStamped wrench_msg_;
-        KDL::Wrench ext_wrench_kdl_;
         
         // Output ports
         RTT::OutputPort<Eigen::VectorXd> port_joint_position_cmd_out,
