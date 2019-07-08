@@ -162,9 +162,9 @@ class dynamics_controller
     const int NUM_OF_CONSTRAINTS_;
     const int END_EFF_;
     const std::vector<double> JOINT_TORQUE_LIMITS_;
-    std::vector<bool> CTRL_DIM_;
+    std::vector<bool> CTRL_DIM_, POS_TUBE_DIM_, MOTION_CTRL_DIM_, FORCE_CTRL_DIM_;
     int fsm_result_, previous_control_status_, tube_section_count_;
-    bool use_mixed_driver_;
+    bool transform_drivers_;
     
     moveTo_task moveTo_task_;
     full_pose_task full_pose_task_;
