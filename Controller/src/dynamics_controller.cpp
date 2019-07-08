@@ -1144,21 +1144,21 @@ int dynamics_controller::initialize(const int desired_control_mode,
     switch (desired_task_model_)
     {
         case task_model::moveConstrained_follow_path:
-            fsm_.initialize_with_moveConstrained_follow_path(moveConstrained_follow_path_task_, 
+            fsm_result_ = fsm_.initialize_with_moveConstrained_follow_path(moveConstrained_follow_path_task_, 
                                                              motion_profile);
             break;
 
         case task_model::moveTo_follow_path:
-            fsm_.initialize_with_moveTo_follow_path(moveTo_follow_path_task_, 
+            fsm_result_ = fsm_.initialize_with_moveTo_follow_path(moveTo_follow_path_task_, 
                                                     motion_profile);
             break;
 
         case task_model::moveTo:
-            fsm_.initialize_with_moveTo(moveTo_task_, motion_profile);
+            fsm_result_ = fsm_.initialize_with_moveTo(moveTo_task_, motion_profile);
             break;
         
         case task_model::full_pose:
-            fsm_.initialize_with_full_pose(full_pose_task_, motion_profile);
+            fsm_result_ = fsm_.initialize_with_full_pose(full_pose_task_, motion_profile);
             break;
             
         default:
@@ -1170,8 +1170,6 @@ int dynamics_controller::initialize(const int desired_control_mode,
     // First make sure that the robot is not moving
     // stop_robot_motion();
 
-    // Update current constraints, external forces, and feedforward torques
-    update_dynamics_interfaces();
     store_control_data_ = store_control_data;
 
     if (store_control_data_) 
@@ -1179,12 +1177,18 @@ int dynamics_controller::initialize(const int desired_control_mode,
         log_file_cart_.open(dynamics_parameter::LOG_FILE_CART_PATH);
         assert(log_file_cart_.is_open());
 
-        for(int i = 0; i < NUM_OF_CONSTRAINTS_ + 1; i++)
+        for (int i = 0; i < NUM_OF_CONSTRAINTS_ + 2; i++)
         {
-            if (desired_task_model_ == task_model::moveTo_follow_path)
+            if (desired_task_model_ == task_model::moveConstrained_follow_path)
+            {
+                log_file_cart_ << moveConstrained_follow_path_task_.tube_tolerances[i] << " ";
+            }
+            
+            else if (desired_task_model_ == task_model::moveTo_follow_path)
             {
                 log_file_cart_ << moveTo_follow_path_task_.tube_tolerances[i] << " ";
             }
+
             else log_file_cart_ << moveTo_task_.tube_tolerances[i] << " ";
         }
         log_file_cart_ << std::endl;      
@@ -1226,9 +1230,9 @@ int dynamics_controller::control(const int desired_control_mode,
     /* 
         Get sensor data from the robot driver or if simulation is on, 
         replace current state with the integrated joint velocities and positions.
-        Additionally, update dynamics intefaces.
     */
-    update_current_state();  update_dynamics_interfaces();
+    update_current_state();  
+    // update_dynamics_interfaces();
 
     //Print information about controller settings
     print_settings_info();
