@@ -452,6 +452,7 @@ void dynamics_controller::define_moveTo_follow_path_task(
     moveTo_follow_path_task_.goal_poses = moveTo_follow_path_task_.tf_poses;
 
     CTRL_DIM_ = constraint_direction;
+    MOTION_CTRL_DIM_ = CTRL_DIM_;
 
     // X-Y-Z linear
     KDL::Vector x_world(1.0, 0.0, 0.0);
@@ -510,6 +511,7 @@ void dynamics_controller::define_moveTo_follow_path_task(
 
     desired_state_.frame_pose[END_EFF_]    = moveTo_follow_path_task_.goal_poses[0];
     desired_task_model_                    = task_model::moveTo_follow_path;
+    transform_drivers_ = true;
 }
 
 
@@ -529,6 +531,7 @@ void dynamics_controller::define_moveTo_task(
     assert(tube_start_position.size()  == 3);
 
     CTRL_DIM_ = constraint_direction;
+    MOTION_CTRL_DIM_ = CTRL_DIM_;
 
     // X-Y-Z linear
     KDL::Vector x_world(1.0, 0.0, 0.0);
@@ -575,6 +578,7 @@ void dynamics_controller::define_moveTo_task(
 
     desired_state_.frame_pose[END_EFF_]    = moveTo_task_.goal_pose;
     desired_task_model_                    = task_model::moveTo;
+    transform_drivers_ = true;
 }
 
 void dynamics_controller::define_desired_ee_pose(
@@ -588,7 +592,8 @@ void dynamics_controller::define_desired_ee_pose(
     assert(cartesian_pose.size()       == NUM_OF_CONSTRAINTS_ * 2);
     
     CTRL_DIM_ = constraint_direction;
-    
+    MOTION_CTRL_DIM_ = CTRL_DIM_;
+
     desired_state_.frame_pose[END_EFF_].p(0) = cartesian_pose[0];
     desired_state_.frame_pose[END_EFF_].p(1) = cartesian_pose[1];
     desired_state_.frame_pose[END_EFF_].p(2) = cartesian_pose[2];
@@ -605,6 +610,7 @@ void dynamics_controller::define_desired_ee_pose(
     full_pose_task_.contact_threshold_angular = contact_threshold_angular;
     full_pose_task_.time_limit                = task_time_limit_sec;
     desired_task_model_                       = task_model::full_pose;
+    transform_drivers_ = false;
 }
 
 // Define Cartesian Acceleration task on the end-effector - Public Method
