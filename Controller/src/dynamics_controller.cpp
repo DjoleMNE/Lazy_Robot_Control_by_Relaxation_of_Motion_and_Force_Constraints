@@ -186,49 +186,49 @@ int dynamics_controller::check_control_status()
     switch (fsm_result_)
     {
         case control_status::NOMINAL:
-            if(previous_control_status_ != control_status::NOMINAL) printf("Control status changed to NOMINAL\n");
+            if (previous_control_status_ != control_status::NOMINAL) printf("Control status changed to NOMINAL\n");
             previous_control_status_ = fsm_result_;
             return 0;
             break;
         
         case control_status::START_TO_CRUISE:
-            if(previous_control_status_ != control_status::START_TO_CRUISE) printf("Control status changed to START_TO_CRUISE\n");
+            if (previous_control_status_ != control_status::START_TO_CRUISE) printf("Control status changed to START_TO_CRUISE\n");
             previous_control_status_ = fsm_result_;
             return 0;
             break;
 
         case control_status::CRUISE_TO_STOP:
-            if(previous_control_status_ != control_status::CRUISE_TO_STOP) printf("Control status changed to CRUISE_TO_STOP\n");
+            if (previous_control_status_ != control_status::CRUISE_TO_STOP) printf("Control status changed to CRUISE_TO_STOP\n");
             previous_control_status_ = fsm_result_;
             return 0;
             break;
 
         case control_status::CRUISE_THROUGH_TUBE:
-            if(previous_control_status_ != control_status::CRUISE_THROUGH_TUBE) printf("Control status changed to CRUISE_THROUGH_TUBE\n");
+            if (previous_control_status_ != control_status::CRUISE_THROUGH_TUBE) printf("Control status changed to CRUISE_THROUGH_TUBE\n");
             previous_control_status_ = fsm_result_;
             return 0;
             break;
         
         case control_status::CRUISE:
-            if(previous_control_status_ != control_status::CRUISE) printf("Control status changed to CRUISE\n");
+            if (previous_control_status_ != control_status::CRUISE) printf("Control status changed to CRUISE\n");
             previous_control_status_ = fsm_result_;
             return 0;
             break;
 
         case control_status::CHANGE_TUBE_SECTION:
-            if(previous_control_status_ != control_status::CHANGE_TUBE_SECTION) printf("Control status changed to CHANGE_TUBE_SECTION\n");
+            if (previous_control_status_ != control_status::CHANGE_TUBE_SECTION) printf("Control status changed to CHANGE_TUBE_SECTION\n");
             previous_control_status_ = fsm_result_;
             return 0;
             break;
 
         case control_status::APPROACH:
-            if(previous_control_status_ != control_status::APPROACH) printf("Control status changed to APPROACH\n");
+            if (previous_control_status_ != control_status::APPROACH) printf("Control status changed to APPROACH\n");
             previous_control_status_ = fsm_result_;
             return 0;
             break;
 
         case control_status::STOP_ROBOT:
-            if(previous_control_status_ != control_status::STOP_ROBOT) printf("Control status changed to STOP_ROBOT\n");
+            if (previous_control_status_ != control_status::STOP_ROBOT) printf("Control status changed to STOP_ROBOT\n");
             // stop_robot_motion();
             previous_control_status_ = fsm_result_;
             return 1;
@@ -1384,7 +1384,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
                                                       robot_state_.qd, 
                                                       robot_state_.frame_pose, 
                                                       robot_state_.frame_velocity);
-    if(fk_solver_result != 0)
+    if (fk_solver_result != 0)
     {
         deinitialize();
         printf("Warning: FK solver returned an error! %d \n", fk_solver_result);
