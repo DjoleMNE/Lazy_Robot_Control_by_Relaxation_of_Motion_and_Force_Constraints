@@ -456,6 +456,34 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
     return control_status::CRUISE;
 }
 
+bool finite_state_machine::contact_secured(const KDL::Wrench &desired_force,
+                                           const KDL::Wrench &ext_force)
+{
+    for (int i = 3; i < 5; i++)
+    {
+        double error = desired_force(i) - ext_force(i);
+        if (std::fabs(error) > moveConstrained_follow_path_task_.tube_tolerances[i]) return false;
+    }
+
+    // std::cout << desired_force(2) << " " << desired_force(3) << " " << desired_force(4)<< std::endl;
+    // std::cout << ext_force(2) << " " << ext_force(3) << " " << ext_force(4)<< std::endl;
+    return true;
+}
+
+bool finite_state_machine::force_goal_maintained(const KDL::Wrench &desired_force,
+                                                 const KDL::Wrench &ext_force)
+{
+    for (int i = 2; i < 5; i++)
+    {
+        double error = desired_force(i) - ext_force(i);
+        if (std::fabs(error) > moveConstrained_follow_path_task_.tube_tolerances[i]) return false;
+    }
+
+    // std::cout << desired_force(2) << " " << desired_force(3) << " " << desired_force(4)<< std::endl;
+    // std::cout << ext_force(2) << " " << ext_force(3) << " " << ext_force(4)<< std::endl;
+    return true;
+}
+
 bool finite_state_machine::contact_detected(const double linear_force_threshold, 
                                             const double angular_force_threshold)
 {
@@ -482,35 +510,6 @@ bool finite_state_machine::contact_detected(const double linear_force_threshold,
     }
 
     return false;    
-}
-
-bool finite_state_machine::contact_secured(const KDL::Wrench &desired_force,
-                                           const KDL::Wrench &ext_force)
-{
-    std::cout << " " << moveConstrained_follow_path_task_.tube_tolerances[3] << std::endl;
-    for (int i = 3; i < 5; i++)
-    {
-        double error = desired_force(i) - ext_force(i);
-        if (std::fabs(error) > moveConstrained_follow_path_task_.tube_tolerances[i]) return false;
-    }
-
-    std::cout << desired_force(2) << " " << desired_force(3) << " " << desired_force(4)<< std::endl;
-    std::cout << ext_force(2) << " " << ext_force(3) << " " << ext_force(4)<< std::endl;
-    return true;
-}
-
-bool finite_state_machine::force_goal_maintained(const KDL::Wrench &desired_force,
-                                                 const KDL::Wrench &ext_force)
-{
-    for (int i = 2; i < 5; i++)
-    {
-        double error = desired_force(i) - ext_force(i);
-        if (std::fabs(error) > moveConstrained_follow_path_task_.tube_tolerances[i]) return false;
-    }
-
-    std::cout << desired_force(2) << " " << desired_force(3) << " " << desired_force(4)<< std::endl;
-    std::cout << ext_force(2) << " " << ext_force(3) << " " << ext_force(4)<< std::endl;
-    return true;
 }
 
 int finite_state_machine::sign(double x)
