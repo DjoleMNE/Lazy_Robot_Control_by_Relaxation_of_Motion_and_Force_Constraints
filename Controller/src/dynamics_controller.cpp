@@ -951,11 +951,20 @@ void dynamics_controller::compute_control_error()
 //Change the reference frame of external (virtual) forces, from task frame to base frame
 void dynamics_controller::transform_force_driver()
 {
-    if (desired_task_model_ == task_model::moveTo_follow_path)
+    switch (desired_task_model_)
     {
-        cart_force_command_[END_EFF_] = moveTo_follow_path_task_.tf_poses[tube_section_count_].M * cart_force_command_[END_EFF_];
+        case task_model::moveConstrained_follow_path:
+            cart_force_command_[END_EFF_] = moveConstrained_follow_path_task_.tf_poses[tube_section_count_].M * cart_force_command_[END_EFF_];
+            break;
+        
+        case task_model::moveTo_follow_path:
+            cart_force_command_[END_EFF_] = moveTo_follow_path_task_.tf_poses[tube_section_count_].M * cart_force_command_[END_EFF_];
+            break;
+
+        default:
+            cart_force_command_[END_EFF_] = moveTo_task_.tf_pose.M * cart_force_command_[END_EFF_];
+            break;
     }
-    else cart_force_command_[END_EFF_] = moveTo_task_.tf_pose.M * cart_force_command_[END_EFF_];
 }
 
 //Change the reference frame of constraint forces, from task frame to base frame
@@ -972,11 +981,20 @@ void dynamics_controller::transform_motion_driver()
         wrench_column = KDL::Wrench(KDL::Vector(alpha(0, c), alpha(1, c), alpha(2, c)),
                                     KDL::Vector(alpha(3, c), alpha(4, c), alpha(5, c)));
         
-        if (desired_task_model_ == task_model::moveTo_follow_path)
+        switch (desired_task_model_)
         {
-            wrench_column = moveTo_follow_path_task_.tf_poses[tube_section_count_].M * wrench_column;
+            case task_model::moveConstrained_follow_path:
+                wrench_column = moveConstrained_follow_path_task_.tf_poses[tube_section_count_].M * wrench_column;
+                break;
+
+            case task_model::moveTo_follow_path:
+                wrench_column = moveTo_follow_path_task_.tf_poses[tube_section_count_].M * wrench_column;
+                break;
+
+            default:
+                wrench_column = moveTo_task_.tf_pose.M * wrench_column;
+                break;
         }
-        else wrench_column = moveTo_task_.tf_pose.M * wrench_column;
 
         // Change Data Type to fit Vereshchagin
         twist_column = KDL::Twist(wrench_column.force, wrench_column.torque);
