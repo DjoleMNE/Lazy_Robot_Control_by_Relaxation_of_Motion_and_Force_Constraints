@@ -1005,6 +1005,7 @@ void dynamics_controller::transform_motion_driver()
 void dynamics_controller::compute_cart_control_commands()
 {   
     abag_command_ = abag_.update_state(abag_error_vector_).transpose();
+    KDL::SetToZero(cart_force_command_[END_EFF_]);
 
     switch (desired_task_inteface_)
     {
@@ -1030,8 +1031,8 @@ void dynamics_controller::compute_cart_control_commands()
         case dynamics_interface::CART_ACCELERATION:
             // Set Cartesian Acceleration Constraints on the End-Effector
             set_ee_acc_constraints(robot_state_,
-                                   std::vector<bool>{CTRL_DIM_[0], CTRL_DIM_[1], CTRL_DIM_[2], // Linear
-                                                     CTRL_DIM_[3], CTRL_DIM_[4], CTRL_DIM_[5]}, // Angular
+                                   std::vector<bool>{MOTION_CTRL_DIM_[0], MOTION_CTRL_DIM_[1], MOTION_CTRL_DIM_[2], // Linear
+                                                     MOTION_CTRL_DIM_[3], MOTION_CTRL_DIM_[4], MOTION_CTRL_DIM_[5]}, // Angular
                                    std::vector<double>{abag_command_(0) * max_command_(0), // Linear
                                                        abag_command_(1) * max_command_(1), // Linear
                                                        abag_command_(2) * max_command_(2), // Linear
