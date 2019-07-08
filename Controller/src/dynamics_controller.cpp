@@ -840,8 +840,8 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
 
-    fsm_result_ = fsm_.update(robot_state_, desired_state_, current_error_twist_, 
-                              ext_wrench_, total_time_sec_, tube_section_count_);
+    fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, 
+                                                 ext_wrench_, total_time_sec_, tube_section_count_);
     
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
     
@@ -879,8 +879,8 @@ void dynamics_controller::compute_moveTo_task_error()
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
 
-    fsm_result_ = fsm_.update(robot_state_, desired_state_, current_error_twist_, 
-                              ext_wrench_, total_time_sec_, tube_section_count_);
+    fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, 
+                                                 ext_wrench_, total_time_sec_, tube_section_count_);
 
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
@@ -913,8 +913,8 @@ void dynamics_controller::compute_full_pose_task_error()
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
 
-    fsm_result_            = fsm_.update(robot_state_, desired_state_, current_error_twist_, 
-                                         ext_wrench_, total_time_sec_, tube_section_count_);
+    fsm_result_            = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, 
+                                                            ext_wrench_, total_time_sec_, tube_section_count_);
     abag_error_vector_     = predicted_error_twist_;
 }
 
