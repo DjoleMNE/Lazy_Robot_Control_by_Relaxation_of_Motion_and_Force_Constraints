@@ -828,6 +828,8 @@ double dynamics_controller::kinetic_energy(const KDL::Twist &twist,
 */
 void dynamics_controller::compute_moveTo_follow_path_task_error()
 {
+    if (previous_control_status_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
+    if (tube_section_count_ > moveTo_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveTo_follow_path_task_.tf_poses.size() - 1;
     //Change the reference frame of the robot state, from base frame to task frame
     robot_state_.frame_pose[END_EFF_]     = moveTo_follow_path_task_.tf_poses[tube_section_count_].Inverse()   * robot_state_.frame_pose[END_EFF_];
     robot_state_.frame_velocity[END_EFF_] = moveTo_follow_path_task_.tf_poses[tube_section_count_].M.Inverse() * robot_state_.frame_velocity[END_EFF_];
@@ -1011,21 +1013,10 @@ void dynamics_controller::compute_cart_control_commands()
     {
         case dynamics_interface::CART_FORCE:
             // Set virtual forces computed by the ABAG controller
-            for(int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+            for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
                 cart_force_command_[END_EFF_](i) = CTRL_DIM_[i]? abag_command_(i) * max_command_(i) : 0.0;
-            
-            if(desired_task_model_ == task_model::moveTo || \
-               desired_task_model_ == task_model::moveTo_follow_path)
-            {
-                transform_force_driver();
 
-                if(fsm_result_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
-                if(tube_section_count_ > moveTo_follow_path_task_.tf_poses.size() - 1)
-                {
-                    tube_section_count_ = moveTo_follow_path_task_.tf_poses.size() - 1;
-                }
-            } 
-
+            if (transform_drivers_) transform_force_driver();
             break;
 
         case dynamics_interface::CART_ACCELERATION:
@@ -1040,26 +1031,16 @@ void dynamics_controller::compute_cart_control_commands()
                                                        abag_command_(4) * max_command_(4), // Angular
                                                        abag_command_(5) * max_command_(5)}); // Angular
 
-            if(desired_task_model_ == task_model::moveTo || \
-               desired_task_model_ == task_model::moveTo_follow_path)
+            //Change the reference frame of constraint forces, from task frame to base frame
+            if (transform_drivers_) transform_motion_driver();
+            if (desired_task_model_ == task_model::moveConstrained_follow_path)
             {
-                //Change the reference frame of constraint forces, from task frame to base frame
-                transform_motion_driver();
+                // Use external force interface only for force commands in task specs
+                for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+                    cart_force_command_[END_EFF_](i) = FORCE_CTRL_DIM_[i]? abag_command_(i) * max_command_(i) : 0.0;
 
                 // Change the reference frame of External Forces from the task frame to the base frame
-                if(use_mixed_driver_)
-                {
-                    // Use external force interace for only X linear direction, to control tube speed
-                    KDL::SetToZero(cart_force_command_[END_EFF_]);
-                    cart_force_command_[END_EFF_](0) = abag_command_(0) * max_command_(0);
-                    transform_force_driver();
-                } 
-                
-                if(fsm_result_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
-                if(tube_section_count_ > moveTo_follow_path_task_.tf_poses.size() - 1)
-                {
-                    tube_section_count_ = moveTo_follow_path_task_.tf_poses.size() - 1;
-                }
+                transform_force_driver();
             }
 
             break;
@@ -1070,6 +1051,7 @@ void dynamics_controller::compute_cart_control_commands()
     }
 
 #ifndef NDEBUG
+    // std::cout << "Ext Force:                 " << ext_wrench_ << std::endl;
     // std::cout << "ABAG Commands:         "<< abag_command_.transpose() << std::endl;
     // std::cout << "Virtual Force Command: " << cart_force_command_[END_EFF_] << std::endl;
     // printf("\n");
