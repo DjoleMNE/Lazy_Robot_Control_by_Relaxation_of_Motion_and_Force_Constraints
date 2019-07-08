@@ -361,8 +361,11 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     moveConstrained_follow_path_task_.tf_poses   = std::vector<KDL::Frame>(tube_path_points.size() - 1);
     moveConstrained_follow_path_task_.goal_poses = moveConstrained_follow_path_task_.tf_poses;
 
-    CTRL_DIM_ = constraint_direction;
-
+    CTRL_DIM_           = constraint_direction;
+    POS_TUBE_DIM_[0]    = CTRL_DIM_[0]; POS_TUBE_DIM_[1]    = CTRL_DIM_[1]; 
+    MOTION_CTRL_DIM_[0] = CTRL_DIM_[0]; MOTION_CTRL_DIM_[1] = CTRL_DIM_[1]; MOTION_CTRL_DIM_[5] = CTRL_DIM_[5];
+    FORCE_CTRL_DIM_[2]  = CTRL_DIM_[2]; FORCE_CTRL_DIM_[3]  = CTRL_DIM_[3]; FORCE_CTRL_DIM_[4]  = CTRL_DIM_[4];
+    
     // X-Y-Z linear
     KDL::Vector x_world(1.0, 0.0, 0.0);
     std::vector<double> task_frame_pose(12, 0.0);
@@ -419,8 +422,13 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     moveConstrained_follow_path_task_.contact_threshold_angular = contact_threshold_angular;
     moveConstrained_follow_path_task_.time_limit                = task_time_limit_sec;
 
-    desired_state_.frame_pose[END_EFF_]    = moveConstrained_follow_path_task_.goal_poses[0];
-    desired_task_model_                    = task_model::moveConstrained_follow_path;
+    desired_state_.frame_pose[END_EFF_]        = moveConstrained_follow_path_task_.goal_poses[0];
+    desired_task_model_                        = task_model::moveConstrained_follow_path;
+    desired_state_.frame_velocity[END_EFF_](0) = tube_speed;
+    desired_state_.frame_velocity[END_EFF_](5) = 0.0;
+    desired_state_.external_force[END_EFF_](2) = tube_force;
+    desired_state_.external_force[END_EFF_](3) = 0.0;
+    desired_state_.external_force[END_EFF_](4) = 0.0;
 }
 
 
