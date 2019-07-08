@@ -926,6 +926,10 @@ void dynamics_controller::compute_control_error()
 {    
     switch (desired_task_model_)
     {
+        case task_model::moveConstrained_follow_path:
+            compute_moveConstrained_follow_path_task_error();
+            break;
+
         case task_model::moveTo_follow_path:
             compute_moveTo_follow_path_task_error();
             break;
@@ -1207,6 +1211,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
         log_file_joint_ << std::endl;
     }
 
+    KDL::SetToZero(robot_state_.feedforward_torque);
     print_settings_info();
     return 0;
 }
