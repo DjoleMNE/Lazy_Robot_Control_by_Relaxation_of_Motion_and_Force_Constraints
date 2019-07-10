@@ -48,7 +48,8 @@ LwrRttControl::LwrRttControl(const std::string& name):
     abag_error_type_(1),
     min_bias_sat_(Eigen::VectorXd::Constant(6, -1.0)), 
     min_command_sat_(Eigen::VectorXd::Constant(6, -1.0)),
-    robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_SEGMENTS_ + 1, NUM_OF_CONSTRAINTS_)
+    robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_SEGMENTS_ + 1, NUM_OF_CONSTRAINTS_),
+    return_msg_(RTT::NoData)
 {
     // Here you can add your ports, properties and operations
     // ex : this->addOperation("my_super_function",&LwrRttControl::MyFunction,this,RTT::OwnThread);
@@ -342,23 +343,24 @@ void LwrRttControl::updateHook()
     
     int function_result = 0;
     if (load_ati_sensor_)
-    {        
-        if (port_ext_force_in.read(wrench_msg_) == RTT::NoData) RTT::log(RTT::Error) << "No Force-Torque sensor data:" << iteration_count_ << RTT::endlog(); 
+    {
+        return_msg_ = port_ext_force_in.read(wrench_msg_);
+        if (return_msg_ == RTT::NoData) RTT::log(RTT::Error) << "No Force-Torque sensor data:" << iteration_count_ << RTT::endlog(); 
         else
         {
             tf::wrenchMsgToKDL(wrench_msg_.wrench, ext_wrench_kdl_);
+            // if (iteration_count_ < 15) KDL::SetToZero(ext_wrench_kdl_);
 
-            if (robot_model_ != lwr_model::LWR_WITH_ATI)
-            { 
-                function_result = fk_solver_->JntToCart(robot_state_.q, gazebo_ee_frame_);
-                if (function_result != 0)
-                {
-                    RTT::log(RTT::Error) << "RTT: FK solver returned error." << RTT::endlog(); 
-                    RTT::TaskContext::stop();
-                }
-
-                ext_wrench_kdl_ = gazebo_ee_frame_.M  * ext_wrench_kdl_;
-            }
+            // if (robot_model_ != lwr_model::LWR_WITH_ATI)
+            // { 
+                // function_result = fk_solver_->JntToCart(robot_state_.q, gazebo_ee_frame_);
+                // if (function_result != 0)
+                // {
+                //     RTT::log(RTT::Error) << "RTT: FK solver returned error." << RTT::endlog(); 
+                //     RTT::TaskContext::stop();
+                // }
+                // ext_wrench_kdl_ = gazebo_ee_frame_.M  * ext_wrench_kdl_;
+            // }
 
             for (int i = 0; i < 6; i++) 
                 log_file_ext_force_ << ext_wrench_kdl_(i) << " ";

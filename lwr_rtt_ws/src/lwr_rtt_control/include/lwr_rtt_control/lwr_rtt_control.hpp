@@ -134,6 +134,7 @@ class LwrRttControl : public RTT::TaskContext{
 
     protected:
         // Input ports
+        RTT::FlowStatus return_msg_;
         RTT::InputPort<Eigen::VectorXd>  port_joint_position_in,
                                          port_joint_velocity_in,
                                          port_joint_torque_in;
