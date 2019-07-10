@@ -452,7 +452,7 @@ int finite_state_machine::update_motion_task_status(const state_specification &r
 int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_force,
                                                    const KDL::Wrench &ext_force)
 {
-    if (!contact_secured(desired_force, ext_force)) return control_status::APPROACH;
+    if (!force_goal_maintained(desired_force, ext_force)) return control_status::APPROACH;
     return control_status::CRUISE;
 }
 
