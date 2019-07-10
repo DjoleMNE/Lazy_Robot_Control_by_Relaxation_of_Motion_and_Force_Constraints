@@ -42,7 +42,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), POS_TUBE_DIM_(NUM_OF_CONSTRAINTS_, false),
     MOTION_CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), FORCE_CTRL_DIM_(NUM_OF_CONSTRAINTS_, false),
     fsm_result_(control_status::NOMINAL), previous_control_status_(fsm_result_), 
-    tube_section_count_(0), transform_drivers_(false),
+    tube_section_count_(0), transform_drivers_(false), transform_force_drivers_(false),
     JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
     current_error_twist_(KDL::Twist::Zero()),
     abag_error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
@@ -1039,8 +1039,8 @@ void dynamics_controller::compute_cart_control_commands()
                 for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
                     cart_force_command_[END_EFF_](i) = FORCE_CTRL_DIM_[i]? abag_command_(i) * max_command_(i) : 0.0;
 
-                // Change the reference frame of External Forces from the task frame to the base frame
-                transform_force_driver();
+                // Change the reference frame of External Forces, from the task frame to the base frame
+                if (transform_force_drivers_) transform_force_driver();
             }
 
             break;
