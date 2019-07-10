@@ -85,7 +85,7 @@
     <!-- <arg name="tube_speed" default="0.7"/> -->
 
     <!-- ========= Tube force N ===============-->
-    <arg name="tube_force" default="-0.50"/>
+    <arg name="tube_force" default="0.05"/>
     <!-- <arg name="tube_force" default="0.9"/> -->
 
 
@@ -110,7 +110,7 @@
     <arg name="damper_amplitude" default="2.5"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
-    <arg name="max_command" default="[60.0, 60.0, 100.0, 
+    <arg name="max_command" default="[60.0, 60.0, 300.0, 
                                       30.0, 30.0, 10.0]"/>
 
 
@@ -133,7 +133,7 @@
 
     <!-- ABAG PARAMETERS (Error Sign): Low Gain, low chattering but less robust -->
     <arg name="ERROR_ALPHA" default="   [0.800000, 0.900000, 0.900000, 
-                                         0.800000, 0.800000, 0.800000]"/>
+                                         0.900000, 0.900000, 0.800000]"/>
 
     <arg name="BIAS_THRESHOLD" default="[0.000507, 0.000407, 0.000407, 
                                          0.000507, 0.000507, 0.000507]"/>
@@ -142,10 +142,10 @@
                                          0.000495, 0.000495, 0.000495]"/>
 
     <arg name="GAIN_THRESHOLD" default="[0.452492, 0.552492, 0.552492, 
-                                         0.402492, 0.402492, 0.402492]"/>
+                                         0.352492, 0.352492, 0.402492]"/>
 
     <arg name="GAIN_STEP" default="     [0.002052, 0.003152, 0.003152, 
-                                         0.002052, 0.002052, 0.002052]"/>
+                                         0.003052, 0.003052, 0.002052]"/>
 
 <!--============ LwrRttControl Params ============-->
     <!-- Set some parameters for LwrRttControl
