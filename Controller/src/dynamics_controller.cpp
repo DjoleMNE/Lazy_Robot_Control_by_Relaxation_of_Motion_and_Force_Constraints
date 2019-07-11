@@ -44,14 +44,14 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     MOTION_CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), FORCE_CTRL_DIM_(NUM_OF_CONSTRAINTS_, false),
     fsm_result_(control_status::NOMINAL), previous_control_status_(fsm_result_), 
     tube_section_count_(0), transform_drivers_(false), transform_force_drivers_(false),
-    JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
+    contact_secured_(false), JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
     current_error_twist_(KDL::Twist::Zero()),
     abag_error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     predicted_error_twist_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     horizon_amplitude_(1.0),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     max_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
-    cart_force_command_(NUM_OF_SEGMENTS_), ext_wrench_(KDL::Wrench::Zero()),
+    cart_force_command_(NUM_OF_SEGMENTS_, KDL::Wrench::Zero()), ext_wrench_(KDL::Wrench::Zero()),
     hd_solver_(robot_chain_, robot_driver->get_joint_inertia(), 
                robot_driver->get_joint_torque_limits(),
                robot_driver->get_root_acceleration(), NUM_OF_CONSTRAINTS_),
@@ -79,8 +79,6 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
 
     desired_task_inteface_ = dynamics_interface::CART_FORCE;
     desired_task_model_    = task_model::full_pose;
-
-    KDL::SetToZero(cart_force_command_[END_EFF_]);
 
     // Setting parameters of the ABAG Controller
     abag_.set_error_alpha(abag_parameter::ERROR_ALPHA);    
