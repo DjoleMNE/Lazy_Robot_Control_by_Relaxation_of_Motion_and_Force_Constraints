@@ -74,7 +74,8 @@ class dynamics_controller
              const KDL::JntArray &qd_input,
              const KDL::Wrench &ext_force, 
              Eigen::VectorXd &tau_output,
-             const double time_passed_sec);
+             const double time_passed_sec,
+             const int loop_iteration);
     
     void set_parameters(const double damper_amplitude,
                         const int abag_error_type,
@@ -154,6 +155,7 @@ class dynamics_controller
     std::chrono::steady_clock::time_point loop_end_time_;
     std::chrono::duration <double, std::micro> loop_interval_{};
     double total_time_sec_;
+    int loop_iteration_count_;
 
     const KDL::Chain robot_chain_;
     const int NUM_OF_JOINTS_;

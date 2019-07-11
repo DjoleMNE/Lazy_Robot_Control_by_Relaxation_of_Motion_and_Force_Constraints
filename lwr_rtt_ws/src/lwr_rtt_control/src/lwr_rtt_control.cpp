@@ -372,7 +372,8 @@ void LwrRttControl::updateHook()
                                         robot_state_.qd, 
                                         ext_wrench_kdl_, 
                                         robot_state_.control_torque.data,
-                                        total_time_ / SECOND);
+                                        total_time_ / SECOND,
+                                        iteration_count_);
 
     if (function_result != 0)
     {

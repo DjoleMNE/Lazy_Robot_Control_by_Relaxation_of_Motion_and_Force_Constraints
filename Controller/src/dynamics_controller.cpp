@@ -33,7 +33,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     // Time period defined in microseconds: 1s = 1 000 000us
     DT_MICRO_(SECOND / RATE_HZ_),  DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
     loop_start_time_(), loop_end_time_(), //Not sure if required to init
-    total_time_sec_(0.0),  robot_chain_(robot_driver->get_robot_model()),
+    total_time_sec_(0.0), loop_iteration_count_(0),
+    robot_chain_(robot_driver->get_robot_model()),
     NUM_OF_JOINTS_(robot_chain_.getNrOfJoints()),
     NUM_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
     NUM_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
@@ -1456,12 +1457,14 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
                               const KDL::JntArray &qd_input,
                               const KDL::Wrench &ext_force,
                               Eigen::VectorXd &tau_output,
-                              const double time_passed_sec)
+                              const double time_passed_sec,
+                              const int loop_iteration)
 {
     robot_state_.q  = q_input;
     robot_state_.qd = qd_input;
     ext_wrench_     = ext_force;
     total_time_sec_ = time_passed_sec;
+    loop_iteration_count_ = loop_iteration;
 
     // Get Cart poses and velocities
     int fk_solver_result = fk_vereshchagin_.JntToCart(robot_state_.q, 
