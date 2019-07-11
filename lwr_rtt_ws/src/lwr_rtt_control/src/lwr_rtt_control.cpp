@@ -349,7 +349,19 @@ void LwrRttControl::updateHook()
         else
         {
             tf::wrenchMsgToKDL(wrench_msg_.wrench, ext_wrench_kdl_);
-            // if (iteration_count_ < 15) KDL::SetToZero(ext_wrench_kdl_);
+            // if (iteration_count_ < 10)
+            // {
+            //     if      (ext_wrench_kdl_(2) >  0.1) ext_wrench_kdl_(2) =  0.1;
+            //     else if (ext_wrench_kdl_(2) < -0.1) ext_wrench_kdl_(2) = -0.1;
+
+            //     // for (int i = 3; i < 5; i++)
+            //     // {
+            //     //     if      (ext_wrench_kdl_(i) >  0.01) ext_wrench_kdl_(i) =  0.01;
+            //     //     else if (ext_wrench_kdl_(i) < -0.01) ext_wrench_kdl_(i) = -0.01;
+            //     // }
+
+            //     // KDL::SetToZero(ext_wrench_kdl_);
+            // }
 
             // if (robot_model_ != lwr_model::LWR_WITH_ATI)
             // { 
@@ -362,9 +374,9 @@ void LwrRttControl::updateHook()
                 // ext_wrench_kdl_ = gazebo_ee_frame_.M  * ext_wrench_kdl_;
             // }
 
-            for (int i = 0; i < 6; i++) 
-                log_file_ext_force_ << ext_wrench_kdl_(i) << " ";
-            log_file_ext_force_ << std::endl;
+            // for (int i = 0; i < 6; i++) 
+            //     log_file_ext_force_ << ext_wrench_kdl_(i) << " ";
+            // log_file_ext_force_ << std::endl;
         }
     }
     
@@ -396,7 +408,7 @@ void LwrRttControl::updateHook()
     }
 
     // jnt_trq_cmd_out << 0.0, M_PI/1.5, 0.0, 0.0, 0.0, 0.0, 0.0;
-    //     port_joint_position_cmd_out.write(jnt_trq_cmd_out);
+    // port_joint_position_cmd_out.write(jnt_trq_cmd_out);
 
     port_joint_torque_cmd_out.write(jnt_trq_cmd_out);
     iteration_count_++;

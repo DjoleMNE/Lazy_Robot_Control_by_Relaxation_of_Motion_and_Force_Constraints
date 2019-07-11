@@ -124,12 +124,6 @@
     <arg name="min_command_sat"    default="[-1.0, -1.0, -1.0, 
                                              -1.0, -1.0, -1.0]"/>
 
-    <!-- <arg name="min_bias_sat"       default="[0.0, 0.0, 0.0, 
-                                             0.0, 0.0, 0.0]"/>
-                                             
-    <arg name="min_command_sat"    default="[0.0, 0.0, 0.0, 
-                                             0.0, 0.0, 0.0]"/> -->
-
 
     <!-- ABAG PARAMETERS (Error Sign): Low Gain, low chattering but less robust -->
     <arg name="ERROR_ALPHA" default="   [0.800000, 0.900000, 0.900000, 
