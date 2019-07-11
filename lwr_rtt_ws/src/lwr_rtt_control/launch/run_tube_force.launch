@@ -71,7 +71,7 @@
 
     <!-- ========= Tube start position ===============-->
     <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/>
-    <!-- <arg name="tube_start_position" default="[0.0, -0.1, 1.165]"/> -->
+    <!-- <arg name="tube_start_position" default="[0.1, 0.2, 1.0]"/> -->
 
     <!-- ========= Tube speed ===============-->
     <arg name="tube_speed" default="0.1"/>
