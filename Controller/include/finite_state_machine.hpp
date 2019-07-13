@@ -117,7 +117,10 @@ class finite_state_machine
         int initialize_with_moveTo_follow_path(const moveTo_follow_path_task &task, const int motion_profile);
         int initialize_with_moveTo(const moveTo_task &task, const int motion_profile);
         int initialize_with_full_pose(const full_pose_task &task, const int motion_profile);
-        int update_force_task_status(const KDL::Wrench &desired_force, const KDL::Wrench &ext_force);
+        int update_force_task_status(const KDL::Wrench &desired_force, 
+                                     const KDL::Wrench &ext_force,
+                                     const double current_task_time,
+                                     const double time_threshold);
         int update_motion_task_status(const state_specification &robot_state,
                                       state_specification &desired_state,
                                       const KDL::Twist &current_error,
@@ -129,7 +132,7 @@ class finite_state_machine
         const int NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_;
         const int END_EFF_;
         int desired_task_model_, motion_profile_;
-        double total_control_time_sec_;
+        double total_control_time_sec_, previous_task_time_, total_contact_time_;
         bool goal_reached_, time_limit_reached_, contact_detected_;
         state_specification robot_state_, desired_state_;
         KDL::Twist current_error_;

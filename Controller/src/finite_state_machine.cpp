@@ -33,6 +33,7 @@ finite_state_machine::finite_state_machine(const int num_of_joints,
     NUM_OF_FRAMES_(num_of_frames), NUM_OF_CONSTRAINTS_(num_of_constraints),
     END_EFF_(NUM_OF_SEGMENTS_ - 1), desired_task_model_(task_model::full_pose),
     motion_profile_(m_profile::CONSTANT), total_control_time_sec_(0.0),
+    previous_task_time_(0.0), total_contact_time_(0.0),
     goal_reached_(false), time_limit_reached_(false), contact_detected_(false),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     desired_state_(robot_state_), current_error_()
@@ -450,10 +451,17 @@ int finite_state_machine::update_motion_task_status(const state_specification &r
 }
 
 int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_force,
-                                                   const KDL::Wrench &ext_force)
+                                                   const KDL::Wrench &ext_force,
+                                                   const double current_task_time,
+                                                   const double time_threshold)
 {
-    if (!force_goal_maintained(desired_force, ext_force)) return control_status::APPROACH;
-    return control_status::CRUISE;
+    if (!force_goal_maintained(desired_force, ext_force)) total_contact_time_ = 0.0;
+    else total_contact_time_ =+ current_task_time - previous_task_time_;
+    // printf("Time: %f\n", total_contact_time_);
+
+    previous_task_time_ = current_task_time;
+    if (total_contact_time_ >= time_threshold) return control_status::CRUISE;
+    return control_status::APPROACH;
 }
 
 bool finite_state_machine::contact_secured(const KDL::Wrench &desired_force,
