@@ -140,6 +140,8 @@ if(show_tube):
         tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim] )))
     plt.plot(desired + tube_tolerance, c = 'red', label='tube_upper_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
     plt.plot(desired - tube_tolerance, c = 'blue', label='tube_lower_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
+if (desired_dim == 8):
+    plt.ylim(desired[0] - tube_tolerance[0] - 0.1, desired[0] - tube_tolerance[0] + 0.1)
 
 plt.legend(loc=4, fontsize = 'x-large')
 plt.xticks(np.arange(0, num_samples, tick_freq))

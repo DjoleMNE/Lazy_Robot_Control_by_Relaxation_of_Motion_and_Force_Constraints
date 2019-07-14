@@ -66,7 +66,7 @@ elif (rows < 500): tick_freq = 50
 
 plt.ion()
 plt.figure(figsize = (18, 10))
-plt.suptitle('External Force-Torque', fontsize=20)
+plt.suptitle('External Force-Torque: In sensor frame', fontsize=20)
 
 plt.gca().set_axis_off()
 plt.subplots_adjust(hspace = 0.02, wspace = 15)

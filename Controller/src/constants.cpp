@@ -198,7 +198,7 @@ namespace dynamics_parameter
     const std::string LOG_FILE_CART_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/control_error.txt");
     const std::string LOG_FILE_JOINT_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/joint_torques.txt");
     const std::string LOG_FILE_PREDICTIONS_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/prediction_effects.txt");
-    const std::string LOG_FILE_TRANSFORMED_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/transformed_error.txt");
+    const std::string LOG_FILE_NULL_SPACE_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/null_space_error.txt");
 }
 
 namespace prediction_parameter

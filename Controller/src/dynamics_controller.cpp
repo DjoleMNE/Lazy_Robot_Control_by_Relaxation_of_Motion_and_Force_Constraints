@@ -331,6 +331,11 @@ void dynamics_controller::write_to_file()
     log_file_cart_ << abag_.get_command().transpose().format(dynamics_parameter::WRITE_FORMAT);
 
     log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
+
+    log_file_null_space_ << -null_space_abag_error_(0)         << " " << 0.0 << " "; // Measured and desired state
+    log_file_null_space_ <<  null_space_abag_error_(0)         << " " << abag_null_space_.get_error()(0) << " "; // Raw and filtered error
+    log_file_null_space_ <<  abag_null_space_.get_bias()(0)    << " " << abag_null_space_.get_gain()(0) << " ";
+    log_file_null_space_ <<  abag_null_space_.get_command()(0) << std::endl;
 }
 
 // Set all values of desired state to 0 - public method
@@ -1348,8 +1353,8 @@ int dynamics_controller::initialize(const int desired_control_mode,
         log_file_predictions_.open(dynamics_parameter::LOG_FILE_PREDICTIONS_PATH);
         assert(log_file_predictions_.is_open());
 
-        log_file_transformed_.open(dynamics_parameter::LOG_FILE_TRANSFORMED_PATH);
-        assert(log_file_transformed_.is_open());
+        log_file_null_space_.open(dynamics_parameter::LOG_FILE_NULL_SPACE_PATH);
+        assert(log_file_null_space_.is_open());
 
         for(int i = 0; i < NUM_OF_JOINTS_; i++) 
             log_file_joint_ << JOINT_TORQUE_LIMITS_[i] << " ";
@@ -1407,8 +1412,8 @@ int dynamics_controller::control(const int desired_control_mode,
             return -1;
         }
 
-        log_file_transformed_.open(dynamics_parameter::LOG_FILE_TRANSFORMED_PATH);
-        if (!log_file_transformed_.is_open()) {
+        log_file_null_space_.open(dynamics_parameter::LOG_FILE_NULL_SPACE_PATH);
+        if (!log_file_null_space_.is_open()) {
             printf("Unable to open the file!\n");
             return -1;
         }
@@ -1447,7 +1452,7 @@ int dynamics_controller::control(const int desired_control_mode,
                 log_file_cart_.close();
                 log_file_joint_.close();
                 log_file_predictions_.close();
-                log_file_transformed_.close();
+                log_file_null_space_.close();
             }
             printf("WARNING: Dynamics Solver returned error. Stopping the robot!");
             return -1;
@@ -1461,7 +1466,7 @@ int dynamics_controller::control(const int desired_control_mode,
                 log_file_cart_.close();
                 log_file_joint_.close();
                 log_file_predictions_.close();
-                log_file_transformed_.close();
+                log_file_null_space_.close();
             }
             return -1;
         } 
@@ -1484,7 +1489,7 @@ int dynamics_controller::control(const int desired_control_mode,
         log_file_cart_.close();
         log_file_joint_.close();
         log_file_predictions_.close();
-        log_file_transformed_.close();
+        log_file_null_space_.close();
     }
     return 0;
 }
@@ -1581,6 +1586,6 @@ void dynamics_controller::deinitialize()
         log_file_cart_.close();
         log_file_joint_.close();
         log_file_predictions_.close();
-        log_file_transformed_.close();
+        log_file_null_space_.close();
     }
 }

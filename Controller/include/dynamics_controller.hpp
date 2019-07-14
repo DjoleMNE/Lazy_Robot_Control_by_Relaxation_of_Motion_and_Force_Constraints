@@ -140,7 +140,7 @@ class dynamics_controller
     const long DT_MICRO_;
     const double DT_SEC_;
 
-    std::ofstream log_file_cart_, log_file_joint_, log_file_predictions_, log_file_transformed_;
+    std::ofstream log_file_cart_, log_file_joint_, log_file_predictions_, log_file_null_space_;
     bool store_control_data_;
 
     struct desired_control_mode
