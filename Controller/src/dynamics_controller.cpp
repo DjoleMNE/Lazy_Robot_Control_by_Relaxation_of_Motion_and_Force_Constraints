@@ -44,11 +44,13 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     MOTION_CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), FORCE_CTRL_DIM_(NUM_OF_CONSTRAINTS_, false),
     fsm_result_(control_status::NOMINAL), previous_control_status_(fsm_result_), 
     tube_section_count_(0), transform_drivers_(false), transform_force_drivers_(false),
-    contact_secured_(false), JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
+    compute_null_space_command_(false), contact_secured_(false), 
+    JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
     current_error_twist_(KDL::Twist::Zero()),
     abag_error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
+    null_space_abag_error_(Eigen::VectorXd::Zero(1)),
     predicted_error_twist_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
-    horizon_amplitude_(1.0),
+    horizon_amplitude_(1.0), null_space_abag_command_(0.0),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     max_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     cart_force_command_(NUM_OF_SEGMENTS_, KDL::Wrench::Zero()), ext_wrench_(KDL::Wrench::Zero()),
@@ -59,6 +61,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     safety_control_(robot_driver, true), 
     fsm_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     abag_(abag_parameter::DIMENSIONS, abag_parameter::USE_ERROR_SIGN),
+    abag_null_space_(1, abag_parameter::USE_ERROR_SIGN),
     predictor_(robot_chain_),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     desired_state_(robot_state_),
@@ -86,6 +89,14 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     abag_.set_bias_step(abag_parameter::BIAS_STEP);
     abag_.set_gain_threshold(abag_parameter::GAIN_THRESHOLD);
     abag_.set_gain_step(abag_parameter::GAIN_STEP);
+
+    abag_null_space_.set_error_alpha(abag_parameter::NULL_SPACE_ERROR_ALPHA, 0);    
+    abag_null_space_.set_bias_threshold(abag_parameter::NULL_SPACE_BIAS_THRESHOLD, 0);
+    abag_null_space_.set_bias_step(abag_parameter::NULL_SPACE_BIAS_STEP, 0);
+    abag_null_space_.set_gain_threshold(abag_parameter::NULL_SPACE_GAIN_THRESHOLD, 0);
+    abag_null_space_.set_gain_step(abag_parameter::NULL_SPACE_GAIN_STEP, 0);
+    abag_null_space_.set_min_bias_sat_limit((Eigen::VectorXd(1) << -1.0).finished());
+    abag_null_space_.set_min_command_sat_limit((Eigen::VectorXd(1) << -1.0).finished());
 }
 
 //Print information about controller settings
@@ -364,7 +375,6 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     POS_TUBE_DIM_[0]    = CTRL_DIM_[0]; POS_TUBE_DIM_[1]    = CTRL_DIM_[1]; 
     MOTION_CTRL_DIM_[0] = CTRL_DIM_[0]; MOTION_CTRL_DIM_[1] = CTRL_DIM_[1]; MOTION_CTRL_DIM_[5] = CTRL_DIM_[5];
     FORCE_CTRL_DIM_[2]  = CTRL_DIM_[2]; FORCE_CTRL_DIM_[3]  = CTRL_DIM_[3]; FORCE_CTRL_DIM_[4]  = CTRL_DIM_[4];
-    
     // X-Y-Z linear
     KDL::Vector x_world(1.0, 0.0, 0.0);
     std::vector<double> task_frame_pose(12, 0.0);
@@ -428,6 +438,7 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     desired_state_.external_force[END_EFF_](2) = tube_force;
     desired_state_.external_force[END_EFF_](3) = 0.0;
     desired_state_.external_force[END_EFF_](4) = 0.0;
+    compute_null_space_command_ = true;
 }
 
 

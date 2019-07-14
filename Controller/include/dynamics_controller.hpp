@@ -166,7 +166,7 @@ class dynamics_controller
     const std::vector<double> JOINT_TORQUE_LIMITS_;
     std::vector<bool> CTRL_DIM_, POS_TUBE_DIM_, MOTION_CTRL_DIM_, FORCE_CTRL_DIM_;
     int fsm_result_, previous_control_status_, tube_section_count_;
-    bool transform_drivers_, transform_force_drivers_;
+    bool transform_drivers_, transform_force_drivers_, compute_null_space_command_;
     bool contact_secured_;
     
     moveTo_task moveTo_task_;
@@ -175,8 +175,8 @@ class dynamics_controller
     moveConstrained_follow_path_task moveConstrained_follow_path_task_;
 
     KDL::Twist current_error_twist_;
-    Eigen::VectorXd abag_error_vector_, predicted_error_twist_;
-    double horizon_amplitude_;
+    Eigen::VectorXd abag_error_vector_, null_space_abag_error_, predicted_error_twist_;
+    double horizon_amplitude_, null_space_abag_command_;
     Eigen::VectorXd abag_command_, max_command_;
     KDL::Wrenches cart_force_command_;
     KDL::Wrench ext_wrench_;
@@ -184,7 +184,7 @@ class dynamics_controller
     KDL::Solver_Vereshchagin hd_solver_;
     KDL::FK_Vereshchagin fk_vereshchagin_;
     safety_controller safety_control_;
-    ABAG abag_;
+    ABAG abag_, abag_null_space_;
     finite_state_machine fsm_;
     model_prediction predictor_;
 

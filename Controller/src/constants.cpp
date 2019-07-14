@@ -143,6 +143,13 @@ namespace abag_parameter
                               << 0.015152, 0.015152, 0.015152, 
                                  0.015152, 0.015152, 0.655152).finished();
 
+    // Parameters for controlling robot's nullspace motion
+    const double NULL_SPACE_ERROR_ALPHA    = 0.900000;
+    const double NULL_SPACE_BIAS_THRESHOLD = 0.000407;
+    const double NULL_SPACE_BIAS_STEP      = 0.000495;
+    const double NULL_SPACE_GAIN_THRESHOLD = 0.552492;
+    const double NULL_SPACE_GAIN_STEP      = 0.003152;
+
    //  Saturation limits   
     const Eigen::VectorXd MIN_BIAS_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
                                            << -1.0, -1.0, -1.0, 

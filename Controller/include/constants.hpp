@@ -108,13 +108,17 @@ namespace abag_parameter
     extern const bool USE_ERROR_SIGN;
 
     extern const Eigen::VectorXd ERROR_ALPHA;
-
     extern const Eigen::VectorXd BIAS_THRESHOLD;
     extern const Eigen::VectorXd BIAS_STEP;
-
     extern const Eigen::VectorXd GAIN_THRESHOLD;
     extern const Eigen::VectorXd GAIN_STEP;
-   
+
+    extern const double NULL_SPACE_ERROR_ALPHA;
+    extern const double NULL_SPACE_BIAS_THRESHOLD;
+    extern const double NULL_SPACE_BIAS_STEP;
+    extern const double NULL_SPACE_GAIN_THRESHOLD;
+    extern const double NULL_SPACE_GAIN_STEP;
+
     extern const Eigen::VectorXd MIN_BIAS_SAT_LIMIT;
     extern const Eigen::VectorXd MAX_BIAS_SAT_LIMIT;
 
