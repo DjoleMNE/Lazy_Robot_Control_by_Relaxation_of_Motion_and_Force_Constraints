@@ -849,16 +849,18 @@ void dynamics_controller::compute_moveConstrained_null_space_task_error()
         KDL::Vector plane_y(0.0, 0.0, 1.0);
         KDL::Rotation plane_orientation(plane_x, plane_y, plane_x * plane_y);
         KDL::Vector r_direction       = plane_orientation.Inverse() * robot_state_.frame_pose[3].p; // transform vector in plane frame
-        KDL::Vector r_yz_projection(0.0, r_direction(1), r_direction(2)); 
-        r_yz_projection.Normalize();
 
-        null_space_abag_error_(0)     = 0.0 - std::atan2(r_yz_projection(2), r_yz_projection(1)); // Angle between Y and R_yz
-        // if (std::fabs(null_space_abag_error_(0)) <= DEG_TO_RAD(30.0)) null_space_abag_error_(0) = 0.0;
+        null_space_abag_error_(0)     = 0.0 - std::atan2(r_direction(2), r_direction(1)); // Angle between Y and R_yz
+        // if (std::fabs(null_space_abag_error_(0)) <= DEG_TO_RAD(5.0)) null_space_abag_error_(0) = 0.0;
 
         // Control Direction: Cart force for null space motion
-        KDL::Vector control_direction = r_yz_projection * plane_x;
+        // KDL::Vector r_yz_projection(0.0, r_direction(1), r_direction(2)); 
+        // r_yz_projection.Normalize();
+
+        KDL::Vector control_direction = r_direction * plane_x;
         control_direction(0) = 0.0;
         control_direction.Normalize();
+
         cart_force_command_[3].force = plane_orientation * control_direction; // Transform from plane frame to base frame
     }
 }
