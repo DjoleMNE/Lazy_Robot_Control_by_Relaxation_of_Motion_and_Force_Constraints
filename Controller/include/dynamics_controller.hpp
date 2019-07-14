@@ -199,6 +199,7 @@ class dynamics_controller
     void update_dynamics_interfaces();
     void update_current_state();
     void compute_moveConstrained_follow_path_task_error();
+    void compute_moveConstrained_null_space_task_error();
     void compute_moveTo_follow_path_task_error();
     void compute_moveTo_task_error();
     void compute_full_pose_task_error();

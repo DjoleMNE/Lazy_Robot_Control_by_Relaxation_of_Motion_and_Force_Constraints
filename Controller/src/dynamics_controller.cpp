@@ -25,7 +25,7 @@ SOFTWARE.
 
 #include <dynamics_controller.hpp>
 #define SECOND 1000000 // 1sec = 1 000 000 us
-const double MIN_NORM = 1e-10;
+const double MIN_NORM = 1e-2;
 
 dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
                                          const int rate_hz):
@@ -831,6 +831,31 @@ double dynamics_controller::kinetic_energy(const KDL::Twist &twist,
     return 0.5 * dot(twist, robot_chain_.getSegment(segment_index).getInertia() * twist);
 }
 
+void dynamics_controller::compute_moveConstrained_null_space_task_error()
+{
+    // X-axis of the null-space plane
+    KDL::Vector plane_x(robot_state_.frame_pose[END_EFF_].p(0), 
+                        robot_state_.frame_pose[END_EFF_].p(1), 
+                        0.0);
+    double norm = plane_x.Normalize();
+    if (norm < MIN_NORM) null_space_abag_error_(0) = 0.0;
+    else 
+    {
+        KDL::Vector plane_y(0.0, 0.0, 1.0);
+        KDL::Vector plane_normal      = plane_x * plane_y;
+        KDL::Rotation plane_orientation(plane_x, plane_y, plane_normal);
+        KDL::Vector r_direction      = plane_orientation.Inverse() * robot_state_.frame_pose[3].p; // transform vector in plane frame
+        KDL::Vector r_yz_projection(0.0, r_direction(1), r_direction(2)); 
+        r_yz_projection.Normalize();
+        double cosine                 = dot(plane_y, r_yz_projection);
+        double sine                   = (plane_y * r_yz_projection).Norm();
+        null_space_abag_error_(0)     = 0.0 - atan2(sine, cosine); // Angle between Y and R_yz
+        // if (std::fabs(null_space_abag_error_(0)) <= DEG_TO_RAD(30.0)) null_space_abag_error_(0) = 0.0;
+
+        // Control Direction: Cart force for null space motion
+        cart_force_command_[3].force  = plane_orientation * (r_yz_projection * plane_x); // Transform from plane frame to base frame
+    }
+}
 
 /**
  * Compute the control error for position velocity and force tube deviations.
@@ -1160,6 +1185,13 @@ void dynamics_controller::compute_cart_control_commands()
         default:
             assert(("Unsupported interface!", false));
             break;
+    }
+
+    // Null space control commands
+    if (compute_null_space_command_)
+    {
+        null_space_abag_command_ = abag_null_space_.update_state(null_space_abag_error_)(0) * max_command_(2);
+        cart_force_command_[3].force = cart_force_command_[3].force * null_space_abag_command_;
     }
 
 #ifndef NDEBUG
