@@ -456,7 +456,7 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
                                                    const double time_threshold)
 {
     if (!force_goal_maintained(desired_force, ext_force)) total_contact_time_ = 0.0;
-    else total_contact_time_ =+ current_task_time - previous_task_time_;
+    else total_contact_time_ += current_task_time - previous_task_time_;
     // printf("Time: %f\n", total_contact_time_);
 
     previous_task_time_ = current_task_time;
