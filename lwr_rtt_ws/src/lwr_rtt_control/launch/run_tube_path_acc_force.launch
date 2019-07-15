@@ -70,11 +70,11 @@
 
 
     <!-- = Tube tolerances: x pos,    y pos,    z force, 
-                            x torque, y torque, z_a pos, 
+                            x torque, y torque, contact_time_threshold, 
                             x vel,    z_a vel             =-->
-    <arg name="tube_tolerances" default="[0.003, 0.03, 0.0,  
-                                          0.01, 0.01, 0.0, 
-                                          0.0, 0.1]"/>
+    <arg name="tube_tolerances" default="[0.003, 0.03, 0.003,  
+                                          0.003, 0.003, 0.005, 
+                                          0.009, 200.0]"/>
 
     <!-- ========= Tube start position ===============-->
     <!-- <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/> -->
@@ -85,7 +85,7 @@
     <!-- <arg name="tube_speed" default="0.7"/> -->
 
     <!-- ========= Tube force N ===============-->
-    <arg name="tube_force" default="0.05"/>
+    <arg name="tube_force" default="0.03"/>
     <!-- <arg name="tube_force" default="0.9"/> -->
 
 
