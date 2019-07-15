@@ -332,10 +332,10 @@ void dynamics_controller::write_to_file()
 
     log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
 
-    log_file_null_space_ << -null_space_abag_error_(0)         << " " << 0.0 << " "; // Measured and desired state
-    log_file_null_space_ <<  null_space_abag_error_(0)         << " " << abag_null_space_.get_error()(0) << " "; // Raw and filtered error
-    log_file_null_space_ <<  abag_null_space_.get_bias()(0)    << " " << abag_null_space_.get_gain()(0) << " ";
-    log_file_null_space_ <<  abag_null_space_.get_command()(0) << std::endl;
+    log_file_null_space_ << null_space_abag_error_(0)         << " " << 0.0 << " "; // Measured and desired state
+    log_file_null_space_ << null_space_abag_error_(0)         << " " << abag_null_space_.get_error()(0) << " "; // Raw and filtered error
+    log_file_null_space_ << abag_null_space_.get_bias()(0)    << " " << abag_null_space_.get_gain()(0) << " ";
+    log_file_null_space_ << abag_null_space_.get_command()(0) << std::endl;
 }
 
 // Set all values of desired state to 0 - public method
@@ -839,29 +839,43 @@ double dynamics_controller::kinetic_energy(const KDL::Twist &twist,
 void dynamics_controller::compute_moveConstrained_null_space_task_error()
 {
     // X-axis of the null-space plane
-    KDL::Vector plane_x(robot_state_.frame_pose[END_EFF_].p(0), 
+    KDL::Vector plane_x(robot_state_.frame_pose[END_EFF_].p(0),
                         robot_state_.frame_pose[END_EFF_].p(1), 
                         0.0);
     double norm = plane_x.Normalize();
-    if (norm < MIN_NORM) null_space_abag_error_(0) = 0.0;
+    
+    if (norm < MIN_NORM)
+    {
+        null_space_abag_error_(0) = 0.0;
+        cart_force_command_[3].force = KDL::Vector::Zero();
+        printf("Null space norm too small 1");
+    }
     else 
     {
+        // Calculate error: angle from the plane
         KDL::Vector plane_y(0.0, 0.0, 1.0);
         KDL::Rotation plane_orientation(plane_x, plane_y, plane_x * plane_y);
-        KDL::Vector r_direction       = plane_orientation.Inverse() * robot_state_.frame_pose[3].p; // transform vector in plane frame
-
-        null_space_abag_error_(0)     = 0.0 - std::atan2(r_direction(2), r_direction(1)); // Angle between Y and R_yz
+        KDL::Vector r_direction       = plane_orientation.Inverse() * robot_state_.frame_pose[3].p;
+        r_direction.Normalize();
+        null_space_abag_error_(0)     = std::atan2(r_direction(2), r_direction(1)); // Angle between Y and R_yz
         // if (std::fabs(null_space_abag_error_(0)) <= DEG_TO_RAD(5.0)) null_space_abag_error_(0) = 0.0;
 
-        // Control Direction: Cart force for null space motion
-        // KDL::Vector r_yz_projection(0.0, r_direction(1), r_direction(2)); 
-        // r_yz_projection.Normalize();
+        // Calculate control/force direction: Cart force for null-space motion
+        // plane_x = plane_orientation.Inverse() * robot_state_.frame_pose[END_EFF_].p;
+        // plane_x.Normalize();
 
-        KDL::Vector control_direction = r_direction * plane_x;
+        // KDL::Vector control_direction = r_direction * plane_x;
+        KDL::Vector control_direction = r_direction * KDL::Vector(1.0, 0.0, 0.0);
         control_direction(0) = 0.0;
-        control_direction.Normalize();
+        norm = control_direction.Normalize();
 
-        cart_force_command_[3].force = plane_orientation * control_direction; // Transform from plane frame to base frame
+        if (norm < MIN_NORM) 
+        {
+            null_space_abag_error_(0) = 0.0;
+            cart_force_command_[3].force = KDL::Vector::Zero();
+            printf("Null space norm too small 2");
+        }
+        else cart_force_command_[3].force = plane_orientation * control_direction; // Transform from plane frame to base frame
     }
 }
 
