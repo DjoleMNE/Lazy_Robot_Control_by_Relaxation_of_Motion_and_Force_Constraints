@@ -428,13 +428,15 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
         moveConstrained_follow_path_task_.goal_poses[i]     = KDL::Frame::Identity();
     }
 
-    moveConstrained_follow_path_task_.tube_path_points          = tube_path_points;
-    moveConstrained_follow_path_task_.tube_tolerances           = tube_tolerances;
-    moveConstrained_follow_path_task_.tube_speed                = tube_speed;
-    moveConstrained_follow_path_task_.tube_force                = tube_force;
-    moveConstrained_follow_path_task_.contact_threshold_linear  = contact_threshold_linear;
-    moveConstrained_follow_path_task_.contact_threshold_angular = contact_threshold_angular;
-    moveConstrained_follow_path_task_.time_limit                = task_time_limit_sec;
+    moveConstrained_follow_path_task_.tube_path_points             = tube_path_points;
+    moveConstrained_follow_path_task_.tube_tolerances              = tube_tolerances;
+    moveConstrained_follow_path_task_.tube_speed                   = tube_speed;
+    moveConstrained_follow_path_task_.tube_force                   = tube_force;
+    moveConstrained_follow_path_task_.contact_threshold_linear     = contact_threshold_linear;
+    moveConstrained_follow_path_task_.contact_threshold_angular    = contact_threshold_angular;
+    moveConstrained_follow_path_task_.time_limit                   = task_time_limit_sec;
+    moveConstrained_follow_path_task_.null_space_plane_orientation = KDL::Rotation::Identity();
+    moveConstrained_follow_path_task_.null_space_force_direction   = KDL::Vector::Zero();
 
     desired_state_.frame_pose[END_EFF_]        = moveConstrained_follow_path_task_.goal_poses[0];
     desired_task_model_                        = task_model::moveConstrained_follow_path;
@@ -847,35 +849,35 @@ void dynamics_controller::compute_moveConstrained_null_space_task_error()
     if (norm < MIN_NORM)
     {
         null_space_abag_error_(0) = 0.0;
-        cart_force_command_[3].force = KDL::Vector::Zero();
+        moveConstrained_follow_path_task_.null_space_force_direction = KDL::Vector::Zero();
         printf("Null space norm too small 1");
     }
     else 
     {
         // Calculate error: angle from the plane
         KDL::Vector plane_y(0.0, 0.0, 1.0);
-        KDL::Rotation plane_orientation(plane_x, plane_y, plane_x * plane_y);
-        KDL::Vector r_direction       = plane_orientation.Inverse() * robot_state_.frame_pose[3].p;
+        moveConstrained_follow_path_task_.null_space_plane_orientation = KDL::Rotation(plane_x, plane_y, plane_x * plane_y);
+        KDL::Vector r_direction = moveConstrained_follow_path_task_.null_space_plane_orientation.Inverse() * robot_state_.frame_pose[3].p;
         r_direction.Normalize();
-        null_space_abag_error_(0)     = std::atan2(r_direction(2), r_direction(1)); // Angle between Y and R_yz
+        null_space_abag_error_(0) = std::atan2(r_direction(2), r_direction(1)); // Angle between Y and R_yz
         // if (std::fabs(null_space_abag_error_(0)) <= DEG_TO_RAD(5.0)) null_space_abag_error_(0) = 0.0;
 
         // Calculate control/force direction: Cart force for null-space motion
-        // plane_x = plane_orientation.Inverse() * robot_state_.frame_pose[END_EFF_].p;
+        // plane_x = moveConstrained_follow_path_task_.null_space_plane_orientation.Inverse() * robot_state_.frame_pose[END_EFF_].p;
         // plane_x.Normalize();
-
         // KDL::Vector control_direction = r_direction * plane_x;
+
         KDL::Vector control_direction = r_direction * KDL::Vector(1.0, 0.0, 0.0);
         control_direction(0) = 0.0;
-        norm = control_direction.Normalize();
 
+        norm = control_direction.Normalize();
         if (norm < MIN_NORM) 
         {
             null_space_abag_error_(0) = 0.0;
-            cart_force_command_[3].force = KDL::Vector::Zero();
+            moveConstrained_follow_path_task_.null_space_force_direction = KDL::Vector::Zero();
             printf("Null space norm too small 2");
         }
-        else cart_force_command_[3].force = plane_orientation * control_direction; // Transform from plane frame to base frame
+        else moveConstrained_follow_path_task_.null_space_force_direction = control_direction; // Transform from plane frame to base frame
     }
 }
 
@@ -1209,11 +1211,17 @@ void dynamics_controller::compute_cart_control_commands()
             break;
     }
 
-    // Null space control commands
+    // Null space control commands to align third segment with arm's plane
     if (compute_null_space_command_)
     {
-        null_space_abag_command_ = abag_null_space_.update_state(null_space_abag_error_)(0) * max_command_(2);
-        cart_force_command_[3].force = cart_force_command_[3].force * null_space_abag_command_;
+        // Compute controll command
+        null_space_abag_command_     = abag_null_space_.update_state(null_space_abag_error_)(0) * moveConstrained_follow_path_task_.tube_tolerances[7];
+
+        // Span the command over unit force vector space
+        cart_force_command_[3].force = moveConstrained_follow_path_task_.null_space_force_direction * null_space_abag_command_;
+
+        // Transform the Cartesian force from arm's plane-frame to base frame
+        cart_force_command_[3].force = moveConstrained_follow_path_task_.null_space_plane_orientation * cart_force_command_[3].force;
     }
 
 #ifndef NDEBUG
