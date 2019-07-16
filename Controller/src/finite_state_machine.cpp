@@ -455,9 +455,8 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
                                                    const double current_task_time,
                                                    const double time_threshold)
 {
-    if (!force_goal_maintained(desired_force, ext_force)) total_contact_time_ = 0.0;
+    if (!contact_secured(desired_force, ext_force)) total_contact_time_ = 0.0;
     else total_contact_time_ += current_task_time - previous_task_time_;
-    // printf("Time: %f\n", total_contact_time_);
 
     previous_task_time_ = current_task_time;
     if (total_contact_time_ >= time_threshold) return control_status::CRUISE;
@@ -467,14 +466,13 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
 bool finite_state_machine::contact_secured(const KDL::Wrench &desired_force,
                                            const KDL::Wrench &ext_force)
 {
+    if (ext_force(2) < 0.025) return false;
     for (int i = 3; i < 5; i++)
     {
-        double error = desired_force(i) - ext_force(i);
-        if (std::fabs(error) > moveConstrained_follow_path_task_.tube_tolerances[i]) return false;
+        if (std::fabs(ext_force(i)) > moveConstrained_follow_path_task_.tube_tolerances[i]) return false;
     }
 
-    // std::cout << desired_force(2) << " " << desired_force(3) << " " << desired_force(4)<< std::endl;
-    // std::cout << ext_force(2) << " " << ext_force(3) << " " << ext_force(4)<< std::endl;
+    // printf("%f, %f, %f \n", ext_force(2), ext_force(3), ext_force(4));
     return true;
 }
 
