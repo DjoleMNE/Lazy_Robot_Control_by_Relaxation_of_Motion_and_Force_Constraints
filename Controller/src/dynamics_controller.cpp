@@ -45,6 +45,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     fsm_result_(control_status::NOMINAL), previous_control_status_(fsm_result_), 
     tube_section_count_(0), transform_drivers_(false), transform_force_drivers_(false),
     compute_null_space_command_(false), contact_secured_(false), 
+    write_contact_time_to_file_(false),
     JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
     current_error_twist_(KDL::Twist::Zero()),
     abag_error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
@@ -300,6 +301,7 @@ void dynamics_controller::update_dynamics_interfaces()
 // Write control data to a file
 void dynamics_controller::write_to_file()
 {   
+    // Write measured state
     for(int i = 0; i < 3; i++) 
         log_file_cart_ << robot_state_.frame_pose[END_EFF_].p(i) << " ";
     for(int i = 3; i < 6; i++) 
@@ -308,8 +310,11 @@ void dynamics_controller::write_to_file()
     log_file_cart_ << robot_state_.frame_velocity[END_EFF_](5) << " ";
     for (int i = 2; i < 5; i++)
         log_file_cart_ << ext_wrench_(i) << " ";
+    if (write_contact_time_to_file_) log_file_cart_ << loop_iteration_count_;
+    else log_file_cart_ << 0.0;
     log_file_cart_ << std::endl;
 
+    // Write desired state
     for(int i = 0; i < 3; i++) 
         log_file_cart_ << desired_state_.frame_pose[END_EFF_].p(i) << " ";
     for(int i = 3; i < 6; i++) 
@@ -320,22 +325,29 @@ void dynamics_controller::write_to_file()
         log_file_cart_ << desired_state_.external_force[END_EFF_](i) << " ";
     log_file_cart_ << std::endl;
 
+    // Write control error
     log_file_cart_ << predicted_error_twist_(0) << " ";
     for(int i = 1; i < 6; i++) 
         log_file_cart_ << abag_error_vector_(i) << " ";
     log_file_cart_ << abag_error_vector_(0) << std::endl;
 
+    // Write ABAG state
     log_file_cart_ << abag_.get_error().transpose().format(dynamics_parameter::WRITE_FORMAT);
     log_file_cart_ << abag_.get_bias().transpose().format(dynamics_parameter::WRITE_FORMAT);
     log_file_cart_ << abag_.get_gain().transpose().format(dynamics_parameter::WRITE_FORMAT);
     log_file_cart_ << abag_.get_command().transpose().format(dynamics_parameter::WRITE_FORMAT);
 
+    // Write joint space state
     log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
 
+    // Write null-space control state
     log_file_null_space_ << null_space_abag_error_(0)         << " " << 0.0 << " "; // Measured and desired state
     log_file_null_space_ << null_space_abag_error_(0)         << " " << abag_null_space_.get_error()(0) << " "; // Raw and filtered error
     log_file_null_space_ << abag_null_space_.get_bias()(0)    << " " << abag_null_space_.get_gain()(0) << " ";
-    log_file_null_space_ << abag_null_space_.get_command()(0) << std::endl;
+    log_file_null_space_ << abag_null_space_.get_command()(0) << " ";
+    if (write_contact_time_to_file_) log_file_null_space_ << loop_iteration_count_;
+    else log_file_null_space_ << 0.0;
+    log_file_null_space_ << std::endl;
 }
 
 // Set all values of desired state to 0 - public method
@@ -909,6 +921,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
     moveConstrained_follow_path_task_.tf_poses[tube_section_count_].M = robot_state_.frame_pose[END_EFF_].M;
     transform_drivers_       = false;
     transform_force_drivers_ = false;
+    write_contact_time_to_file_ = false;
 
     if (fsm_result_ == control_status::APPROACH || fsm_result_ == control_status::NOMINAL)
     {
