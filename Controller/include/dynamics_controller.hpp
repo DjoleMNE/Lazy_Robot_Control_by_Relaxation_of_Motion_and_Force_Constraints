@@ -86,7 +86,8 @@ class dynamics_controller
                         const Eigen::VectorXd &gain_threshold, 
                         const Eigen::VectorXd &gain_step,
                         const Eigen::VectorXd &min_bias_sat,
-                        const Eigen::VectorXd &min_command_sat);
+                        const Eigen::VectorXd &min_command_sat,
+                        const Eigen::VectorXd &null_space_abag_parameters);
     int initialize(const int desired_control_mode, 
                    const int desired_task_inteface,
                    const bool use_mixed_driver, 

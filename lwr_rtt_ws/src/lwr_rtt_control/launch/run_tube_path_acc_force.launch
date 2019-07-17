@@ -141,6 +141,11 @@
     <arg name="GAIN_STEP" default="     [0.002052, 0.003152, 0.003152, 
                                          0.003052, 0.003052, 0.002052]"/>
 
+    <!-- NULL SPACE ABAG PARAMETERS (Error Sign)-->
+    <arg name="null_space_abag_parameters" default="[0.900000, 0.000407, 
+                                                     0.000495, 0.552492, 
+                                                     0.003152]"/>
+
 <!--============ LwrRttControl Params ============-->
     <!-- Set some parameters for LwrRttControl
     You can get them using rtt_ros_kdl_tools::getAllPropertiesFromROSParam(this)
@@ -174,6 +179,7 @@
         <rosparam param="abag_error_type" subst_value="True">$(arg abag_error_type)</rosparam>
         <rosparam param="min_bias_sat" subst_value="True">$(arg min_bias_sat)</rosparam>
         <rosparam param="min_command_sat" subst_value="True">$(arg min_command_sat)</rosparam>
+        <rosparam param="null_space_abag_parameters" subst_value="True">$(arg null_space_abag_parameters)</rosparam>
     </node>
 
 <!-- ============ Runner script =============== -->

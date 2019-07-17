@@ -113,7 +113,8 @@ class LwrRttControl : public RTT::TaskContext{
 
         // ABAG Parameters
         Eigen::VectorXd error_alpha_, bias_threshold_, bias_step_, 
-                        gain_threshold_, gain_step_, min_bias_sat_, min_command_sat_;
+                        gain_threshold_, gain_step_, min_bias_sat_, min_command_sat_,
+                        null_space_abag_parameters_;
         int abag_error_type_;
 
         // State and Driver

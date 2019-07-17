@@ -1202,6 +1202,7 @@ void dynamics_controller::compute_cart_control_commands()
 {   
     abag_command_ = abag_.update_state(abag_error_vector_).transpose();
     KDL::SetToZero(cart_force_command_[END_EFF_]);
+    KDL::SetToZero(cart_force_command_[3]);
 
     switch (desired_task_inteface_)
     {
@@ -1315,7 +1316,8 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
                                          const Eigen::VectorXd &gain_threshold, 
                                          const Eigen::VectorXd &gain_step,
                                          const Eigen::VectorXd &min_bias_sat,
-                                         const Eigen::VectorXd &min_command_sat)
+                                         const Eigen::VectorXd &min_command_sat,
+                                         const Eigen::VectorXd &null_space_abag_parameters)
 {
     //First check input dimensions
     assert(max_command.size()    == NUM_OF_CONSTRAINTS_); 
@@ -1337,6 +1339,12 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
     abag_.set_min_bias_sat_limit(min_bias_sat);
     abag_.set_min_command_sat_limit(min_command_sat);
     abag_.set_error_type(abag_error_type);
+
+    abag_null_space_.set_error_alpha(   null_space_abag_parameters(0), 0);
+    abag_null_space_.set_bias_threshold(null_space_abag_parameters(1), 0);
+    abag_null_space_.set_bias_step(     null_space_abag_parameters(2), 0);
+    abag_null_space_.set_gain_threshold(null_space_abag_parameters(3), 0);
+    abag_null_space_.set_gain_step(     null_space_abag_parameters(4), 0);
 }
 
 int dynamics_controller::initialize(const int desired_control_mode, 
