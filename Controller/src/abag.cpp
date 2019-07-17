@@ -207,10 +207,10 @@ void ABAG::reset_state(const int dimension)
     assert(("Not valid dimension number", dimension >= 0));
     assert(("Not valid dimension number", dimension <= (DIMENSIONS_ - 1) ));
 
-    signal.command_(dimension) = 0;
-    signal.error_(dimension) = 0;
-    signal.bias_(dimension) = 0;
-    signal.gain_(dimension) = 0;
+    signal.command_(dimension) = 0.0;
+    signal.error_(dimension)   = 0.0;
+    signal.bias_(dimension)    = 0.0;
+    signal.gain_(dimension)    = 0.0;
 }
 
 

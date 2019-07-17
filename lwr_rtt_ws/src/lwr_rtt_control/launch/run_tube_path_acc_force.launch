@@ -25,7 +25,6 @@
     <arg name="gazebo_gui" default="false"/>
 
 
-
 <!-- ***************** General Control PARAMETERS ********************** -->
     <arg name="environment" default="1"/>
     <arg name="robot_model" default="1"/>
