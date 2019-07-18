@@ -342,8 +342,8 @@ void dynamics_controller::write_to_file()
     log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
 
     // Write null-space control state
-    log_file_null_space_ << null_space_abag_error_(0)         << " " << 0.0 << " "; // Measured and desired state
-    log_file_null_space_ << null_space_abag_error_(0)         << " " << abag_null_space_.get_error()(0) << " "; // Raw and filtered error
+    log_file_null_space_ << RAD_TO_DEG(null_space_abag_error_(0))         << " " << 0.0 << " "; // Measured and desired state
+    log_file_null_space_ << RAD_TO_DEG(null_space_abag_error_(0))         << " " << abag_null_space_.get_error()(0) << " "; // Raw and filtered error
     log_file_null_space_ << abag_null_space_.get_bias()(0)    << " " << abag_null_space_.get_gain()(0) << " ";
     log_file_null_space_ << abag_null_space_.get_command()(0) << " ";
     if (write_contact_time_to_file_) log_file_null_space_ << loop_iteration_count_;
