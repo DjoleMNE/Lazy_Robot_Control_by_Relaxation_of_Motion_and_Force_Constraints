@@ -68,6 +68,7 @@ struct moveConstrained_follow_path_task
     KDL::Vector null_space_force_direction;
     std::vector< std::vector<double> > tube_path_points{1, std::vector<double>(3, 0.0)};
     std::vector<double> tube_tolerances{std::vector<double>(8, 0.0)};
+    double null_space_tolerance = 0.0;  // Tolerance unit in degrees
     double tube_speed = 0.0;
     double tube_force = 0.0;
     double contact_threshold_linear = 0.0;

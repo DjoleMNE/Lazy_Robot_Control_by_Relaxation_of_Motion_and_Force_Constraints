@@ -873,7 +873,8 @@ void dynamics_controller::compute_moveConstrained_null_space_task_error()
         KDL::Vector r_direction = moveConstrained_follow_path_task_.null_space_plane_orientation.Inverse() * robot_state_.frame_pose[3].p;
         r_direction.Normalize();
         null_space_abag_error_(0) = std::atan2(r_direction(2), r_direction(1)); // Angle between Y and R_yz
-        // if (std::fabs(null_space_abag_error_(0)) <= DEG_TO_RAD(5.0)) null_space_abag_error_(0) = 0.0;
+        // Unit of tolerance is degree
+        if (std::fabs(null_space_abag_error_(0)) <= DEG_TO_RAD(moveConstrained_follow_path_task_.null_space_tolerance)) null_space_abag_error_(0) = 0.0;
 
         // Calculate control/force direction: Cart force for null-space motion
         // plane_x = moveConstrained_follow_path_task_.null_space_plane_orientation.Inverse() * robot_state_.frame_pose[END_EFF_].p;
@@ -999,9 +1000,11 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 
         transform_force_drivers_ = true;
 
-        if (!contact_secured_) printf("Loop iteration: %d \n", loop_iteration_count_);
-        contact_secured_ = true;
+        // Set null-space error tolerance, oscillations are desired in this mode
+        moveConstrained_follow_path_task_.null_space_tolerance = 10.0;
     }
+    
+    // Additional Cartesian force to keep residual part of the robot in a good configuration
     compute_moveConstrained_null_space_task_error();
     
     // else
@@ -1376,7 +1379,7 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
     this->force_task_parameters_(3) = gain_threshold(2);
     this->force_task_parameters_(4) = gain_step(2);
     this->force_task_parameters_(5) = max_command(2);
-    
+
     // Setting parameters of the ABAG Controller
     abag_.set_error_alpha(error_alpha);    
     abag_.set_bias_threshold(bias_threshold);
