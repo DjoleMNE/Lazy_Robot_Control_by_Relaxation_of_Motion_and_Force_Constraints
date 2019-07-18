@@ -54,6 +54,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     horizon_amplitude_(1.0), null_space_abag_command_(0.0),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     max_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
+    force_task_parameters_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     cart_force_command_(NUM_OF_SEGMENTS_, KDL::Wrench::Zero()), ext_wrench_(KDL::Wrench::Zero()),
     hd_solver_(robot_chain_, robot_driver->get_joint_inertia(), 
                robot_driver->get_joint_torque_limits(),
@@ -925,6 +926,16 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 
     if (fsm_result_ == control_status::APPROACH || fsm_result_ == control_status::NOMINAL)
     {
+        if (loop_iteration_count_ == 0)
+        {
+            abag_.set_error_alpha(   abag_parameter::ERROR_ALPHA(2),    2);    
+            abag_.set_bias_threshold(abag_parameter::BIAS_THRESHOLD(2), 2);
+            abag_.set_bias_step(     abag_parameter::BIAS_STEP(2),      2);
+            abag_.set_gain_threshold(abag_parameter::GAIN_THRESHOLD(2), 2);
+            abag_.set_gain_step(     abag_parameter::GAIN_STEP(2),      2);
+            max_command_(2) =        60.0;
+        }
+
         // Linear DOFs: Control Motion w.r.t. base frame
         for (int i = 0; i < 2; i++)
         {
@@ -932,7 +943,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             // if (std::fabs(abag_error_vector_(i)) <= 0.001) abag_error_vector_(i) = 0.0;
             MOTION_CTRL_DIM_[i] = true;
         }
-        abag_error_vector_(2) = -0.01 - robot_state_.frame_velocity[END_EFF_](2);
+        abag_error_vector_(2) = -0.02 - robot_state_.frame_velocity[END_EFF_](2);
         MOTION_CTRL_DIM_[2] = true;
 
         // Check for tube on force: Z linear and X & Y-angular w.r.t. tasks (E-EF) frame
@@ -947,11 +958,26 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             FORCE_CTRL_DIM_[i]  = true;       
         }
 
-        // Additional Cartesian force to keep residual part of the robot in a good configuration
         transform_force_drivers_ = true;
+
+        // Set null-space error tolerance to zero, oscillations are NOT desired in this mode
+        moveConstrained_follow_path_task_.null_space_tolerance = 0.0;
     }
     else
     {
+        if (!contact_secured_)
+        {
+            abag_.reset_state(2);
+            abag_.set_error_alpha(   force_task_parameters_(0), 2);    
+            abag_.set_bias_threshold(force_task_parameters_(1), 2);
+            abag_.set_bias_step(     force_task_parameters_(2), 2);
+            abag_.set_gain_threshold(force_task_parameters_(3), 2);
+            abag_.set_gain_step(     force_task_parameters_(4), 2);
+            max_command_(2)        = force_task_parameters_(5);
+            write_contact_time_to_file_ = true;
+            contact_secured_ = true;
+        }
+
         for (int i = 0; i < 2; i++)
         {
             abag_error_vector_(i) = 0.0 - robot_state_.frame_velocity[END_EFF_](i);
@@ -1340,8 +1366,16 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
     assert(gain_threshold.size() == NUM_OF_CONSTRAINTS_); 
     assert(gain_step.size()      == NUM_OF_CONSTRAINTS_); 
 
-    this->horizon_amplitude_  = horizon_amplitude;
-    this->max_command_        = max_command;
+    this->horizon_amplitude_        = horizon_amplitude;
+    this->max_command_              = max_command;
+
+    // Setting parameters of the force controller DOF
+    this->force_task_parameters_(0) = error_alpha(2);
+    this->force_task_parameters_(1) = bias_threshold(2);
+    this->force_task_parameters_(2) = bias_step(2);
+    this->force_task_parameters_(3) = gain_threshold(2);
+    this->force_task_parameters_(4) = gain_step(2);
+    this->force_task_parameters_(5) = max_command(2);
     
     // Setting parameters of the ABAG Controller
     abag_.set_error_alpha(error_alpha);    

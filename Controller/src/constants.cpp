@@ -121,27 +121,27 @@ namespace abag_parameter
 
     // Error parameters: Low pass filter threshold
     const Eigen::VectorXd ERROR_ALPHA = (Eigen::VectorXd(DIMENSIONS) \
-                              << 0.650000, 0.650000, 0.650000, 
-                                 0.650000, 0.850000, 0.178001).finished();
+                                          << 0.800000, 0.800000, 0.800000, 
+                                             0.650000, 0.850000, 0.178001).finished();
 
      // Bias parameters: threshold and step
     const Eigen::VectorXd BIAS_THRESHOLD = (Eigen::VectorXd(DIMENSIONS) \
-                              << 0.001007, 0.001007, 0.001007, 
-                                 0.001007, 0.001007, 0.724277).finished();
+                                          << 0.000507, 0.000507, 0.000507, 
+                                             0.001007, 0.001007, 0.724277).finished();
 
     const Eigen::VectorXd BIAS_STEP = (Eigen::VectorXd(DIMENSIONS) \
-                              << 0.003495, 0.003495, 0.003495, 
-                                 0.003495, 0.003495, 0.503495).finished();
+                                       << 0.000495, 0.000495, 0.000495, 
+                                          0.003495, 0.003495, 0.503495).finished();
 
 
     // Gain parameters: threshold and step
     const Eigen::VectorXd GAIN_THRESHOLD = (Eigen::VectorXd(DIMENSIONS) \
-                              << 0.252492, 0.252492, 0.252492, 
-                                 0.252492, 0.252492, 0.432492).finished();
+                                          << 0.452492, 0.452492, 0.452492, 
+                                             0.252492, 0.252492, 0.432492).finished();
 
     const Eigen::VectorXd GAIN_STEP = (Eigen::VectorXd(DIMENSIONS) \
-                              << 0.015152, 0.015152, 0.015152, 
-                                 0.015152, 0.015152, 0.655152).finished();
+                                       << 0.002052, 0.002052, 0.002052, 
+                                          0.015152, 0.015152, 0.655152).finished();
 
     // Parameters for controlling robot's nullspace motion
     const double NULL_SPACE_ERROR_ALPHA    = 0.900000;
