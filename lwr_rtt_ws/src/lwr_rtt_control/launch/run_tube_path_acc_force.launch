@@ -73,7 +73,7 @@
                             x vel,    z_a vel             =-->
     <arg name="tube_tolerances" default="[0.003, 0.03, 0.003,  
                                           0.003, 0.003, 0.005, 
-                                          0.009, 200.0]"/>
+                                          0.009, 50.0]"/>
 
     <!-- ========= Tube start position ===============-->
     <!-- <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/> -->
@@ -141,9 +141,9 @@
                                          0.003052, 0.003052, 0.002052]"/>
 
     <!-- NULL SPACE ABAG PARAMETERS (Error Sign)-->
-    <arg name="null_space_abag_parameters" default="[0.900000, 0.000407, 
-                                                     0.000495, 0.552492, 
-                                                     0.003152]"/>
+    <arg name="null_space_abag_parameters" default="[0.800000, 0.000507, 
+                                                     0.000495, 0.452492, 
+                                                     0.002052]"/>
 
 <!--============ LwrRttControl Params ============-->
     <!-- Set some parameters for LwrRttControl
