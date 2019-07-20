@@ -456,7 +456,7 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
                                                    const double current_task_time,
                                                    const double time_threshold)
 {
-    low_pass_filter(ext_force, 0.75);
+    low_pass_filter(ext_force, 0.55);
     // printf("Force: %f, %f, %f \n", ext_wrench_(2), ext_wrench_(3), ext_wrench_(4));
 
     if (!contact_secured(desired_force, ext_wrench_)) total_contact_time_ = 0.0;
@@ -470,7 +470,7 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
 bool finite_state_machine::contact_secured(const KDL::Wrench &desired_force,
                                            const KDL::Wrench &ext_force)
 {
-    if (ext_force(2) < 0.025) return false;
+    if (ext_force(2) < 0.015 || ext_force(2) > 1.0) return false;
     for (int i = 3; i < 5; i++)
     {
         if (std::fabs(ext_force(i)) > moveConstrained_follow_path_task_.tube_tolerances[i]) return false;
