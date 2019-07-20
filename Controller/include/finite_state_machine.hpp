@@ -157,6 +157,7 @@ class finite_state_machine
                              const KDL::Wrench &ext_force);
         bool force_goal_maintained(const KDL::Wrench &desired_force,
                                    const KDL::Wrench &ext_force);
+        void low_pass_filter(const KDL::Wrench &ext_force, const double alpha);
         int sign(double x);
 };
 #endif /* FINITE_STATE_MACHINE_HPP */

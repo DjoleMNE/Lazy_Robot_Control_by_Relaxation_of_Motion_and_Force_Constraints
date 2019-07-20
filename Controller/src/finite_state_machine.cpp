@@ -36,7 +36,8 @@ finite_state_machine::finite_state_machine(const int num_of_joints,
     previous_task_time_(0.0), total_contact_time_(0.0),
     goal_reached_(false), time_limit_reached_(false), contact_detected_(false),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
-    desired_state_(robot_state_), current_error_()
+    desired_state_(robot_state_), current_error_(KDL::Twist::Zero()),
+    ext_wrench_(KDL::Wrench::Zero())
 {
 }
 
@@ -455,7 +456,10 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
                                                    const double current_task_time,
                                                    const double time_threshold)
 {
-    if (!contact_secured(desired_force, ext_force)) total_contact_time_ = 0.0;
+    low_pass_filter(ext_force, 0.75);
+    // printf("Force: %f, %f, %f \n", ext_wrench_(2), ext_wrench_(3), ext_wrench_(4));
+
+    if (!contact_secured(desired_force, ext_wrench_)) total_contact_time_ = 0.0;
     else total_contact_time_ += current_task_time - previous_task_time_;
 
     previous_task_time_ = current_task_time;
@@ -516,6 +520,14 @@ bool finite_state_machine::contact_detected(const double linear_force_threshold,
     }
 
     return false;    
+}
+
+void finite_state_machine::low_pass_filter(const KDL::Wrench &ext_force,
+                                           const double alpha)
+{
+    // ext_wrench_(2) = alpha * ext_wrench_(2) + (1 - alpha) * ( (ext_force(2) > 0.0)? ext_force(2) : 0.0 );
+    for (int i = 2; i < 5; i++)
+        ext_wrench_(i) = alpha * ext_wrench_(i) + (1 - alpha) * ext_force(i);
 }
 
 int finite_state_machine::sign(double x)
