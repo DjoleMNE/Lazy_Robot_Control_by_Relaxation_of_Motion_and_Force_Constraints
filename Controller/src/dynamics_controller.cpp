@@ -867,7 +867,7 @@ void dynamics_controller::compute_moveConstrained_null_space_task_error()
     {
         null_space_abag_error_(0) = 0.0;
         moveConstrained_follow_path_task_.null_space_force_direction = KDL::Vector::Zero();
-        printf("Null space norm too small 1");
+        printf("Null space norm too small 1 \n");
     }
     else 
     {
@@ -893,7 +893,7 @@ void dynamics_controller::compute_moveConstrained_null_space_task_error()
         {
             null_space_abag_error_(0) = 0.0;
             moveConstrained_follow_path_task_.null_space_force_direction = KDL::Vector::Zero();
-            printf("Null space norm too small 2");
+            printf("Null space norm too small 2 \n");
         }
         else moveConstrained_follow_path_task_.null_space_force_direction = control_direction; // Transform from plane frame to base frame
     }
@@ -993,7 +993,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 
         for (int i = 0; i < 2; i++)
         {
-            abag_error_vector_(i) = 0.0 - robot_state_.frame_velocity[END_EFF_](i);
+            abag_error_vector_(i) = 0.01 - robot_state_.frame_velocity[END_EFF_](i);
             // if (std::fabs(abag_error_vector_(i)) <= 0.001) abag_error_vector_(i) = 0.0;
             MOTION_CTRL_DIM_[i] = true;
         }
