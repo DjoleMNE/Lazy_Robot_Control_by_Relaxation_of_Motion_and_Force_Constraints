@@ -452,6 +452,9 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     moveConstrained_follow_path_task_.null_space_plane_orientation = KDL::Rotation::Identity();
     moveConstrained_follow_path_task_.null_space_force_direction   = KDL::Vector::Zero();
 
+    // Set null-space error tolerance; small null-space oscillations are desired in this mode
+    moveConstrained_follow_path_task_.null_space_tolerance = 35.0;
+
     desired_state_.frame_pose[END_EFF_]        = moveConstrained_follow_path_task_.goal_poses[0];
     desired_task_model_                        = task_model::moveConstrained_follow_path;
     desired_state_.frame_velocity[END_EFF_](0) = tube_speed;
@@ -905,6 +908,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
     if (previous_control_status_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
     if (tube_section_count_ > moveConstrained_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveConstrained_follow_path_task_.tf_poses.size() - 1;
 
+    // Saturate linear force measurements in Z (sensor frame) direction
     if (ext_wrench_(2) < 0.0) ext_wrench_(2) = 0.0;
 
     // This function expects ext. wrench values to be expressed w.r.t. sensor frame
@@ -1007,9 +1011,6 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
         }
 
         transform_force_drivers_ = true;
-
-        // Set null-space error tolerance, oscillations are desired in this mode
-        moveConstrained_follow_path_task_.null_space_tolerance = 10.0;
     }
     
     // Additional Cartesian force to keep residual part of the robot in a good configuration
