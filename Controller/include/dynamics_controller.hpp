@@ -178,7 +178,8 @@ class dynamics_controller
     KDL::Twist current_error_twist_;
     Eigen::VectorXd abag_error_vector_, null_space_abag_error_, predicted_error_twist_;
     double horizon_amplitude_, null_space_abag_command_;
-    Eigen::VectorXd abag_command_, max_command_, force_task_parameters_;
+    Eigen::VectorXd abag_command_, max_command_, 
+                    force_task_parameters_, min_sat_limits_;
     KDL::Wrenches cart_force_command_;
     KDL::Wrench ext_wrench_;
 

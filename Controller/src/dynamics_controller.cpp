@@ -55,6 +55,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     max_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     force_task_parameters_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
+    min_sat_limits_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     cart_force_command_(NUM_OF_SEGMENTS_, KDL::Wrench::Zero()), ext_wrench_(KDL::Wrench::Zero()),
     hd_solver_(robot_chain_, robot_driver->get_joint_inertia(), 
                robot_driver->get_joint_torque_limits(),
@@ -904,6 +905,8 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
     if (previous_control_status_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
     if (tube_section_count_ > moveConstrained_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveConstrained_follow_path_task_.tf_poses.size() - 1;
 
+    if (ext_wrench_(2) < 0.0) ext_wrench_(2) = 0.0;
+
     // This function expects ext. wrench values to be expressed w.r.t. sensor frame
     if (!contact_secured_) fsm_result_ = fsm_.update_force_task_status(desired_state_.external_force[END_EFF_], 
                                                                        ext_wrench_,
@@ -927,13 +930,16 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 
     if (fsm_result_ == control_status::APPROACH || fsm_result_ == control_status::NOMINAL)
     {
-        if (loop_iteration_count_ == 0)
+        if (loop_iteration_count_ <= 1)
         {
+            // Parameters for Velocity controlled DOF
             abag_.set_error_alpha(   abag_parameter::ERROR_ALPHA(2),    2);    
             abag_.set_bias_threshold(abag_parameter::BIAS_THRESHOLD(2), 2);
             abag_.set_bias_step(     abag_parameter::BIAS_STEP(2),      2);
             abag_.set_gain_threshold(abag_parameter::GAIN_THRESHOLD(2), 2);
             abag_.set_gain_step(     abag_parameter::GAIN_STEP(2),      2);
+            abag_.set_min_bias_sat_limit(Eigen::VectorXd::Constant(6, -1.0));
+            abag_.set_min_command_sat_limit(Eigen::VectorXd::Constant(6, -1.0));
             max_command_(2) =        60.0;
         }
 
@@ -960,21 +966,23 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
         }
 
         transform_force_drivers_ = true;
-
-        // Set null-space error tolerance to zero, oscillations are NOT desired in this mode
-        moveConstrained_follow_path_task_.null_space_tolerance = 0.0;
     }
     else
     {
         if (!contact_secured_)
         {
-            abag_.reset_state(2);
+            // abag_.reset_state(2);
+            
+            // Parameters for Force controlled DOF
             abag_.set_error_alpha(   force_task_parameters_(0), 2);    
             abag_.set_bias_threshold(force_task_parameters_(1), 2);
             abag_.set_bias_step(     force_task_parameters_(2), 2);
             abag_.set_gain_threshold(force_task_parameters_(3), 2);
             abag_.set_gain_step(     force_task_parameters_(4), 2);
             max_command_(2)        = force_task_parameters_(5);
+            abag_.set_min_bias_sat_limit(min_sat_limits_);
+            abag_.set_min_command_sat_limit(min_sat_limits_);
+            
             write_contact_time_to_file_ = true;
             contact_secured_ = true;
         }
@@ -1379,6 +1387,7 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
     this->force_task_parameters_(3) = gain_threshold(2);
     this->force_task_parameters_(4) = gain_step(2);
     this->force_task_parameters_(5) = max_command(2);
+    this->min_sat_limits_ = min_command_sat;
 
     // Setting parameters of the ABAG Controller
     abag_.set_error_alpha(error_alpha);    
