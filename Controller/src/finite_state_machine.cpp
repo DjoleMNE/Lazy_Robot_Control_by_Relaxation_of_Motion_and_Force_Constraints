@@ -480,7 +480,7 @@ bool finite_state_machine::contact_secured(const KDL::Wrench &desired_force,
     if (ext_force(2) < 0.015 || ext_force(2) > 1.0) return false;
     for (int i = 3; i < 5; i++)
     {
-        if (std::fabs(ext_force(i)) > moveConstrained_follow_path_task_.tube_tolerances[i]) return false;
+        if (std::fabs(ext_force(i)) > 0.003) return false;
     }
 
     // printf("%f, %f, %f \n", ext_force(2), ext_force(3), ext_force(4));

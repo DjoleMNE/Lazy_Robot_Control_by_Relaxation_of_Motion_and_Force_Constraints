@@ -956,10 +956,6 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
         }
         abag_error_vector_(2) = -0.02 - robot_state_.frame_velocity[END_EFF_](2);
         MOTION_CTRL_DIM_[2] = true;
-
-        // Check for tube on force: Z linear and X & Y-angular w.r.t. tasks (E-EF) frame
-        // abag_error_vector_(2) = desired_state_.external_force[END_EFF_](2) - ext_wrench_(2);
-        // FORCE_CTRL_DIM_[2]  = true;
         // if ( std::fabs(abag_error_vector_(2)) <= moveConstrained_follow_path_task_.tube_tolerances[2] ) abag_error_vector_(2) = 0.0;
 
         for (int i = 3; i < 5; i++)
