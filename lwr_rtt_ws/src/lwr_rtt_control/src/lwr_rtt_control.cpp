@@ -180,7 +180,7 @@ bool LwrRttControl::configureHook()
 
         case desired_pose::TABLE:
             // Table pose 1
-            desired_ee_pose_ = {-0.200785, -0.308278,  0.1502811, // Linear: Vector
+            desired_ee_pose_ = {-0.200785, -0.308278,  0.1202811, // Linear: Vector
                                 -0.540302, -0.841471, -0.000860, // Angular: Rotation matrix
                                 -0.841470,  0.540302, -0.001340,
                                  0.001592,  0.000000, -0.999999};
@@ -351,19 +351,6 @@ void LwrRttControl::updateHook()
         else
         {
             tf::wrenchMsgToKDL(wrench_msg_.wrench, ext_wrench_kdl_);
-            // if (iteration_count_ < 10)
-            // {
-            //     if      (ext_wrench_kdl_(2) >  0.1) ext_wrench_kdl_(2) =  0.1;
-            //     else if (ext_wrench_kdl_(2) < -0.1) ext_wrench_kdl_(2) = -0.1;
-
-            //     // for (int i = 3; i < 5; i++)
-            //     // {
-            //     //     if      (ext_wrench_kdl_(i) >  0.01) ext_wrench_kdl_(i) =  0.01;
-            //     //     else if (ext_wrench_kdl_(i) < -0.01) ext_wrench_kdl_(i) = -0.01;
-            //     // }
-
-            //     // KDL::SetToZero(ext_wrench_kdl_);
-            // }
 
             // if (robot_model_ != lwr_model::LWR_WITH_ATI)
             // { 

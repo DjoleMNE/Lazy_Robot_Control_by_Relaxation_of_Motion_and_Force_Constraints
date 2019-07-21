@@ -462,7 +462,7 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
     low_pass_filter(ext_force, 0.70);
     // printf("Force: %f, %f, %f \n", ext_wrench_(2), ext_wrench_(3), ext_wrench_(4));
 
-    if (!contact_secured(desired_force, ext_wrench_)) total_contact_time_ = 0.0;
+    if (!contact_alignment_secured(desired_force, ext_wrench_)) total_contact_time_ = 0.0;
     else total_contact_time_ += current_task_time - previous_task_time_;
 
     // for (int i = 0; i < 6; i++) 
@@ -474,8 +474,8 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
     return control_status::APPROACH;
 }
 
-bool finite_state_machine::contact_secured(const KDL::Wrench &desired_force,
-                                           const KDL::Wrench &ext_force)
+bool finite_state_machine::contact_alignment_secured(const KDL::Wrench &desired_force,
+                                                     const KDL::Wrench &ext_force)
 {
     if (ext_force(2) < 0.015 || ext_force(2) > 1.0) return false;
     for (int i = 3; i < 5; i++)
