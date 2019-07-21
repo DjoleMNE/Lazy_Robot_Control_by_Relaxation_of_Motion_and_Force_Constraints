@@ -975,7 +975,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
     {
         if (!contact_secured_)
         {
-            // abag_.reset_state(2);
+            abag_.reset_state(2);
             
             // Parameters for Force controlled DOF
             abag_.set_error_alpha(   force_task_parameters_(0), 2);    

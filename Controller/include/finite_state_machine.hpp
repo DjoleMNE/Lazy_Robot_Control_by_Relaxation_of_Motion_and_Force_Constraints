@@ -144,7 +144,9 @@ class finite_state_machine
         full_pose_task full_pose_task_;
         moveTo_follow_path_task moveTo_follow_path_task_;
         moveConstrained_follow_path_task moveConstrained_follow_path_task_;
-        
+
+        std::ofstream log_file_ext_force_;
+
         int update_full_pose_task(state_specification &desired_state);
         int update_moveTo_task(state_specification &desired_state);
         int update_moveTo_follow_path_task(state_specification &desired_state,

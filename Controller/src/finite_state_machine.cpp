@@ -48,6 +48,9 @@ int finite_state_machine::initialize_with_moveConstrained_follow_path(const move
     moveConstrained_follow_path_task_ = task;
     motion_profile_                   = motion_profile;
 
+    // log_file_ext_force_.open("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/ext_force_data.txt");
+    // assert(log_file_ext_force_.is_open());
+
     return control_status::NOMINAL;
 }
 
@@ -456,11 +459,15 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
                                                    const double current_task_time,
                                                    const double time_threshold)
 {
-    low_pass_filter(ext_force, 0.55);
+    low_pass_filter(ext_force, 0.70);
     // printf("Force: %f, %f, %f \n", ext_wrench_(2), ext_wrench_(3), ext_wrench_(4));
 
     if (!contact_secured(desired_force, ext_wrench_)) total_contact_time_ = 0.0;
     else total_contact_time_ += current_task_time - previous_task_time_;
+
+    // for (int i = 0; i < 6; i++) 
+    //     log_file_ext_force_ << ext_wrench_(i) << " ";
+    // log_file_ext_force_ << std::endl;
 
     previous_task_time_ = current_task_time;
     if (total_contact_time_ >= time_threshold) return control_status::CRUISE;
