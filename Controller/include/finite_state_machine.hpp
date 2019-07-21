@@ -144,7 +144,6 @@ class finite_state_machine
         full_pose_task full_pose_task_;
         moveTo_follow_path_task moveTo_follow_path_task_;
         moveConstrained_follow_path_task moveConstrained_follow_path_task_;
-
         std::ofstream log_file_ext_force_;
 
         int update_full_pose_task(state_specification &desired_state);
@@ -155,8 +154,8 @@ class finite_state_machine
                                                     const int tube_section_count);
         bool contact_detected(const double linear_force_threshold, 
                               const double angular_force_threshold);
-        bool contact_secured(const KDL::Wrench &desired_force,
-                             const KDL::Wrench &ext_force);
+        bool contact_alignment_secured(const KDL::Wrench &desired_force,
+                                       const KDL::Wrench &ext_force);
         bool force_goal_maintained(const KDL::Wrench &desired_force,
                                    const KDL::Wrench &ext_force);
         void low_pass_filter(const KDL::Wrench &ext_force, const double alpha);

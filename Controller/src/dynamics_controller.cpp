@@ -44,7 +44,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     MOTION_CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), FORCE_CTRL_DIM_(NUM_OF_CONSTRAINTS_, false),
     fsm_result_(control_status::NOMINAL), previous_control_status_(fsm_result_), 
     tube_section_count_(0), transform_drivers_(false), transform_force_drivers_(false),
-    compute_null_space_command_(false), contact_secured_(false), 
+    compute_null_space_command_(false), contact_alignment_secured_(false), 
     write_contact_time_to_file_(false),
     JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
     current_error_twist_(KDL::Twist::Zero()),
@@ -984,7 +984,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             abag_.set_min_command_sat_limit(min_sat_limits_);
             
             write_contact_time_to_file_ = true;
-            contact_secured_ = true;
+            contact_alignment_secured_ = true;
         }
 
         for (int i = 0; i < 2; i++)

@@ -168,7 +168,7 @@ class dynamics_controller
     std::vector<bool> CTRL_DIM_, POS_TUBE_DIM_, MOTION_CTRL_DIM_, FORCE_CTRL_DIM_;
     int fsm_result_, previous_control_status_, tube_section_count_;
     bool transform_drivers_, transform_force_drivers_, compute_null_space_command_;
-    bool contact_secured_, write_contact_time_to_file_;
+    bool contact_alignment_secured_, write_contact_time_to_file_;
     
     moveTo_task moveTo_task_;
     full_pose_task full_pose_task_;
