@@ -219,7 +219,7 @@ bool LwrRttControl::configureHook()
                                        path_parameters_[2], path_parameters_[3], 
                                        desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
                     break;
-                
+
                 default:
                     printf("Unsupported path type");
                     return false;
@@ -232,7 +232,7 @@ bool LwrRttControl::configureHook()
                                                                  tube_tolerances_,
                                                                  tube_speed_,
                                                                  tube_force_,
-                                                                 1.0, 0.1, //contact_threshold linear and angular
+                                                                 0.007, 0.0004, //contact_threshold linear and angular
                                                                  task_time_limit_sec_,// time_limit
                                                                  path_poses_); // TF pose
             break;
