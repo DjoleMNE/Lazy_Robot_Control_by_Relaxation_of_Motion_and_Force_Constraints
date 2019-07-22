@@ -299,8 +299,8 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         return control_status::STOP_CONTROL;
     }
     
-    if(contact_detected(moveTo_task_.contact_threshold_linear, 
-                        moveTo_task_.contact_threshold_angular))
+    if (contact_detected(moveTo_task_.contact_threshold_linear, 
+                         moveTo_task_.contact_threshold_angular))
     {
         #ifndef NDEBUG       
             printf("Contact occurred\n");
@@ -483,7 +483,6 @@ bool finite_state_machine::contact_alignment_secured(const KDL::Wrench &desired_
         if (std::fabs(ext_force(i)) > 0.003) return false;
     }
 
-    // printf("%f, %f, %f \n", ext_force(2), ext_force(3), ext_force(4));
     return true;
 }
 
@@ -496,34 +495,20 @@ bool finite_state_machine::force_goal_maintained(const KDL::Wrench &desired_forc
         if (std::fabs(error) > moveConstrained_follow_path_task_.tube_tolerances[i]) return false;
     }
 
-    // std::cout << desired_force(2) << " " << desired_force(3) << " " << desired_force(4)<< std::endl;
-    // std::cout << ext_force(2) << " " << ext_force(3) << " " << ext_force(4)<< std::endl;
     return true;
 }
 
 bool finite_state_machine::contact_detected(const double linear_force_threshold, 
                                             const double angular_force_threshold)
 {
-
-    if (desired_task_model_ == task_model::moveConstrained_follow_path)
+    for (int i = 0; i < 3; i++)
     {
-        for (int i = 0; i < 2; i++)
-        {
-            if (std::fabs(ext_wrench_(i)) > linear_force_threshold) return true;
-        }
+        if (std::fabs(ext_wrench_(i)) > linear_force_threshold) return true;
     }
 
-    else 
+    for (int i = 3; i < 6; i++)
     {
-        for (int i = 0; i < 3; i++)
-        {
-            if (std::fabs(ext_wrench_(i)) > linear_force_threshold) return true;
-        }
-
-        for (int i = 3; i < 6; i++)
-        {
-            if (std::fabs(ext_wrench_(i)) > angular_force_threshold) return true;
-        }
+        if (std::fabs(ext_wrench_(i)) > angular_force_threshold) return true;
     }
 
     return false;    
@@ -532,8 +517,7 @@ bool finite_state_machine::contact_detected(const double linear_force_threshold,
 void finite_state_machine::low_pass_filter(const KDL::Wrench &ext_force,
                                            const double alpha)
 {
-    // ext_wrench_(2) = alpha * ext_wrench_(2) + (1 - alpha) * ( (ext_force(2) > 0.0)? ext_force(2) : 0.0 );
-    for (int i = 2; i < 5; i++)
+    for (int i = 0; i < 6; i++)
         ext_wrench_(i) = alpha * ext_wrench_(i) + (1 - alpha) * ext_force(i);
 }
 
