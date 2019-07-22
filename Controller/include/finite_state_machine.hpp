@@ -136,7 +136,7 @@ class finite_state_machine
         const int END_EFF_;
         int desired_task_model_, motion_profile_;
         double total_control_time_sec_, previous_task_time_, total_contact_time_;
-        bool goal_reached_, time_limit_reached_, contact_detected_;
+        bool goal_reached_, time_limit_reached_, contact_detected_, contact_alignment_performed_;
         state_specification robot_state_, desired_state_;
         KDL::Twist current_error_;
         KDL::Wrench ext_wrench_;

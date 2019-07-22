@@ -35,6 +35,7 @@ finite_state_machine::finite_state_machine(const int num_of_joints,
     motion_profile_(m_profile::CONSTANT), total_control_time_sec_(0.0),
     previous_task_time_(0.0), total_contact_time_(0.0),
     goal_reached_(false), time_limit_reached_(false), contact_detected_(false),
+    contact_alignment_performed_(false),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     desired_state_(robot_state_), current_error_(KDL::Twist::Zero()),
     ext_wrench_(KDL::Wrench::Zero())
@@ -459,19 +460,41 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
                                                    const double current_task_time,
                                                    const double time_threshold)
 {
+    // First filter the measurements. Data is too noisy.
     low_pass_filter(ext_force, 0.70);
-    // printf("Force: %f, %f, %f \n", ext_wrench_(2), ext_wrench_(3), ext_wrench_(4));
-
-    if (!contact_alignment_secured(desired_force, ext_wrench_)) total_contact_time_ = 0.0;
-    else total_contact_time_ += current_task_time - previous_task_time_;
 
     // for (int i = 0; i < 6; i++) 
     //     log_file_ext_force_ << ext_wrench_(i) << " ";
     // log_file_ext_force_ << std::endl;
 
-    previous_task_time_ = current_task_time;
-    if (total_contact_time_ >= time_threshold) return control_status::CRUISE;
-    return control_status::APPROACH;
+    if (contact_alignment_performed_)
+    {
+        if (!contact_detected(moveConstrained_follow_path_task_.contact_threshold_linear, 
+                              moveConstrained_follow_path_task_.contact_threshold_angular))
+        {
+            total_contact_time_ += current_task_time - previous_task_time_;
+        }
+        else total_contact_time_ = 0.0;
+
+        previous_task_time_ = current_task_time;
+
+        if (total_contact_time_ >= time_threshold) return control_status::STOP_ROBOT;
+        return control_status::CRUISE;
+    }
+    else
+    {
+        if (!contact_alignment_secured(desired_force, ext_wrench_)) total_contact_time_ = 0.0;
+        else total_contact_time_ += current_task_time - previous_task_time_;
+
+        previous_task_time_ = current_task_time;
+        if (total_contact_time_ >= 0.011) 
+        {
+            total_contact_time_ = 0.0;
+            contact_alignment_performed_ = true;
+            return control_status::CRUISE;
+        }
+        return control_status::APPROACH;
+    }
 }
 
 bool finite_state_machine::contact_alignment_secured(const KDL::Wrench &desired_force,
