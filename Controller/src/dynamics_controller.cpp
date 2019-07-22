@@ -42,9 +42,10 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     END_EFF_(NUM_OF_SEGMENTS_ - 1),
     CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), POS_TUBE_DIM_(NUM_OF_CONSTRAINTS_, false),
     MOTION_CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), FORCE_CTRL_DIM_(NUM_OF_CONSTRAINTS_, false),
-    fsm_result_(control_status::NOMINAL), previous_control_status_(fsm_result_), 
-    tube_section_count_(0), transform_drivers_(false), transform_force_drivers_(false),
-    compute_null_space_command_(false), contact_alignment_secured_(false), 
+    fsm_result_(control_status::NOMINAL), fsm_force_task_result_(control_status::APPROACH),
+    previous_control_status_(fsm_result_), tube_section_count_(0), 
+    transform_drivers_(false), transform_force_drivers_(false),
+    compute_null_space_command_(false),
     write_contact_time_to_file_(false),
     JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
     current_error_twist_(KDL::Twist::Zero()),
@@ -463,6 +464,7 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     desired_state_.external_force[END_EFF_](3) = 0.0;
     desired_state_.external_force[END_EFF_](4) = 0.0;
     compute_null_space_command_ = true;
+    transform_force_drivers_    = true;
 }
 
 
@@ -545,7 +547,9 @@ void dynamics_controller::define_moveTo_follow_path_task(
 
     desired_state_.frame_pose[END_EFF_]    = moveTo_follow_path_task_.goal_poses[0];
     desired_task_model_                    = task_model::moveTo_follow_path;
-    transform_drivers_ = true;
+    transform_drivers_       = true;
+    transform_force_drivers_ = false;
+    compute_null_space_command_ = false;
 }
 
 
@@ -612,7 +616,9 @@ void dynamics_controller::define_moveTo_task(
 
     desired_state_.frame_pose[END_EFF_]    = moveTo_task_.goal_pose;
     desired_task_model_                    = task_model::moveTo;
-    transform_drivers_ = true;
+    transform_drivers_       = true;
+    transform_force_drivers_ = false;
+    compute_null_space_command_ = false;
 }
 
 void dynamics_controller::define_desired_ee_pose(
@@ -644,7 +650,9 @@ void dynamics_controller::define_desired_ee_pose(
     full_pose_task_.contact_threshold_angular = contact_threshold_angular;
     full_pose_task_.time_limit                = task_time_limit_sec;
     desired_task_model_                       = task_model::full_pose;
-    transform_drivers_ = false;
+    transform_drivers_       = false;
+    transform_force_drivers_ = false;
+    compute_null_space_command_ = false;
 }
 
 // Define Cartesian Acceleration task on the end-effector - Public Method
@@ -1249,7 +1257,6 @@ void dynamics_controller::compute_cart_control_commands()
 {   
     abag_command_ = abag_.update_state(abag_error_vector_).transpose();
     KDL::SetToZero(cart_force_command_[END_EFF_]);
-    KDL::SetToZero(cart_force_command_[3]);
 
     switch (desired_task_inteface_)
     {
@@ -1291,6 +1298,9 @@ void dynamics_controller::compute_cart_control_commands()
             assert(("Unsupported interface!", false));
             break;
     }
+
+    // First reset the force magnitudes
+    KDL::SetToZero(cart_force_command_[3].force);
 
     // Null space control commands to align third segment with arm's plane
     if (compute_null_space_command_)
