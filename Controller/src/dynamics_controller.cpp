@@ -348,7 +348,11 @@ void dynamics_controller::write_to_file()
     log_file_null_space_ << RAD_TO_DEG(null_space_abag_error_(0))         << " " << abag_null_space_.get_error()(0) << " "; // Raw and filtered error
     log_file_null_space_ << abag_null_space_.get_bias()(0)    << " " << abag_null_space_.get_gain()(0) << " ";
     log_file_null_space_ << abag_null_space_.get_command()(0) << " ";
-    if (write_contact_time_to_file_) log_file_null_space_ << loop_iteration_count_;
+    if (write_contact_time_to_file_) 
+    {
+        log_file_null_space_ << loop_iteration_count_;
+        write_contact_time_to_file_ = false;
+    }
     else log_file_null_space_ << 0.0;
     log_file_null_space_ << std::endl;
 }
