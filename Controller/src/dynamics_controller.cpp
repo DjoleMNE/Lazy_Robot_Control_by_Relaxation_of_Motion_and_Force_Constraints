@@ -974,7 +974,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             for (int i = 3; i < 5; i++)
             {
                 abag_error_vector_(i) = 0.0 - ext_wrench_(i);
-                // if ( std::fabs(abag_error_vector_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
+                if (std::fabs(abag_error_vector_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[i]) abag_error_vector_(i) = 0.0;
                 FORCE_CTRL_DIM_[i]  = true;       
             }
             
@@ -1029,7 +1029,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             for (int i = 3; i < 5; i++)
             {
                 abag_error_vector_(i) = 0.0 - ext_wrench_(i);
-                // if ( std::fabs(abag_error_vector_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
+                if (std::fabs(abag_error_vector_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[i]) abag_error_vector_(i) = 0.0;
                 FORCE_CTRL_DIM_[i]  = true;       
             }
 
