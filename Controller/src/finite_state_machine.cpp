@@ -466,7 +466,8 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
     // for (int i = 0; i < 6; i++) 
     //     log_file_ext_force_ << ext_wrench_(i) << " ";
     // log_file_ext_force_ << std::endl;
-
+    
+    // Cruise control mode
     if (contact_alignment_performed_)
     {
         if (!contact_detected(moveConstrained_follow_path_task_.contact_threshold_linear, 
@@ -481,6 +482,8 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
         if (total_contact_time_ >= time_threshold) return control_status::STOP_ROBOT;
         return control_status::CRUISE;
     }
+
+    // Approach control mode
     else
     {
         if (!contact_alignment_secured(desired_force, ext_wrench_)) total_contact_time_ = 0.0;

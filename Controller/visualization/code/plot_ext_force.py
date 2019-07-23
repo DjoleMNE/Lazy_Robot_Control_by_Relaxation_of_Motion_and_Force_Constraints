@@ -75,39 +75,39 @@ plt.margins(0,0)
 
 plt.subplot(6, 1, 1)
 plt.plot(linear_x_force, label='linear_x_force', c = 'red', linewidth = 2, zorder = 2)
-plt.legend(loc=4, fontsize = 'x-large')
+plt.legend(loc=2, fontsize = 'x-large')
 plt.xticks(np.arange(0, rows, tick_freq))
 plt.grid(True)
 
 plt.subplot(6, 1, 2)
 plt.plot(linear_y_force, label='linear_y_force', linewidth = 2, color = 'limegreen', zorder = 2)
-plt.legend(loc=4, fontsize = 'x-large')
+plt.legend(loc=2, fontsize = 'x-large')
 plt.xticks(np.arange(0, rows, tick_freq))
 plt.grid(True)
 
 plt.subplot(6, 1, 3)
 plt.plot(linear_z_force, label='linear_z_force', linewidth = 2, color = 'blue', zorder = 2)
-plt.legend(loc=4, fontsize = 'x-large')
+plt.legend(loc=2, fontsize = 'x-large')
 plt.xticks(np.arange(0, rows, tick_freq))
 plt.grid(True)
 
 plt.subplot(6, 1, 4)
 plt.plot(angular_x_force, label='angular_x_force', c = 'red', linewidth = 2, zorder = 2)
-plt.legend(fontsize = 'x-large')
+plt.legend(loc=2, fontsize = 'x-large')
 plt.xticks(np.arange(0, rows, tick_freq))
 plt.grid(True)
 
 
 plt.subplot(6, 1, 5)
 plt.plot(angular_y_force, label='angular_y_force', linewidth = 2, color = 'limegreen', zorder = 2)
-plt.legend(fontsize = 'x-large')
+plt.legend(loc=2, fontsize = 'x-large')
 plt.xticks(np.arange(0, rows, tick_freq))
 plt.grid(True)
 
 
 plt.subplot(6, 1, 6)
 plt.plot(angular_z_force, label='angular_z_force', linewidth = 2, color = 'blue', zorder = 2)
-plt.legend(fontsize = 'x-large')
+plt.legend(loc=2, fontsize = 'x-large')
 plt.xticks(np.arange(0, rows, tick_freq))
 plt.grid(True)
 
