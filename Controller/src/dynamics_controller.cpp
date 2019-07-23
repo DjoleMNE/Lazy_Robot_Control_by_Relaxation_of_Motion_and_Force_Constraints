@@ -978,6 +978,9 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
                 FORCE_CTRL_DIM_[i]  = true;       
             }
             
+            // Set null-space error tolerance; small null-space oscillations are desired in this mode
+            moveConstrained_follow_path_task_.null_space_tolerance = 15.0;
+
             // Motion error is computed in the base-frame
             transform_drivers_ = false;
             fsm_result_ = control_status::APPROACH;
@@ -1029,6 +1032,9 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
                 // if ( std::fabs(abag_error_vector_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
                 FORCE_CTRL_DIM_[i]  = true;       
             }
+
+            // Set null-space error tolerance; small null-space oscillations are desired in this mode
+            moveConstrained_follow_path_task_.null_space_tolerance = 30.0;
 
             transform_drivers_ = false;
             fsm_result_ = control_status::CRUISE_THROUGH_TUBE;
