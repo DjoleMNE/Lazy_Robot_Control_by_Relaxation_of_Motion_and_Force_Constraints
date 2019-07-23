@@ -1284,18 +1284,18 @@ void dynamics_controller::compute_cart_control_commands()
                                                        abag_command_(4) * max_command_(4), // Angular
                                                        abag_command_(5) * max_command_(5)}); // Angular
 
-            //Change the reference frame of constraint forces, from task frame to base frame
+            // Change the reference frame of constraint forces, from task frame to base frame
             if (transform_drivers_) transform_motion_driver();
+
+            // Use external force interface only for force commands in task specs
             if (desired_task_model_ == task_model::moveConstrained_follow_path)
             {
-                // Use external force interface only for force commands in task specs
                 for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
                     cart_force_command_[END_EFF_](i) = FORCE_CTRL_DIM_[i]? abag_command_(i) * max_command_(i) : 0.0;
-
-                // Change the reference frame of External Forces, from the task frame to the base frame
-                if (transform_force_drivers_) transform_force_driver();
             }
 
+            // Change the reference frame of External Forces, from the task frame to the base frame
+            if (transform_force_drivers_) transform_force_driver();
             break;
 
         default:
