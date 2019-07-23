@@ -118,26 +118,26 @@
     <arg name="abag_error_type"   default="1"/>
 
     <!-- ==== Saturate Bias and Command signals to [0, 1] or [-1, 1] ======-->
-    <arg name="min_bias_sat"       default="[-1.0, -1.0,  0.0, 
+    <arg name="min_bias_sat"       default="[-1.0, -1.0, -1.0, 
                                              -1.0, -1.0, -1.0]"/>
-    <arg name="min_command_sat"    default="[-1.0, -1.0,  0.0, 
+    <arg name="min_command_sat"    default="[-1.0, -1.0, -1.0, 
                                              -1.0, -1.0, -1.0]"/>
 
 
     <!-- ABAG PARAMETERS (Error Sign): Low Gain, low chattering but less robust -->
-    <arg name="ERROR_ALPHA" default="   [0.800000, 0.900000, 0.900000, 
+    <arg name="ERROR_ALPHA" default="   [0.800000, 0.900000, 0.900000,
                                          0.750000, 0.750000, 0.800000]"/>
 
     <arg name="BIAS_THRESHOLD" default="[0.000507, 0.000407, 0.000407, 
                                          0.000507, 0.000507, 0.000507]"/>
 
-    <arg name="BIAS_STEP" default="     [0.000495, 0.000495, 0.000505, 
+    <arg name="BIAS_STEP" default="     [0.000495, 0.000495, 0.000555, 
                                          0.000595, 0.000595, 0.000495]"/>
 
     <arg name="GAIN_THRESHOLD" default="[0.452492, 0.552492, 0.552492, 
                                          0.352492, 0.352492, 0.402492]"/>
 
-    <arg name="GAIN_STEP" default="     [0.002052, 0.003152, 0.003252, 
+    <arg name="GAIN_STEP" default="     [0.002052, 0.003152, 0.003152, 
                                          0.004052, 0.004052, 0.002052]"/>
 
     <!-- NULL SPACE ABAG PARAMETERS (Error Sign)-->
