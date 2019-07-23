@@ -232,7 +232,7 @@ bool LwrRttControl::configureHook()
                                                                  tube_tolerances_,
                                                                  tube_speed_,
                                                                  tube_force_,
-                                                                 0.007, 0.0004, //contact_threshold linear and angular
+                                                                 0.005, 0.0004, //contact_threshold linear and angular
                                                                  task_time_limit_sec_,// time_limit
                                                                  path_poses_); // TF pose
             break;
