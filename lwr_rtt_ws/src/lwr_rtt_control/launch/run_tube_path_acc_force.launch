@@ -73,7 +73,7 @@
                             x vel,    z_a vel             =-->
     <arg name="tube_tolerances" default="[0.003, 0.03, 0.01,  
                                           0.02, 0.02, 0.014, 
-                                          0.009, 250.0]"/>
+                                          0.001, 0.001]"/>
 
     <!-- ========= Tube start position ===============-->
     <!-- <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/> -->
@@ -84,7 +84,7 @@
     <!-- <arg name="tube_speed" default="0.7"/> -->
 
     <!-- ========= Tube force N ===============-->
-    <arg name="tube_force" default="-0.04"/>
+    <arg name="tube_force" default="0.04"/>
     <!-- <arg name="tube_force" default="0.9"/> -->
 
 
