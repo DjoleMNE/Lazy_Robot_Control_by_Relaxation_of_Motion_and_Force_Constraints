@@ -48,8 +48,12 @@ error     = []
 bias      = []
 gain      = []
 command   = []
+contact_time_tick = []
 
 for sample_ in range (1, rows - 1, variable_num):
+    tick = np.float32( input_data[    sample_][11] )
+    if (tick > 0): contact_time_tick.append(tick)
+
     measured.append(    np.float32( input_data[    sample_][desired_dim]) )
     desired.append(     np.float32( input_data[1 + sample_][desired_dim]) )
     if (desired_dim == 6):
@@ -140,8 +144,12 @@ if(show_tube):
         tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim] )))
     plt.plot(desired + tube_tolerance, c = 'red', label='tube_upper_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
     plt.plot(desired - tube_tolerance, c = 'blue', label='tube_lower_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
+    for tick in contact_time_tick:
+        plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
+
 if (desired_dim == 8):
     plt.ylim(desired[0] - tube_tolerance[0] - 0.1, desired[0] - tube_tolerance[0] + 0.1)
+
 
 plt.legend(loc=4, fontsize = 'x-large')
 plt.xticks(np.arange(0, num_samples, tick_freq))
@@ -149,12 +157,16 @@ plt.grid(True)
 
 plt.subplot(4, 1, 2)
 plt.plot(raw_error, c = 'orange', label=r'raw error: $e = y_d - y_k$', linewidth=1, zorder=2)
+for tick in contact_time_tick:
+    plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
 plt.legend(fontsize = 'x-large')
 plt.xticks(np.arange(0, num_samples, tick_freq))
 plt.grid(True)
 
 plt.subplot(4, 1, 3)
 plt.plot(error, c = 'orange', label=r'low-pass filtered error sign: $\bar{e}$', linewidth=1, zorder=2)
+for tick in contact_time_tick:
+    plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
 plt.legend(fontsize = 'x-large')
 plt.ylim(-1.2, 1.2)
 plt.xticks(np.arange(0, num_samples, tick_freq))
@@ -164,6 +176,8 @@ plt.subplot(4, 1, 4)
 plt.plot(bias, c = 'green', label='bias', linewidth = 2, zorder = 4)
 plt.plot(gain, c = 'red', label=r'gain * sign(e)', linewidth = 2, zorder = 2)
 plt.plot(command, c = 'blue', label='u', linewidth = 1.0, zorder = 3)
+for tick in contact_time_tick:
+    plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
 plt.ylim(-1.05, 1.05)
 plt.yticks(np.arange(-1.0, 1.05, 0.25))
 
