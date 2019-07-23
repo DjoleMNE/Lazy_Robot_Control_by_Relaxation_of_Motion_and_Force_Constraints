@@ -52,7 +52,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     abag_error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     null_space_abag_error_(Eigen::VectorXd::Zero(1)),
     predicted_error_twist_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
-    horizon_amplitude_(1.0), null_space_abag_command_(0.0),
+    horizon_amplitude_(1.0), null_space_abag_command_(0.0), null_space_angle_(0.0),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     max_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     force_task_parameters_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
@@ -344,7 +344,7 @@ void dynamics_controller::write_to_file()
     log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
 
     // Write null-space control state
-    log_file_null_space_ << RAD_TO_DEG(null_space_abag_error_(0))         << " " << 0.0 << " "; // Measured and desired state
+    log_file_null_space_ << RAD_TO_DEG(null_space_angle_)         << " " << 0.0 << " "; // Measured and desired state
     log_file_null_space_ << RAD_TO_DEG(null_space_abag_error_(0))         << " " << abag_null_space_.get_error()(0) << " "; // Raw and filtered error
     log_file_null_space_ << abag_null_space_.get_bias()(0)    << " " << abag_null_space_.get_gain()(0) << " ";
     log_file_null_space_ << abag_null_space_.get_command()(0) << " ";
@@ -888,9 +888,11 @@ void dynamics_controller::compute_moveConstrained_null_space_task_error()
         moveConstrained_follow_path_task_.null_space_plane_orientation = KDL::Rotation(plane_x, plane_y, plane_x * plane_y);
         KDL::Vector r_direction = moveConstrained_follow_path_task_.null_space_plane_orientation.Inverse() * robot_state_.frame_pose[3].p;
         r_direction.Normalize();
-        null_space_abag_error_(0) = std::atan2(r_direction(2), r_direction(1)); // Angle between Y and R_yz
+        null_space_angle_ = std::atan2(r_direction(2), r_direction(1)); // Angle between Y and R_yz
+
         // Unit of tolerance is degree
-        if (std::fabs(null_space_abag_error_(0)) <= DEG_TO_RAD(moveConstrained_follow_path_task_.null_space_tolerance)) null_space_abag_error_(0) = 0.0;
+        if (std::fabs(null_space_angle_) <= DEG_TO_RAD(moveConstrained_follow_path_task_.null_space_tolerance)) null_space_abag_error_(0) = 0.0;
+        else null_space_abag_error_(0) = null_space_angle_;
 
         // Calculate control/force direction: Cart force for null-space motion
         // plane_x = moveConstrained_follow_path_task_.null_space_plane_orientation.Inverse() * robot_state_.frame_pose[END_EFF_].p;
