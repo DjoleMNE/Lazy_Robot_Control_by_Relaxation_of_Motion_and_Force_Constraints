@@ -84,7 +84,7 @@
     <!-- <arg name="tube_speed" default="0.7"/> -->
 
     <!-- ========= Tube force N ===============-->
-    <arg name="tube_force" default="0.04"/>
+    <arg name="tube_force" default="-0.04"/>
     <!-- <arg name="tube_force" default="0.9"/> -->
 
 

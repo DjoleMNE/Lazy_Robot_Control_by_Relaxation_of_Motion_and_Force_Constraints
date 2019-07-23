@@ -923,7 +923,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
     moveConstrained_follow_path_task_.tf_poses[tube_section_count_].M = robot_state_.frame_pose[END_EFF_].M;
 
     // Saturate linear force measurements in Z (sensor frame) direction
-    if (ext_wrench_(2) < 0.0) ext_wrench_(2) = 0.0;
+    if (ext_wrench_(2) > 0.0) ext_wrench_(2) = 0.0;
 
     // Reset the flags
     for (int i = 0; i < 6; i++)
@@ -1017,7 +1017,8 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             }
 
             // Check for tube on force: Z linear and X & Y-angular, sensor frame
-            abag_error_vector_(2) = desired_state_.external_force[END_EFF_](2) - ext_wrench_(2);
+            abag_error_vector_(2) = ext_wrench_(2) - desired_state_.external_force[END_EFF_](2);
+
             // if ( std::fabs(abag_error_vector_(2)) <= moveConstrained_follow_path_task_.tube_tolerances[2] ) abag_error_vector_(2) = 0.0;
             FORCE_CTRL_DIM_[2]  = true;       
 
