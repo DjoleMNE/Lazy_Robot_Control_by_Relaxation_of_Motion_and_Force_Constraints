@@ -919,112 +919,133 @@ void dynamics_controller::compute_moveConstrained_null_space_task_error()
 */
 void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 {
-    if (previous_control_status_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
-    if (tube_section_count_ > moveConstrained_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveConstrained_follow_path_task_.tf_poses.size() - 1;
+    // End-effector/Sensor Frame is the task frame
+    moveConstrained_follow_path_task_.tf_poses[tube_section_count_].M = robot_state_.frame_pose[END_EFF_].M;
 
     // Saturate linear force measurements in Z (sensor frame) direction
     if (ext_wrench_(2) < 0.0) ext_wrench_(2) = 0.0;
 
-    // This function expects ext. wrench values to be expressed w.r.t. sensor frame
-    if (!contact_secured_) fsm_result_ = fsm_.update_force_task_status(desired_state_.external_force[END_EFF_], 
-                                                                       ext_wrench_,
-                                                                       total_time_sec_,
-                                                                       moveConstrained_follow_path_task_.tube_tolerances[5]);
-    
-    // Transform ext-force values from the sensor/end-effector to the base frame
-    // ext_wrench_ = robot_state_.frame_pose[END_EFF_].M * ext_wrench_;
-    // robot_state_.frame_velocity[END_EFF_] = robot_state_.frame_pose[END_EFF_].M.Inverse() * robot_state_.frame_velocity[END_EFF_];
-
+    // Reset the flags
     for (int i = 0; i < 6; i++)
     {
-        abag_error_vector_(i) = 0.0; 
-        MOTION_CTRL_DIM_[i]   = false;
-        FORCE_CTRL_DIM_[i]    = false;
+        MOTION_CTRL_DIM_[i] = false;
+        FORCE_CTRL_DIM_[i]  = false;
     }
-    moveConstrained_follow_path_task_.tf_poses[tube_section_count_].M = robot_state_.frame_pose[END_EFF_].M;
-    transform_drivers_       = false;
-    transform_force_drivers_ = false;
-    write_contact_time_to_file_ = false;
 
-    if (fsm_result_ == control_status::APPROACH || fsm_result_ == control_status::NOMINAL)
+    // Force-task FSM has priority over motion-task FSM
+    if (previous_control_status_ != control_status::STOP_ROBOT)
     {
-        if (loop_iteration_count_ <= 1)
-        {
-            // Parameters for Velocity controlled DOF
-            abag_.set_error_alpha(   abag_parameter::ERROR_ALPHA(2),    2);    
-            abag_.set_bias_threshold(abag_parameter::BIAS_THRESHOLD(2), 2);
-            abag_.set_bias_step(     abag_parameter::BIAS_STEP(2),      2);
-            abag_.set_gain_threshold(abag_parameter::GAIN_THRESHOLD(2), 2);
-            abag_.set_gain_step(     abag_parameter::GAIN_STEP(2),      2);
-            abag_.set_min_bias_sat_limit(Eigen::VectorXd::Constant(6, -1.0));
-            abag_.set_min_command_sat_limit(Eigen::VectorXd::Constant(6, -1.0));
-            max_command_(2) =        60.0;
-        }
-
-        // Linear DOFs: Control Motion w.r.t. base frame
-        for (int i = 0; i < 2; i++)
-        {
-            abag_error_vector_(i) = 0.0 - robot_state_.frame_velocity[END_EFF_](i);
-            // if (std::fabs(abag_error_vector_(i)) <= 0.001) abag_error_vector_(i) = 0.0;
-            MOTION_CTRL_DIM_[i] = true;
-        }
-        abag_error_vector_(2) = -0.02 - robot_state_.frame_velocity[END_EFF_](2);
-        MOTION_CTRL_DIM_[2] = true;
-        // if ( std::fabs(abag_error_vector_(2)) <= moveConstrained_follow_path_task_.tube_tolerances[2] ) abag_error_vector_(2) = 0.0;
-
-        for (int i = 3; i < 5; i++)
-        {
-            abag_error_vector_(i) = desired_state_.external_force[END_EFF_](i) - ext_wrench_(i);
-            // if ( std::fabs(abag_error_vector_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
-            FORCE_CTRL_DIM_[i]  = true;       
-        }
-
-        transform_force_drivers_ = true;
+        // This function expects external wrench values to be expressed w.r.t. sensor frame
+        fsm_force_task_result_ = fsm_.update_force_task_status(desired_state_.external_force[END_EFF_], 
+                                                               ext_wrench_,
+                                                               total_time_sec_,
+                                                               moveConstrained_follow_path_task_.tube_tolerances[5]);
     }
-    else
+
+    switch (fsm_force_task_result_)
     {
-        if (!contact_secured_)
-        {
-            abag_.reset_state(2);
+        case control_status::APPROACH:
+
+            // Set ABAG parameters for linear Z axis velocity control 
+            if (previous_control_status_ == control_status::NOMINAL)
+            {
+                // Parameters for Velocity controlled DOF
+                abag_.set_error_alpha(   abag_parameter::ERROR_ALPHA(2),    2);    
+                abag_.set_bias_threshold(abag_parameter::BIAS_THRESHOLD(2), 2);
+                abag_.set_bias_step(     abag_parameter::BIAS_STEP(2),      2);
+                abag_.set_gain_threshold(abag_parameter::GAIN_THRESHOLD(2), 2);
+                abag_.set_gain_step(     abag_parameter::GAIN_STEP(2),      2);
+                abag_.set_min_bias_sat_limit(   Eigen::VectorXd::Constant(6, -1.0));
+                abag_.set_min_command_sat_limit(Eigen::VectorXd::Constant(6, -1.0));
+                max_command_(2) = 60.0;
+            }
+
+            // Linear DOFs: Control Motion w.r.t. base frame
+            for (int i = 0; i < 2; i++)
+            {
+                abag_error_vector_(i) = 0.0 - robot_state_.frame_velocity[END_EFF_](i);
+                // if (std::fabs(abag_error_vector_(i)) <= 0.001) abag_error_vector_(i) = 0.0;
+                MOTION_CTRL_DIM_[i] = true;
+            }
+            abag_error_vector_(2) = -0.02 - robot_state_.frame_velocity[END_EFF_](2);
+            MOTION_CTRL_DIM_[2] = true;
+            // if ( std::fabs(abag_error_vector_(2)) <= moveConstrained_follow_path_task_.tube_tolerances[2] ) abag_error_vector_(2) = 0.0;
+
+            for (int i = 3; i < 5; i++)
+            {
+                abag_error_vector_(i) = 0.0 - ext_wrench_(i);
+                // if ( std::fabs(abag_error_vector_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
+                FORCE_CTRL_DIM_[i]  = true;       
+            }
             
-            // Parameters for Force controlled DOF
-            abag_.set_error_alpha(   force_task_parameters_(0), 2);    
-            abag_.set_bias_threshold(force_task_parameters_(1), 2);
-            abag_.set_bias_step(     force_task_parameters_(2), 2);
-            abag_.set_gain_threshold(force_task_parameters_(3), 2);
-            abag_.set_gain_step(     force_task_parameters_(4), 2);
-            max_command_(2)        = force_task_parameters_(5);
-            abag_.set_min_bias_sat_limit(min_sat_limits_);
-            abag_.set_min_command_sat_limit(min_sat_limits_);
-            
-            write_contact_time_to_file_ = true;
-            contact_alignment_secured_ = true;
-        }
+            // Motion error is computed in the base-frame
+            transform_drivers_ = false;
+            fsm_result_ = control_status::APPROACH;
+            break;
 
-        for (int i = 0; i < 2; i++)
-        {
-            abag_error_vector_(i) = 0.01 - robot_state_.frame_velocity[END_EFF_](i);
-            // if (std::fabs(abag_error_vector_(i)) <= 0.001) abag_error_vector_(i) = 0.0;
-            MOTION_CTRL_DIM_[i] = true;
-        }
+        case control_status::CRUISE:
+            if (previous_control_status_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
+            if (tube_section_count_ > moveConstrained_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveConstrained_follow_path_task_.tf_poses.size() - 1;
 
-        // Check for tube on force: Z linear and X & Y-angular
-        abag_error_vector_(2) = desired_state_.external_force[END_EFF_](2) - ext_wrench_(2);
-        // if ( std::fabs(abag_error_vector_(2)) <= moveConstrained_follow_path_task_.tube_tolerances[2] ) abag_error_vector_(2) = 0.0;
-        FORCE_CTRL_DIM_[2]  = true;       
+            // Transform motion measurements
+            // robot_state_.frame_velocity[END_EFF_] = robot_state_.frame_pose[END_EFF_].M.Inverse() * robot_state_.frame_velocity[END_EFF_];
 
-        for (int i = 3; i < 5; i++)
-        {
-            abag_error_vector_(i) = desired_state_.external_force[END_EFF_](i) - ext_wrench_(i);
-            // if ( std::fabs(abag_error_vector_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
-            FORCE_CTRL_DIM_[i]  = true;       
-        }
+            // Set ABAG parameters for linear Z axis force control 
+            if (previous_control_status_ == control_status::APPROACH)
+            {
+                abag_.reset_state(2);
+                
+                // Parameters for Force controlled DOF
+                abag_.set_error_alpha(   force_task_parameters_(0), 2);    
+                abag_.set_bias_threshold(force_task_parameters_(1), 2);
+                abag_.set_bias_step(     force_task_parameters_(2), 2);
+                abag_.set_gain_threshold(force_task_parameters_(3), 2);
+                abag_.set_gain_step(     force_task_parameters_(4), 2);
+                abag_.set_min_bias_sat_limit(   min_sat_limits_);
+                abag_.set_min_command_sat_limit(min_sat_limits_);
+                max_command_(2) = force_task_parameters_(5);
 
-        transform_force_drivers_ = true;
+                // Visualize time flag in control graphs, for this mode switching
+                write_contact_time_to_file_ = true;
+            }
+
+            for (int i = 0; i < 2; i++)
+            {
+                abag_error_vector_(i) = 0.01 - robot_state_.frame_velocity[END_EFF_](i);
+                // if (std::fabs(abag_error_vector_(i)) <= 0.001) abag_error_vector_(i) = 0.0;
+                MOTION_CTRL_DIM_[i] = true;
+            }
+
+            // Check for tube on force: Z linear and X & Y-angular, sensor frame
+            abag_error_vector_(2) = desired_state_.external_force[END_EFF_](2) - ext_wrench_(2);
+            // if ( std::fabs(abag_error_vector_(2)) <= moveConstrained_follow_path_task_.tube_tolerances[2] ) abag_error_vector_(2) = 0.0;
+            FORCE_CTRL_DIM_[2]  = true;       
+
+            for (int i = 3; i < 5; i++)
+            {
+                abag_error_vector_(i) = 0.0 - ext_wrench_(i);
+                // if ( std::fabs(abag_error_vector_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
+                FORCE_CTRL_DIM_[i]  = true;       
+            }
+
+            transform_drivers_ = false;
+            fsm_result_ = control_status::CRUISE_THROUGH_TUBE;
+
+            // fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, 
+            //                                              ext_wrench_, total_time_sec_, tube_section_count_);
+
+            if (fsm_result_ == control_status::STOP_ROBOT) fsm_force_task_result_ = control_status::STOP_ROBOT;
+            else break;
+
+        default:
+            if (previous_control_status_ != control_status::STOP_ROBOT) write_contact_time_to_file_ = true;
+            fsm_result_ = control_status::STOP_ROBOT;
+            compute_null_space_command_ = false;
+            return;
     }
-    
+
     // Additional Cartesian force to keep residual part of the robot in a good configuration
-    compute_moveConstrained_null_space_task_error();
+    if (compute_null_space_command_) compute_moveConstrained_null_space_task_error();
     
     // else
     // {
@@ -1046,8 +1067,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
     //     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
     //         current_error_twist_(i) = POS_TUBE_DIM_[i]? current_error_twist_(i) : 0.0;
 
-    //     fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, 
-    //                                                 ext_wrench_, total_time_sec_, tube_section_count_);
+
 
     //     // Check for tube on velocity X-linear
     //     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_](0) - robot_state_.frame_velocity[END_EFF_](0);
