@@ -142,7 +142,7 @@
 
     <!-- NULL SPACE ABAG PARAMETERS (Error Sign)-->
     <arg name="null_space_abag_parameters" default="[0.800000, 
-                                                     0.000457, 0.000445, 
+                                                     0.000507, 0.000495, 
                                                      0.452492, 0.002052]"/>
 
 <!--============ LwrRttControl Params ============-->

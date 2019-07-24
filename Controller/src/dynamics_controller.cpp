@@ -900,8 +900,8 @@ void dynamics_controller::compute_moveConstrained_null_space_task_error()
         // KDL::Vector control_direction = r_direction * plane_x;
 
         KDL::Vector control_direction = r_direction * KDL::Vector(1.0, 0.0, 0.0);
-        control_direction(0) = 0.0;
 
+        control_direction(0) = 0.0;
         norm = control_direction.Normalize();
         if (norm < MIN_NORM) 
         {
@@ -1014,7 +1014,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 
             for (int i = 0; i < 2; i++)
             {
-                abag_error_vector_(i) = 0.01 - robot_state_.frame_velocity[END_EFF_](i);
+                abag_error_vector_(i) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_](i);
                 if (std::fabs(abag_error_vector_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[6]) abag_error_vector_(i) = 0.0;
                 MOTION_CTRL_DIM_[i] = true;
             }
@@ -1340,7 +1340,7 @@ void dynamics_controller::compute_cart_control_commands()
     if (compute_null_space_command_)
     {
         // Compute controll command
-        null_space_abag_command_     = abag_null_space_.update_state(null_space_abag_error_)(0) * 280.0;
+        null_space_abag_command_     = abag_null_space_.update_state(null_space_abag_error_)(0) * 250.0;
 
         // Span the command over unit force vector space
         cart_force_command_[3].force = moveConstrained_follow_path_task_.null_space_force_direction * null_space_abag_command_;
