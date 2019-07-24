@@ -1034,7 +1034,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             }
 
             // Set null-space error tolerance; small null-space oscillations are desired in this mode
-            moveConstrained_follow_path_task_.null_space_tolerance = 30.0;
+            moveConstrained_follow_path_task_.null_space_tolerance = 25.0;
 
             transform_drivers_ = false;
             fsm_result_ = control_status::CRUISE_THROUGH_TUBE;
@@ -1340,7 +1340,7 @@ void dynamics_controller::compute_cart_control_commands()
     if (compute_null_space_command_)
     {
         // Compute controll command
-        null_space_abag_command_     = abag_null_space_.update_state(null_space_abag_error_)(0) * 250.0;
+        null_space_abag_command_     = abag_null_space_.update_state(null_space_abag_error_)(0) * 280.0;
 
         // Span the command over unit force vector space
         cart_force_command_[3].force = moveConstrained_follow_path_task_.null_space_force_direction * null_space_abag_command_;
