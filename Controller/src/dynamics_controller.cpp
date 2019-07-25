@@ -398,7 +398,8 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     CTRL_DIM_           = constraint_direction;
     POS_TUBE_DIM_[0]    = CTRL_DIM_[0]; POS_TUBE_DIM_[1]    = CTRL_DIM_[1]; 
     MOTION_CTRL_DIM_[0] = CTRL_DIM_[0]; MOTION_CTRL_DIM_[1] = CTRL_DIM_[1]; MOTION_CTRL_DIM_[5] = CTRL_DIM_[5];
-    FORCE_CTRL_DIM_[2]  = CTRL_DIM_[2]; FORCE_CTRL_DIM_[3]  = CTRL_DIM_[3]; FORCE_CTRL_DIM_[4]  = CTRL_DIM_[4];
+    FORCE_CTRL_DIM_[3]  = CTRL_DIM_[3]; FORCE_CTRL_DIM_[4]  = CTRL_DIM_[4];
+
     // X-Y-Z linear
     KDL::Vector x_world(1.0, 0.0, 0.0);
     std::vector<double> task_frame_pose(12, 0.0);
@@ -442,9 +443,9 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
             task_frame_pose[9] = tf_orientation.data[6]; task_frame_pose[10] = tf_orientation.data[7]; task_frame_pose[11] = tf_orientation.data[8];
         }
 
-        task_frame_poses[i]                                 = task_frame_pose;
-        moveConstrained_follow_path_task_.tf_poses[i]       = KDL::Frame(tf_orientation, tf_position);
-        moveConstrained_follow_path_task_.goal_poses[i]     = KDL::Frame::Identity();
+        task_frame_poses[i]                             = task_frame_pose;
+        moveConstrained_follow_path_task_.tf_poses[i]   = KDL::Frame(tf_orientation, tf_position);
+        moveConstrained_follow_path_task_.goal_poses[i] = KDL::Frame::Identity();
     }
 
     moveConstrained_follow_path_task_.tube_path_points             = tube_path_points;
@@ -458,7 +459,7 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     moveConstrained_follow_path_task_.null_space_force_direction   = KDL::Vector::Zero();
 
     // Set null-space error tolerance; small null-space oscillations are desired in this mode
-    moveConstrained_follow_path_task_.null_space_tolerance = 30.0;
+    moveConstrained_follow_path_task_.null_space_tolerance = 35.0;
 
     desired_state_.frame_pose[END_EFF_]        = moveConstrained_follow_path_task_.goal_poses[0];
     desired_task_model_                        = task_model::moveConstrained_follow_path;
@@ -987,11 +988,10 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             break;
 
         case control_status::CRUISE:
+
+            // Update tube section count 
             if (previous_control_status_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
             if (tube_section_count_ > moveConstrained_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveConstrained_follow_path_task_.tf_poses.size() - 1;
-
-            // Transform motion measurements
-            // robot_state_.frame_velocity[END_EFF_] = robot_state_.frame_pose[END_EFF_].M.Inverse() * robot_state_.frame_velocity[END_EFF_];
 
             // Set ABAG parameters for linear Z axis force control 
             if (previous_control_status_ == control_status::APPROACH)
@@ -1054,54 +1054,6 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 
     // Additional Cartesian force to keep residual part of the robot in a good configuration
     if (compute_null_space_command_) compute_moveConstrained_null_space_task_error();
-    
-    // else
-    // {
-    //     // if (fsm_result_ == control_status::CRUISE) printf("  afffaf ");
-    //     MOTION_CTRL_DIM_[0] = CTRL_DIM_[0]; MOTION_CTRL_DIM_[1] = CTRL_DIM_[1]; MOTION_CTRL_DIM_[5] = CTRL_DIM_[5];
-    //     FORCE_CTRL_DIM_[2]  = CTRL_DIM_[2]; FORCE_CTRL_DIM_[3]  = CTRL_DIM_[3]; FORCE_CTRL_DIM_[4]  = CTRL_DIM_[4];
-    //     transform_drivers_ = true;
-
-    //     //Change the reference frame of the robot state, from base frame to task frame
-    //     moveConstrained_follow_path_task_.tf_poses[tube_section_count_].M = robot_state_.frame_pose[END_EFF_].M;
-    //     robot_state_.frame_pose[END_EFF_]     = moveConstrained_follow_path_task_.tf_poses[tube_section_count_].Inverse()   * robot_state_.frame_pose[END_EFF_];
-    //     robot_state_.frame_velocity[END_EFF_] = moveConstrained_follow_path_task_.tf_poses[tube_section_count_].M.Inverse() * robot_state_.frame_velocity[END_EFF_];
-        
-    //     current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
-
-    //     make_predictions(horizon_amplitude_, 1);
-    //     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
-
-    //     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
-    //         current_error_twist_(i) = POS_TUBE_DIM_[i]? current_error_twist_(i) : 0.0;
-
-
-
-    //     // Check for tube on velocity X-linear
-    //     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_](0) - robot_state_.frame_velocity[END_EFF_](0);
-    //     if ((desired_state_.frame_velocity[END_EFF_](0) != 0.0) && \
-    //         (std::fabs(abag_error_vector_(0)) <= moveConstrained_follow_path_task_.tube_tolerances[6])) abag_error_vector_(0) = 0.0;
-
-    //     // Check for tube on position Y-linear
-    //     abag_error_vector_(1) = predicted_error_twist_(1);
-    //     if ( std::fabs(abag_error_vector_(1)) <= moveConstrained_follow_path_task_.tube_tolerances[1] ) abag_error_vector_(1) = 0.0;
-
-    //     // Check for tube on force Z-linear
-    //     abag_error_vector_(2) = desired_state_.external_force[END_EFF_](2) - ext_wrench_(2);
-    //     if ((desired_state_.external_force[END_EFF_](2) != 0.0) && \
-    //         (std::fabs(abag_error_vector_(2)) <= moveConstrained_follow_path_task_.tube_tolerances[2])) abag_error_vector_(2) = 0.0;
-
-    //     // Check for tube on force X & Y-angular
-    //     for (int i = 3; i < 5; i++)
-    //     {   
-    //         abag_error_vector_(i) = desired_state_.external_force[END_EFF_](i) - ext_wrench_(i);
-    //         if ( std::fabs(abag_error_vector_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
-    //     }
-
-    //     // Check for tube on velocity: Z-angular
-    //     abag_error_vector_(5) = desired_state_.frame_velocity[END_EFF_](5) - robot_state_.frame_velocity[END_EFF_](5);
-    //     if ( std::fabs(abag_error_vector_(5)) <= moveConstrained_follow_path_task_.tube_tolerances[7] ) abag_error_vector_(5) = 0.0;
-    // }
 }
 
 /**
