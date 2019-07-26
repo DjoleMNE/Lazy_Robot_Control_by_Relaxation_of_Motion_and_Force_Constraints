@@ -188,8 +188,6 @@ int finite_state_machine::update_moveConstrained_follow_path_task(state_specific
 int finite_state_machine::update_moveTo_follow_path_task(state_specification &desired_state,
                                                          const int tube_section_count)
 {
-    if (goal_reached_ || contact_detected_) return control_status::STOP_ROBOT;
-
     if (total_control_time_sec_ > moveTo_follow_path_task_.time_limit) 
     {
         #ifndef NDEBUG       
@@ -199,6 +197,8 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
         time_limit_reached_ = true;
         return control_status::STOP_CONTROL;
     }
+
+    if (goal_reached_ || contact_detected_) return control_status::STOP_ROBOT;
 
     if (contact_detected(moveTo_follow_path_task_.contact_threshold_linear, 
                          moveTo_follow_path_task_.contact_threshold_angular))
@@ -286,8 +286,6 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
 
 int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 {
-    if (goal_reached_ || contact_detected_) return control_status::STOP_ROBOT;
-
     if (total_control_time_sec_ > moveTo_task_.time_limit) 
     {
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
@@ -299,6 +297,8 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         time_limit_reached_ = true;
         return control_status::STOP_CONTROL;
     }
+
+    if (goal_reached_ || contact_detected_) return control_status::STOP_ROBOT;
     
     if (contact_detected(moveTo_task_.contact_threshold_linear, 
                          moveTo_task_.contact_threshold_angular))
@@ -374,8 +374,6 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 
 int finite_state_machine::update_full_pose_task(state_specification &desired_state)
 {
-    if (goal_reached_ || contact_detected_) return control_status::STOP_ROBOT;
-
     if(total_control_time_sec_ > full_pose_task_.time_limit) 
     {
         #ifndef NDEBUG
@@ -385,6 +383,8 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
         time_limit_reached_ = true;
         return control_status::STOP_CONTROL;
     }
+
+    if (goal_reached_ || contact_detected_) return control_status::STOP_ROBOT;
 
     if(contact_detected(full_pose_task_.contact_threshold_linear, 
                         full_pose_task_.contact_threshold_angular))
@@ -427,7 +427,6 @@ int finite_state_machine::update_motion_task_status(const state_specification &r
     robot_state_            = robot_state;
     desired_state_          = desired_state;
     current_error_          = current_error;
-    ext_wrench_             = ext_force;
     total_control_time_sec_ = time_passed_sec;
 
     switch (desired_task_model_)
@@ -437,14 +436,17 @@ int finite_state_machine::update_motion_task_status(const state_specification &r
             break;
 
         case task_model::moveTo_follow_path:
+            ext_wrench_ = ext_force;
             return update_moveTo_follow_path_task(desired_state, tube_section_count);
             break;
 
         case task_model::moveTo:
+            ext_wrench_ = ext_force;
             return update_moveTo_task(desired_state);
             break;
         
         case task_model::full_pose:
+            ext_wrench_ = ext_force;
             return update_full_pose_task(desired_state);
             break;
             
@@ -479,7 +481,13 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
 
         previous_task_time_ = current_task_time;
 
-        if (total_contact_time_ >= time_threshold) return control_status::STOP_ROBOT;
+        if (total_contact_time_ >= time_threshold)
+        {
+            #ifndef NDEBUG       
+                printf("Contact Lost\n");
+            #endif
+            return control_status::STOP_ROBOT;
+        } 
         return control_status::CRUISE;
     }
 
