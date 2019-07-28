@@ -110,7 +110,7 @@ int finite_state_machine::update_moveConstrained_follow_path_task(state_specific
         if (std::fabs(current_error_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[i]) count++;
     }
 
-    // Check if the robot has reached final goal area
+    // Check if the robot has reached the final goal area
     if (count == 2 && final_section_reached) 
     {   
         #ifndef NDEBUG       
@@ -118,7 +118,6 @@ int finite_state_machine::update_moveConstrained_follow_path_task(state_specific
         #endif
 
         goal_reached_ = true;
-        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         return control_status::STOP_ROBOT;
     }
 
@@ -468,7 +467,7 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
         if (total_contact_time_ >= time_threshold)
         {
             #ifndef NDEBUG       
-                printf("Contact Lost\n");
+                printf("Contact Lost!\n");
             #endif
             return control_status::STOP_ROBOT;
         } 

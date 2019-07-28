@@ -1122,10 +1122,7 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
     
     // Check for tube on velocity
     if ((desired_state_.frame_velocity[END_EFF_].vel(0) != 0.0) && \
-        (std::fabs(abag_error_vector_(0)) <= moveTo_follow_path_task_.tube_tolerances[6]))
-    {
-        abag_error_vector_(0) = 0.0;
-    }
+        (std::fabs(abag_error_vector_(0)) <= moveTo_follow_path_task_.tube_tolerances[6])) abag_error_vector_(0) = 0.0;
 
     // Other parts of the ABAG error are position errors
     for(int i = 1; i < NUM_OF_CONSTRAINTS_; i++)
