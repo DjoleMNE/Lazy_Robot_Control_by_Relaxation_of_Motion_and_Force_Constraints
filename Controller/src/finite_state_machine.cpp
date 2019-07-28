@@ -122,12 +122,11 @@ int finite_state_machine::update_moveConstrained_follow_path_task(state_specific
     }
 
     /*
-     * The robot has reached goal x axis area but it is out of y area?
+     * The robot is out of y area?
      * If yes command zero X linear velocity, to keep it in that x area.
      * Else go with initially commanded tube speed.
     */
-    if ((count  == 2) || \
-        ((count == 1) && (std::fabs(current_error_(0)) > moveConstrained_follow_path_task_.tube_tolerances[0])))
+    if (std::fabs(current_error_(1)) <= moveConstrained_follow_path_task_.tube_tolerances[1])
     {
         double speed = 0.0;
         switch (motion_profile_)
