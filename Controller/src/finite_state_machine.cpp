@@ -480,7 +480,7 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
         else total_contact_time_ += current_task_time - previous_task_time_;
 
         previous_task_time_ = current_task_time;
-        if (total_contact_time_ >= 0.011) 
+        if (total_contact_time_ >= 0.010) 
         {
             total_contact_time_ = 0.0;
             contact_alignment_performed_ = true;
@@ -493,10 +493,10 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
 bool finite_state_machine::contact_alignment_secured(const KDL::Wrench &desired_force,
                                                      const KDL::Wrench &ext_force)
 {
-    if (std::fabs(ext_force(2)) < 0.015 || std::fabs(ext_force(2)) > 1.0) return false;
+    if (std::fabs(ext_force(2)) < 0.016 || std::fabs(ext_force(2)) > 1.0) return false;
     for (int i = 3; i < 5; i++)
     {
-        if (std::fabs(ext_force(i)) > 0.003) return false;
+        if (std::fabs(ext_force(i)) > 0.0029) return false;
     }
 
     return true;

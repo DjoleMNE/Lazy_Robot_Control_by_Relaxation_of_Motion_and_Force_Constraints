@@ -67,11 +67,11 @@
     <!-- === Path parameters. Last param: num of points ===-->
     <arg name="path_parameters" default="[0.5, 0.5, 0.05, 0.008, 2]"/>
 
-    <!-- = Tube tolerances: x pos,    y pos,    z force, 
-                            x torque, y torque, contact_time_threshold, 
-                            x vel,    z_a vel             =-->
-    <arg name="tube_tolerances" default="[0.005, 0.03, 0.0,  
-                                          0.01, 0.01, 15.0, 
+    <!-- = Tube tolerances: x pos,    y pos,      z force, 
+                            x torque, y torque,   null-space, 
+                            x vel,    z_a pos/vel =-->
+    <arg name="tube_tolerances" default="[0.005, 0.05, 0.0,  
+                                          0.01, 0.01, 20.0, 
                                           0.001, 0.001]"/>
 
     <!-- ========= Tube start position ===============-->
@@ -108,7 +108,7 @@
     <arg name="damper_amplitude" default="2.5"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
-    <arg name="max_command" default="[60.0, 60.0, 300.0, 
+    <arg name="max_command" default="[70.0, 70.0, 300.0, 
                                       30.0, 30.0, 10.0]"/>
 
 
@@ -117,14 +117,14 @@
     <arg name="abag_error_type"   default="1"/>
 
     <!-- ==== Saturate Bias and Command signals to [0, 1] or [-1, 1] ======-->
-    <arg name="min_bias_sat"       default="[-1.0, -1.0, 0.0, 
+    <arg name="min_bias_sat"       default="[-1.0, -1.0,  0.0, 
                                              -1.0, -1.0, -1.0]"/>
-    <arg name="min_command_sat"    default="[-1.0, -1.0, 0.0, 
+    <arg name="min_command_sat"    default="[-1.0, -1.0,  0.0, 
                                              -1.0, -1.0, -1.0]"/>
 
 
     <!-- ABAG PARAMETERS (Error Sign): Low Gain, low chattering but less robust -->
-    <arg name="ERROR_ALPHA" default="   [0.800000, 0.900000, 0.900000,
+    <arg name="ERROR_ALPHA" default="   [0.850000, 0.900000, 0.900000,
                                          0.850000, 0.850000, 0.800000]"/>
 
     <arg name="BIAS_THRESHOLD" default="[0.000507, 0.000407, 0.000407, 
@@ -140,9 +140,9 @@
                                          0.002052, 0.002052, 0.002052]"/>
 
     <!-- NULL SPACE ABAG PARAMETERS (Error Sign)-->
-    <arg name="null_space_abag_parameters" default="[0.800000, 
-                                                     0.000507, 0.000495, 
-                                                     0.452492, 0.002052]"/>
+    <arg name="null_space_abag_parameters" default="[0.850000, 
+                                                     0.000507, 0.000455, 
+                                                     0.452492, 0.001552]"/>
 
 <!--============ LwrRttControl Params ============-->
     <!-- Set some parameters for LwrRttControl
