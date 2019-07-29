@@ -1048,35 +1048,52 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 
             // Check for tube on position Y-linear
             abag_error_vector_(1) = predicted_error_twist_(1);
-            if ( std::fabs(abag_error_vector_(1)) <= moveConstrained_follow_path_task_.tube_tolerances[1] ) abag_error_vector_(1) = 0.0;
+            if (std::fabs(abag_error_vector_(1)) <= moveConstrained_follow_path_task_.tube_tolerances[1]) abag_error_vector_(1) = 0.0;
             MOTION_CTRL_DIM_[1] = true;
 
             // Check for tube on force: Z linear, sensor frame
             abag_error_vector_(2) = desired_state_.external_force[END_EFF_](2) - ext_wrench_(2);
-            if ( std::fabs(abag_error_vector_(2)) <= moveConstrained_follow_path_task_.tube_tolerances[2] ) abag_error_vector_(2) = 0.0;
-            FORCE_CTRL_DIM_[2] = true;       
+            if (std::fabs(abag_error_vector_(2)) <= moveConstrained_follow_path_task_.tube_tolerances[2]) abag_error_vector_(2) = 0.0;
+            FORCE_CTRL_DIM_[2] = true;
+
 
             // Check for tube on angular force: X & Y-angular, sensor frame
-            for (int i = 3; i < 5; i++)
-            {
-                abag_error_vector_(i) = 0.0 - ext_wrench_(i);
-                if (std::fabs(abag_error_vector_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[i]) abag_error_vector_(i) = 0.0;
-                FORCE_CTRL_DIM_[i]  = true;       
-            }
+            // for (int i = 3; i < 5; i++)
+            // {
+            //     abag_error_vector_(i) = 0.0 - ext_wrench_(i);
+            //     if (std::fabs(abag_error_vector_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[i]) abag_error_vector_(i) = 0.0;
+            //     FORCE_CTRL_DIM_[i]  = true;       
+            // }
+
+            // Check for tube on angular force: X angular, sensor frame
+            abag_error_vector_(3) = std::atan2(-ext_wrench_(1), ext_wrench_(2));
+            if (std::fabs(abag_error_vector_(3)) <= moveConstrained_follow_path_task_.tube_tolerances[3]) abag_error_vector_(3) = 0.0;
+            FORCE_CTRL_DIM_[3]  = true;
+
+            // Check for tube on angular force: Y-angular, sensor frame
+            abag_error_vector_(4) = std::atan2(-ext_wrench_(0), ext_wrench_(2));
+            if (std::fabs(abag_error_vector_(4)) <= moveConstrained_follow_path_task_.tube_tolerances[4]) abag_error_vector_(4) = 0.0;
+            FORCE_CTRL_DIM_[4]  = true;
+
 
             // Check for tube on angular velocity: Z-angular
-            abag_error_vector_(5) = 0.0 - robot_state_.frame_velocity[END_EFF_](5);
-            if (std::fabs(abag_error_vector_(5)) <= moveConstrained_follow_path_task_.tube_tolerances[7]) abag_error_vector_(5) = 0.0;
-            MOTION_CTRL_DIM_[5] = true;
+            // abag_error_vector_(5) = 0.0 - robot_state_.frame_velocity[END_EFF_](5);
+            // if (std::fabs(abag_error_vector_(5)) <= moveConstrained_follow_path_task_.tube_tolerances[7]) abag_error_vector_(5) = 0.0;
+            // MOTION_CTRL_DIM_[5] = true;
 
             // Set null-space error tolerance; small null-space oscillations are desired in this mode
             // moveConstrained_follow_path_task_.null_space_tolerance = 25.0;
 
+            // Motion error is, in this case, expressed in the task frame
             transform_drivers_ = true;
 
-            // fsm_result_ = control_status::CRUISE_THROUGH_TUBE;
-            fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, 
-                                                         ext_wrench_, total_time_sec_, tube_section_count_);
+            // Feedforward force for ensuring stable contact alignment once control mode switch occurs
+            if (apply_feedforward_force_)
+            {
+                feedforward_loop_count_++;
+                if (feedforward_loop_count_ > 20) apply_feedforward_force_ = false;
+                else abag_error_vector_(2) = 1.0; // ABAG does not care about raw error magnitude
+            }
 
             if (fsm_result_ == control_status::STOP_ROBOT) fsm_force_task_result_ = control_status::STOP_ROBOT;
             else break;
@@ -1084,6 +1101,13 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
         default:
             if (previous_control_status_ != control_status::STOP_ROBOT) write_contact_time_to_file_ = true;
             fsm_result_ = control_status::STOP_ROBOT;
+            
+            // Reset the flags
+            for (int i = 0; i < 6; i++)
+            {
+                MOTION_CTRL_DIM_[i] = false;
+                FORCE_CTRL_DIM_[i]  = false;
+            }
             compute_null_space_command_ = false;
             return;
     }
