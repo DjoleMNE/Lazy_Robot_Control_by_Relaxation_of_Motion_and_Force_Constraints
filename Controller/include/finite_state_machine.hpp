@@ -64,7 +64,7 @@ enum control_status
 struct moveConstrained_follow_path_task
 {
     std::vector<KDL::Frame> tf_poses, goal_poses;
-    KDL::Rotation null_space_plane_orientation;
+    KDL::Rotation tf_force, null_space_plane_orientation;
     KDL::Vector null_space_force_direction;
     std::vector< std::vector<double> > tube_path_points{1, std::vector<double>(3, 0.0)};
     std::vector<double> tube_tolerances{std::vector<double>(8, 0.0)};

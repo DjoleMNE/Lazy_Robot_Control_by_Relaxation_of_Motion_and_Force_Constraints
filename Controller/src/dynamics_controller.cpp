@@ -25,7 +25,7 @@ SOFTWARE.
 
 #include <dynamics_controller.hpp>
 #define SECOND 1000000 // 1sec = 1 000 000 us
-const double MIN_NORM = 1e-2;
+const double MIN_NORM = 1e-3;
 
 dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
                                          const int rate_hz):
@@ -456,11 +456,12 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     moveConstrained_follow_path_task_.contact_threshold_linear     = contact_threshold_linear;
     moveConstrained_follow_path_task_.contact_threshold_angular    = contact_threshold_angular;
     moveConstrained_follow_path_task_.time_limit                   = task_time_limit_sec;
+    moveConstrained_follow_path_task_.tf_force                     = KDL::Rotation::Identity();
     moveConstrained_follow_path_task_.null_space_plane_orientation = KDL::Rotation::Identity();
     moveConstrained_follow_path_task_.null_space_force_direction   = KDL::Vector::Zero();
 
     // Set null-space error tolerance; small null-space oscillations are desired in this mode
-    moveConstrained_follow_path_task_.null_space_tolerance = 35.0;
+    moveConstrained_follow_path_task_.null_space_tolerance = 25.0;
 
     desired_state_.frame_pose[END_EFF_]        = moveConstrained_follow_path_task_.goal_poses[0];
     desired_task_model_                        = task_model::moveConstrained_follow_path;
@@ -921,9 +922,7 @@ void dynamics_controller::compute_moveConstrained_null_space_task_error()
 */
 void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 {
-    moveConstrained_follow_path_task_.null_space_tolerance = 35.0;
-    // End-effector/Sensor Frame is the task frame
-    moveConstrained_follow_path_task_.tf_poses[tube_section_count_].M = robot_state_.frame_pose[END_EFF_].M;
+    moveConstrained_follow_path_task_.null_space_tolerance = 15.0;
 
     // Saturate linear force measurements in Z (sensor frame) direction
     if (ext_wrench_(2) < 0.0) ext_wrench_(2) = 0.0;
@@ -934,6 +933,9 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
         MOTION_CTRL_DIM_[i] = false;
         FORCE_CTRL_DIM_[i]  = false;
     }
+
+    // End-effector/Sensor Frame is the task frame for force DOFs
+    moveConstrained_follow_path_task_.tf_force = robot_state_.frame_pose[END_EFF_].M;
 
     // Force-task FSM has priority over motion-task FSM
     if (previous_control_status_ != control_status::STOP_ROBOT)
@@ -1017,9 +1019,6 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             // Update tube section count 
             if (previous_control_status_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
             if (tube_section_count_ > moveConstrained_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveConstrained_follow_path_task_.tf_poses.size() - 1;
-
-            // End-effector/Sensor Frame is the task frame
-            moveConstrained_follow_path_task_.tf_poses[tube_section_count_].M = robot_state_.frame_pose[END_EFF_].M;
 
             // Make prediction while the state is expressed in the base frame
             make_predictions(horizon_amplitude_, 1);
@@ -1226,7 +1225,7 @@ void dynamics_controller::transform_force_driver()
     switch (desired_task_model_)
     {
         case task_model::moveConstrained_follow_path:
-            cart_force_command_[END_EFF_] = moveConstrained_follow_path_task_.tf_poses[tube_section_count_].M * cart_force_command_[END_EFF_];
+            cart_force_command_[END_EFF_] = moveConstrained_follow_path_task_.tf_force * cart_force_command_[END_EFF_];
             break;
         
         case task_model::moveTo_follow_path:
