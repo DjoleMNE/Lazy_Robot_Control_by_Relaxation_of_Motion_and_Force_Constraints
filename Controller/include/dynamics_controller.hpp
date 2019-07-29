@@ -156,7 +156,7 @@ class dynamics_controller
     std::chrono::steady_clock::time_point loop_end_time_;
     std::chrono::duration <double, std::micro> loop_interval_{};
     double total_time_sec_;
-    int loop_iteration_count_;
+    int loop_iteration_count_, feedforward_loop_count_;
 
     const KDL::Chain robot_chain_;
     const int NUM_OF_JOINTS_;
@@ -167,7 +167,7 @@ class dynamics_controller
     const std::vector<double> JOINT_TORQUE_LIMITS_;
     std::vector<bool> CTRL_DIM_, POS_TUBE_DIM_, MOTION_CTRL_DIM_, FORCE_CTRL_DIM_;
     int fsm_result_, fsm_force_task_result_, previous_control_status_, tube_section_count_;
-    bool transform_drivers_, transform_force_drivers_, 
+    bool transform_drivers_, transform_force_drivers_, apply_feedforward_force_, 
          compute_null_space_command_, write_contact_time_to_file_;
     
     moveTo_task moveTo_task_;

@@ -33,7 +33,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     // Time period defined in microseconds: 1s = 1 000 000us
     DT_MICRO_(SECOND / RATE_HZ_),  DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
     loop_start_time_(), loop_end_time_(), //Not sure if required to init
-    total_time_sec_(0.0), loop_iteration_count_(0),
+    total_time_sec_(0.0), loop_iteration_count_(0), feedforward_loop_count_(0),
     robot_chain_(robot_driver->get_robot_model()),
     NUM_OF_JOINTS_(robot_chain_.getNrOfJoints()),
     NUM_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
@@ -45,6 +45,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     fsm_result_(control_status::NOMINAL), fsm_force_task_result_(control_status::APPROACH),
     previous_control_status_(fsm_result_), tube_section_count_(0), 
     transform_drivers_(false), transform_force_drivers_(false),
+    apply_feedforward_force_(false),
     compute_null_space_command_(false),
     write_contact_time_to_file_(false),
     JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
@@ -947,7 +948,6 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
     switch (fsm_force_task_result_)
     {
         case control_status::APPROACH:
-
             // Set ABAG parameters for linear Z axis velocity control 
             if (previous_control_status_ == control_status::NOMINAL)
             {
@@ -961,7 +961,6 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
                 abag_.set_min_command_sat_limit(Eigen::VectorXd::Constant(6, -1.0));
                 max_command_(2) = 60.0;
             }
-
             // Linear DOFs: Control Motion w.r.t. base frame
             for (int i = 0; i < 2; i++)
             {
@@ -1008,18 +1007,18 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
                 abag_.set_min_bias_sat_limit(   min_sat_limits_);
                 abag_.set_min_command_sat_limit(min_sat_limits_);
                 max_command_(2) = force_task_parameters_(5);
+                apply_feedforward_force_ = true;
 
-                // Visualize time flag in control graphs, for this mode switching
+                // Visualize time flag in control graphs, for this control mode switching
                 write_contact_time_to_file_ = true;
-                desired_state_.frame_velocity[END_EFF_](0) = 0.0;
-                desired_state_.frame_velocity[END_EFF_](1) = 0.0;
             }
 
-            else
-            {
-                desired_state_.frame_velocity[END_EFF_](0) = 0.0;
-                desired_state_.frame_velocity[END_EFF_](1) = 0.0;
-            }
+            // Update tube section count 
+            if (previous_control_status_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
+            if (tube_section_count_ > moveConstrained_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveConstrained_follow_path_task_.tf_poses.size() - 1;
+
+            // End-effector/Sensor Frame is the task frame
+            moveConstrained_follow_path_task_.tf_poses[tube_section_count_].M = robot_state_.frame_pose[END_EFF_].M;
 
             // Make prediction while the state is expressed in the base frame
             make_predictions(horizon_amplitude_, 1);
@@ -1313,6 +1312,7 @@ void dynamics_controller::compute_cart_control_commands()
 
             // Change the reference frame of External Forces, from the task frame to the base frame
             if (transform_force_drivers_) transform_force_driver();
+            if (apply_feedforward_force_) cart_force_command_[END_EFF_](2) = - max_command_(2)/3;
             break;
 
         default:
