@@ -180,7 +180,7 @@ bool LwrRttControl::configureHook()
 
         case desired_pose::TABLE:
             // Table pose 1
-            desired_ee_pose_ = {-0.200785, -0.308278,  0.1202811, // Linear: Vector
+            desired_ee_pose_ = {-0.200785, -0.308278,  0.120281, // Linear: Vector
                                 -0.540302, -0.841471, -0.000860, // Angular: Rotation matrix
                                 -0.841470,  0.540302, -0.001340,
                                  0.001592,  0.000000, -0.999999};

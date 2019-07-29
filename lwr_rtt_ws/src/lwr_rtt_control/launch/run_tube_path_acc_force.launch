@@ -71,7 +71,7 @@
                             x torque, y torque, contact_time_threshold, 
                             x vel,    z_a vel             =-->
     <arg name="tube_tolerances" default="[0.005, 0.03, 0.0,  
-                                          0.01, 0.01, 0.014, 
+                                          0.01, 0.01, 15.0, 
                                           0.001, 0.001]"/>
 
     <!-- ========= Tube start position ===============-->
