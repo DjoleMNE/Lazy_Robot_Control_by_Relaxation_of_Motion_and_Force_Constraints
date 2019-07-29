@@ -461,7 +461,7 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     moveConstrained_follow_path_task_.null_space_force_direction   = KDL::Vector::Zero();
 
     // Set null-space error tolerance; small null-space oscillations are desired in this mode
-    moveConstrained_follow_path_task_.null_space_tolerance = 25.0;
+    moveConstrained_follow_path_task_.null_space_tolerance = moveConstrained_follow_path_task_.tube_tolerances[5];
 
     desired_state_.frame_pose[END_EFF_]        = moveConstrained_follow_path_task_.goal_poses[0];
     desired_task_model_                        = task_model::moveConstrained_follow_path;
@@ -922,8 +922,6 @@ void dynamics_controller::compute_moveConstrained_null_space_task_error()
 */
 void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 {
-    moveConstrained_follow_path_task_.null_space_tolerance = 15.0;
-
     // Saturate linear force measurements in Z (sensor frame) direction
     if (ext_wrench_(2) < 0.0) ext_wrench_(2) = 0.0;
 
@@ -944,7 +942,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
         fsm_force_task_result_ = fsm_.update_force_task_status(desired_state_.external_force[END_EFF_], 
                                                                ext_wrench_,
                                                                total_time_sec_,
-                                                               moveConstrained_follow_path_task_.tube_tolerances[5]);
+                                                               0.014);
     }
 
     switch (fsm_force_task_result_)
