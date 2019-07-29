@@ -67,20 +67,19 @@
     <!-- === Path parameters. Last param: num of points ===-->
     <arg name="path_parameters" default="[0.5, 0.5, 0.05, 0.008, 2]"/>
 
-
     <!-- = Tube tolerances: x pos,    y pos,    z force, 
                             x torque, y torque, contact_time_threshold, 
                             x vel,    z_a vel             =-->
-    <arg name="tube_tolerances" default="[0.003, 0.03, 0.01,  
-                                          0.0002, 0.0002, 0.014, 
-                                          0.0, 0.001]"/>
+    <arg name="tube_tolerances" default="[0.005, 0.03, 0.0,  
+                                          0.01, 0.01, 0.014, 
+                                          0.001, 0.001]"/>
 
     <!-- ========= Tube start position ===============-->
     <!-- <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/> -->
     <arg name="tube_start_position" default="[0.2, 0.3, 0.632811]"/>
 
     <!-- ========= Tube speed ===============-->
-    <arg name="tube_speed" default="0.01"/>
+    <arg name="tube_speed" default="0.03"/>
     <!-- <arg name="tube_speed" default="0.7"/> -->
 
     <!-- ========= Tube force N ===============-->
@@ -118,27 +117,27 @@
     <arg name="abag_error_type"   default="1"/>
 
     <!-- ==== Saturate Bias and Command signals to [0, 1] or [-1, 1] ======-->
-    <arg name="min_bias_sat"       default="[-1.0, -1.0, -1.0, 
+    <arg name="min_bias_sat"       default="[-1.0, -1.0, 0.0, 
                                              -1.0, -1.0, -1.0]"/>
-    <arg name="min_command_sat"    default="[-1.0, -1.0, -1.0, 
+    <arg name="min_command_sat"    default="[-1.0, -1.0, 0.0, 
                                              -1.0, -1.0, -1.0]"/>
 
 
     <!-- ABAG PARAMETERS (Error Sign): Low Gain, low chattering but less robust -->
     <arg name="ERROR_ALPHA" default="   [0.800000, 0.900000, 0.900000,
-                                         0.750000, 0.750000, 0.800000]"/>
+                                         0.850000, 0.850000, 0.800000]"/>
 
     <arg name="BIAS_THRESHOLD" default="[0.000507, 0.000407, 0.000407, 
                                          0.000507, 0.000507, 0.000507]"/>
 
     <arg name="BIAS_STEP" default="     [0.000495, 0.000495, 0.000555, 
-                                         0.000595, 0.000595, 0.000495]"/>
+                                         0.000495, 0.000495, 0.000495]"/>
 
     <arg name="GAIN_THRESHOLD" default="[0.452492, 0.552492, 0.552492, 
-                                         0.352492, 0.352492, 0.402492]"/>
+                                         0.502492, 0.502492, 0.402492]"/>
 
     <arg name="GAIN_STEP" default="     [0.002052, 0.003152, 0.003152, 
-                                         0.004052, 0.004052, 0.002052]"/>
+                                         0.002052, 0.002052, 0.002052]"/>
 
     <!-- NULL SPACE ABAG PARAMETERS (Error Sign)-->
     <arg name="null_space_abag_parameters" default="[0.800000, 
