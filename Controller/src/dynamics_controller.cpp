@@ -972,7 +972,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
                 MOTION_CTRL_DIM_[i] = true;
             }
             abag_error_vector_(2) = -0.02 - robot_state_.frame_velocity[END_EFF_](2);
-            // if ( std::fabs(abag_error_vector_(2)) <= moveConstrained_follow_path_task_.tube_tolerances[6] ) abag_error_vector_(2) = 0.0;
+            if (std::fabs(abag_error_vector_(2)) <= moveConstrained_follow_path_task_.tube_tolerances[6]) abag_error_vector_(2) = 0.0;
             MOTION_CTRL_DIM_[2] = true;
 
             for (int i = 3; i < 5; i++)
@@ -984,25 +984,22 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 
             // Set null-space error tolerance; small null-space oscillations are desired in this mode
             // moveConstrained_follow_path_task_.null_space_tolerance = 15.0;
-
+            
             // Motion error is computed in the base-frame
             transform_drivers_ = false;
             fsm_result_ = control_status::APPROACH;
             break;
 
         case control_status::CRUISE:
-
-            // Update tube section count 
-            if (previous_control_status_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
-            if (tube_section_count_ > moveConstrained_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveConstrained_follow_path_task_.tf_poses.size() - 1;
-
             // Set ABAG parameters for linear Z axis force control 
             if (previous_control_status_ == control_status::APPROACH)
             {
+                abag_.reset_state(0);
+                abag_.reset_state(1);
                 abag_.reset_state(2);
                 
-                // Parameters for Force controlled DOF
-                abag_.set_error_alpha(   force_task_parameters_(0), 2);    
+                // Parameters for linear force controlled DOF
+                abag_.set_error_alpha(   force_task_parameters_(0), 2);
                 abag_.set_bias_threshold(force_task_parameters_(1), 2);
                 abag_.set_bias_step(     force_task_parameters_(2), 2);
                 abag_.set_gain_threshold(force_task_parameters_(3), 2);
@@ -1033,6 +1030,10 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 
             for (int i = 0; i < 2; i++)
                 current_error_twist_(i) = POS_TUBE_DIM_[i]? current_error_twist_(i) : 0.0;
+
+            // fsm_result_ = control_status::CRUISE_THROUGH_TUBE;
+            fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, 
+                                                         ext_wrench_, total_time_sec_, tube_section_count_);
 
             // for (int i = 0; i < 2; i++)
             // {
