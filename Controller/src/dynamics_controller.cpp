@@ -932,6 +932,9 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
         FORCE_CTRL_DIM_[i]  = false;
     }
 
+    // Additional Cartesian force to keep residual part of the robot in a good configuration
+    if (compute_null_space_command_) compute_moveConstrained_null_space_task_error();
+
     // End-effector/Sensor Frame is the task frame for force DOFs
     moveConstrained_follow_path_task_.tf_force = robot_state_.frame_pose[END_EFF_].M;
 
@@ -1111,9 +1114,6 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             compute_null_space_command_ = false;
             return;
     }
-
-    // Additional Cartesian force to keep residual part of the robot in a good configuration
-    if (compute_null_space_command_) compute_moveConstrained_null_space_task_error();
 }
 
 /**
