@@ -1475,12 +1475,12 @@ int dynamics_controller::initialize(const int desired_control_mode,
     {
         case task_model::moveConstrained_follow_path:
             fsm_result_ = fsm_.initialize_with_moveConstrained_follow_path(moveConstrained_follow_path_task_, 
-                                                             motion_profile);
+                                                                           motion_profile);
             break;
 
         case task_model::moveTo_follow_path:
             fsm_result_ = fsm_.initialize_with_moveTo_follow_path(moveTo_follow_path_task_, 
-                                                    motion_profile);
+                                                                  motion_profile);
             break;
 
         case task_model::moveTo:
@@ -1523,15 +1523,15 @@ int dynamics_controller::initialize(const int desired_control_mode,
         }
         log_file_cart_ << std::endl;      
 
-        log_file_joint_.open(dynamics_parameter::LOG_FILE_JOINT_PATH);
-        assert(log_file_joint_.is_open());
-
         log_file_predictions_.open(dynamics_parameter::LOG_FILE_PREDICTIONS_PATH);
         assert(log_file_predictions_.is_open());
 
         log_file_null_space_.open(dynamics_parameter::LOG_FILE_NULL_SPACE_PATH);
         assert(log_file_null_space_.is_open());
+        log_file_null_space_ << moveConstrained_follow_path_task_.tube_tolerances[5] << std::endl;
 
+        log_file_joint_.open(dynamics_parameter::LOG_FILE_JOINT_PATH);
+        assert(log_file_joint_.is_open());
         for(int i = 0; i < NUM_OF_JOINTS_; i++) 
             log_file_joint_ << JOINT_TORQUE_LIMITS_[i] << " ";
         log_file_joint_ << std::endl;

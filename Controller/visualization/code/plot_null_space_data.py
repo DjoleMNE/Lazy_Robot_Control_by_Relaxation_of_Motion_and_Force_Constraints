@@ -32,7 +32,7 @@ with open(filename, "r") as f:
     all_data = [x.split() for x in f.readlines()]
     input_data = np.array(all_data)[:-2]
 
-rows = np.shape(input_data)[0]
+rows = np.shape(input_data)[0] - 1
 cols = variable_num
 print("Data size: ", rows, ",", cols)
 
@@ -44,8 +44,9 @@ bias      = []
 gain      = []
 command   = []
 contact_time_tick = []
+tube_tolerance = input_data[0][0] 
 
-for sample_ in range (0, rows):
+for sample_ in range (1, rows):
     tick = np.float32( input_data[sample_][7] )
     if (tick > 0): contact_time_tick.append(tick)
     measured.append(  np.float32( input_data[sample_][0] ) )
@@ -85,9 +86,9 @@ plt.plot(desired, label='Desired', linewidth = 2, color = 'black', zorder = 3)
 for tick in contact_time_tick:
     plt.axvline(x = tick, linewidth = 1.3,  color='blue')
 
-# tube_tolerance = np.array(np.full((rows, ), np.float32(0.5235)))
-# plt.plot(desired + tube_tolerance, c = 'red', label='tube_upper_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
-# plt.plot(desired - tube_tolerance, c = 'blue', label='tube_lower_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
+tube_tolerance = np.array(np.full((rows-1, ), np.float32(tube_tolerance)))
+plt.plot(desired + tube_tolerance, c = 'red', label='tube_upper_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
+plt.plot(desired - tube_tolerance, c = 'blue', label='tube_lower_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
 # plt.ylim(desired[0] - tube_tolerance[0] - 0.1, desired[0] - tube_tolerance[0] + 0.1)
 
 plt.legend(loc=4, fontsize = 'x-large')
