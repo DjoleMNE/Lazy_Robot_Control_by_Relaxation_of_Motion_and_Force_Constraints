@@ -952,7 +952,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             if (previous_control_status_ == control_status::NOMINAL)
             {
                 // Parameters for Velocity controlled DOF
-                abag_.set_error_alpha(   abag_parameter::ERROR_ALPHA(2),    2);    
+                abag_.set_error_alpha(   abag_parameter::ERROR_ALPHA(2),    2);
                 abag_.set_bias_threshold(abag_parameter::BIAS_THRESHOLD(2), 2);
                 abag_.set_bias_step(     abag_parameter::BIAS_STEP(2),      2);
                 abag_.set_gain_threshold(abag_parameter::GAIN_THRESHOLD(2), 2);
@@ -961,7 +961,8 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
                 abag_.set_min_command_sat_limit(Eigen::VectorXd::Constant(6, -1.0));
                 max_command_(2) = 60.0;
             }
-            // Linear DOFs: Control Motion w.r.t. base frame
+
+            // Linear DOFs: Control Linear X,Y,Z Motion w.r.t. base frame
             for (int i = 0; i < 2; i++)
             {
                 abag_error_vector_(i) = 0.0 - robot_state_.frame_velocity[END_EFF_](i);
@@ -969,8 +970,8 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
                 MOTION_CTRL_DIM_[i] = true;
             }
             abag_error_vector_(2) = -0.02 - robot_state_.frame_velocity[END_EFF_](2);
+            // if ( std::fabs(abag_error_vector_(2)) <= moveConstrained_follow_path_task_.tube_tolerances[6] ) abag_error_vector_(2) = 0.0;
             MOTION_CTRL_DIM_[2] = true;
-            // if ( std::fabs(abag_error_vector_(2)) <= moveConstrained_follow_path_task_.tube_tolerances[2] ) abag_error_vector_(2) = 0.0;
 
             for (int i = 3; i < 5; i++)
             {
