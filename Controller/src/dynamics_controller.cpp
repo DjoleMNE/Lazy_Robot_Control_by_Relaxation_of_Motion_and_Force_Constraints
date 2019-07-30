@@ -404,11 +404,15 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     // X-Y-Z linear
     KDL::Vector x_world(1.0, 0.0, 0.0);
     std::vector<double> task_frame_pose(12, 0.0);
-
+    KDL::Rotation task_orientation = KDL::Rotation::EulerZYZ(0.0, 0.0, -M_PI/4);
     for (int i = 0; i < tube_path_points.size() - 1; i++)
     {
         KDL::Vector tube_start_position = KDL::Vector(tube_path_points[i    ][0], tube_path_points[i    ][1], tube_path_points[i    ][2]);
         KDL::Vector tf_position         = KDL::Vector(tube_path_points[i + 1][0], tube_path_points[i + 1][1], tube_path_points[i + 1][2]);
+
+        tube_start_position = task_orientation * tube_start_position;
+        tf_position         = task_orientation * tf_position;
+
         KDL::Vector x_task              = tf_position - tube_start_position;
         x_task.Normalize();
 

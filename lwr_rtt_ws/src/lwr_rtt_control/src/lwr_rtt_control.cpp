@@ -180,7 +180,7 @@ bool LwrRttControl::configureHook()
 
         case desired_pose::TABLE:
             // Table pose 1
-            desired_ee_pose_ = {-0.200785, -0.308278,  0.120281, // Linear: Vector
+            desired_ee_pose_ = { 0.145075, -0.338278,  0.120281, // Linear: Vector
                                 -0.540302, -0.841471, -0.000860, // Angular: Rotation matrix
                                 -0.841470,  0.540302, -0.001340,
                                  0.001592,  0.000000, -0.999999};
@@ -205,10 +205,10 @@ bool LwrRttControl::configureHook()
             switch (path_type_)
             {
                 case path_types::STEP_PATH:
-                    this->draw_step_xy(tube_path_points_, 6, 0.005,
+                    this->draw_step_xy(tube_path_points_, 6, 0.17,
                                        desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
                     break;
-                
+
                 case path_types::INF_SIGN_PATH:
                     this->draw_inf_sign_xy(tube_path_points_, 0.3, 0.2, 1.0, 1.0, 
                                            desired_ee_pose_[0], desired_ee_pose_[1], desired_ee_pose_[2]);
@@ -808,6 +808,7 @@ void LwrRttControl::draw_step_xy(std::vector< std::vector<double> > &path_points
 {
     double x, y;
     int offset = int(path_points.size() / step_size);
+    offset = 0.1;
 
     for(int i = 0; i < path_points.size(); i++)
     {
