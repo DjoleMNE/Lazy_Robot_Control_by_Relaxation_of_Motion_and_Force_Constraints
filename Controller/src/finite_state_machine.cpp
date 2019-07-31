@@ -362,7 +362,7 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 
 int finite_state_machine::update_full_pose_task(state_specification &desired_state)
 {
-    if(total_control_time_sec_ > full_pose_task_.time_limit) 
+    if (total_control_time_sec_ > full_pose_task_.time_limit) 
     {
         #ifndef NDEBUG
             if(!time_limit_reached_) printf("Time limit reached\n");
@@ -374,8 +374,8 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
 
     if (goal_reached_ || contact_detected_) return control_status::STOP_ROBOT;
 
-    if(contact_detected(full_pose_task_.contact_threshold_linear, 
-                        full_pose_task_.contact_threshold_angular))
+    if (contact_detected(full_pose_task_.contact_threshold_linear, 
+                         full_pose_task_.contact_threshold_angular))
     {
         #ifndef NDEBUG       
             printf("Contact occurred\n");
@@ -383,7 +383,6 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
         contact_detected_ = true;
         return control_status::STOP_ROBOT;
     }
-    contact_detected_ = false;
 
     int count = 0;
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
@@ -391,7 +390,7 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
         if (std::fabs(current_error_(i)) <= full_pose_task_.goal_area[i]) count++;
     }
     
-    if(count == NUM_OF_CONSTRAINTS_) 
+    if (count == NUM_OF_CONSTRAINTS_) 
     {
         #ifndef NDEBUG       
             printf("Goal area reached\n");
@@ -400,7 +399,6 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
         goal_reached_ = true;
         return control_status::STOP_ROBOT;
     }
-    else goal_reached_ = false;
 
     return control_status::NOMINAL;
 }

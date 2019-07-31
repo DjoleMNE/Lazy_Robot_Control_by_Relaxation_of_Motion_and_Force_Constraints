@@ -661,8 +661,8 @@ void dynamics_controller::define_desired_ee_pose(
     full_pose_task_.contact_threshold_angular = contact_threshold_angular;
     full_pose_task_.time_limit                = task_time_limit_sec;
     desired_task_model_                       = task_model::full_pose;
-    transform_drivers_       = false;
-    transform_force_drivers_ = false;
+    transform_drivers_          = false;
+    transform_force_drivers_    = false;
     compute_null_space_command_ = false;
 }
 
@@ -1203,9 +1203,8 @@ void dynamics_controller::compute_moveTo_task_error()
 */
 void dynamics_controller::compute_full_pose_task_error()
 {
-    current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
-
     make_predictions(horizon_amplitude_, 1);
+    current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
     
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
@@ -1383,7 +1382,7 @@ int dynamics_controller::evaluate_dynamics()
                                                 cart_force_command_,
                                                 robot_state_.feedforward_torque);
 
-    if(hd_solver_result != 0) return hd_solver_result;
+    if (hd_solver_result != 0) return hd_solver_result;
 
     hd_solver_.get_control_torque(robot_state_.control_torque);
 
@@ -1738,7 +1737,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
     if (store_control_data_) write_to_file();   
 
     // Calculate robot dynamics using the Vereshchagin HD solver
-    if(evaluate_dynamics() != 0)
+    if (evaluate_dynamics() != 0)
     {
         deinitialize();
         printf("WARNING: Dynamics Solver returned error. Stopping the robot!\n");
@@ -1747,7 +1746,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
 
     // apply_joint_control_commands();
     // Apply joint commands using safe control interface.
-    // if(apply_joint_control_commands() != 0)
+    // if (apply_joint_control_commands() != 0)
     // {
     //     deinitialize();
     //     return -1;

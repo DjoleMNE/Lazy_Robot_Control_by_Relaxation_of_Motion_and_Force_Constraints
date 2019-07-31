@@ -57,7 +57,7 @@
 
 
     <!-- ========= Task time limit in seconds ==============-->
-    <arg name="task_time_limit_sec" default="60000.0"/>
+    <arg name="task_time_limit_sec" default="6000.0"/>
 
 
     <!-- ========= Motion profile: constant velocity ===============-->
@@ -93,13 +93,6 @@
                                              -1.0, -1.0, -1.0]"/>
     <arg name="min_command_sat"    default="[-1.0, -1.0, -1.0, 
                                              -1.0, -1.0, -1.0]"/>
-
-    <!-- <arg name="min_bias_sat"       default="[0.0, 0.0, 0.0, 
-                                             0.0, 0.0, 0.0]"/>
-                                             
-    <arg name="min_command_sat"    default="[0.0, 0.0, 0.0, 
-                                             0.0, 0.0, 0.0]"/> -->
-
 
     <!-- ABAG PARAMETERS (Error Sign): Low Gain, low chattering but less robust -->
     <arg name="ERROR_ALPHA" default="   [0.900000, 0.900000, 0.900000, 
