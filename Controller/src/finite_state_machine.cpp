@@ -149,7 +149,13 @@ int finite_state_machine::update_moveConstrained_follow_path_task(state_specific
         }
 
         // Check for necessary direction of motion
-        if ((sign(current_error_(0)) == -1) && final_section_reached) speed = -1 * speed;      
+        if ((sign(current_error_(0)) == -1) && final_section_reached)
+        {
+            speed = -1 * speed;
+            // #ifndef NDEBUG       
+            //     printf("Motion reversed.\n");
+            // #endif
+        }
         desired_state.frame_velocity[END_EFF_].vel(0) = speed;      
 
         // Robot has crossed some tube section? If yes, switch to next one.
