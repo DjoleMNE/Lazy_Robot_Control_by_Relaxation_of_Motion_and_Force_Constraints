@@ -558,8 +558,8 @@ void dynamics_controller::define_moveTo_follow_path_task(
 
     desired_state_.frame_pose[END_EFF_]    = moveTo_follow_path_task_.goal_poses[0];
     desired_task_model_                    = task_model::moveTo_follow_path;
-    transform_drivers_       = true;
-    transform_force_drivers_ = false;
+    transform_drivers_          = true;
+    transform_force_drivers_    = false;
     compute_null_space_command_ = false;
 }
 
@@ -627,8 +627,8 @@ void dynamics_controller::define_moveTo_task(
 
     desired_state_.frame_pose[END_EFF_]    = moveTo_task_.goal_pose;
     desired_task_model_                    = task_model::moveTo;
-    transform_drivers_       = true;
-    transform_force_drivers_ = false;
+    transform_drivers_          = true;
+    transform_force_drivers_    = false;
     compute_null_space_command_ = false;
 }
 
@@ -848,13 +848,13 @@ KDL::Twist dynamics_controller::finite_displacement_twist(const state_specificat
 
     /**
      * This error part represents a linear motion necessary to go from 
-     * predicted to desired position (positive direction of translation).
+     * predicted/measured to desired position (positive direction of translation).
     */
     twist.vel = state_a.frame_pose[END_EFF_].p - state_b.frame_pose[END_EFF_].p;
 
     /**
-     * Describes rotation required to align R_p with R_d.
-     * It represents relative rotation from predicted state to 
+     * Describes rotation required to align R_m/p with R_d.
+     * It represents relative rotation from measured/predicted state to 
      * desired state, expressed in the BASE frame!
      * Source: Luh et al. "Resolved-acceleration control of 
      * mechanical manipulators".
