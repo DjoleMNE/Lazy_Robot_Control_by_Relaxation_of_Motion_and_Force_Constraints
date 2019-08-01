@@ -4,9 +4,9 @@
 
     <!-- The end effector frame (you'll be able to use frames <= tip_link for cartesian position, jacobians etc.) -->
     <!-- 7 joints, 7 links, 8 frames. frames from link 0 to link 7-->
-    <!-- <arg name="tip_link" default="link_7"/> -->
+    <arg name="tip_link" default="link_7"/>
     <!-- arm as usual: 7 joints & 7 links, ati sensor additional 2 (fixed-not counted in kdl)joints and 2 links  -->
-    <arg name="tip_link" default="ati_link"/>
+    <!-- <arg name="tip_link" default="ati_link"/> -->
 
     <!-- Run Simulated robot -->
     <arg name="sim" default="true" />
@@ -15,30 +15,32 @@
     <!-- Launch rviz -->
     <arg name="rviz" default="true" />
     <!-- The level of verbose (never, fatal, critical, error, warning, info, debug, realtime) -->
-    <arg name="log_level" default="realtime" />
+    <arg name="log_level" default="error" />
     <!-- Tools -->
     <arg name="load_base" default="false" />
-    <arg name="load_ati_sensor" default="true" />
-    <arg name="load_table" default="true" />
+    <arg name="load_ati_sensor" default="false" />
     <arg name="load_handle" default="false" />
+    <arg name="load_weight" default="true" />
+    <arg name="load_table" default="false" />
     <!-- Gazebo -->
     <arg name="gazebo_gui" default="false"/>
 
 
+
 <!-- ***************** General Control PARAMETERS ********************** -->
     <arg name="environment" default="1"/>
-    <arg name="robot_model" default="1"/>
-    <arg name="simulation_loop_iterations" default="200000"/>
-    <arg name="krc_compensate_gravity" default="true"/>
-
-    <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) or MoveTo_follow_path(3) or MoveConstrained_follow_path(5)==-->
-    <arg name="desired_task_model" default="5"/>
+    <arg name="robot_model" default="0"/>
+    <arg name="simulation_loop_iterations" default="20000"/>
+    <arg name="krc_compensate_gravity" default="false"/>
     
+    <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) ==-->
+    <arg name="desired_task_model" default="2"/>
+
     <!-- ========= Use Joint Torque Commands ===============-->
     <arg name="desired_control_mode" default="0"/>
 
-    <!-- ========= Use Cart Acc Constraint Interface ===============-->
-    <arg name="desired_dynamics_interface" default="0"/>
+    <!-- ========= Use Cart Virtual Force Interface ===============-->
+    <arg name="desired_dynamics_interface" default="1"/>
 
 
     
@@ -46,7 +48,7 @@
     <!-- <arg name="desired_pose" default="0"/> -->
 
     <!-- ========= navigation pose ===============-->
-    <!-- <arg name="desired_pose" default="1"/> -->
+    <arg name="desired_pose" default="1"/>
 
     <!-- ========= navigation 2 pose ===============-->
     <!-- <arg name="desired_pose" default="2"/> -->
@@ -54,37 +56,24 @@
     <!-- ========= folded pose ===============-->
     <!-- <arg name="desired_pose" default="3"/> -->
 
-    <!-- ========= table pose ===============-->
-    <arg name="desired_pose" default="4"/>
 
 
     <!-- ========= Task time limit in seconds ==============-->
-    <arg name="task_time_limit_sec" default="600.0"/>
+    <arg name="task_time_limit_sec" default="60.0"/>
 
-    <!-- === Path type: 0 for sine, 1 for step, 2 for inf sign ====-->
-    <arg name="path_type" default="1"/>
 
-    <!-- === Path parameters. Last param: num of points ===-->
-    <arg name="path_parameters" default="[0.5, 0.5, 0.05, 0.008, 2]"/>
+    <!-- ========= Tube tolerances ===============-->
+    <arg name="tube_tolerances" default="[0.03, 0.05, 0.05, 
+                                          0.17, 0.17, 0.17, 
+                                          0.005, 0.1]"/>
 
-    <!-- = Tube tolerances: x pos,    y pos,      z force, 
-                            x torque, y torque,   null-space, 
-                            x vel,    z_a pos/vel =-->
-    <arg name="tube_tolerances" default="[0.005, 0.05, 0.0,  
-                                          0.01, 0.01, 30.0, 
-                                          0.001, 0.001]"/>
 
     <!-- ========= Tube start position ===============-->
-    <!-- <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/> -->
-    <arg name="tube_start_position" default="[0.2, 0.3, 0.632811]"/>
+    <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/>
+    <!-- <arg name="tube_start_position" default="[0.1, 0.2, 1.0]"/> -->
 
     <!-- ========= Tube speed ===============-->
-    <arg name="tube_speed" default="0.03"/>
-    <!-- <arg name="tube_speed" default="0.7"/> -->
-
-    <!-- ========= Tube force N ===============-->
-    <arg name="tube_force" default="0.03"/>
-    <!-- <arg name="tube_force" default="0.9"/> -->
+    <arg name="tube_speed" default="0.1"/>
 
 
     <!-- ========= Motion profile: constant velocity ===============-->
@@ -102,47 +91,42 @@
 
     <!-- ========= Dimensions to be controlled ===============-->
     <arg name="control_dims" default="[true, true, true, 
-                                       true, true, false]"/>
+                                       false, false, false]"/>
 
-    <!-- === Prediction Horizion =======-->
-    <arg name="damper_amplitude" default="2.5"/>
+    <!-- === Prediction Horizion  =======-->
+    <arg name="damper_amplitude" default="5.50"/>
   
-    <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
-    <arg name="max_command" default="[80.0, 70.0, 300.0, 
-                                      30.0, 30.0, 10.0]"/>
+    <!-- ========= Max Cart force excerted on the End-Effector ===============-->
+    <arg name="max_command" default="[200.0, 200.0, 200.0, 
+                                      20.0, 20.0, 20.0]"/>
 
-
+    
 <!-- *************** ABAG SETTINGS ******************** -->
     <!-- ==== Raw error is 0, sign is 1 flag ======-->
     <arg name="abag_error_type"   default="1"/>
 
     <!-- ==== Saturate Bias and Command signals to [0, 1] or [-1, 1] ======-->
-    <arg name="min_bias_sat"       default="[-1.0, -1.0,  -1.0, 
+    <arg name="min_bias_sat"       default="[-1.0, -1.0, -1.0, 
                                              -1.0, -1.0, -1.0]"/>
-    <arg name="min_command_sat"    default="[-1.0, -1.0,  -1.0, 
+    <arg name="min_command_sat"    default="[-1.0, -1.0, -1.0, 
                                              -1.0, -1.0, -1.0]"/>
 
 
     <!-- ABAG PARAMETERS (Error Sign): Low Gain, low chattering but less robust -->
-    <arg name="ERROR_ALPHA" default="   [0.900000, 0.900000, 0.900000,
-                                         0.850000, 0.850000, 0.800000]"/>
+    <arg name="ERROR_ALPHA" default="   [0.900000, 0.900000, 0.900000, 
+                                         0.650000, 0.850000, 0.178001]"/>
 
-    <arg name="BIAS_THRESHOLD" default="[0.000457, 0.000407, 0.000407, 
-                                         0.000507, 0.000507, 0.000507]"/>
+    <arg name="BIAS_THRESHOLD" default="[0.000407, 0.000407, 0.000407, 
+                                         0.001007, 0.001007, 0.724277]"/>
 
-    <arg name="BIAS_STEP" default="     [0.000495, 0.000495, 0.000605, 
-                                         0.000495, 0.000495, 0.000495]"/>
+    <arg name="BIAS_STEP" default="     [0.000495, 0.000495, 0.000495, 
+                                         0.003495, 0.003495, 0.503495]"/>
 
     <arg name="GAIN_THRESHOLD" default="[0.552492, 0.552492, 0.552492, 
-                                         0.502492, 0.502492, 0.402492]"/>
+                                         0.252492, 0.252492, 0.432492]"/>
 
-    <arg name="GAIN_STEP" default="     [0.002500, 0.002500, 0.002652, 
-                                         0.002052, 0.002052, 0.002052]"/>
-
-    <!-- NULL SPACE ABAG PARAMETERS (Error Sign)-->
-    <arg name="null_space_abag_parameters" default="[0.850000, 
-                                                     0.000507, 0.000455, 
-                                                     0.452492, 0.001552]"/>
+    <arg name="GAIN_STEP" default="     [0.003152, 0.003152, 0.003152, 
+                                         0.015152, 0.015152, 0.655152]"/>
 
 <!--============ LwrRttControl Params ============-->
     <!-- Set some parameters for LwrRttControl
@@ -157,14 +141,11 @@
         <param name="desired_task_model" value="$(arg desired_task_model)"/>
         <param name="desired_control_mode" value="$(arg desired_control_mode)"/>
         <param name="desired_dynamics_interface" value="$(arg desired_dynamics_interface)"/>
-        <param name="desired_pose" value="$(arg desired_pose)"/>
-        <param name="task_time_limit_sec" value="$(arg task_time_limit_sec)"/>
-        <param name="path_type" value="$(arg path_type)"/>
-        <rosparam param="path_parameters" subst_value="True">$(arg path_parameters)</rosparam>
+        <param name="desired_pose" value="$(arg desired_pose)"/>   
+        <param name="task_time_limit_sec" value="$(arg task_time_limit_sec)"/>     
         <rosparam param="tube_tolerances" subst_value="True">$(arg tube_tolerances)</rosparam>
         <rosparam param="tube_start_position" subst_value="True">$(arg tube_start_position)</rosparam>
         <rosparam param="tube_speed" subst_value="True">$(arg tube_speed)</rosparam>
-        <rosparam param="tube_force" subst_value="True">$(arg tube_force)</rosparam>
         <rosparam param="motion_profile" subst_value="True">$(arg motion_profile)</rosparam>
         <rosparam param="control_dims" subst_value="True">$(arg control_dims)</rosparam>
         <rosparam param="damper_amplitude" subst_value="True">$(arg damper_amplitude)</rosparam>
@@ -177,7 +158,6 @@
         <rosparam param="abag_error_type" subst_value="True">$(arg abag_error_type)</rosparam>
         <rosparam param="min_bias_sat" subst_value="True">$(arg min_bias_sat)</rosparam>
         <rosparam param="min_command_sat" subst_value="True">$(arg min_command_sat)</rosparam>
-        <rosparam param="null_space_abag_parameters" subst_value="True">$(arg null_space_abag_parameters)</rosparam>
     </node>
 
 <!-- ============ Runner script =============== -->
@@ -190,6 +170,7 @@
         <arg name="tip_link" default="$(arg tip_link)"/>
         <arg name="load_base" value="$(arg load_base)" />
         <arg name="load_ati_sensor" value="$(arg load_ati_sensor)" />
+        <arg name="load_weight" value="$(arg load_weight)" />        
         <arg name="load_handle" value="$(arg load_handle)" />
         <arg name="load_table" value="$(arg load_table)" />
         <arg name="gazebo_gui" value="$(arg gazebo_gui)"/>
