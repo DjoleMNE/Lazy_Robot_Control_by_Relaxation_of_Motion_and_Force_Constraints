@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<launch>
+<!--============ Runner script Params ========-->
+
+    <!-- The end effector frame (you'll be able to use frames <= tip_link for cartesian position, jacobians etc.) -->
+    <!-- 7 joints, 7 links, 8 frames. frames from link 0 to link 7-->
+    <arg name="tip_link" default="link_7"/>
+    <!-- arm as usual: 7 joints & 7 links, ati sensor additional 2 (fixed-not counted in kdl)joints and 2 links  -->
+    <!-- <arg name="tip_link" default="ati_link"/> -->
+
+    <!-- Run Simulated robot -->
+    <arg name="sim" default="true" />
+    <!-- Run in GDB -->
+    <arg name="debug" default="false" />
+    <!-- Launch rviz -->
+    <arg name="rviz" default="true" />
+    <!-- The level of verbose (never, fatal, critical, error, warning, info, debug, realtime) -->
+    <arg name="log_level" default="error" />
+    <!-- Tools -->
+    <arg name="load_base" default="false" />
+    <arg name="load_ati_sensor" default="false" />
+    <arg name="load_handle" default="false" />
+    <arg name="load_weight" default="true" />
+    <arg name="load_table" default="false" />
+    <!-- Gazebo -->
+    <arg name="gazebo_gui" default="false"/>
+
+
+
+<!-- ***************** General Control PARAMETERS ********************** -->
+    <arg name="environment" default="1"/>
+    <arg name="robot_model" default="0"/>
+    <arg name="simulation_loop_iterations" default="20000"/>
+    <arg name="krc_compensate_gravity" default="false"/>
+    
+    <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) ==-->
+    <arg name="desired_task_model" default="0"/>
+
+    <!-- ========= Use Joint Torque Commands ===============-->
+    <arg name="desired_control_mode" default="0"/>
+
+    <!-- ========= Use Cart Virtual Force Interface ===============-->
+    <arg name="desired_dynamics_interface" default="1"/>
+
+
+    
+    <!-- ========= candle pose ===============-->
+    <!-- <arg name="desired_pose" default="0"/> -->
+
+    <!-- ========= navigation pose ===============-->
+    <arg name="desired_pose" default="1"/>
+
+    <!-- ========= navigation 2 pose ===============-->
+    <!-- <arg name="desired_pose" default="2"/> -->
+
+    <!-- ========= folded pose ===============-->
+    <!-- <arg name="desired_pose" default="3"/> -->
+
+
+
+    <!-- ========= Task time limit in seconds ==============-->
+    <arg name="task_time_limit_sec" default="600.0"/>
+
+
+    <!-- ========= Motion profile: constant velocity ===============-->
+    <arg name="motion_profile" default="0"/>
+    
+    <!-- ========= Motion profile: tanh ===============-->
+    <!-- <arg name="motion_profile" default="1"/> -->
+
+    <!-- ========= Motion profile: s_curve ===============-->
+    <!-- <arg name="motion_profile" default="2"/> -->
+
+    <!-- ========= Motion profile: step ===============-->
+    <!-- <arg name="motion_profile" default="3"/> -->
+
+    <!-- ========= Dimensions to be controlled ===============-->
+    <arg name="control_dims" default="[true, true, true, 
+                                       false, false, false]"/>
+
+    <!-- === Damping decision map parameters: Error Sign =======-->
+    <arg name="damper_amplitude" default="2.3"/>
+  
+    <!-- ========= Max Cart force excerted on the End-Effector ===============-->
+    <arg name="max_command" default="[200.0, 200.0, 200.0, 
+                                      20.0, 20.0, 20.0]"/>
+
+    
+<!-- *************** ABAG SETTINGS ******************** -->
+    <!-- ==== Raw error is 0, sign is 1 flag ======-->
+    <arg name="abag_error_type"   default="1"/>
+
+    <!-- ==== Saturate Bias and Command signals to [0, 1] or [-1, 1] ======-->
+    <arg name="min_bias_sat"       default="[-1.0, -1.0, -1.0, 
+                                             -1.0, -1.0, -1.0]"/>
+    <arg name="min_command_sat"    default="[-1.0, -1.0, -1.0, 
+                                             -1.0, -1.0, -1.0]"/>
+
+    <!-- ABAG PARAMETERS (Error Sign): Low Gain, low chattering but less robust -->
+    <arg name="ERROR_ALPHA" default="   [0.900000, 0.900000, 0.900000, 
+                                         0.650000, 0.850000, 0.178001]"/>
+
+    <arg name="BIAS_THRESHOLD" default="[0.000407, 0.000407, 0.000407, 
+                                         0.001007, 0.001007, 0.724277]"/>
+
+    <arg name="BIAS_STEP" default="     [0.000495, 0.000495, 0.000495, 
+                                         0.003495, 0.003495, 0.503495]"/>
+
+    <arg name="GAIN_THRESHOLD" default="[0.552492, 0.552492, 0.552492, 
+                                         0.252492, 0.252492, 0.432492]"/>
+
+    <arg name="GAIN_STEP" default="     [0.003152, 0.003152, 0.003152, 
+                                         0.015152, 0.015152, 0.655152]"/>
+
+
+    <!-- ABAG PARAMETERS(Error Sign): Robust but high Gain, high chattering in motors  -->
+    <!-- <arg name="ERROR_ALPHA"    default="[0.650000, 0.650000, 0.650000, 
+                                         0.650000, 0.850000, 0.178001]"/>
+
+    <arg name="BIAS_THRESHOLD" default="[0.001007, 0.001007, 0.001007, 
+                                         0.001007, 0.001007, 0.724277]"/>
+
+    <arg name="BIAS_STEP"      default="[0.003495, 0.003495, 0.003495, 
+                                         0.003495, 0.003495, 0.503495]"/>
+
+    <arg name="GAIN_THRESHOLD" default="[0.252492, 0.252492, 0.252492, 
+                                         0.252492, 0.252492, 0.432492]"/>
+
+    <arg name="GAIN_STEP"      default="[0.015152, 0.015152, 0.015152, 
+                                         0.015152, 0.015152, 0.655152]"/> -->
+
+
+
+<!--============ LwrRttControl Params ============-->
+    <!-- Set some parameters for LwrRttControl
+    You can get them using rtt_ros_kdl_tools::getAllPropertiesFromROSParam(this)
+    in your component's configureHook() -->
+    <node name="lwr_rtt_control" pkg="rtt_ros" type="deployer" args="-s $(find lwr_rtt_control)/scripts/run.ops --" output="screen">
+        <param name="environment" value="$(arg environment)"/>
+        <param name="load_ati_sensor" value="$(arg load_ati_sensor)" />
+        <param name="robot_model" value="$(arg robot_model)"/>
+        <param name="simulation_loop_iterations" value="$(arg simulation_loop_iterations)"/>
+        <param name="krc_compensate_gravity" value="$(arg krc_compensate_gravity)"/>
+        <param name="desired_task_model" value="$(arg desired_task_model)"/>
+        <param name="desired_control_mode" value="$(arg desired_control_mode)"/>
+        <param name="desired_dynamics_interface" value="$(arg desired_dynamics_interface)"/>
+        <param name="desired_pose" value="$(arg desired_pose)"/> 
+        <param name="task_time_limit_sec" value="$(arg task_time_limit_sec)"/>       
+        <rosparam param="motion_profile" subst_value="True">$(arg motion_profile)</rosparam>
+        <rosparam param="control_dims" subst_value="True">$(arg control_dims)</rosparam>
+        <rosparam param="damper_amplitude" subst_value="True">$(arg damper_amplitude)</rosparam>
+        <rosparam param="max_command" subst_value="True">$(arg max_command)</rosparam>
+        <rosparam param="ERROR_ALPHA" subst_value="True">$(arg ERROR_ALPHA)</rosparam>
+        <rosparam param="BIAS_THRESHOLD" subst_value="True">$(arg BIAS_THRESHOLD)</rosparam>
+        <rosparam param="BIAS_STEP" subst_value="True">$(arg BIAS_STEP)</rosparam>
+        <rosparam param="GAIN_THRESHOLD" subst_value="True">$(arg GAIN_THRESHOLD)</rosparam>
+        <rosparam param="GAIN_STEP" subst_value="True">$(arg GAIN_STEP)</rosparam>
+        <rosparam param="abag_error_type" subst_value="True">$(arg abag_error_type)</rosparam>
+        <rosparam param="min_bias_sat" subst_value="True">$(arg min_bias_sat)</rosparam>
+        <rosparam param="min_command_sat" subst_value="True">$(arg min_command_sat)</rosparam>
+    </node>
+
+<!-- ============ Runner script =============== -->
+    <include file="$(find lwr_utils)/launch/run.launch">
+        <arg name="sim" value="$(arg sim)" />
+        <arg name="ops_script" value="$(find lwr_rtt_control)/scripts/run.ops"/>
+        <arg name="debug" value="$(arg debug)" />
+        <arg name="rviz" value="$(arg rviz)" />
+        <arg name="log_level" value="$(arg log_level)" />
+        <arg name="tip_link" default="$(arg tip_link)"/>
+        <arg name="load_base" value="$(arg load_base)" />
+        <arg name="load_ati_sensor" value="$(arg load_ati_sensor)" />
+        <arg name="load_weight" value="$(arg load_weight)" />        
+        <arg name="load_handle" value="$(arg load_handle)" />
+        <arg name="load_table" value="$(arg load_table)" />
+        <arg name="gazebo_gui" value="$(arg gazebo_gui)"/>
+    </include>
+</launch>

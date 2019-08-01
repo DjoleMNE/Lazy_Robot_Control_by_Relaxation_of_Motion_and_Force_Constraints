@@ -436,16 +436,14 @@ void Solver_Vereshchagin::constraint_calculation(const JntArray& beta)
     Vector6d acc;
     acc << Vector3d::Map(acc_root.rot.data), Vector3d::Map(acc_root.vel.data);
     
-    //nu_sum.setZero();
     nu_sum.noalias() = -(results[0].E_tilde.transpose() * acc);
     nu_sum += beta.data;
+    nu_sum -= results[0].G;
 
     // Djordje: Compute and add additional contribution to beta from gravity acceleration
     // Djordje: Required for properly compansating for gravity effects at end-effector.
     // Djordje: See Popov and Vereshchagin book from 1978, Moscow 
     nu_sum += E_input.transpose() * acc;
-
-    nu_sum -= results[0].G;
 
     //equation f) nu = M_0_inverse*(beta_N - E0_tilde`*acc0 - G0)
     nu.noalias() = M_0_inverse * nu_sum;
@@ -508,9 +506,8 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
         s.constAccComp = constraint_torque / s.D;
         s.nullspaceAccComp = s.u / s.D;
 
-        //total joint space acceleration resulting from accelerations of parent joints, constraint forces and
-        // nullspace forces.
-        //equation g) qdotdot[i] = D^-1(u - Z'(P*acc[i-1] + E*nu) Vereshchagin89'
+        // total joint acceleration resulting from accelerations of parent joints, constraint forces and nullspace forces.
+        // equation g) qdotdot[i] = D^-1(u - Z'(P*acc[i-1] + E*nu) Vereshchagin89'
         q_dotdot(j) = (s.nullspaceAccComp + parentAccComp + s.constAccComp);
 
         //returns acceleration in link distal tip coordinates.
