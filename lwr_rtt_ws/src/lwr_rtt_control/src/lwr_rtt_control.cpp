@@ -162,6 +162,14 @@ bool LwrRttControl::configureHook()
                                  0.0,  0.0, 1.0};
             break;
 
+        case desired_pose::CANDLE2:
+            // Candle Pose
+            desired_ee_pose_ = { -0.040437, 0.0103562, 1.13, // Linear: Vector
+                                  1.0,      0.0,       0.0, // Angular: Rotation matrix
+                                  0.0,      1.0,       0.0,
+                                  0.0,      0.0,       1.0};
+            break;
+
         case desired_pose::FOLDED:
             // Folded pose
             desired_ee_pose_ = { 0.260912, -0.014731,  0.0945801, // Linear: Vector
@@ -278,12 +286,12 @@ bool LwrRttControl::configureHook()
         case task_model::moveTo:
             controller_->define_moveTo_task(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
                                                               control_dims_[3], control_dims_[4], control_dims_[5]},// Angular
-                                    tube_start_position_,
-                                    tube_tolerances_,
-                                    tube_speed_,
-                                    1.0, 0.1, //contact_threshold linear and angular
-                                    task_time_limit_sec_,// time_limit
-                                    desired_ee_pose_); // TF pose
+                                            tube_start_position_,
+                                            tube_tolerances_,
+                                            tube_speed_,
+                                            1.0, 0.1, //contact_threshold linear and angular
+                                            task_time_limit_sec_,// time_limit
+                                            desired_ee_pose_); // TF pose
             break;
 
         case task_model::full_pose:

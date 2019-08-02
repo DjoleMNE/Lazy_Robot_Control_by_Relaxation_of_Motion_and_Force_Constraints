@@ -66,7 +66,8 @@ enum desired_pose
     NAVIGATION   = 1,
     NAVIGATION_2 = 2,
     FOLDED       = 3,
-    TABLE        = 4  
+    TABLE        = 4,
+    CANDLE2      = 5
 };
 
 enum path_types
