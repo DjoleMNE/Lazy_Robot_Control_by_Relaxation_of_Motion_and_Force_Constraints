@@ -76,7 +76,7 @@
     <!-- <arg name="tube_start_position" default="[-0.200785, -0.308278,  0.632811]"/> -->
 
     <!-- ========= Tube speed ===============-->
-    <arg name="tube_speed" default="0.2"/>
+    <arg name="tube_speed" default="0.0"/>
 
 
     <!-- ========= Motion profile: constant velocity ===============-->
@@ -100,7 +100,7 @@
     <arg name="damper_amplitude" default="2.0"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
-    <arg name="max_command" default="[100.0, 100.0, 100.0, 
+    <arg name="max_command" default="[80.0, 80.0, 80.0, 
                                       10.0, 10.0, 10.0]"/>
 
     
@@ -122,10 +122,10 @@
     <arg name="BIAS_THRESHOLD" default="[0.000407, 0.000407, 0.000407,
                                          0.001007, 0.001007, 0.724277]"/>
 
-    <arg name="BIAS_STEP" default="     [0.000500, 0.000500, 0.000500,
+    <arg name="BIAS_STEP" default="     [0.000500, 0.000450, 0.000450,
                                          0.003495, 0.003495, 0.503495]"/>
 
-    <arg name="GAIN_THRESHOLD" default="[0.502492, 0.502492, 0.502492,
+    <arg name="GAIN_THRESHOLD" default="[0.452492, 0.452492, 0.452492,
                                          0.252492, 0.252492, 0.432492]"/>
 
     <arg name="GAIN_STEP" default="     [0.002600, 0.002600, 0.002600,

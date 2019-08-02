@@ -22,7 +22,7 @@ if (isSim()) then
   // Table Pose 2
   //setRobotInitialJointConfiguration(0.870617, 0.620455, 0.0204834, -2.10655, -0.0290253, 0.451482, 0.021415)
   // Down Pose
-  setRobotInitialJointConfiguration(2.96, 1.01597, -0.00247816, 3.09441, 0.00712046, 0.9, 0.0185914)
+  setRobotInitialJointConfiguration(2.96, 1.01597, -0.00247816, 3.09441, 0.00712046, 0.7, 0.0185914)
 
 // On the real robot, you have to set the mode manually. In simulation, JointImpedance is selected by default at the end of the loadRobot()
 setJointTorqueControlMode()
