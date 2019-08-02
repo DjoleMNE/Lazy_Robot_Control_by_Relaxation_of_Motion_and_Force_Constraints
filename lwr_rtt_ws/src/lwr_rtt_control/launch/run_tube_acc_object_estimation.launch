@@ -30,18 +30,18 @@
     <arg name="robot_model" default="0"/>
     <arg name="simulation_loop_iterations" default="20000"/>
     <arg name="krc_compensate_gravity" default="false"/>
-    
-    <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) ==-->
-    <arg name="desired_task_model" default="2"/>
 
+    <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) or MoveTo_follow_path(3) ==-->
+    <arg name="desired_task_model" default="2"/>
+    
     <!-- ========= Use Joint Torque Commands ===============-->
     <arg name="desired_control_mode" default="0"/>
 
-    <!-- ========= Use Cart Virtual Force Interface ===============-->
-    <arg name="desired_dynamics_interface" default="1"/>
+    <!-- ========= Use Cart Acc Constraint Interface ===============-->
+    <arg name="desired_dynamics_interface" default="0"/>
 
 
-    
+
     <!-- ========= candle pose ===============-->
     <!-- <arg name="desired_pose" default="0"/> -->
 
@@ -68,10 +68,12 @@
                                           0.17, 0.17, 0.17, 
                                           0.005, 0.1]"/>
 
-
     <!-- ========= Tube start position ===============-->
     <!-- <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/> -->
     <arg name="tube_start_position" default="[-0.040437, 0.0103562, 0.860475]"/>
+    <!-- <arg name="tube_start_position" default="[0.1, 0.2, 1.0]"/> -->
+    <!-- <arg name="tube_start_position" default="[0.3, -0.4, 1.165]"/> -->
+    <!-- <arg name="tube_start_position" default="[-0.200785, -0.308278,  0.632811]"/> -->
 
     <!-- ========= Tube speed ===============-->
     <arg name="tube_speed" default="0.2"/>
@@ -94,12 +96,12 @@
     <arg name="control_dims" default="[true, true, true, 
                                        false, false, false]"/>
 
-    <!-- === Prediction Horizion  =======-->
-    <arg name="damper_amplitude" default="2.50"/>
+    <!-- === Prediction Horizion =======-->
+    <arg name="damper_amplitude" default="2.5"/>
   
-    <!-- ========= Max Cart force excerted on the End-Effector ===============-->
-    <arg name="max_command" default="[200.0, 200.0, 200.0, 
-                                      20.0,  20.0,  20.0]"/>
+    <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
+    <arg name="max_command" default="[70.0, 70.0, 70.0, 
+                                      10.0, 10.0, 10.0]"/>
 
     
 <!-- *************** ABAG SETTINGS ******************** -->
@@ -113,20 +115,20 @@
                                              -1.0, -1.0, -1.0]"/>
 
 
-    <!-- ABAG PARAMETERS (Error Sign): Low Gain, low chattering but less robust -->
-    <arg name="ERROR_ALPHA" default="   [0.900000, 0.900000, 0.900000, 
+    <!-- ABAG PARAMETERS (Error Sign) -->
+    <arg name="ERROR_ALPHA" default="   [0.800000, 0.900000, 0.900000,
                                          0.650000, 0.850000, 0.178001]"/>
 
-    <arg name="BIAS_THRESHOLD" default="[0.000407, 0.000407, 0.000407, 
+    <arg name="BIAS_THRESHOLD" default="[0.000507, 0.000407, 0.000407,
                                          0.001007, 0.001007, 0.724277]"/>
 
-    <arg name="BIAS_STEP" default="     [0.000500, 0.000495, 0.000495, 
+    <arg name="BIAS_STEP" default="     [0.000495, 0.000495, 0.000495,
                                          0.003495, 0.003495, 0.503495]"/>
 
-    <arg name="GAIN_THRESHOLD" default="[0.552492, 0.552492, 0.552492, 
+    <arg name="GAIN_THRESHOLD" default="[0.452492, 0.552492, 0.552492,
                                          0.252492, 0.252492, 0.432492]"/>
 
-    <arg name="GAIN_STEP" default="     [0.002500, 0.003152, 0.003152, 
+    <arg name="GAIN_STEP" default="     [0.002052, 0.003152, 0.003152,
                                          0.015152, 0.015152, 0.655152]"/>
 
 <!--============ LwrRttControl Params ============-->
@@ -142,8 +144,8 @@
         <param name="desired_task_model" value="$(arg desired_task_model)"/>
         <param name="desired_control_mode" value="$(arg desired_control_mode)"/>
         <param name="desired_dynamics_interface" value="$(arg desired_dynamics_interface)"/>
-        <param name="desired_pose" value="$(arg desired_pose)"/>   
-        <param name="task_time_limit_sec" value="$(arg task_time_limit_sec)"/>     
+        <param name="desired_pose" value="$(arg desired_pose)"/>
+        <param name="task_time_limit_sec" value="$(arg task_time_limit_sec)"/>
         <rosparam param="tube_tolerances" subst_value="True">$(arg tube_tolerances)</rosparam>
         <rosparam param="tube_start_position" subst_value="True">$(arg tube_start_position)</rosparam>
         <rosparam param="tube_speed" subst_value="True">$(arg tube_speed)</rosparam>
@@ -170,8 +172,8 @@
         <arg name="log_level" value="$(arg log_level)" />
         <arg name="tip_link" default="$(arg tip_link)"/>
         <arg name="load_base" value="$(arg load_base)" />
-        <arg name="load_ati_sensor" value="$(arg load_ati_sensor)" />
         <arg name="load_weight" value="$(arg load_weight)" />        
+        <arg name="load_ati_sensor" value="$(arg load_ati_sensor)" />
         <arg name="load_handle" value="$(arg load_handle)" />
         <arg name="load_table" value="$(arg load_table)" />
         <arg name="gazebo_gui" value="$(arg gazebo_gui)"/>
