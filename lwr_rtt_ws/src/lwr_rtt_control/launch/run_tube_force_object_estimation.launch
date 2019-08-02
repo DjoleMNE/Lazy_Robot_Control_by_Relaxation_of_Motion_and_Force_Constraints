@@ -68,7 +68,7 @@
     <!-- ========= Tube tolerances ===============-->
     <arg name="tube_tolerances" default="[0.03, 0.02, 0.02, 
                                           0.17, 0.17, 0.17, 
-                                          0.0, 0.1]"/>
+                                          0.005, 0.1]"/>
 
 
     <!-- ========= Tube start position ===============-->
@@ -97,7 +97,7 @@
                                        false, false, false]"/>
 
     <!-- === Prediction Horizion  =======-->
-    <arg name="damper_amplitude" default="5.50"/>
+    <arg name="damper_amplitude" default="2.50"/>
   
     <!-- ========= Max Cart force excerted on the End-Effector ===============-->
     <arg name="max_command" default="[200.0, 200.0, 200.0, 
@@ -122,13 +122,13 @@
     <arg name="BIAS_THRESHOLD" default="[0.000407, 0.000407, 0.000407, 
                                          0.001007, 0.001007, 0.724277]"/>
 
-    <arg name="BIAS_STEP" default="     [0.000495, 0.000495, 0.000495, 
+    <arg name="BIAS_STEP" default="     [0.000500, 0.000495, 0.000495, 
                                          0.003495, 0.003495, 0.503495]"/>
 
     <arg name="GAIN_THRESHOLD" default="[0.552492, 0.552492, 0.552492, 
                                          0.252492, 0.252492, 0.432492]"/>
 
-    <arg name="GAIN_STEP" default="     [0.003152, 0.003152, 0.003152, 
+    <arg name="GAIN_STEP" default="     [0.002500, 0.003152, 0.003152, 
                                          0.015152, 0.015152, 0.655152]"/>
 
 <!--============ LwrRttControl Params ============-->
