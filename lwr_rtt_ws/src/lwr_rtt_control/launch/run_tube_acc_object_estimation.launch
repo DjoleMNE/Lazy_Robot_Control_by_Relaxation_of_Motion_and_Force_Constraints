@@ -31,8 +31,8 @@
     <arg name="simulation_loop_iterations" default="20000"/>
     <arg name="krc_compensate_gravity" default="false"/>
 
-    <!-- == Desired Task specification/model: Full Pose(0) or MoveGuarded(1) or MoveTo(2) or MoveTo_follow_path(3) ==-->
-    <arg name="desired_task_model" default="2"/>
+    <!-- == Desired Task specification/model: MoveTo_weight_compensation(6) ==-->
+    <arg name="desired_task_model" default="6"/>
     
     <!-- ========= Use Joint Torque Commands ===============-->
     <arg name="desired_control_mode" default="0"/>
@@ -76,7 +76,7 @@
     <!-- <arg name="tube_start_position" default="[-0.200785, -0.308278,  0.632811]"/> -->
 
     <!-- ========= Tube speed ===============-->
-    <arg name="tube_speed" default="0.0"/>
+    <arg name="tube_speed" default="0.04"/>
 
 
     <!-- ========= Motion profile: constant velocity ===============-->

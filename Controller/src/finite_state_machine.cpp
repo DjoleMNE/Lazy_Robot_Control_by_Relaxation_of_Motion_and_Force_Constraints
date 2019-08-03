@@ -75,6 +75,15 @@ int finite_state_machine::initialize_with_moveTo(const moveTo_task &task,
     return control_status::NOMINAL;
 }
 
+int finite_state_machine::initialize_with_moveTo_weight_compensation(const moveTo_weight_compensation_task &task,
+                                                                     const int motion_profile)
+{
+    desired_task_model_              = task_model::moveTo_weight_compensation;
+    moveTo_weight_compensation_task_ = task;
+    motion_profile_                  = motion_profile;
+    return control_status::NOMINAL;
+}
+
 int finite_state_machine::initialize_with_full_pose(const full_pose_task &task,
                                                     const int motion_profile)
 {
@@ -271,6 +280,94 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
     }
 }
 
+int finite_state_machine::update_moveTo_weight_compensation_task(state_specification &desired_state)
+{
+    if (total_control_time_sec_ > moveTo_weight_compensation_task_.time_limit) 
+    {
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+
+        #ifndef NDEBUG       
+            if(!time_limit_reached_) printf("Time limit reached\n");
+        #endif
+
+        time_limit_reached_ = true;
+        return control_status::STOP_CONTROL;
+    }
+
+    if (goal_reached_ || contact_detected_) return control_status::STOP_ROBOT;
+    
+    if (contact_detected(moveTo_weight_compensation_task_.contact_threshold_linear, 
+                         moveTo_weight_compensation_task_.contact_threshold_angular))
+    {
+        #ifndef NDEBUG       
+            printf("Contact occurred\n");
+        #endif
+
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        contact_detected_ = true;
+        return control_status::STOP_ROBOT;
+    }
+    contact_detected_ = false;
+
+    int count = 0;
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+    {
+        if (std::fabs(current_error_(i)) <= moveTo_weight_compensation_task_.tube_tolerances[i]) count++;
+    }
+    
+    if (count == NUM_OF_CONSTRAINTS_) 
+    {
+        #ifndef NDEBUG       
+            printf("Goal area reached\n");
+        #endif
+
+        goal_reached_ = true;
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        return control_status::STOP_ROBOT;
+    }
+    goal_reached_ = false;
+
+    /*
+     * The robot has reached goal x area?
+     * If yes, command zero X linear velocity to keep it in that area, until all DOFs gets back into tube.
+     * Else go with initially commanded tube speed.
+    */
+    if ( (std::fabs(current_error_(0)) <= moveTo_weight_compensation_task_.tube_tolerances[0]) || \
+         ((std::fabs(current_error_(0)) >  moveTo_weight_compensation_task_.tube_tolerances[0]) && \
+          (count < NUM_OF_CONSTRAINTS_ - 1)) 
+       )
+    {
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        return control_status::START_TO_CRUISE;
+    }
+    else
+    {
+        double speed = 0.0;
+        switch (motion_profile_)
+        {
+            case m_profile::STEP:
+                speed = motion_profile::negative_step_function(std::fabs(current_error_(0)), 
+                                                               moveTo_weight_compensation_task_.tube_speed, 
+                                                               0.25, 0.4, 0.2);
+                break;
+
+            case m_profile::S_CURVE:
+                speed = motion_profile::s_curve_function(std::fabs(current_error_(0)), 
+                                                         0.05, moveTo_weight_compensation_task_.tube_speed, 5.0);
+                break;
+
+            default:
+                speed = moveTo_weight_compensation_task_.tube_speed;
+                break;
+        }
+
+        if (sign(current_error_(0)) == -1) desired_state.frame_velocity[END_EFF_].vel(0) = -1 * speed;      
+        else desired_state.frame_velocity[END_EFF_].vel(0) = speed;              
+    }
+   
+    return control_status::CRUISE_THROUGH_TUBE;
+}
+
 
 int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 {
@@ -430,7 +527,12 @@ int finite_state_machine::update_motion_task_status(const state_specification &r
             ext_wrench_ = ext_force;
             return update_moveTo_task(desired_state);
             break;
-        
+
+        case task_model::moveTo_weight_compensation:
+            ext_wrench_ = ext_force;
+            return update_moveTo_weight_compensation_task(desired_state);
+            break;
+
         case task_model::full_pose:
             ext_wrench_ = ext_force;
             return update_full_pose_task(desired_state);

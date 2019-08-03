@@ -294,6 +294,17 @@ bool LwrRttControl::configureHook()
                                             desired_ee_pose_); // TF pose
             break;
 
+        case task_model::moveTo_weight_compensation:
+            controller_->define_moveTo_weight_compensation_task(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
+                                                                                  control_dims_[3], control_dims_[4], control_dims_[5]},// Angular
+                                                                tube_start_position_,
+                                                                tube_tolerances_,
+                                                                tube_speed_,
+                                                                1.0, 0.1, //contact_threshold linear and angular
+                                                                task_time_limit_sec_,// time_limit
+                                                                desired_ee_pose_); // TF pose
+            break;
+
         case task_model::full_pose:
             controller_->define_desired_ee_pose(std::vector<bool>{control_dims_[0], control_dims_[1], control_dims_[2], // Linear
                                                                   control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
