@@ -1658,6 +1658,10 @@ int dynamics_controller::initialize(const int desired_control_mode,
         }
         log_file_cart_ << std::endl;      
 
+        for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+                log_file_cart_ << max_command_(i) << " ";
+        log_file_cart_ << std::endl;      
+
         log_file_predictions_.open(dynamics_parameter::LOG_FILE_PREDICTIONS_PATH);
         assert(log_file_predictions_.is_open());
 

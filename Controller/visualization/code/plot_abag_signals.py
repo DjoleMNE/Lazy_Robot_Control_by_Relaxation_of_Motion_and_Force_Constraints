@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import pyinotify
 
 desired_dim = np.int(sys.argv[1])
-show_tube = np.int(sys.argv[2])
 
 print("Selected dimension: ", desired_dim)
 variable_num = 7
@@ -35,7 +34,7 @@ with open(filename, "r") as f:
     all_data = [x.split() for x in f.readlines()]
     input_data = np.array(all_data)[:-2]
 
-rows = np.shape(input_data)[0] - 2
+rows = np.shape(input_data)[0] - 2 
 cols = np.shape(input_data[0])[0]
 rows = rows - (rows % variable_num)
 num_samples = np.int(rows / variable_num) 
@@ -108,7 +107,7 @@ gain      = np.array(gain)
 command   = np.array(command)
 
 plt.ion()
-plt.figure(figsize = (18, 10))
+plt.figure(figsize = (15, 5))
 if(desired_dim is 0):   plt.suptitle('Linear X', fontsize=20)
 elif(desired_dim is 1): plt.suptitle('Linear Y', fontsize=20)
 elif(desired_dim is 2): plt.suptitle('Linear Z', fontsize=20)
@@ -127,59 +126,22 @@ elif (num_samples < 4000 and num_samples > 1000): tick_freq = 200
 elif (num_samples < 1000 and num_samples > 500): tick_freq = 100
 elif (num_samples < 500): tick_freq = 50
 
-plt.gca().set_axis_off()
+# plt.gca().set_axis_off()
 plt.subplots_adjust(hspace = 0.02, wspace = 15)
-plt.subplots_adjust(left=0.05, right=0.99, top=0.95, bottom=0.03)
+plt.subplots_adjust(left=0.05, right=0.99, top=0.9, bottom=0.1)
 plt.margins(0,0)
 
-plt.subplot(4, 1, 1)
-if(desired_dim < 3 or desired_dim > 5):
-    plt.plot(measured, c = 'limegreen', label='Measured', linewidth = 2, zorder = 2)
-    plt.plot(desired, label='Desired', linewidth = 2, color = 'black', zorder = 3)
+if (desired_dim > 5):
+    max_command = np.float32( input_data[1][0] )
+else:
+    max_command = np.float32( input_data[1][desired_dim] )
 
-if(show_tube):
-    if (desired_dim > 7):
-        tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim-6] )))
-    else:
-        tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim] )))
-    plt.plot(desired + tube_tolerance, c = 'red', label='tube_upper_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
-    plt.plot(desired - tube_tolerance, c = 'blue', label='tube_lower_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
-    for tick in contact_time_tick:
-        plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
-
-if (desired_dim == 8):
-    plt.ylim(desired[0] - tube_tolerance[0] - 0.1, desired[0] - tube_tolerance[0] + 0.1)
-
-
-plt.legend(loc=4, fontsize = 'x-large')
-plt.xticks(np.arange(0, num_samples, tick_freq))
-plt.grid(True)
-
-plt.subplot(4, 1, 2)
-plt.plot(raw_error, c = 'orange', label=r'raw error: $e = y_d - y_k$', linewidth=1, zorder=2)
+plt.plot(bias * max_command, c = 'green', label='bias', linewidth = 2, zorder = 4)
+plt.plot(gain * max_command, c = 'red', label=r'gain * sign(e)', linewidth = 2, zorder = 2)
+plt.plot(command * max_command, c = 'blue', label='u', linewidth = 1.0, zorder = 3)
 for tick in contact_time_tick:
     plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
-plt.legend(fontsize = 'x-large')
-plt.xticks(np.arange(0, num_samples, tick_freq))
-plt.grid(True)
-
-plt.subplot(4, 1, 3)
-plt.plot(error, c = 'orange', label=r'low-pass filtered error sign: $\bar{e}$', linewidth=1, zorder=2)
-for tick in contact_time_tick:
-    plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
-plt.legend(fontsize = 'x-large')
-plt.ylim(-1.2, 1.2)
-plt.xticks(np.arange(0, num_samples, tick_freq))
-plt.grid(True)
-
-plt.subplot(4, 1, 4)
-plt.plot(bias, c = 'green', label='bias', linewidth = 2, zorder = 4)
-plt.plot(gain, c = 'red', label=r'gain * sign(e)', linewidth = 2, zorder = 2)
-plt.plot(command, c = 'blue', label='u', linewidth = 1.0, zorder = 3)
-for tick in contact_time_tick:
-    plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
-plt.ylim(-1.05, 1.05)
-plt.yticks(np.arange(-1.0, 1.05, 0.25))
+plt.yticks(np.arange(-max_command - 5 , max_command + 5, 10))
 
 plt.legend(fontsize = 'x-large')
 plt.xticks(np.arange(0, num_samples, tick_freq))
