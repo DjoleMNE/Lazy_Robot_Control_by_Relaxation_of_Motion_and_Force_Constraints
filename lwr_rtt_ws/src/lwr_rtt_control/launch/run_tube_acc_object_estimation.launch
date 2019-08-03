@@ -46,10 +46,10 @@
     <!-- <arg name="desired_pose" default="0"/> -->
 
     <!-- ========= candle 2 pose ===============-->
-    <!-- <arg name="desired_pose" default="5"/> -->
+    <arg name="desired_pose" default="5"/>
 
     <!-- ========= folded 2 pose ===============-->
-    <arg name="desired_pose" default="6"/>
+    <!-- <arg name="desired_pose" default="6"/> -->
 
 
     <!-- ========= Task time limit in seconds ==============-->
@@ -57,19 +57,19 @@
 
 
     <!-- ========= Tube tolerances ===============-->
-    <arg name="tube_tolerances" default="[0.03, 0.02, 0.02, 
+    <arg name="tube_tolerances" default="[0.03, 0.01, 0.01, 
                                           0.0, 0.0, 0.0, 
                                           0.001, 0.1]"/>
 
     <!-- ========= Tube start position ===============-->
     <!-- <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/> -->
-    <arg name="tube_start_position" default="[-0.040437, 0.0103562, 0.990475]"/>
+    <arg name="tube_start_position" default="[-0.040437, 0.0103562, 0.86]"/>
     <!-- <arg name="tube_start_position" default="[0.1, 0.2, 1.0]"/> -->
     <!-- <arg name="tube_start_position" default="[0.3, -0.4, 1.165]"/> -->
     <!-- <arg name="tube_start_position" default="[-0.200785, -0.308278,  0.632811]"/> -->
 
     <!-- ========= Tube speed ===============-->
-    <arg name="tube_speed" default="0.1"/>
+    <arg name="tube_speed" default="0.0"/>
 
 
     <!-- ========= Motion profile: constant velocity ===============-->
@@ -93,7 +93,7 @@
     <arg name="damper_amplitude" default="2.0"/>
   
     <!-- ========= Max Cart Acc commanded for the End-Effector ===============-->
-    <arg name="max_command" default="[80.0, 80.0, 80.0, 
+    <arg name="max_command" default="[70.0, 70.0, 70.0, 
                                       10.0, 10.0, 10.0]"/>
 
     
