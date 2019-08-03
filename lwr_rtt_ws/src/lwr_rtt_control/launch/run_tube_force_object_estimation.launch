@@ -45,17 +45,10 @@
     <!-- <arg name="desired_pose" default="0"/> -->
 
     <!-- ========= candle 2 pose ===============-->
-    <arg name="desired_pose" default="5"/>
+    <!-- <arg name="desired_pose" default="5"/> -->
 
-    <!-- ========= navigation pose ===============-->
-    <!-- <arg name="desired_pose" default="1"/> -->
-
-    <!-- ========= navigation 2 pose ===============-->
-    <!-- <arg name="desired_pose" default="2"/> -->
-
-    <!-- ========= folded pose ===============-->
-    <!-- <arg name="desired_pose" default="3"/> -->
-
+    <!-- ========= folded 2 pose ===============-->
+    <arg name="desired_pose" default="6"/>
 
 
     <!-- ========= Task time limit in seconds ==============-->
@@ -70,7 +63,7 @@
 
     <!-- ========= Tube start position ===============-->
     <!-- <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/> -->
-    <arg name="tube_start_position" default="[-0.040437, 0.0103562, 0.860475]"/>
+    <arg name="tube_start_position" default="[-0.040437, 0.0103562, 0.990475]"/>
 
     <!-- ========= Tube speed ===============-->
     <arg name="tube_speed" default="0.04"/>

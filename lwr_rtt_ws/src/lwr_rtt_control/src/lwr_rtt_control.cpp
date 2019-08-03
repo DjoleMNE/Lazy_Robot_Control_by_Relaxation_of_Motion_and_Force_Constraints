@@ -163,8 +163,8 @@ bool LwrRttControl::configureHook()
             break;
 
         case desired_pose::CANDLE2:
-            // Candle Pose
-            desired_ee_pose_ = { -0.040437, 0.0103562, 1.06, // Linear: Vector
+            // Candle 2 Pose
+            desired_ee_pose_ = { -0.040437, 0.0103562, 1.07, // Linear: Vector
                                   1.0,      0.0,       0.0, // Angular: Rotation matrix
                                   0.0,      1.0,       0.0,
                                   0.0,      0.0,       1.0};
@@ -176,6 +176,14 @@ bool LwrRttControl::configureHook()
                                  0.575147,  0.789481, -0.214301, // Angular: Rotation matrix
                                  0.174954,  0.137195,  0.974971,
                                  0.799122, -0.598245, -0.059216};
+            break;
+
+        case desired_pose::FOLDED2:
+            // Folded 2 Pose
+            desired_ee_pose_ = { -0.040437, 0.0103562, 0.76, // Linear: Vector
+                                  1.0,      0.0,       0.0, // Angular: Rotation matrix
+                                  0.0,      1.0,       0.0,
+                                  0.0,      0.0,       1.0};
             break;
 
         case desired_pose::NAVIGATION_2:
