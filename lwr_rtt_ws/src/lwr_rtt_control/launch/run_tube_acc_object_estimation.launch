@@ -65,8 +65,8 @@
 
     <!-- ========= Tube tolerances ===============-->
     <arg name="tube_tolerances" default="[0.03, 0.02, 0.02, 
-                                          0.17, 0.17, 0.17, 
-                                          0.0, 0.1]"/>
+                                          0.0, 0.0, 0.0, 
+                                          0.001, 0.1]"/>
 
     <!-- ========= Tube start position ===============-->
     <!-- <arg name="tube_start_position" default="[0.0, 0.0, 1.175]"/> -->

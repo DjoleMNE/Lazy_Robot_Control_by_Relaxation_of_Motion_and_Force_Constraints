@@ -164,7 +164,7 @@ bool LwrRttControl::configureHook()
 
         case desired_pose::CANDLE2:
             // Candle Pose
-            desired_ee_pose_ = { -0.040437, 0.0103562, 1.0, // Linear: Vector
+            desired_ee_pose_ = { -0.040437, 0.0103562, 1.06, // Linear: Vector
                                   1.0,      0.0,       0.0, // Angular: Rotation matrix
                                   0.0,      1.0,       0.0,
                                   0.0,      0.0,       1.0};
