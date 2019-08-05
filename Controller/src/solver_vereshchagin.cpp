@@ -436,13 +436,20 @@ void Solver_Vereshchagin::constraint_calculation(const JntArray& beta)
     Vector6d acc;
     acc << Vector3d::Map(acc_root.rot.data), Vector3d::Map(acc_root.vel.data);
     
+    /*
+        Djordje: Here, the gravity acc vector is added to be accounted as a constraint on the base link!
+        Fixed base is also a constrained base!
+        But it is NOT added here to be compensated for its effects on the end-effector!  
+    */ 
     nu_sum.noalias() = -(results[0].E_tilde.transpose() * acc);
     nu_sum += beta.data;
     nu_sum -= results[0].G;
 
-    // Djordje: Compute and add additional contribution to beta from gravity acceleration
-    // Djordje: Required for properly compansating for gravity effects at end-effector.
-    // Djordje: See Popov and Vereshchagin book from 1978, Moscow 
+    /*
+        Djordje: Compute and add additional contribution to beta from gravity acceleration
+        Required for properly compansating for gravity effects at the end-effector.
+        See Popov and Vereshchagin book from 1978, Moscow
+    */ 
     nu_sum += E_input.transpose() * acc;
 
     //equation f) nu = M_0_inverse*(beta_N - E0_tilde`*acc0 - G0)
