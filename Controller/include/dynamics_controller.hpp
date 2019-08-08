@@ -87,7 +87,8 @@ class dynamics_controller
                         const Eigen::VectorXd &gain_step,
                         const Eigen::VectorXd &min_bias_sat,
                         const Eigen::VectorXd &min_command_sat,
-                        const Eigen::VectorXd &null_space_abag_parameters);
+                        const Eigen::VectorXd &null_space_abag_parameters,
+                        const Eigen::VectorXd &compensation_parameters);
     int initialize(const int desired_control_mode, 
                    const int desired_task_inteface,
                    const bool use_mixed_driver, 
@@ -177,7 +178,8 @@ class dynamics_controller
     std::vector<bool> CTRL_DIM_, POS_TUBE_DIM_, MOTION_CTRL_DIM_, FORCE_CTRL_DIM_;
     int fsm_result_, fsm_force_task_result_, previous_control_status_, tube_section_count_;
     bool transform_drivers_, transform_force_drivers_, apply_feedforward_force_, 
-         compute_null_space_command_, write_contact_time_to_file_;
+         compute_null_space_command_, write_contact_time_to_file_,
+         compensate_unknown_weight_;
     
     moveTo_task moveTo_task_;
     moveTo_weight_compensation_task moveTo_weight_compensation_task_;
@@ -186,10 +188,11 @@ class dynamics_controller
     moveConstrained_follow_path_task moveConstrained_follow_path_task_;
 
     KDL::Twist current_error_twist_;
-    Eigen::VectorXd abag_error_vector_, null_space_abag_error_, predicted_error_twist_;
+    Eigen::VectorXd abag_error_vector_, null_space_abag_error_, 
+                    predicted_error_twist_, compensation_error_;
     double horizon_amplitude_, null_space_abag_command_, null_space_angle_;
-    Eigen::VectorXd abag_command_, max_command_, 
-                    force_task_parameters_, min_sat_limits_;
+    Eigen::VectorXd abag_command_, max_command_, compensation_parameters_,
+                    force_task_parameters_, min_sat_limits_, filtered_bias_;
     KDL::Wrenches cart_force_command_;
     KDL::Wrench ext_wrench_;
 
@@ -221,6 +224,7 @@ class dynamics_controller
     void transform_motion_driver();
     void make_predictions(const double dt_sec, const int num_steps);
     void compute_cart_control_commands();
+    void compute_weight_compensation_control_commands();
     KDL::Twist finite_displacement_twist(const state_specification &state_a, 
                                          const state_specification &state_b);
     double kinetic_energy(const KDL::Twist &twist, const int segment_index);

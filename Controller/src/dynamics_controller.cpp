@@ -47,17 +47,20 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     transform_drivers_(false), transform_force_drivers_(false),
     apply_feedforward_force_(false),
     compute_null_space_command_(false),
-    write_contact_time_to_file_(false),
+    write_contact_time_to_file_(false), compensate_unknown_weight_(false),
     JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
     current_error_twist_(KDL::Twist::Zero()),
     abag_error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     null_space_abag_error_(Eigen::VectorXd::Zero(1)),
     predicted_error_twist_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
+    compensation_error_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     horizon_amplitude_(1.0), null_space_abag_command_(0.0), null_space_angle_(0.0),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     max_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
+    compensation_parameters_(Eigen::VectorXd::Constant(7, 0.0)),
     force_task_parameters_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     min_sat_limits_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
+    filtered_bias_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     cart_force_command_(NUM_OF_SEGMENTS_, KDL::Wrench::Zero()), ext_wrench_(KDL::Wrench::Zero()),
     hd_solver_(robot_chain_, robot_driver->get_joint_inertia(), 
                robot_driver->get_joint_torque_limits(),
@@ -480,6 +483,7 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     desired_state_.external_force[END_EFF_](4) = 0.0;
     compute_null_space_command_ = true;
     transform_force_drivers_    = true;
+    compensate_unknown_weight_  = false;
 }
 
 
@@ -565,6 +569,7 @@ void dynamics_controller::define_moveTo_follow_path_task(
     transform_drivers_          = true;
     transform_force_drivers_    = false;
     compute_null_space_command_ = false;
+    compensate_unknown_weight_  = false;
 }
 
 
@@ -634,6 +639,7 @@ void dynamics_controller::define_moveTo_task(
     transform_drivers_          = true;
     transform_force_drivers_    = false;
     compute_null_space_command_ = false;
+    compensate_unknown_weight_  = false;
 }
 
 void dynamics_controller::define_moveTo_weight_compensation_task(
@@ -702,6 +708,7 @@ void dynamics_controller::define_moveTo_weight_compensation_task(
     transform_drivers_          = true;
     transform_force_drivers_    = false;
     compute_null_space_command_ = false;
+    compensate_unknown_weight_  = true;
 }
 
 void dynamics_controller::define_desired_ee_pose(
@@ -736,6 +743,7 @@ void dynamics_controller::define_desired_ee_pose(
     transform_drivers_          = false;
     transform_force_drivers_    = false;
     compute_null_space_command_ = false;
+    compensate_unknown_weight_  = false;
 }
 
 // Define Cartesian Acceleration task on the end-effector - Public Method
@@ -1493,6 +1501,28 @@ void dynamics_controller::compute_cart_control_commands()
 #endif
 }
 
+void dynamics_controller::compute_weight_compensation_control_commands()
+{
+    // Values expressed in the task frames
+    int compensation_status = fsm_.update_weight_compensation_task_status(compensation_parameters_, 
+                                                                          loop_iteration_count_,
+                                                                          abag_.get_bias(), 
+                                                                          abag_.get_gain(), 
+                                                                          filtered_bias_);
+    // Update error and control command
+    if (compensation_status == 1) 
+    {
+        // Values expressed in the task frame: offset - current bias
+        compensation_error_(0) = compensation_parameters_(2) - filtered_bias_(0);
+        if (std::fabs(compensation_error_(0)) <= compensation_parameters_(1)) compensation_error_(0) = 0.0;
+
+        // Error in procentage * max command * proportional gain
+        KDL::Vector ext_weight(compensation_error_(0) * max_command_(0) * compensation_parameters_(0), 0.0, 0.0);
+        // Transform external force from task frame to the base frame
+        robot_state_.external_force[END_EFF_].force = moveTo_weight_compensation_task_.tf_pose.M * ext_weight;
+    }
+}
+
 //Calculate robot dynamics - Resolve motion and forces using the Vereshchagin HD solver
 int dynamics_controller::evaluate_dynamics()
 {
@@ -1544,7 +1574,8 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
                                          const Eigen::VectorXd &gain_step,
                                          const Eigen::VectorXd &min_bias_sat,
                                          const Eigen::VectorXd &min_command_sat,
-                                         const Eigen::VectorXd &null_space_abag_parameters)
+                                         const Eigen::VectorXd &null_space_abag_parameters,
+                                         const Eigen::VectorXd &compensation_parameters)
 {
     //First check input dimensions
     assert(max_command.size()    == NUM_OF_CONSTRAINTS_); 
@@ -1581,6 +1612,8 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
     abag_null_space_.set_bias_step(     null_space_abag_parameters(2), 0);
     abag_null_space_.set_gain_threshold(null_space_abag_parameters(3), 0);
     abag_null_space_.set_gain_step(     null_space_abag_parameters(4), 0);
+
+    this->compensation_parameters_ = compensation_parameters;
 }
 
 int dynamics_controller::initialize(const int desired_control_mode, 
@@ -1614,7 +1647,9 @@ int dynamics_controller::initialize(const int desired_control_mode,
             break;
 
         case task_model::moveTo_weight_compensation:
-            fsm_result_ = fsm_.initialize_with_moveTo_weight_compensation(moveTo_weight_compensation_task_, motion_profile);
+            fsm_result_ = fsm_.initialize_with_moveTo_weight_compensation(moveTo_weight_compensation_task_, 
+                                                                          motion_profile,
+                                                                          compensation_parameters_);
             break;
 
         case task_model::full_pose:
@@ -1756,6 +1791,7 @@ int dynamics_controller::control(const int desired_control_mode,
         compute_control_error();
         
         compute_cart_control_commands();
+        if (compensate_unknown_weight_) compute_weight_compensation_control_commands();
         if (store_control_data) write_to_file();        
 
         // Calculate robot dynamics using the Vereshchagin HD solver
@@ -1867,7 +1903,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
     if (check_control_status() == -1) return -1;
 
     compute_cart_control_commands();
-
+    if (compensate_unknown_weight_) compute_weight_compensation_control_commands();
     // steps++;
 
     if (store_control_data_) write_to_file();   
