@@ -40,10 +40,12 @@ link_directories(
   "/home/djole/Master/Thesis/GIT/MT_testing/KDL/KDL_install_dir/lib/"
 )
 
-add_library(controller 
+add_library(controller
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/constants.cpp
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/kdl_eigen_conversions.cpp
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/geometry_utils.cpp
+    /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/moving_slope.cpp
+    /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/moving_variance.cpp
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/model_prediction.cpp
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/finite_state_machine.cpp
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/motion_profile.cpp

@@ -41,6 +41,8 @@ if("${ROBOT}" STREQUAL "lwr")
     src/main_lwr.cpp
     src/constants.cpp
     src/kdl_eigen_conversions.cpp
+    src/moving_variance.cpp
+    src/moving_slope.cpp
     src/geometry_utils.cpp
     src/model_prediction.cpp
     src/finite_state_machine.cpp
@@ -59,6 +61,8 @@ else()
     src/constants.cpp
     src/kdl_eigen_conversions.cpp
     src/geometry_utils.cpp
+    src/moving_variance.cpp
+    src/moving_slope.cpp
     src/model_prediction.cpp
     src/finite_state_machine.cpp
     src/motion_profile.cpp
