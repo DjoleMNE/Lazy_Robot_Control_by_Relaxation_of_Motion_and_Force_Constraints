@@ -37,10 +37,10 @@ finite_state_machine::finite_state_machine(const int num_of_joints,
     previous_task_time_(0.0), total_contact_time_(0.0),
     goal_reached_(false), time_limit_reached_(false), contact_detected_(false),
     contact_alignment_performed_(false), write_compensation_time_to_file_(false), 
-    filtered_bias_(Eigen::VectorXd::Zero(6)), 
+    filtered_bias_(Eigen::VectorXd::Zero(6)), compensation_parameters_(Eigen::VectorXd::Zero(7)),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     desired_state_(robot_state_), 
-    variance_gain_(100, 6), variance_bias_(100, 6), slope_bias_(150, 6),
+    variance_gain_(100, 6), variance_bias_(100, 6), slope_bias_(180, 6),
     current_error_(KDL::Twist::Zero()), ext_wrench_(KDL::Wrench::Zero())
 {
 }
@@ -85,12 +85,13 @@ int finite_state_machine::initialize_with_moveTo_weight_compensation(const moveT
     desired_task_model_              = task_model::moveTo_weight_compensation;
     moveTo_weight_compensation_task_ = task;
     motion_profile_                  = motion_profile;
+    compensation_parameters_         = compensation_parameters;
 
     log_file_compensation_.open("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/compensation_data.txt");
     assert(log_file_compensation_.is_open());
-    log_file_compensation_ << compensation_parameters(3) << " ";
-    log_file_compensation_ << compensation_parameters(4) << " ";
-    log_file_compensation_ << compensation_parameters(5) << std::endl;
+    log_file_compensation_ << compensation_parameters_(3) << " ";
+    log_file_compensation_ << compensation_parameters_(4) << " ";
+    log_file_compensation_ << compensation_parameters_(5) << std::endl;
     return control_status::NOMINAL;
 }
 
@@ -555,8 +556,7 @@ int finite_state_machine::update_motion_task_status(const state_specification &r
     }
 }
 
-int finite_state_machine::update_weight_compensation_task_status(const Eigen::VectorXd &compensation_parameters,
-                                                                 const int loop_iteration_count,
+int finite_state_machine::update_weight_compensation_task_status(const int loop_iteration_count,
                                                                  const Eigen::VectorXd &bias_signal,
                                                                  const Eigen::VectorXd &gain_signal,
                                                                  Eigen::VectorXd &filtered_bias)
@@ -578,8 +578,8 @@ int finite_state_machine::update_weight_compensation_task_status(const Eigen::Ve
     low_pass_filter(bias_signal, 0.99);
 
     // For now, check only for X linear axis
-    if (bias_within_tube(compensation_parameters(3), 0, bias_signal(0)) && \
-        gain_within_tube(compensation_parameters(4), 0, gain_signal(0)))
+    if (bias_within_tube(compensation_parameters_(3), 0, bias_signal(0)) && \
+        gain_within_tube(compensation_parameters_(4), 0, gain_signal(0)))
     {
         total_loop_count_++;
         loop_period_count_++;
@@ -594,10 +594,10 @@ int finite_state_machine::update_weight_compensation_task_status(const Eigen::Ve
         return 0;
     }
 
-    if (loop_period_count_ >= compensation_parameters(6))
+    if (loop_period_count_ >= compensation_parameters_(6))
     {
         // For now, check only for X linear axis
-        if ( std::fabs(slope_bias_.update(0, filtered_bias_(0))) <= compensation_parameters(5) )
+        if ( std::fabs(slope_bias_.update(0, filtered_bias_(0))) <= compensation_parameters_(5) )
         {
             filtered_bias(0)   = filtered_bias_(0);
             loop_period_count_ = 0;

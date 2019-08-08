@@ -1504,8 +1504,7 @@ void dynamics_controller::compute_cart_control_commands()
 void dynamics_controller::compute_weight_compensation_control_commands()
 {
     // Values expressed in the task frames
-    int compensation_status = fsm_.update_weight_compensation_task_status(compensation_parameters_, 
-                                                                          loop_iteration_count_,
+    int compensation_status = fsm_.update_weight_compensation_task_status(loop_iteration_count_,
                                                                           abag_.get_bias(), 
                                                                           abag_.get_gain(), 
                                                                           filtered_bias_);

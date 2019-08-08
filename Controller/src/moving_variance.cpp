@@ -105,6 +105,7 @@ double moving_variance::get_variance(const int dimension)
     assert(dimension < DIMENSIONS_);
 
     // Normalize the value
+    if (windows_[dimension].size() == 0) return 0.0;
     return variances_(dimension) / static_cast<float>(windows_[dimension].size());
 }
 

@@ -136,8 +136,7 @@ class finite_state_machine
                                                        const Eigen::VectorXd &compensation_parameters);
         int initialize_with_moveTo(const moveTo_task &task, const int motion_profile);
         int initialize_with_full_pose(const full_pose_task &task, const int motion_profile);
-        int update_weight_compensation_task_status(const Eigen::VectorXd &compensation_parameters,
-                                                   const int loop_iteration_count,
+        int update_weight_compensation_task_status(const int loop_iteration_count,
                                                    const Eigen::VectorXd &bias_signal,
                                                    const Eigen::VectorXd &gain_signal,
                                                    Eigen::VectorXd &filtered_bias);
@@ -159,7 +158,7 @@ class finite_state_machine
         double total_control_time_sec_, previous_task_time_, total_contact_time_;
         bool goal_reached_, time_limit_reached_, contact_detected_, 
              contact_alignment_performed_, write_compensation_time_to_file_;
-        Eigen::VectorXd filtered_bias_;
+        Eigen::VectorXd filtered_bias_, compensation_parameters_;
         state_specification robot_state_, desired_state_;
         moving_variance variance_gain_, variance_bias_;
         moving_slope slope_bias_;
