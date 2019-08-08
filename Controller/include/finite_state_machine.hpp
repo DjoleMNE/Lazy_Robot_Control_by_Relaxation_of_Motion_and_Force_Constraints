@@ -30,6 +30,8 @@ SOFTWARE.
 #include <fk_vereshchagin.hpp>
 #include <kdl_eigen_conversions.hpp>
 #include <motion_profile.hpp>
+#include <moving_variance.hpp>
+#include <moving_slope.hpp>
 #include <iostream>
 #include <sstream>
 #include <fstream>
