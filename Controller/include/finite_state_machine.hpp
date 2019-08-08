@@ -132,9 +132,15 @@ class finite_state_machine
         ~finite_state_machine(){};
         int initialize_with_moveConstrained_follow_path(const moveConstrained_follow_path_task &task, const int motion_profile);
         int initialize_with_moveTo_follow_path(const moveTo_follow_path_task &task, const int motion_profile);
-        int initialize_with_moveTo_weight_compensation(const moveTo_weight_compensation_task &task, const int motion_profile);
+        int initialize_with_moveTo_weight_compensation(const moveTo_weight_compensation_task &task, const int motion_profile,
+                                                       const Eigen::VectorXd &compensation_parameters);
         int initialize_with_moveTo(const moveTo_task &task, const int motion_profile);
         int initialize_with_full_pose(const full_pose_task &task, const int motion_profile);
+        int update_weight_compensation_task_status(const Eigen::VectorXd &compensation_parameters,
+                                                   const int loop_iteration_count,
+                                                   const Eigen::VectorXd &bias_signal,
+                                                   const Eigen::VectorXd &gain_signal,
+                                                   Eigen::VectorXd &filtered_bias);
         int update_force_task_status(const KDL::Wrench &desired_force, 
                                      const KDL::Wrench &ext_force,
                                      const double current_task_time,
@@ -149,10 +155,14 @@ class finite_state_machine
     private:
         const int NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_;
         const int END_EFF_;
-        int desired_task_model_, motion_profile_;
+        int desired_task_model_, motion_profile_, loop_period_count_, total_loop_count_;
         double total_control_time_sec_, previous_task_time_, total_contact_time_;
-        bool goal_reached_, time_limit_reached_, contact_detected_, contact_alignment_performed_;
+        bool goal_reached_, time_limit_reached_, contact_detected_, 
+             contact_alignment_performed_, write_compensation_time_to_file_;
+        Eigen::VectorXd filtered_bias_;
         state_specification robot_state_, desired_state_;
+        moving_variance variance_gain_, variance_bias_;
+        moving_slope slope_bias_;
         KDL::Twist current_error_;
         KDL::Wrench ext_wrench_;
         moveTo_task moveTo_task_;
@@ -160,7 +170,7 @@ class finite_state_machine
         full_pose_task full_pose_task_;
         moveTo_follow_path_task moveTo_follow_path_task_;
         moveConstrained_follow_path_task moveConstrained_follow_path_task_;
-        std::ofstream log_file_ext_force_;
+        std::ofstream log_file_ext_force_, log_file_compensation_;
 
         int update_full_pose_task(state_specification &desired_state);
         int update_moveTo_task(state_specification &desired_state);
@@ -175,7 +185,12 @@ class finite_state_machine
                                        const KDL::Wrench &ext_force);
         bool force_goal_maintained(const KDL::Wrench &desired_force,
                                    const KDL::Wrench &ext_force);
+        bool bias_within_tube(const double tolerance, const int dimension, const double signal);
+        bool gain_within_tube(const double tolerance, const int dimension, const double signal);
         void low_pass_filter(const KDL::Wrench &ext_force, const double alpha);
+        void low_pass_filter(const Eigen::VectorXd &signal, const double alpha);
+        double signal_slope(const double point_1_y, const int point_1_x, 
+                            const double point_2_y, const int point_2_x);
         int sign(double x);
 };
 #endif /* FINITE_STATE_MACHINE_HPP */

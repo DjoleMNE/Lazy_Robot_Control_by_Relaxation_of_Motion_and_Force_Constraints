@@ -32,13 +32,16 @@ finite_state_machine::finite_state_machine(const int num_of_joints,
     NUM_OF_JOINTS_(num_of_joints), NUM_OF_SEGMENTS_(num_of_segments),
     NUM_OF_FRAMES_(num_of_frames), NUM_OF_CONSTRAINTS_(num_of_constraints),
     END_EFF_(NUM_OF_SEGMENTS_ - 1), desired_task_model_(task_model::full_pose),
-    motion_profile_(m_profile::CONSTANT), total_control_time_sec_(0.0),
+    motion_profile_(m_profile::CONSTANT), loop_period_count_(0),
+    total_loop_count_(0), total_control_time_sec_(0.0),
     previous_task_time_(0.0), total_contact_time_(0.0),
     goal_reached_(false), time_limit_reached_(false), contact_detected_(false),
-    contact_alignment_performed_(false),
+    contact_alignment_performed_(false), write_compensation_time_to_file_(false), 
+    filtered_bias_(Eigen::VectorXd::Zero(6)), 
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
-    desired_state_(robot_state_), current_error_(KDL::Twist::Zero()),
-    ext_wrench_(KDL::Wrench::Zero())
+    desired_state_(robot_state_), 
+    variance_gain_(100, 6), variance_bias_(100, 6), slope_bias_(150, 6),
+    current_error_(KDL::Twist::Zero()), ext_wrench_(KDL::Wrench::Zero())
 {
 }
 
@@ -76,11 +79,18 @@ int finite_state_machine::initialize_with_moveTo(const moveTo_task &task,
 }
 
 int finite_state_machine::initialize_with_moveTo_weight_compensation(const moveTo_weight_compensation_task &task,
-                                                                     const int motion_profile)
+                                                                     const int motion_profile,
+                                                                     const Eigen::VectorXd &compensation_parameters)
 {
     desired_task_model_              = task_model::moveTo_weight_compensation;
     moveTo_weight_compensation_task_ = task;
     motion_profile_                  = motion_profile;
+
+    log_file_compensation_.open("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/compensation_data.txt");
+    assert(log_file_compensation_.is_open());
+    log_file_compensation_ << compensation_parameters(3) << " ";
+    log_file_compensation_ << compensation_parameters(4) << " ";
+    log_file_compensation_ << compensation_parameters(5) << std::endl;
     return control_status::NOMINAL;
 }
 
@@ -545,6 +555,59 @@ int finite_state_machine::update_motion_task_status(const state_specification &r
     }
 }
 
+int finite_state_machine::update_weight_compensation_task_status(const Eigen::VectorXd &compensation_parameters,
+                                                                 const int loop_iteration_count,
+                                                                 const Eigen::VectorXd &bias_signal,
+                                                                 const Eigen::VectorXd &gain_signal,
+                                                                 Eigen::VectorXd &filtered_bias)
+{
+    log_file_compensation_ << bias_signal.transpose().format(dynamics_parameter::WRITE_FORMAT);
+    log_file_compensation_ << gain_signal.transpose().format(dynamics_parameter::WRITE_FORMAT);
+    log_file_compensation_ << filtered_bias_.transpose().format(dynamics_parameter::WRITE_FORMAT);
+    log_file_compensation_ << variance_bias_.get_variance().transpose().format(dynamics_parameter::WRITE_FORMAT);
+    log_file_compensation_ << variance_gain_.get_variance().transpose().format(dynamics_parameter::WRITE_FORMAT);
+    log_file_compensation_ << slope_bias_.get_slope().transpose().format(dynamics_parameter::WRITE_FORMAT);
+    if (write_compensation_time_to_file_) 
+    {
+        log_file_compensation_ << loop_iteration_count - 1 << std::endl;
+        write_compensation_time_to_file_ = false;
+    }
+    else log_file_compensation_ << 0.0 << std::endl;
+    // log_file_compensation_ << 0.0 << std::endl;
+
+    low_pass_filter(bias_signal, 0.99);
+
+    // For now, check only for X linear axis
+    if (bias_within_tube(compensation_parameters(3), 0, bias_signal(0)) && \
+        gain_within_tube(compensation_parameters(4), 0, gain_signal(0)))
+    {
+        total_loop_count_++;
+        loop_period_count_++;
+    }
+    else 
+    {
+        total_loop_count_  = 0;
+        loop_period_count_ = 0;
+
+        // For now, check only for X linear axis
+        slope_bias_.clear(0);
+        return 0;
+    }
+
+    if (loop_period_count_ >= compensation_parameters(6))
+    {
+        // For now, check only for X linear axis
+        if ( std::fabs(slope_bias_.update(0, filtered_bias_(0))) <= compensation_parameters(5) )
+        {
+            filtered_bias(0)   = filtered_bias_(0);
+            loop_period_count_ = 0;
+            write_compensation_time_to_file_ = true;
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_force,
                                                    const KDL::Wrench &ext_force,
                                                    const double current_task_time,
@@ -636,11 +699,36 @@ bool finite_state_machine::contact_detected(const double linear_force_threshold,
     return false;    
 }
 
+bool finite_state_machine::bias_within_tube(const double tolerance, const int dimension, const double signal)
+{
+    if (variance_bias_.update(dimension, signal) <= tolerance) return true;
+    return false;
+}
+
+bool finite_state_machine::gain_within_tube(const double tolerance, const int dimension, const double signal)
+{
+    if (variance_gain_.update(dimension, signal) <= tolerance) return true;
+    return false;
+}
+
 void finite_state_machine::low_pass_filter(const KDL::Wrench &ext_force,
                                            const double alpha)
 {
     for (int i = 0; i < 6; i++)
         ext_wrench_(i) = alpha * ext_wrench_(i) + (1 - alpha) * ext_force(i);
+}
+
+void finite_state_machine::low_pass_filter(const Eigen::VectorXd &signal,
+                                           const double alpha)
+{
+    for (int i = 0; i < 6; i++)
+        filtered_bias_(i) = alpha * filtered_bias_(i) + (1 - alpha) * signal(i);
+}
+
+double finite_state_machine::signal_slope(const double point_1_y, const int point_1_x, 
+                                          const double point_2_y, const int point_2_x)
+{
+    return (point_2_y - point_1_y) / (point_2_x - point_1_x);
 }
 
 int finite_state_machine::sign(double x)
