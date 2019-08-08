@@ -61,7 +61,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     force_task_parameters_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     min_sat_limits_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     filtered_bias_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
-    cart_force_command_(NUM_OF_SEGMENTS_, KDL::Wrench::Zero()), ext_wrench_(KDL::Wrench::Zero()),
+    cart_force_command_(NUM_OF_SEGMENTS_, KDL::Wrench::Zero()), 
+    ext_wrench_(KDL::Wrench::Zero()), compensated_weight_(KDL::Wrench::Zero()),
     hd_solver_(robot_chain_, robot_driver->get_joint_inertia(), 
                robot_driver->get_joint_torque_limits(),
                robot_driver->get_root_acceleration(), NUM_OF_CONSTRAINTS_),
@@ -1515,10 +1516,13 @@ void dynamics_controller::compute_weight_compensation_control_commands()
         compensation_error_(0) = compensation_parameters_(2) - filtered_bias_(0);
         if (std::fabs(compensation_error_(0)) <= compensation_parameters_(1)) compensation_error_(0) = 0.0;
 
-        // Error in procentage * max command * proportional gain
-        KDL::Vector ext_weight(compensation_error_(0) * max_command_(0) * compensation_parameters_(0), 0.0, 0.0);
+        // Force in task frame = error in procentage * max command * proportional gain
+        compensated_weight_.force = compensated_weight_.force + KDL::Vector(compensation_error_(0) * max_command_(0) * compensation_parameters_(0), 0.0, 0.0);
+
+        printf("Force: %f\n", compensated_weight_.force(0));
+
         // Transform external force from task frame to the base frame
-        robot_state_.external_force[END_EFF_].force = moveTo_weight_compensation_task_.tf_pose.M * ext_weight;
+        robot_state_.external_force[END_EFF_].force = moveTo_weight_compensation_task_.tf_pose.M * compensated_weight_.force;
     }
 }
 

@@ -194,7 +194,7 @@ class dynamics_controller
     Eigen::VectorXd abag_command_, max_command_, compensation_parameters_,
                     force_task_parameters_, min_sat_limits_, filtered_bias_;
     KDL::Wrenches cart_force_command_;
-    KDL::Wrench ext_wrench_;
+    KDL::Wrench ext_wrench_, compensated_weight_;
 
     KDL::Solver_Vereshchagin hd_solver_;
     KDL::FK_Vereshchagin fk_vereshchagin_;

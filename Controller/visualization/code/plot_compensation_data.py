@@ -93,7 +93,7 @@ plt.plot(bias, c = 'green', label='bias', linewidth = 2, zorder = 4)
 plt.plot(gain, c = 'red', label=r'gain * sign(e)', linewidth = 2, zorder = 2)
 plt.plot(filtered_bias, c = 'blue', label='filered_bias', linewidth = 1.0, zorder = 3)
 for tick in contact_time_tick:
-    plt.axvline(x = tick, linewidth = 0.7,  color='red', zorder = 1)
+    plt.axvline(x = tick, linewidth = 0.3,  color='blue', zorder = 4)
 plt.ylim(-1.05, 1.05)
 plt.yticks(np.arange(-1.0, 1.05, 0.25))
 plt.legend(fontsize = 'x-large')
@@ -105,7 +105,7 @@ plt.plot(variance_bias, c = 'limegreen', label='bias variance', linewidth = 2, z
 tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][0] )))
 plt.plot(tube_tolerance, c = 'blue', label='tube_upper_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
 for tick in contact_time_tick:
-    plt.axvline(x = tick, linewidth = 0.7,  color='red', zorder = 1)
+    plt.axvline(x = tick, linewidth = 0.3,  color='blue', zorder = 4)
 plt.legend(loc=4, fontsize = 'x-large')
 plt.xticks(np.arange(0, num_samples, tick_freq))
 plt.ylim(-0.0001, 0.0003)
@@ -116,7 +116,7 @@ plt.plot(variance_gain, label='gain variance', linewidth = 2, color = 'black', z
 tube_tolerance = np.array( np.full((num_samples, ), np.float32( input_data[0][1] )))
 plt.plot(tube_tolerance, c = 'blue', label='tube_upper_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
 for tick in contact_time_tick:
-    plt.axvline(x = tick, linewidth = 0.7,  color='red', zorder = 1)
+    plt.axvline(x = tick, linewidth = 0.3,  color='blue', zorder = 4)
 plt.legend(loc=4, fontsize = 'x-large')
 plt.xticks(np.arange(0, num_samples, tick_freq))
 plt.ylim(-0.001, 0.003)
@@ -128,7 +128,7 @@ tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][2] 
 plt.plot(tube_tolerance, c = 'blue', label='tube_upper_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
 plt.plot(-tube_tolerance, c = 'blue', label='tube_upper_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
 for tick in contact_time_tick:
-    plt.axvline(x = tick, linewidth = 0.7,  color='red', zorder = 1)
+    plt.axvline(x = tick, linewidth = 0.3,  color='blue', zorder = 4)
 plt.legend(fontsize = 'x-large')
 plt.xticks(np.arange(0, num_samples, tick_freq))
 plt.grid(True)
