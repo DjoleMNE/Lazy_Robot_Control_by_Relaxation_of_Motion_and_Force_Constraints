@@ -49,6 +49,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     min_bias_sat_(Eigen::VectorXd::Constant(6, -1.0)), 
     min_command_sat_(Eigen::VectorXd::Constant(6, -1.0)),
     null_space_abag_parameters_(Eigen::VectorXd::Constant(5, 0.1)),
+    compensation_parameters_(Eigen::VectorXd::Constant(7, 0.0)),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_SEGMENTS_ + 1, NUM_OF_CONSTRAINTS_),
     return_msg_(RTT::NoData)
 {
@@ -86,6 +87,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addProperty("BIAS_STEP", bias_step_).doc("BIAS_STEP");
     this->addProperty("GAIN_THRESHOLD", gain_threshold_).doc("GAIN_THRESHOLD");
     this->addProperty("GAIN_STEP", gain_step_).doc("GAIN_STEP");
+    this->addProperty("compensation_parameters", compensation_parameters_).doc("compensation_parameters");
     this->addProperty("abag_error_type", abag_error_type_).doc("abag_error_type");
     this->addProperty("min_bias_sat", min_bias_sat_).doc("min_bias_sat");
     this->addProperty("min_command_sat", min_command_sat_).doc("min_command_sat");
@@ -330,7 +332,8 @@ bool LwrRttControl::configureHook()
                                 max_command_, error_alpha_,
                                 bias_threshold_, bias_step_, gain_threshold_,
                                 gain_step_, min_bias_sat_, min_command_sat_,
-                                null_space_abag_parameters_);
+                                null_space_abag_parameters_,
+                                compensation_parameters_);
 
     int initial_result = controller_->initialize(desired_control_mode_, 
                                                  desired_dynamics_interface_,
