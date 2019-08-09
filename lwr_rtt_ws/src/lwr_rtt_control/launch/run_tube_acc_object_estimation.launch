@@ -129,7 +129,7 @@
                                              control-period -->
     <arg name="compensation_parameters" default=" [1.7, 0.03, 0.0,
                                                    0.00016, 0.0025, 0.00002,
-                                                   30]"/>
+                                                   60]"/>
 
 <!--============ LwrRttControl Params ============-->
     <!-- Set some parameters for LwrRttControl

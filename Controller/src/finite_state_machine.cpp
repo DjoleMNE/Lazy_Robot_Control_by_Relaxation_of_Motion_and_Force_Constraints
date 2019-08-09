@@ -40,7 +40,7 @@ finite_state_machine::finite_state_machine(const int num_of_joints,
     filtered_bias_(Eigen::VectorXd::Zero(6)), compensation_parameters_(Eigen::VectorXd::Zero(7)),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     desired_state_(robot_state_), 
-    variance_gain_(100, 6), variance_bias_(100, 6), slope_bias_(180, 6),
+    variance_gain_(100, 6), variance_bias_(100, 6), slope_bias_(100, 6),
     current_error_(KDL::Twist::Zero()), ext_wrench_(KDL::Wrench::Zero())
 {
 }
