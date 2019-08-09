@@ -1518,8 +1518,10 @@ void dynamics_controller::compute_weight_compensation_control_commands()
 
         // Force in task frame = error in procentage * max command * proportional gain
         compensated_weight_.force = compensated_weight_.force + KDL::Vector(compensation_error_(0) * max_command_(0) * compensation_parameters_(0), 0.0, 0.0);
-
-        printf("Force: %f\n", compensated_weight_.force(0));
+        
+        #ifndef NDEBUG
+            printf("Force: %f\n", compensated_weight_.force(0));
+        #endif
 
         // Transform external force from task frame to the base frame
         robot_state_.external_force[END_EFF_].force = moveTo_weight_compensation_task_.tf_pose.M * compensated_weight_.force;

@@ -576,35 +576,38 @@ int finite_state_machine::update_weight_compensation_task_status(const int loop_
     // log_file_compensation_ << 0.0 << std::endl;
 
     low_pass_filter(bias_signal, 0.99);
+    variance_bias_.update(0, bias_signal(0));
+    variance_gain_.update(0, gain_signal(0));
+    slope_bias_.update(0, filtered_bias_(0));
 
     // For now, check only for X linear axis
-    if (bias_within_tube(compensation_parameters_(3), 0, bias_signal(0)) && \
-        gain_within_tube(compensation_parameters_(4), 0, gain_signal(0)))
+    if ( (variance_bias_.get_variance(0) <= compensation_parameters_(3)) && \
+         (variance_gain_.get_variance(0) <= compensation_parameters_(4)) && \
+         (std::fabs(slope_bias_.get_slope(0)) <= compensation_parameters_(5)) )
     {
-        total_loop_count_++;
         loop_period_count_++;
     }
     else 
     {
-        total_loop_count_  = 0;
         loop_period_count_ = 0;
 
         // For now, check only for X linear axis
-        slope_bias_.clear(0);
+        // slope_bias_.clear(0);
         return 0;
     }
+    
+    double compensation_error = compensation_parameters_(2) - filtered_bias_(0);
+    if (std::fabs(compensation_error) <= compensation_parameters_(1)) compensation_error = 0.0;
 
-    if (loop_period_count_ >= compensation_parameters_(6))
+    if ((loop_period_count_ >= compensation_parameters_(6)) && (compensation_error != 0.0))
     {
         // For now, check only for X linear axis
-        if ( std::fabs(slope_bias_.update(0, filtered_bias_(0))) <= compensation_parameters_(5) )
-        {
-            filtered_bias(0)   = filtered_bias_(0);
-            loop_period_count_ = 0;
-            write_compensation_time_to_file_ = true;
-            return 1;
-        }
+        filtered_bias(0)   = filtered_bias_(0);
+        loop_period_count_ = 0;
+        write_compensation_time_to_file_ = true;
+        return 1;
     }
+
     return 0;
 }
 
