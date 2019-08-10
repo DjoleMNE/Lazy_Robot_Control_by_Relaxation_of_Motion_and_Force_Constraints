@@ -32,7 +32,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     environment_(lwr_environment::LWR_SIMULATION), 
     robot_model_(lwr_model::LWR_URDF), iteration_count_(0), gazebo_arm_eef_(0),
     simulation_loop_iterations_(10000), total_time_(0.0), task_time_limit_sec_(0.0),
-    krc_compensate_gravity_(false), use_mixed_driver_(false), load_ati_sensor_(false),
+    krc_compensate_gravity_(false), load_ati_sensor_(false),
     desired_task_model_(2), desired_control_mode_(0), desired_dynamics_interface_(1),
     desired_pose_(1), motion_profile_(0), path_type_(0),
     damper_amplitude_(1.0), tube_speed_(0.0), tube_force_(0.0),
@@ -117,8 +117,8 @@ bool LwrRttControl::configureHook()
     port_joint_torque_cmd_out.setDataSample(jnt_trq_cmd_out);
 
     // Check validity of (all) Ports:
-    if ( !port_joint_position_in.connected() || 
-         !port_joint_velocity_in.connected() ||
+    if ( !port_joint_position_in.connected() || \
+         !port_joint_velocity_in.connected() || \
          !port_joint_torque_in.connected() ) 
     {
         RTT::log(RTT::Fatal) << "No input connection!"<< RTT::endlog();
@@ -127,8 +127,7 @@ bool LwrRttControl::configureHook()
 
     if (load_ati_sensor_ && !port_ext_force_in.connected()) RTT::log(RTT::Fatal) << "No EXT Force input connection!" << RTT::endlog();
 
-    if ( !port_joint_position_cmd_out.connected() ||
-         !port_joint_torque_cmd_out.connected()) 
+    if ( !port_joint_position_cmd_out.connected() || !port_joint_torque_cmd_out.connected()) 
     {
            RTT::log(RTT::Warning) << "No output connection!"<< RTT::endlog();  
     }
@@ -215,7 +214,6 @@ bool LwrRttControl::configureHook()
 
     switch (desired_task_model_)
     {
-
         case task_model::moveConstrained_follow_path:
             tube_path_points_ = std::vector< std::vector<double> > (path_parameters_[4]    , std::vector<double>( 3, 0.0));
             path_poses_       = std::vector< std::vector<double> > (path_parameters_[4] - 1, std::vector<double>(12, 0.0));
@@ -337,10 +335,9 @@ bool LwrRttControl::configureHook()
 
     int initial_result = controller_->initialize(desired_control_mode_, 
                                                  desired_dynamics_interface_,
-                                                 use_mixed_driver_, 
                                                  true,
                                                  motion_profile_);
-    if(initial_result != 0) return false;
+    if (initial_result != 0) return false;
 
     this->visualize_pose(desired_ee_pose_, path_poses_);
 

@@ -25,7 +25,6 @@
     <arg name="gazebo_gui" default="false"/>
 
 
-
 <!-- ***************** General Control PARAMETERS ********************** -->
     <arg name="environment" default="1"/>
     <arg name="robot_model" default="0"/>
@@ -85,7 +84,7 @@
 
     
 <!-- *************** ABAG SETTINGS ******************** -->
-    <!-- ==== Raw error is 0, sign is 1 flag ======-->
+    <!-- ==== Raw error is 0, sign is 1 ======-->
     <arg name="abag_error_type"   default="1"/>
 
     <!-- ==== Saturate Bias and Command signals to [0, 1] or [-1, 1] ======-->
@@ -96,19 +95,19 @@
 
     <!-- ABAG PARAMETERS (Error Sign): Low Gain, low chattering but less robust -->
     <arg name="ERROR_ALPHA" default="   [0.900000, 0.900000, 0.900000, 
-                                         0.650000, 0.850000, 0.178001]"/>
+                                         0.850000, 0.850000, 0.850000]"/>
 
     <arg name="BIAS_THRESHOLD" default="[0.000407, 0.000407, 0.000407, 
-                                         0.001007, 0.001007, 0.724277]"/>
+                                         0.001007, 0.001007, 0.001007]"/>
 
     <arg name="BIAS_STEP" default="     [0.000495, 0.000495, 0.000495, 
-                                         0.003495, 0.003495, 0.503495]"/>
+                                         0.003495, 0.003495, 0.003495]"/>
 
     <arg name="GAIN_THRESHOLD" default="[0.552492, 0.552492, 0.552492, 
-                                         0.252492, 0.252492, 0.432492]"/>
+                                         0.252492, 0.252492, 0.252492]"/>
 
     <arg name="GAIN_STEP" default="     [0.003152, 0.003152, 0.003152, 
-                                         0.015152, 0.015152, 0.655152]"/>
+                                         0.015152, 0.015152, 0.015152]"/>
 
 <!--============ LwrRttControl Params ============-->
     <!-- Set some parameters for LwrRttControl
