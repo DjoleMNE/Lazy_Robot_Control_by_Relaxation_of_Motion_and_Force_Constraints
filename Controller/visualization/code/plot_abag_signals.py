@@ -106,6 +106,11 @@ bias      = np.array(bias)
 gain      = np.array(gain)
 command   = np.array(command)
 
+# f = open("guru99.txt","w+")
+# for i in range(num_samples):
+#     f.write("%f\n" % bias[i])
+# f.close() 
+
 plt.ion()
 plt.figure(figsize = (15, 5))
 if(desired_dim is 0):   plt.suptitle('Linear X', fontsize=20)

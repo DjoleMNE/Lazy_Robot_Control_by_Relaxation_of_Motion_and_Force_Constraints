@@ -45,10 +45,10 @@
     <!-- <arg name="desired_pose" default="0"/> -->
 
     <!-- ========= candle 2 pose ===============-->
-    <!-- <arg name="desired_pose" default="5"/> -->
+    <arg name="desired_pose" default="5"/>
 
     <!-- ========= folded 2 pose ===============-->
-    <arg name="desired_pose" default="6"/>
+    <!-- <arg name="desired_pose" default="6"/> -->
 
 
     <!-- ========= Task time limit in seconds ==============-->
@@ -66,7 +66,7 @@
     <arg name="tube_start_position" default="[-0.040437, 0.0103562, 0.86]"/>
 
     <!-- ========= Tube speed ===============-->
-    <arg name="tube_speed" default="0.04"/>
+    <arg name="tube_speed" default="0.0"/>
 
 
     <!-- ========= Motion profile: constant velocity ===============-->
@@ -121,6 +121,13 @@
     <arg name="GAIN_STEP" default="     [0.002500, 0.003152, 0.003152, 
                                          0.015152, 0.015152, 0.655152]"/>
 
+    <!-- Parameters for weight compensation: K proportional, error-tube, bias-offset,
+                                             bias-variance, gain-variance, bias slope, 
+                                             control-period -->
+    <arg name="compensation_parameters" default=" [1.7, 0.03, 0.0,
+                                                   0.00016, 0.0025, 0.00002,
+                                                   60]"/>
+
 <!--============ LwrRttControl Params ============-->
     <!-- Set some parameters for LwrRttControl
     You can get them using rtt_ros_kdl_tools::getAllPropertiesFromROSParam(this)
@@ -148,6 +155,7 @@
         <rosparam param="BIAS_STEP" subst_value="True">$(arg BIAS_STEP)</rosparam>
         <rosparam param="GAIN_THRESHOLD" subst_value="True">$(arg GAIN_THRESHOLD)</rosparam>
         <rosparam param="GAIN_STEP" subst_value="True">$(arg GAIN_STEP)</rosparam>
+        <rosparam param="compensation_parameters" subst_value="True">$(arg compensation_parameters)</rosparam>
         <rosparam param="abag_error_type" subst_value="True">$(arg abag_error_type)</rosparam>
         <rosparam param="min_bias_sat" subst_value="True">$(arg min_bias_sat)</rosparam>
         <rosparam param="min_command_sat" subst_value="True">$(arg min_command_sat)</rosparam>

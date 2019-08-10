@@ -1509,7 +1509,7 @@ void dynamics_controller::compute_weight_compensation_control_commands()
                                                                           abag_.get_bias(), 
                                                                           abag_.get_gain(), 
                                                                           filtered_bias_);
-    // Update error and control command
+    // Update error and control command for linear X axis
     if (compensation_status == 1) 
     {
         // Values expressed in the task frame: offset - current bias
@@ -1520,7 +1520,29 @@ void dynamics_controller::compute_weight_compensation_control_commands()
         compensated_weight_.force = compensated_weight_.force + KDL::Vector(compensation_error_(0) * max_command_(0) * compensation_parameters_(0), 0.0, 0.0);
         
         #ifndef NDEBUG
-            printf("Force: %f\n", compensated_weight_.force(0));
+            printf("X Force: %f\n", compensated_weight_.force(0));
+        #endif
+
+        // Transform external force from task frame to the base frame
+        robot_state_.external_force[END_EFF_].force = moveTo_weight_compensation_task_.tf_pose.M * compensated_weight_.force;
+    }
+    
+    // Update error and control command for linear Z axis
+    else if (compensation_status == 2) 
+    {
+        // Values expressed in the task frame: offset - current bias
+        compensation_error_(2) = compensation_parameters_(2) - filtered_bias_(2);
+        if (std::fabs(compensation_error_(2)) <= compensation_parameters_(1)) compensation_error_(2) = 0.0;
+
+        // compensation_error_(2) = compensation_parameters_(2) + filtered_bias_(2);
+        // if (compensation_error_(2) >= -compensation_parameters_(1)) compensation_error_(2) = 0.0;
+
+        // Force in task frame = error in procentage * max command * proportional gain
+        compensated_weight_.force = compensated_weight_.force + KDL::Vector(0.0, 0.0, compensation_error_(2) * max_command_(2) * compensation_parameters_(0) * 0.8);
+        // compensated_weight_.force = compensated_weight_.force + KDL::Vector(compensation_error_(2) * max_command_(2) * compensation_parameters_(0)*0.9, 0.0, 0.0);
+        
+        #ifndef NDEBUG
+            printf("Z Force: %f\n", compensated_weight_.force(2));
         #endif
 
         // Transform external force from task frame to the base frame

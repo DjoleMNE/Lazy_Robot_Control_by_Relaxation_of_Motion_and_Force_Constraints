@@ -127,7 +127,7 @@
     <!-- Parameters for weight compensation: K proportional, error-tube, bias-offset,
                                              bias-variance, gain-variance, bias slope, 
                                              control-period -->
-    <arg name="compensation_parameters" default=" [1.7, 0.03, 0.0,
+    <arg name="compensation_parameters" default=" [1.7, 0.025, 0.0,
                                                    0.00016, 0.0025, 0.00002,
                                                    60]"/>
 

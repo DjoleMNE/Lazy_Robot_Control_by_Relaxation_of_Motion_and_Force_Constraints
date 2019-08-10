@@ -33,7 +33,7 @@ finite_state_machine::finite_state_machine(const int num_of_joints,
     NUM_OF_FRAMES_(num_of_frames), NUM_OF_CONSTRAINTS_(num_of_constraints),
     END_EFF_(NUM_OF_SEGMENTS_ - 1), desired_task_model_(task_model::full_pose),
     motion_profile_(m_profile::CONSTANT), loop_period_count_(0),
-    total_loop_count_(0), total_control_time_sec_(0.0),
+    compensator_trigger_count_(0), total_control_time_sec_(0.0),
     previous_task_time_(0.0), total_contact_time_(0.0),
     goal_reached_(false), time_limit_reached_(false), contact_detected_(false),
     contact_alignment_performed_(false), write_compensation_time_to_file_(false), 
@@ -561,53 +561,71 @@ int finite_state_machine::update_weight_compensation_task_status(const int loop_
                                                                  const Eigen::VectorXd &gain_signal,
                                                                  Eigen::VectorXd &filtered_bias)
 {
-    log_file_compensation_ << bias_signal.transpose().format(dynamics_parameter::WRITE_FORMAT);
-    log_file_compensation_ << gain_signal.transpose().format(dynamics_parameter::WRITE_FORMAT);
-    log_file_compensation_ << filtered_bias_.transpose().format(dynamics_parameter::WRITE_FORMAT);
-    log_file_compensation_ << variance_bias_.get_variance().transpose().format(dynamics_parameter::WRITE_FORMAT);
-    log_file_compensation_ << variance_gain_.get_variance().transpose().format(dynamics_parameter::WRITE_FORMAT);
-    log_file_compensation_ << slope_bias_.get_slope().transpose().format(dynamics_parameter::WRITE_FORMAT);
-    if (write_compensation_time_to_file_) 
-    {
-        log_file_compensation_ << loop_iteration_count - 1 << std::endl;
-        write_compensation_time_to_file_ = false;
-    }
-    else log_file_compensation_ << 0.0 << std::endl;
-    // log_file_compensation_ << 0.0 << std::endl;
-
+    log_compensation_data(loop_iteration_count, bias_signal, gain_signal);
     low_pass_filter(bias_signal, 0.99);
-    variance_bias_.update(0, bias_signal(0));
-    variance_gain_.update(0, gain_signal(0));
-    slope_bias_.update(0, filtered_bias_(0));
+    variance_bias_.update(bias_signal);
+    variance_gain_.update(gain_signal);
+    slope_bias_.update(filtered_bias_);
 
-    // For now, check only for X linear axis
-    if ( (variance_bias_.get_variance(0) <= compensation_parameters_(3)) && \
-         (variance_gain_.get_variance(0) <= compensation_parameters_(4)) && \
-         (std::fabs(slope_bias_.get_slope(0)) <= compensation_parameters_(5)) )
+    if (compensator_trigger_count_ <= 2)
     {
-        loop_period_count_++;
+        // For now, check only for X linear axis
+        if ( (variance_bias_.get_variance(0)      <= compensation_parameters_(3)) && \
+             (variance_gain_.get_variance(0)      <= compensation_parameters_(4)) && \
+             (std::fabs(slope_bias_.get_slope(0)) <= compensation_parameters_(5)) )
+        {
+            loop_period_count_++;
+        }
+        else 
+        {
+            loop_period_count_ = 0;
+            return 0;
+        }
+        
+        double compensation_error = compensation_parameters_(2) - filtered_bias_(0);
+        if (std::fabs(compensation_error) <= compensation_parameters_(1)) compensation_error = 0.0;
+
+        if ((loop_period_count_ >= compensation_parameters_(6)) && (compensation_error != 0.0))
+        {
+            // For now, check only for X linear axis
+            filtered_bias(0)   = filtered_bias_(0);
+            loop_period_count_ = 0;
+            write_compensation_time_to_file_ = true;
+            compensator_trigger_count_++;
+            return 1;
+        }
     }
     else 
     {
-        loop_period_count_ = 0;
+        // For now, check only for Z linear axis
+        if ( (variance_bias_.get_variance(2)      <= compensation_parameters_(3)) && \
+             (variance_gain_.get_variance(2)      <= compensation_parameters_(4)) && \
+             (std::fabs(slope_bias_.get_slope(2)) <= compensation_parameters_(5)) )
+        {
+            loop_period_count_++;
+        }
+        else 
+        {
+            loop_period_count_ = 0;
+            return 0;
+        }
+        
+        double compensation_error = compensation_parameters_(2) - filtered_bias_(2);
+        if (std::fabs(compensation_error) <= compensation_parameters_(1)) compensation_error = 0.0;
 
-        // For now, check only for X linear axis
-        // slope_bias_.clear(0);
-        return 0;
+        // double compensation_error = compensation_parameters_(2) + filtered_bias_(2);
+        // if (compensation_error >= -compensation_parameters_(1)) compensation_error = 0.0;
+
+        if ((loop_period_count_ >= compensation_parameters_(6)) && (compensation_error != 0.0))
+        {
+            // For now, check only for Z linear axis
+            filtered_bias(2)   = filtered_bias_(2);
+            loop_period_count_ = 0;
+            write_compensation_time_to_file_ = true;
+            compensator_trigger_count_++;
+            return 2;
+        }
     }
-    
-    double compensation_error = compensation_parameters_(2) - filtered_bias_(0);
-    if (std::fabs(compensation_error) <= compensation_parameters_(1)) compensation_error = 0.0;
-
-    if ((loop_period_count_ >= compensation_parameters_(6)) && (compensation_error != 0.0))
-    {
-        // For now, check only for X linear axis
-        filtered_bias(0)   = filtered_bias_(0);
-        loop_period_count_ = 0;
-        write_compensation_time_to_file_ = true;
-        return 1;
-    }
-
     return 0;
 }
 
@@ -702,18 +720,6 @@ bool finite_state_machine::contact_detected(const double linear_force_threshold,
     return false;    
 }
 
-bool finite_state_machine::bias_within_tube(const double tolerance, const int dimension, const double signal)
-{
-    if (variance_bias_.update(dimension, signal) <= tolerance) return true;
-    return false;
-}
-
-bool finite_state_machine::gain_within_tube(const double tolerance, const int dimension, const double signal)
-{
-    if (variance_gain_.update(dimension, signal) <= tolerance) return true;
-    return false;
-}
-
 void finite_state_machine::low_pass_filter(const KDL::Wrench &ext_force,
                                            const double alpha)
 {
@@ -728,15 +734,27 @@ void finite_state_machine::low_pass_filter(const Eigen::VectorXd &signal,
         filtered_bias_(i) = alpha * filtered_bias_(i) + (1 - alpha) * signal(i);
 }
 
-double finite_state_machine::signal_slope(const double point_1_y, const int point_1_x, 
-                                          const double point_2_y, const int point_2_x)
-{
-    return (point_2_y - point_1_y) / (point_2_x - point_1_x);
-}
-
 int finite_state_machine::sign(double x)
 {
     if (x > 0.0) return 1;
     else if (x < 0.0) return -1;
     else return 0;
+}
+
+void finite_state_machine::log_compensation_data(const int loop_iteration_count,
+                                                 const Eigen::VectorXd &bias_signal,
+                                                 const Eigen::VectorXd &gain_signal)
+{
+    log_file_compensation_ << bias_signal.transpose().format(dynamics_parameter::WRITE_FORMAT);
+    log_file_compensation_ << gain_signal.transpose().format(dynamics_parameter::WRITE_FORMAT);
+    log_file_compensation_ << filtered_bias_.transpose().format(dynamics_parameter::WRITE_FORMAT);
+    log_file_compensation_ << variance_bias_.get_variance().transpose().format(dynamics_parameter::WRITE_FORMAT);
+    log_file_compensation_ << variance_gain_.get_variance().transpose().format(dynamics_parameter::WRITE_FORMAT);
+    log_file_compensation_ << slope_bias_.get_slope().transpose().format(dynamics_parameter::WRITE_FORMAT);
+    if (write_compensation_time_to_file_) 
+    {
+        log_file_compensation_ << loop_iteration_count - 1 << std::endl;
+        write_compensation_time_to_file_ = false;
+    }
+    else log_file_compensation_ << 0.0 << std::endl;
 }

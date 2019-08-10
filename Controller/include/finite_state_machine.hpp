@@ -154,7 +154,7 @@ class finite_state_machine
     private:
         const int NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_;
         const int END_EFF_;
-        int desired_task_model_, motion_profile_, loop_period_count_, total_loop_count_;
+        int desired_task_model_, motion_profile_, loop_period_count_, compensator_trigger_count_;
         double total_control_time_sec_, previous_task_time_, total_contact_time_;
         bool goal_reached_, time_limit_reached_, contact_detected_, 
              contact_alignment_performed_, write_compensation_time_to_file_;
@@ -184,12 +184,11 @@ class finite_state_machine
                                        const KDL::Wrench &ext_force);
         bool force_goal_maintained(const KDL::Wrench &desired_force,
                                    const KDL::Wrench &ext_force);
-        bool bias_within_tube(const double tolerance, const int dimension, const double signal);
-        bool gain_within_tube(const double tolerance, const int dimension, const double signal);
         void low_pass_filter(const KDL::Wrench &ext_force, const double alpha);
         void low_pass_filter(const Eigen::VectorXd &signal, const double alpha);
-        double signal_slope(const double point_1_y, const int point_1_x, 
-                            const double point_2_y, const int point_2_x);
         int sign(double x);
+        void log_compensation_data(const int loop_iteration_count,
+                                   const Eigen::VectorXd &bias_signal,
+                                   const Eigen::VectorXd &gain_signal);
 };
 #endif /* FINITE_STATE_MACHINE_HPP */
