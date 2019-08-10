@@ -33,11 +33,11 @@ youbot_mediator::youbot_mediator():
     add_offsets_(false), connection_established_(false),
     youbot_arm_(nullptr), yb_chain_(), yb_tree_(), yb_urdf_model_(),
     linear_root_acc_(youbot_constants::root_acceleration[0],
-                        youbot_constants::root_acceleration[1],
-                        youbot_constants::root_acceleration[2]),
+                     youbot_constants::root_acceleration[1],
+                     youbot_constants::root_acceleration[2]),
     angular_root_acc_(youbot_constants::root_acceleration[3],
-                        youbot_constants::root_acceleration[4],
-                        youbot_constants::root_acceleration[5]),
+                      youbot_constants::root_acceleration[4],
+                      youbot_constants::root_acceleration[5]),
     root_acc_(linear_root_acc_, angular_root_acc_) 
 {   
     //Resize measurement variables
@@ -303,7 +303,7 @@ bool youbot_mediator::is_initialized()
     return is_initialized_;
 }
 
-// Initialize varibles and calibrate the manipulator: 
+// Initialize variables and calibrate the manipulator: 
 void youbot_mediator::initialize(const int robot_model,
                                  const int robot_environment,
                                  const bool gravity_compensated)
@@ -311,10 +311,12 @@ void youbot_mediator::initialize(const int robot_model,
     youbot_model_ = robot_model;
     youbot_environment_ = robot_environment;
     yb_chain_ = KDL::Chain();
-    
+
+    // if (gravity_compensated) root_acc_ = KDL::Twist::Zero();
+
     // Reset Flags
-    is_initialized_ = false;
-    add_offsets_ = false;
+    is_initialized_   = false;
+    add_offsets_      = false;
     int parser_result = 0;
 
     if(youbot_model_ == youbot_model::YB_STORE)

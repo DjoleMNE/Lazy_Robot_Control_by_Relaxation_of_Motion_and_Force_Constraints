@@ -261,7 +261,7 @@ void lwr_mediator::initialize(const int robot_model,
     lwr_environment_ = robot_environment;
     lwr_chain_ = KDL::Chain();
 
-    if(gravity_compensated) root_acc_ = KDL::Twist::Zero();
+    if (gravity_compensated) root_acc_ = KDL::Twist::Zero();
     
     // Reset Flags
     is_initialized_ = false;
@@ -285,7 +285,7 @@ void lwr_mediator::initialize(const int robot_model,
             break;
     }
     
-    if(parser_result != 0) printf("Cannot create the LWR model! \n");
+    if (parser_result != 0) printf("Cannot create the LWR model! \n");
     else
     {
         is_initialized_ = true;

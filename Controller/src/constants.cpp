@@ -14,7 +14,7 @@ namespace youbot_constants
     const int NUMBER_OF_FRAMES(6);
 
     //Arm's root acceleration
-    const std::vector<double> root_acceleration {0.0, 0.0, 9.81, 0.0, 0.0, 0.0};
+    const std::vector<double> root_acceleration {0.0, 0.0, 9.81289, 0.0, 0.0, 0.0};
 
     //Kuka youBot store position limit values: positive and negative
     const std::vector<double> joint_position_limits_max_1 {  2.9496,  1.5707,  2.5481,  1.7889,  2.9234};
