@@ -891,7 +891,8 @@ int dynamics_controller::apply_joint_control_commands()
             if (!desired_control_mode_.is_safe) printf("WARNING: Control switched to position mode \n");
             return 0;
 
-        default: 
+        default:
+            printf("WARNING: Unsupported joint control mode.\n");
             return -1;
     }
 }
@@ -1788,10 +1789,11 @@ int dynamics_controller::control()
         if (store_control_data_) write_to_file();        
 
         // Calculate robot dynamics using the Vereshchagin HD solver
-        if (evaluate_dynamics() != 0)
+        ctrl_status = evaluate_dynamics();
+        if (ctrl_status != 0)
         {
             deinitialize();
-            printf("WARNING: Dynamics Solver returned error. Stopping the robot!");
+            printf("WARNING: Dynamics Solver returned error: %d. Stopping the robot!", ctrl_status);
             return -1;
         }
 
@@ -1806,8 +1808,8 @@ int dynamics_controller::control()
         } 
 
         // Make sure that the loop is always running with the same frequency
-        enforce_loop_frequency();
-        // if (enforce_loop_frequency() != 0) printf("WARNING: Control loop runs too slow \n");
+        // enforce_loop_frequency();
+        if (enforce_loop_frequency() != 0) printf("WARNING: Control loop runs too slow \n");
 
         // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_).count();
         // if (loop_iteration_count_ == 40) 

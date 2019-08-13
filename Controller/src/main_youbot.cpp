@@ -141,6 +141,90 @@ const Eigen::VectorXd compensation_parameters = (Eigen::VectorXd(7) \
                                                    0.00016, 0.0025, 0.00002,
                                                    60).finished();
 
+void define_task(dynamics_controller *dyn_controller, const int model_of_task)
+{
+    desired_task_model = model_of_task;
+    std::vector<double> desired_ee_pose(12, 0.0);
+
+    //Create End_effector Cartesian Acceleration task
+    dyn_controller->define_ee_acc_constraint(std::vector<bool>{false, false, false, // Linear
+                                                               false, false, false}, // Angular
+                                             std::vector<double>{0.0, 0.0, 0.0, // Linear
+                                                                 0.0, 0.0, 0.0}); // Angular
+    //Create External Forces task
+    dyn_controller->define_ee_external_force(std::vector<double>{0.0, 0.0, 0.0, // Linear
+                                                                 0.0, 0.0, 0.0}); // Angular
+    //Create Feedforward torques task
+    dyn_controller->define_feedforward_torque(std::vector<double>{0.0, 0.0, 
+                                                                  0.0, 0.0, 0.0});
+
+    switch (desired_pose_id)
+    {
+        case desired_pose::CANDLE:
+            tube_start_position = std::vector<double>{0.045522, 0.0222869, 0.535};
+            // Candle Pose
+            desired_ee_pose = { 0.045522, 0.0222869, 0.435, // Linear: Vector
+                                1.0, 0.0, 0.0, // Angular: Rotation matrix
+                                0.0, 1.0, 0.0,
+                                0.0, 0.0, 1.0};
+            break;
+
+        case desired_pose::LOOK_AT:
+            tube_start_position = std::vector<double>{0.0192443, 0.285581, 0.240953};
+            desired_ee_pose = { 0.0192443, 0.235581, 0.240953, // Linear: Vector
+                                1.0, 0.0, 0.0, // Angular: Rotation matrix
+                                0.0, 1.0, 0.0,
+                                0.0, 0.0, 1.0};
+            break;
+
+        default:
+            tube_start_position = std::vector<double>{0.262105, 0.004157, 0.308879};
+            // Navigation pose 1
+            desired_ee_pose = { 0.262105,  0.004157,  0.27000, // Linear: Vector
+                                0.338541,  0.137563,  0.930842, // Angular: Rotation Matrix
+                                0.337720, -0.941106,  0.016253,
+                                0.878257,  0.308861, -0.365061};
+            break;
+    }
+
+    switch (desired_task_model)
+    {
+        case task_model::moveTo:
+            dyn_controller->define_moveTo_task(std::vector<bool>{control_dims[0], control_dims[1], control_dims[2], // Linear
+                                                                 control_dims[3], control_dims[4], control_dims[5]},// Angular
+                                               tube_start_position,
+                                               tube_tolerances,
+                                               tube_speed,
+                                               1.0, 0.1, //contact_threshold linear and angular
+                                               task_time_limit_sec,// time_limit
+                                               desired_ee_pose); // TF pose
+            break;
+
+        case task_model::moveTo_weight_compensation:
+            dyn_controller->define_moveTo_weight_compensation_task(std::vector<bool>{control_dims[0], control_dims[1], control_dims[2], // Linear
+                                                                                     control_dims[3], control_dims[4], control_dims[5]},// Angular
+                                                                   tube_start_position,
+                                                                   tube_tolerances,
+                                                                   tube_speed,
+                                                                   1.0, 0.1, // contact_threshold linear and angular
+                                                                   task_time_limit_sec,// time_limit
+                                                                   desired_ee_pose); // TF pose
+            break;
+
+        case task_model::full_pose:
+            dyn_controller->define_desired_ee_pose(std::vector<bool>{control_dims[0], control_dims[1], control_dims[2], // Linear
+                                                                     control_dims[3], control_dims[4], control_dims[5]}, // Angular
+                                                   desired_ee_pose,
+                                                   1.0, 0.2, //contact_threshold linear and angular
+                                                   task_time_limit_sec);
+            break;
+
+        default:
+            assert(("Unsupported task model", false));
+            break;
+    }
+}
+
 // Go to Candle 1 configuration  
 void go_candle_1(youbot_mediator &arm){
     KDL::JntArray candle_pose(JOINTS);
@@ -245,91 +329,6 @@ void rotate_joint(youbot_mediator &arm, const int joint, const double rate){
     rotate_joint(joint) = rate; 
     arm.set_joint_velocities(rotate_joint);
     usleep(3000 * MILLISECOND);
-}
-
-
-void define_task(dynamics_controller *dyn_controller, const int model_of_task)
-{
-    desired_task_model = model_of_task;
-    std::vector<double> desired_ee_pose(12, 0.0);
-
-    //Create End_effector Cartesian Acceleration task
-    dyn_controller->define_ee_acc_constraint(std::vector<bool>{false, false, false, // Linear
-                                                               false, false, false}, // Angular
-                                             std::vector<double>{0.0, 0.0, 0.0, // Linear
-                                                                 0.0, 0.0, 0.0}); // Angular
-    //Create External Forces task
-    dyn_controller->define_ee_external_force(std::vector<double>{0.0, 0.0, 0.0, // Linear
-                                                                 0.0, 0.0, 0.0}); // Angular
-    //Create Feedforward torques task
-    dyn_controller->define_feedforward_torque(std::vector<double>{0.0, 0.0, 
-                                                                  0.0, 0.0, 0.0});
-
-    switch (desired_pose_id)
-    {
-        case desired_pose::CANDLE:
-            tube_start_position = std::vector<double>{0.045522, 0.0222869, 0.535};
-            // Candle Pose
-            desired_ee_pose = { 0.045522, 0.0222869, 0.435, // Linear: Vector
-                                1.0, 0.0, 0.0, // Angular: Rotation matrix
-                                0.0, 1.0, 0.0,
-                                0.0, 0.0, 1.0};
-            break;
-
-        case desired_pose::LOOK_AT:
-            tube_start_position = std::vector<double>{0.0192443, 0.285581, 0.240953};
-            desired_ee_pose = { 0.0192443, 0.235581, 0.240953, // Linear: Vector
-                                1.0, 0.0, 0.0, // Angular: Rotation matrix
-                                0.0, 1.0, 0.0,
-                                0.0, 0.0, 1.0};
-            break;
-
-        default:
-            tube_start_position = std::vector<double>{0.262105, 0.004157, 0.308879};
-            // Navigation pose 1
-            desired_ee_pose = { 0.262105,  0.004157,  0.27000, // Linear: Vector
-                                0.338541,  0.137563,  0.930842, // Angular: Rotation Matrix
-                                0.337720, -0.941106,  0.016253,
-                                0.878257,  0.308861, -0.365061};
-            break;
-    }
-
-    switch (desired_task_model)
-    {
-        case task_model::moveTo:
-            dyn_controller->define_moveTo_task(std::vector<bool>{control_dims[0], control_dims[1], control_dims[2], // Linear
-                                                                 control_dims[3], control_dims[4], control_dims[5]},// Angular
-                                               tube_start_position,
-                                               tube_tolerances,
-                                               tube_speed,
-                                               1.0, 0.1, //contact_threshold linear and angular
-                                               task_time_limit_sec,// time_limit
-                                               desired_ee_pose); // TF pose
-            break;
-
-        case task_model::moveTo_weight_compensation:
-            dyn_controller->define_moveTo_weight_compensation_task(std::vector<bool>{control_dims[0], control_dims[1], control_dims[2], // Linear
-                                                                                     control_dims[3], control_dims[4], control_dims[5]},// Angular
-                                                                   tube_start_position,
-                                                                   tube_tolerances,
-                                                                   tube_speed,
-                                                                   1.0, 0.1, // contact_threshold linear and angular
-                                                                   task_time_limit_sec,// time_limit
-                                                                   desired_ee_pose); // TF pose
-            break;
-
-        case task_model::full_pose:
-            dyn_controller->define_desired_ee_pose(std::vector<bool>{control_dims[0], control_dims[1], control_dims[2], // Linear
-                                                                     control_dims[3], control_dims[4], control_dims[5]}, // Angular
-                                                   desired_ee_pose,
-                                                   1.0, 0.2, //contact_threshold linear and angular
-                                                   task_time_limit_sec);
-            break;
-
-        default:
-            assert(("Unsupported task model", false));
-            break;
-    }
 }
 
 int main(int argc, char **argv)
