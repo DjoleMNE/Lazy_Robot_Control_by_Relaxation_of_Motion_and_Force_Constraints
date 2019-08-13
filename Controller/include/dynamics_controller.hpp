@@ -64,7 +64,7 @@ class dynamics_controller
     ~dynamics_controller(){};
     
     //Main control loop
-    int control(const int desired_control_mode, const bool store_control_data);
+    int control();
 
     /**
     * Perform single step of the control loop, given current robot joint state
@@ -90,8 +90,7 @@ class dynamics_controller
                         const Eigen::VectorXd &null_space_abag_parameters,
                         const Eigen::VectorXd &compensation_parameters);
     int initialize(const int desired_control_mode, 
-                   const int desired_task_inteface,
-                   const bool use_mixed_driver, 
+                   const int desired_dynamics_interface,
                    const bool store_control_data,
                    const int motion_profile);
     void deinitialize();
@@ -153,14 +152,13 @@ class dynamics_controller
 
     std::ofstream log_file_cart_, log_file_joint_, log_file_predictions_, log_file_null_space_;
     bool store_control_data_;
+    int desired_dynamics_interface_, desired_task_model_;
 
     struct desired_control_mode
     {
       int interface;
       bool is_safe;
     } desired_control_mode_;
-
-    int desired_task_inteface_, desired_task_model_;
 
     std::chrono::steady_clock::time_point loop_start_time_;
     std::chrono::steady_clock::time_point loop_end_time_;
@@ -207,12 +205,12 @@ class dynamics_controller
     state_specification desired_state_;
     state_specification predicted_state_;
 
-    int check_control_status();
+    int check_fsm_status();
+    int update_current_state();
     void print_settings_info();
     void write_to_file();
     void reset_state(state_specification &state);
     void update_dynamics_interfaces();
-    void update_current_state();
     void compute_moveConstrained_follow_path_task_error();
     void compute_moveConstrained_null_space_task_error();
     void compute_moveTo_follow_path_task_error();

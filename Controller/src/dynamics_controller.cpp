@@ -32,6 +32,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     RATE_HZ_(rate_hz),
     // Time period defined in microseconds: 1s = 1 000 000us
     DT_MICRO_(SECOND / RATE_HZ_),  DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
+    store_control_data_(true), desired_dynamics_interface_(dynamics_interface::CART_ACCELERATION), 
+    desired_task_model_(task_model::full_pose),
     loop_start_time_(), loop_end_time_(), //Not sure if required to init
     total_time_sec_(0.0), loop_iteration_count_(0), feedforward_loop_count_(0),
     robot_chain_(robot_driver->get_robot_model()),
@@ -89,9 +91,6 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     desired_control_mode_.interface = control_mode::STOP_MOTION;
     desired_control_mode_.is_safe = false;
 
-    desired_task_inteface_ = dynamics_interface::CART_FORCE;
-    desired_task_model_    = task_model::full_pose;
-
     // Setting parameters of the ABAG Controller
     abag_.set_error_alpha(abag_parameter::ERROR_ALPHA);    
     abag_.set_bias_threshold(abag_parameter::BIAS_THRESHOLD);
@@ -142,7 +141,7 @@ void dynamics_controller::print_settings_info()
     }
 
     printf("Dynamics Interface: ");
-    switch(desired_task_inteface_) 
+    switch(desired_dynamics_interface_) 
     {
         case dynamics_interface::CART_ACCELERATION:
             printf("Cartesian EndEffector Acceleration Interface\n");
@@ -204,7 +203,7 @@ void dynamics_controller::print_settings_info()
 }
 
 
-int dynamics_controller::check_control_status()
+int dynamics_controller::check_fsm_status()
 {
     switch (fsm_result_)
     {
@@ -252,7 +251,6 @@ int dynamics_controller::check_control_status()
 
         case control_status::STOP_ROBOT:
             if (previous_control_status_ != control_status::STOP_ROBOT) printf("Control status changed to STOP_ROBOT\n");
-            // stop_robot_motion();
             previous_control_status_ = fsm_result_;
             return 1;
             break;
@@ -269,7 +267,7 @@ int dynamics_controller::check_control_status()
     or if simulation is on, replace current state with 
     integrated joint velocities and positions.
 */
-void dynamics_controller::update_current_state()
+int dynamics_controller::update_current_state()
 {
     // Get joint angles and velocities
     safety_control_.get_current_state(robot_state_);
@@ -279,9 +277,6 @@ void dynamics_controller::update_current_state()
                                                       robot_state_.qd, 
                                                       robot_state_.frame_pose, 
                                                       robot_state_.frame_velocity);
-    if(fk_solver_result != 0) 
-        printf("Warning: FK solver returned an error! %d \n", fk_solver_result);
-
     // Print Current robot state in Debug mode
 #ifndef NDEBUG
         // std::cout << "\nCurrent Joint state:          " << std::endl;
@@ -299,6 +294,7 @@ void dynamics_controller::update_current_state()
         // std::cout << "End-effector Velocity:   \n" 
         //           << robot_state_.frame_velocity[END_EFF_] << std::endl;
 #endif
+    return fk_solver_result;
 }
 
 // Update current dynamics intefaces using desired robot state specifications 
@@ -729,10 +725,9 @@ void dynamics_controller::define_desired_ee_pose(
     desired_state_.frame_pose[END_EFF_].p(1) = cartesian_pose[1];
     desired_state_.frame_pose[END_EFF_].p(2) = cartesian_pose[2];
 
-    desired_state_.frame_pose[END_EFF_].M = \
-        KDL::Rotation(cartesian_pose[3], cartesian_pose[4], cartesian_pose[5],
-                      cartesian_pose[6], cartesian_pose[7], cartesian_pose[8],
-                      cartesian_pose[9], cartesian_pose[10], cartesian_pose[11]);
+    desired_state_.frame_pose[END_EFF_].M = KDL::Rotation(cartesian_pose[3], cartesian_pose[4], cartesian_pose[5],
+                                                          cartesian_pose[6], cartesian_pose[7], cartesian_pose[8],
+                                                          cartesian_pose[9], cartesian_pose[10], cartesian_pose[11]);
     
     full_pose_task_.tf_pose                   = KDL::Frame::Identity();
     full_pose_task_.goal_pose                 = desired_state_.frame_pose[END_EFF_];
@@ -845,19 +840,20 @@ void dynamics_controller::set_feedforward_torque(state_specification &state,
 //Make sure that the control loop runs exactly with specified frequency
 int dynamics_controller::enforce_loop_frequency()
 {
-    loop_interval_= std::chrono::duration<double, std::micro>\
-                    (std::chrono::steady_clock::now() - loop_start_time_);
+    loop_interval_= std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_);
 
-    if(loop_interval_ < std::chrono::microseconds(DT_MICRO_))
-    {   
-        //Loop is sufficiently fast
+    if (loop_interval_ < std::chrono::microseconds(DT_MICRO_))
+    {// Loop is sufficiently fast
         // clock_nanosleep((DT_MICRO_ - loop_interval_.count()));
-        while(loop_interval_.count() < DT_MICRO_){
-            loop_interval_= std::chrono::duration<double, std::micro>\
-                    (std::chrono::steady_clock::now() - loop_start_time_);
+
+        while (loop_interval_.count() < DT_MICRO_)
+        {
+            loop_interval_= std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_);
         }
+
         return 0;
-    } else return -1; //Loop is too slow
+    } 
+    else return -1; //Loop is too slow
 }
 
 /*
@@ -868,38 +864,34 @@ int dynamics_controller::apply_joint_control_commands()
 { 
     /* 
         Safety controller checks if the commands are over the limits.
-        If false: use desired control mode
-        Else: stop the robot motion 
+        If yes: stop the robot motion 
+        Else: use desired control mode
     */
     int safe_control_mode = safety_control_.set_control_commands(robot_state_, 
                                                                  DT_SEC_, 
                                                                  desired_control_mode_.interface,
                                                                  integration_method::SYMPLECTIC_EULER);
-   
-    // Check if the safety controller has changed the control mode
-    // Save the current decision if desired control mode is safe or not.
-    desired_control_mode_.is_safe =\
-        (desired_control_mode_.interface == safe_control_mode)? true : false; 
+
+    // Check if the safety controller has changed the control mode.
+    // Save the current decision: if desired control mode is safe or not.
+    desired_control_mode_.is_safe = (desired_control_mode_.interface == safe_control_mode)? true : false; 
 
     // Notify if the safety controller has changed the control mode
-    switch(safe_control_mode) {
+    switch (safe_control_mode) 
+    {
         case control_mode::TORQUE:
-            assert(desired_control_mode_.is_safe);
+            if (!desired_control_mode_.is_safe) return -1;
             return 0;
 
         case control_mode::VELOCITY:
-            if(!desired_control_mode_.is_safe) 
-                printf("WARNING: Control switched to velocity mode \n");
+            if (!desired_control_mode_.is_safe) printf("WARNING: Control switched to velocity mode \n");
             return 0;
 
         case control_mode::POSITION:
-            if(!desired_control_mode_.is_safe) 
-                printf("WARNING: Control switched to position mode \n");
+            if (!desired_control_mode_.is_safe) printf("WARNING: Control switched to position mode \n");
             return 0;
 
         default: 
-            stop_robot_motion();
-            // printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
             return -1;
     }
 }
@@ -910,9 +902,7 @@ int dynamics_controller::apply_joint_control_commands()
 */
 void dynamics_controller::make_predictions(const double dt_sec, const int num_steps)
 {
-    predictor_.integrate_cartesian_space(robot_state_, 
-                                         predicted_state_, 
-                                         dt_sec, num_steps);
+    predictor_.integrate_cartesian_space(robot_state_, predicted_state_, dt_sec, num_steps);
 }
 
 
@@ -1436,7 +1426,7 @@ void dynamics_controller::compute_cart_control_commands()
     abag_command_ = abag_.update_state(abag_error_vector_).transpose();
     KDL::SetToZero(cart_force_command_[END_EFF_]);
 
-    switch (desired_task_inteface_)
+    switch (desired_dynamics_interface_)
     {
         case dynamics_interface::CART_FORCE:
             // Set virtual forces computed by the ABAG controller
@@ -1644,8 +1634,7 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
 }
 
 int dynamics_controller::initialize(const int desired_control_mode, 
-                                    const int desired_task_inteface,
-                                    const bool use_mixed_driver,
+                                    const int desired_dynamics_interface,
                                     const bool store_control_data,
                                     const int motion_profile)
 {
@@ -1655,7 +1644,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
     //Exit the program if the "Stop Motion" mode is selected
     assert(desired_control_mode_.interface != control_mode::STOP_MOTION); 
 
-    desired_task_inteface_ = desired_task_inteface;
+    desired_dynamics_interface_ = desired_dynamics_interface;
 
     switch (desired_task_model_)
     {
@@ -1688,9 +1677,6 @@ int dynamics_controller::initialize(const int desired_control_mode,
             return -1;
             break;
     }
-
-    // First make sure that the robot is not moving
-    // stop_robot_motion();
 
     store_control_data_ = store_control_data;
 
@@ -1739,23 +1725,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
     }
 
     KDL::SetToZero(robot_state_.feedforward_torque);
-    print_settings_info();
-    return 0;
-}
 
-//Main control loop
-int dynamics_controller::control(const int desired_control_mode,
-                                 const bool store_control_data)
-{   
-    // Save current selection of desire control mode
-    desired_control_mode_.interface = desired_control_mode;
-    
-    //Exit the program if the "Stop Motion" mode is selected
-    if(desired_control_mode_.interface == control_mode::STOP_MOTION){
-        std::cout << "Stop Motion mode selected. Exiting the program" << std::endl;
-        return -1;
-    } 
-    
     // First make sure that the robot is not moving
     stop_robot_motion();
 
@@ -1763,111 +1733,88 @@ int dynamics_controller::control(const int desired_control_mode,
         Get sensor data from the robot driver or if simulation is on, 
         replace current state with the integrated joint velocities and positions.
     */
-    update_current_state();  
-    // update_dynamics_interfaces();
-
-    //Print information about controller settings
-    print_settings_info();
-
-    if (store_control_data) 
+    int state_update_result = update_current_state();  
+    if (state_update_result != 0)
     {
-        log_file_cart_.open(dynamics_parameter::LOG_FILE_CART_PATH);
-        if (!log_file_cart_.is_open()) {
-            printf("Unable to open the file!\n");
-            return -1;
-        }
-
-        log_file_joint_.open(dynamics_parameter::LOG_FILE_JOINT_PATH);
-        if (!log_file_joint_.is_open()) {
-            printf("Unable to open the file!\n");
-            return -1;
-        }
-
-        log_file_predictions_.open(dynamics_parameter::LOG_FILE_PREDICTIONS_PATH);
-        if (!log_file_predictions_.is_open()) {
-            printf("Unable to open the file!\n");
-            return -1;
-        }
-
-        log_file_null_space_.open(dynamics_parameter::LOG_FILE_NULL_SPACE_PATH);
-        if (!log_file_null_space_.is_open()) {
-            printf("Unable to open the file!\n");
-            return -1;
-        }
-
-        for(int i = 0; i < NUM_OF_JOINTS_; i++) 
-            log_file_joint_ << JOINT_TORQUE_LIMITS_[i] << " ";
-        log_file_joint_ << std::endl;
+        deinitialize();
+        printf("Warning: FK solver returned an error! %d \n", state_update_result);
+        return -1;
     }
 
+    //Print information about controller settings
+    print_settings_info();    
+    return 0;
+}
+
+// Main control loop
+int dynamics_controller::control()
+{   
     double loop_time = 0.0;
-    int loop_count = 0;
+    int ctrl_status  = 0;
+    printf("Control Loop Started\n");
 
-    std::cout << "Control Loop Started"<< std::endl;
-    while(1)
-    {   
-        loop_count++; 
-        // printf("Loop Count: %d \n", loop_count);
-
+    while (1)
+    {
         // Save current time point
+        loop_iteration_count_++;
         loop_start_time_ = std::chrono::steady_clock::now();
 
         //Get current robot state from the joint sensors: velocities and angles
-        update_current_state();
+        ctrl_status = update_current_state();  
+        if (ctrl_status != 0)
+        {
+            deinitialize();
+            printf("Warning: FK solver returned an error! %d \n", ctrl_status);
+            return -1;
+        }
 
         compute_control_error();
-        
+
+        ctrl_status = check_fsm_status();
+        if (ctrl_status != 0) 
+        {
+            deinitialize();
+            if (ctrl_status == -1) return -1;
+            else
+            {
+                printf("Control changed to Stop-Robot mode.\n");
+                return 1;
+            }
+        }
+
         compute_cart_control_commands();
         if (compensate_unknown_weight_) compute_weight_compensation_control_commands();
-        if (store_control_data) write_to_file();        
+
+        if (store_control_data_) write_to_file();        
 
         // Calculate robot dynamics using the Vereshchagin HD solver
-        if(evaluate_dynamics() != 0)
+        if (evaluate_dynamics() != 0)
         {
-            stop_robot_motion();
-            if (store_control_data) 
-            {
-                log_file_cart_.close();
-                log_file_joint_.close();
-                log_file_predictions_.close();
-                log_file_null_space_.close();
-            }
+            deinitialize();
             printf("WARNING: Dynamics Solver returned error. Stopping the robot!");
             return -1;
         }
-        // if(loop_count == 1) return 0;
+
+        // return 0;
 
         // Apply joint commands using safe control interface.
-        if(apply_joint_control_commands() != 0){
-            if (store_control_data) 
-            {
-                log_file_cart_.close();
-                log_file_joint_.close();
-                log_file_predictions_.close();
-                log_file_null_space_.close();
-            }
+        if (apply_joint_control_commands() != 0)
+        {
+            deinitialize();
+            printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
             return -1;
         } 
 
         // Make sure that the loop is always running with the same frequency
-        if(!enforce_loop_frequency() == 0)
-            printf("WARNING: Control loop runs too slow \n");
+        enforce_loop_frequency();
+        // if (enforce_loop_frequency() != 0) printf("WARNING: Control loop runs too slow \n");
 
-        // loop_time += std::chrono::duration<double, std::micro>\
-        //             (std::chrono::steady_clock::now() -\
-        //                                          loop_start_time_).count();
-        // if(loop_count == 40) {
+        // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_).count();
+        // if (loop_iteration_count_ == 40) 
+        // {
         //     std::cout << loop_time / 40.0 <<std::endl;
         //     return 0;
         // }
-    }
-
-    if (store_control_data) 
-    {
-        log_file_cart_.close();
-        log_file_joint_.close();
-        log_file_predictions_.close();
-        log_file_null_space_.close();
     }
     return 0;
 }
@@ -1917,21 +1864,12 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
         //           << robot_state_.frame_velocity[END_EFF_] << std::endl;
     #endif 
 
-    // static int steps = 0;
-
-    // if (steps % 1 == 0)
-    // {
-    //     compute_control_error();
-    //     compute_cart_control_commands();
-    // }
-
     compute_control_error();
 
-    if (check_control_status() == -1) return -1;
+    if (check_fsm_status() == -1) return -1;
 
     compute_cart_control_commands();
     if (compensate_unknown_weight_) compute_weight_compensation_control_commands();
-    // steps++;
 
     if (store_control_data_) write_to_file();   
 
@@ -1943,15 +1881,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
         return -1;
     }
 
-    // apply_joint_control_commands();
-    // Apply joint commands using safe control interface.
-    // if (apply_joint_control_commands() != 0)
-    // {
-    //     deinitialize();
-    //     return -1;
-    // } 
     tau_output = robot_state_.control_torque.data;
-
     return 0;
 }
 
@@ -1966,4 +1896,5 @@ void dynamics_controller::deinitialize()
         log_file_predictions_.close();
         log_file_null_space_.close();
     }
+    printf("Number of iterations: %d\n", loop_iteration_count_);
 }

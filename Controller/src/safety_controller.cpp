@@ -92,22 +92,15 @@ bool safety_controller::is_current_state_safe(const state_specification &current
         Our model is not correct and commanded torque in previous iteration,
         may produce too high velocities or move joint over position limits.
         Basically check for error in model evaluation and predictions.
-        TODO: Investigate if its necessary also to check for measured torques.
-        It depends on:
-            - which torque we command, full or constraint
-            - what sensor readings we receive: full torque on the joint, 
-                                        or just torque produced by motors
-            - question is: what torques do you command if e.g. RNE is used?
-                        do you have a choice?
-                        e.g. gravity compensation
     */
     for (int i = 0; i < NUM_OF_JOINTS_; i++)
     {
-        if(!is_state_finite(current_state, i) || \
-           velocity_limit_reached(current_state, i) || \
-           position_limit_reached(current_state, i) || \
-           reaching_position_limits(current_state, i))
+        if (!is_state_finite(current_state, i) || \
+            velocity_limit_reached(current_state, i) || \
+            position_limit_reached(current_state, i) || \
+            reaching_position_limits(current_state, i))
            {
+                stop_robot_motion();
                 if (PRINT_LOGS_) printf("Current robot state is not safe \n\n");
                 return false;
            } 
@@ -141,23 +134,21 @@ bool safety_controller::is_state_finite(const state_specification &state,
 bool safety_controller::torque_limit_reached(const state_specification &state,
                                              const int joint)
 {
-    if (fabs(state.control_torque(joint)) >= joint_torque_limits_[joint])
+    if (std::fabs(state.control_torque(joint)) >= joint_torque_limits_[joint])
     {
-        if(PRINT_LOGS_) printf("Joint %d torque limit reached: %f \n",  
-                                joint, state.control_torque(joint));
+        if (PRINT_LOGS_) printf("Joint %d torque limit reached: %f \n", joint, state.control_torque(joint));
         return true;        
     }
-    
+
     return false;
 }
 
 bool safety_controller::velocity_limit_reached(const state_specification &state,
                                                const int joint)
 {
-    if (fabs(state.qd(joint)) >= joint_velocity_limits_[joint])
+    if (std::fabs(state.qd(joint)) >= joint_velocity_limits_[joint])
     {
-        if(PRINT_LOGS_) printf("Joint %d velocity limit reached: %f \n", 
-                               joint, state.qd(joint));
+        if (PRINT_LOGS_) printf("Joint %d velocity limit reached: %f \n", joint, state.qd(joint));
         return true;        
     }
     
@@ -181,10 +172,9 @@ bool safety_controller::reaching_position_limits(const state_specification &stat
                                                  const int joint)
 {
 
-    if ((joint_position_limits_max_[joint] - state.q(joint)) \
-        < joint_position_thresholds_[joint])
+    if ((joint_position_limits_max_[joint] - state.q(joint)) < joint_position_thresholds_[joint])
     {
-        if(state.qd(joint) > 0.02)
+        if (state.qd(joint) > 0.02)
         {
              printf("Joint %d is too close to the max limit %f %f \n", 
                     joint, state.q(joint), state.qd(joint));
@@ -192,10 +182,9 @@ bool safety_controller::reaching_position_limits(const state_specification &stat
         } 
     } 
     
-    else if ((joint_position_limits_min_[joint] - state.q(joint)) \
-             > -joint_position_thresholds_[joint])
+    else if ((joint_position_limits_min_[joint] - state.q(joint)) > -joint_position_thresholds_[joint])
     {
-        if(state.qd(joint) < -0.02)
+        if (state.qd(joint) < -0.02)
         {
             printf("Joint %d is too close to the min limit %f %f \n", 
                     joint, state.q(joint), state.qd(joint));

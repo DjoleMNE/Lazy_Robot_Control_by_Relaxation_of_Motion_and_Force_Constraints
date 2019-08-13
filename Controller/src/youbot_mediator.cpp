@@ -66,14 +66,9 @@ void youbot_mediator::get_joint_positions(KDL::JntArray &joint_positions)
             // Check with Sven if the last joint value should be inverted here
             // similary like in the case of getting joint velocities
             // Check JP's code and report
-            if (add_offsets_)
-            {
-                joint_positions(i) = \
-                            joint_positions(i) + youbot_constants::joint_offsets[i];
-            }
+            if (add_offsets_) joint_positions(i) = joint_positions(i) + youbot_constants::joint_offsets[i];
         }
     }
-
     else // Assign to the current state the previously passed command 
     {
         for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
@@ -86,31 +81,25 @@ void youbot_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
 {
     for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
     {
-        if (add_offsets_)
-        {
-            q_setpoint_[i].angle = \
-                (joint_positions(i) - youbot_constants::joint_offsets[i]) * radian;            
-        } 
+        if (add_offsets_) q_setpoint_[i].angle = (joint_positions(i) - youbot_constants::joint_offsets[i]) * radian;
         else q_setpoint_[i].angle = joint_positions(i) * radian;
     }
 
-    if (youbot_environment_ != youbot_environment::SIMULATION)
-	    youbot_arm_->setJointData(q_setpoint_);
+    if (youbot_environment_ != youbot_environment::SIMULATION) youbot_arm_->setJointData(q_setpoint_);
 }
 
-//Get Joint Velocities
+// Get Joint Velocities
 void youbot_mediator::get_joint_velocities(KDL::JntArray &joint_velocities)
 {
     if (youbot_environment_ != youbot_environment::SIMULATION)
     {
         youbot_arm_->getJointData(qd_measured_);
-        
+
         for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
             joint_velocities(i) = qd_measured_[i].angularVelocity.value();
 
         if (add_offsets_) joint_velocities(4) = -1 * joint_velocities(4);
     }
-
     else // Assign to the current state the previously passed command  
     {
         for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
@@ -118,29 +107,18 @@ void youbot_mediator::get_joint_velocities(KDL::JntArray &joint_velocities)
     }
 }
 
-//Set Joint Velocities
+// Set Joint Velocities
 void youbot_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities)
 {   
     for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
-    {
-        qd_setpoint_[i].angularVelocity = \
-                                    joint_velocities(i) * radian_per_second;
-    }
+        qd_setpoint_[i].angularVelocity = joint_velocities(i) * radian_per_second;
 
-    // if(add_offsets_){
-    //     qd_setpoint_[4].angularVelocity = 0.0 * radian_per_second;
-    // } 
-    if(add_offsets_) 
-    {
-        qd_setpoint_[4].angularVelocity = \
-                                -1 * joint_velocities(4) * radian_per_second;
-    }
-    
-    if (youbot_environment_ != youbot_environment::SIMULATION)
-	    youbot_arm_->setJointData(qd_setpoint_);
+    // if (add_offsets_) qd_setpoint_[4].angularVelocity = 0.0 * radian_per_second;
+    if (add_offsets_) qd_setpoint_[4].angularVelocity = -1 * joint_velocities(4) * radian_per_second;
+    if (youbot_environment_ != youbot_environment::SIMULATION) youbot_arm_->setJointData(qd_setpoint_);
 }
 
-//Get Joint Torques
+// Get Joint Torques
 void youbot_mediator::get_joint_torques(KDL::JntArray &joint_torques)
 {
     if (youbot_environment_ != youbot_environment::SIMULATION)
@@ -152,27 +130,22 @@ void youbot_mediator::get_joint_torques(KDL::JntArray &joint_torques)
         
         if (add_offsets_) joint_torques(4) = -1 * joint_torques(4);
     }
-
-    else // Assign to the current state the previously passed command 
+    else // Assign to the current state, the previously passed command 
     {
         for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
             joint_torques(i) = tau_setpoint_[i].torque.value();
     }
 }
 
-//Set Joint Torques
+// Set Joint Torques
 void youbot_mediator::set_joint_torques(const KDL::JntArray &joint_torques) 
 {
-
     for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
         tau_setpoint_[i].torque = joint_torques(i) * newton_meter;
     
     // if(add_offsets_) tau_setpoint_[4].torque = 0.0 * newton_meter;
-    if(add_offsets_) 
-        tau_setpoint_[4].torque = -1 * joint_torques(4) * newton_meter;
-    
-    if (youbot_environment_ != youbot_environment::SIMULATION)
-	    youbot_arm_->setJointData(tau_setpoint_);
+    if (add_offsets_) tau_setpoint_[4].torque = -1 * joint_torques(4) * newton_meter;
+    if (youbot_environment_ != youbot_environment::SIMULATION) youbot_arm_->setJointData(tau_setpoint_);
 }
 
 void youbot_mediator::set_joint_command(const KDL::JntArray &joint_positions,
@@ -320,25 +293,21 @@ void youbot_mediator::initialize(const int robot_model,
     add_offsets_      = false;
     int parser_result = 0;
 
-    if(youbot_model_ == youbot_model::YB_STORE)
+    if (youbot_model_ == youbot_model::YB_STORE)
     {
         //Extract model from custom file 
         youbot_custom_model yb_store_model(yb_chain_);
         
         // Add offsets to match real robot and the youBot store model
-        if(youbot_environment_ != youbot_environment::SIMULATION) 
-            add_offsets_ = true;
+        if (youbot_environment_ != youbot_environment::SIMULATION) add_offsets_ = true;
     }
-    
     //Extract youBot model from the URDF file
     else parser_result = get_model_from_urdf();
     
-    if (youbot_environment_ != youbot_environment::SIMULATION \
-        && !connection_established_)
+    if (youbot_environment_ != youbot_environment::SIMULATION && !connection_established_)
     {
-        this->youbot_arm_ = \
-            std::make_shared<youbot::YouBotManipulator>("youbot-manipulator", 
-                                                youbot_constants::config_path);
+        this->youbot_arm_ = std::make_shared<youbot::YouBotManipulator>("youbot-manipulator", 
+                                                                        youbot_constants::config_path);
         // Commutate with the joints
         youbot_arm_->doJointCommutation();
         // Calibrate youBot arm
