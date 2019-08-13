@@ -51,7 +51,7 @@ youbot_mediator::youbot_mediator():
     tau_setpoint_.resize(youbot_constants::NUMBER_OF_JOINTS); 
 }
 
-//Get Joint Positions
+// Get Joint Positions
 void youbot_mediator::get_joint_positions(KDL::JntArray &joint_positions) 
 {
     if (youbot_environment_ != youbot_environment::SIMULATION)
@@ -180,9 +180,9 @@ void youbot_mediator::set_joint_command(const KDL::JntArray &joint_positions,
                                         const KDL::JntArray &joint_torques,
                                         const int desired_control_mode)
 {
-    assert(joint_positions.rows() == youbot_constants::NUMBER_OF_JOINTS);
+    assert(joint_positions.rows()  == youbot_constants::NUMBER_OF_JOINTS);
     assert(joint_velocities.rows() == youbot_constants::NUMBER_OF_JOINTS);
-    assert(joint_torques.rows() == youbot_constants::NUMBER_OF_JOINTS);
+    assert(joint_torques.rows()    == youbot_constants::NUMBER_OF_JOINTS);
 
     if (youbot_environment_ == youbot_environment::SIMULATION)
     {
@@ -190,7 +190,6 @@ void youbot_mediator::set_joint_command(const KDL::JntArray &joint_positions,
         set_joint_velocities(joint_velocities);
         set_joint_positions(joint_positions);
     }
-
     else
     {
         switch (desired_control_mode)
@@ -204,7 +203,9 @@ void youbot_mediator::set_joint_command(const KDL::JntArray &joint_positions,
             case control_mode::POSITION:
                 return set_joint_positions(joint_positions);
         
-            default: assert(("Unknown control mode!", false));
+            default: 
+                assert(("Unknown control mode!", false));
+                break;
         }
     }
 }
@@ -345,7 +346,7 @@ void youbot_mediator::initialize(const int robot_model,
         connection_established_ = true;
     }
     
-    if(parser_result != 0)  printf("Cannot create youBot model! \n");
+    if (parser_result != 0)  printf("Cannot create youBot model! \n");
     else
     {
         is_initialized_ = true;

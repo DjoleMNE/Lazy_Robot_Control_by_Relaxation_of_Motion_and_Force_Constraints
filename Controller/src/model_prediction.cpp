@@ -88,7 +88,7 @@ void model_prediction::integrate_joint_space(
         printf("\n");
     #endif
 
-    if(fk_required) compute_FK(predicted_states[0]);
+    if (fk_required) compute_FK(predicted_states[0]);
 }
 
 // Vector integration from joint acceleration to joint velocity
@@ -108,7 +108,9 @@ void model_prediction::integrate_to_velocity(const KDL::JntArray &acceleration,
             //Integrate accelerations to velocities - Classical Euler method
             predicted_velocity.data = current_velocity.data + acceleration.data * dt_sec;
             break;
-        default: assert(false);
+        default: 
+            assert(false);
+            break;
     }
 }
 
@@ -131,7 +133,9 @@ void model_prediction::integrate_to_position(const KDL::JntArray &acceleration,
             predicted_position.data = current_position.data + dt_sec * \
                                  (predicted_velocity.data - acceleration.data * dt_sec / 2.0);
             break;
-        default: assert(false);
+        default: 
+            assert(false);
+            break;
     }
 }
 

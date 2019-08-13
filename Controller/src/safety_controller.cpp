@@ -170,8 +170,7 @@ bool safety_controller::position_limit_reached(const state_specification &state,
     if ((state.q(joint) >= joint_position_limits_max_[joint]) || \
         (state.q(joint) <= joint_position_limits_min_[joint]))
     {
-        if(PRINT_LOGS_) printf("Joint %d position limit reached: %f \n", 
-                                joint, state.q(joint));
+        if (PRINT_LOGS_) printf("Joint %d position limit reached: %f \n", joint, state.q(joint));
         return true; 
     }
     
@@ -234,9 +233,9 @@ int safety_controller::check_torques()
 {
     for (int i = 0; i < NUM_OF_JOINTS_; i++)
     {
-        if(torque_limit_reached(commands_, i) || \
-           position_limit_reached(predicted_states_[0], i) || \
-           position_limit_reached(predicted_states_[1], i))
+        if (torque_limit_reached(commands_, i) || \
+            position_limit_reached(predicted_states_[0], i) || \
+            position_limit_reached(predicted_states_[1], i))
         {
             stop_robot_motion();
             if (PRINT_LOGS_) printf("Torque commands not safe \n");
@@ -246,8 +245,8 @@ int safety_controller::check_torques()
 
     // Commands are valid. Send them to the robot driver
     robot_driver_->set_joint_command(commands_.q, commands_.qd,
-                                    commands_.control_torque,
-                                    control_mode::TORQUE);
+                                     commands_.control_torque,
+                                     control_mode::TORQUE);
     return control_mode::TORQUE;
 }
 
@@ -273,8 +272,8 @@ int safety_controller::check_velocities()
 
     // Commands are valid. Send them to the robot driver
     robot_driver_->set_joint_command(commands_.q, commands_.qd,
-                                    commands_.control_torque, 
-                                    control_mode::VELOCITY);
+                                     commands_.control_torque,
+                                     control_mode::VELOCITY);
     return control_mode::VELOCITY;
 }
 
@@ -297,8 +296,8 @@ int safety_controller::check_positions()
 
     // Commands are valid. Send them to the robot driver
     robot_driver_->set_joint_command(commands_.q, commands_.qd,
-                                    commands_.control_torque,
-                                    control_mode::POSITION);
+                                     commands_.control_torque,
+                                     control_mode::POSITION);
     return control_mode::POSITION;
 }
 
