@@ -86,7 +86,7 @@ const std::vector<bool> control_dims      = {true, true, true, // Linear
 // Last parameter: Numer of points
 const std::vector<double> path_parameters = {0.5, 4.5, 0.05, 0.008, 70};
 
-std::vector<double> tube_start_position = {0.262105, 0.004157, 0.300};
+std::vector<double> tube_start_position   = {0.262105, 0.004157, 0.300};
 const std::vector<double> tube_tolerances = {0.001, 0.02, 0.02, 
                                              0.17, 0.17, 0.17, 
                                              0.0, 0.1};
@@ -162,7 +162,6 @@ void define_task(dynamics_controller *dyn_controller, const int model_of_task)
     {
         case desired_pose::CANDLE:
             tube_start_position = std::vector<double>{0.045522, 0.0222869, 0.535};
-            // Candle Pose
             desired_ee_pose = { 0.045522, 0.0222869, 0.435, // Linear: Vector
                                 1.0, 0.0, 0.0, // Angular: Rotation matrix
                                 0.0, 1.0, 0.0,
@@ -179,7 +178,6 @@ void define_task(dynamics_controller *dyn_controller, const int model_of_task)
 
         default:
             tube_start_position = std::vector<double>{0.262105, 0.004157, 0.308879};
-            // Navigation pose 1
             desired_ee_pose = { 0.262105,  0.004157,  0.27000, // Linear: Vector
                                 0.338541,  0.137563,  0.930842, // Angular: Rotation Matrix
                                 0.337720, -0.941106,  0.016253,
@@ -336,8 +334,8 @@ int main(int argc, char **argv)
     printf("youBot MAIN Started \n");
     youbot_mediator robot_driver;
 
-    environment    = youbot_environment::REAL;
-    robot_model_id = youbot_model::URDF;
+    environment     = youbot_environment::REAL;
+    robot_model_id  = youbot_model::URDF;
     desired_pose_id = desired_pose::LOOK_AT;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
