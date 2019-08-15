@@ -842,11 +842,9 @@ int dynamics_controller::enforce_loop_frequency()
 {
     loop_interval_= std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_);
 
-    if (loop_interval_ < std::chrono::microseconds(DT_MICRO_))
-    {// Loop is sufficiently fast
-        // clock_nanosleep((DT_MICRO_ - loop_interval_.count()));
-
-        while (loop_interval_.count() < DT_MICRO_)
+    if (loop_interval_ < std::chrono::microseconds(DT_MICRO_)) // Loop is sufficiently fast
+    {
+        while (loop_interval_.count() < (DT_MICRO_ - 1.0))
         {
             loop_interval_= std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_);
         }
@@ -1804,16 +1802,15 @@ int dynamics_controller::control()
             deinitialize();
             printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
             return -1;
-        } 
+        }
 
         // Make sure that the loop is always running with the same frequency
-        // enforce_loop_frequency();
         if (enforce_loop_frequency() != 0) printf("WARNING: Control loop runs too slow \n");
 
         // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_).count();
-        // if (loop_iteration_count_ == 40) 
+        // if (loop_iteration_count_ == 50) 
         // {
-        //     std::cout << loop_time / 40.0 <<std::endl;
+        //     std::cout << loop_time / 50.0 <<std::endl;
         //     return 0;
         // }
     }
