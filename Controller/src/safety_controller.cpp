@@ -100,7 +100,7 @@ bool safety_controller::is_current_state_safe(const state_specification &current
             position_limit_reached(current_state, i) || \
             reaching_position_limits(current_state, i))
            {
-                stop_robot_motion();
+                // stop_robot_motion();
                 if (PRINT_LOGS_) printf("Current robot state is not safe \n\n");
                 return false;
            } 
@@ -224,7 +224,7 @@ int safety_controller::check_torques()
             position_limit_reached(predicted_states_[0], i) || \
             position_limit_reached(predicted_states_[1], i))
         {
-            stop_robot_motion();
+            // stop_robot_motion();
             if (PRINT_LOGS_) printf("Torque commands not safe \n");
             return control_mode::STOP_MOTION;
         }
@@ -251,7 +251,7 @@ int safety_controller::check_velocities()
             position_limit_reached(predicted_states_[0], i) || \
             position_limit_reached(predicted_states_[1], i))
         {
-            stop_robot_motion();
+            // stop_robot_motion();
             if (PRINT_LOGS_) printf("Velocity commands not safe \n");
             return control_mode::STOP_MOTION;
         }
@@ -275,7 +275,7 @@ int safety_controller::check_positions()
     {
         if (position_limit_reached(commands_, i))
         {
-            stop_robot_motion();
+            // stop_robot_motion();
             if (PRINT_LOGS_) printf("Position commands not safe \n");
             return control_mode::STOP_MOTION;
         }
