@@ -304,7 +304,8 @@ void go_navigation_3(youbot_mediator &arm){
 
 void go_look_at(youbot_mediator &arm){
     KDL::JntArray desired_config(JOINTS);
-    double navigation[] = {1.3796, 1.29471, -1.53241, 2.85201, 2.93825};
+    double navigation[] = {1.3842, 1.59705, -1.49501, 1.92562, 2.95774};
+    // double navigation[] = {1.3796, 1.29471, -1.53241, 2.85201, 2.93825};
     for (int i = 0; i < JOINTS; i++) 
         desired_config(i) = navigation[i];  
     arm.set_joint_positions(desired_config);
