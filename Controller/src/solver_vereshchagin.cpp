@@ -516,8 +516,8 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
         // controlTorque(j) = ext_torque(j);
 
         // Torque saturation
-        if      (controlTorque(j) >  joint_torque_limits_(j)) controlTorque(j) =  joint_torque_limits_(j);
-        else if (controlTorque(j) < -joint_torque_limits_(j)) controlTorque(j) = -joint_torque_limits_(j);
+        if      (controlTorque(j) >  joint_torque_limits_(j)) controlTorque(j) =  joint_torque_limits_(j) - 0.001;
+        else if (controlTorque(j) < -joint_torque_limits_(j)) controlTorque(j) = -joint_torque_limits_(j) + 0.001;
 
         s.constAccComp = constraint_torque / s.D;
         s.nullspaceAccComp = s.u / s.D;
