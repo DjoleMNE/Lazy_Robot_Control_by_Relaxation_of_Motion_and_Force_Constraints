@@ -92,7 +92,7 @@ const std::vector<double> tube_tolerances = {0.001, 0.02, 0.02,
                                              0.0, 0.1};
 
 const Eigen::VectorXd max_command         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 50.0, 50.0, 50.0, 
+                                            << 10.0, 10.0, 10.0, 
                                                10.0, 10.0, 10.0).finished();
 
 // Full Pose ABAG parameters
@@ -356,7 +356,7 @@ int main(int argc, char **argv)
     robot_model_id       = youbot_model::URDF;
     desired_pose_id      = desired_pose::LOOK_AT;
     desired_control_mode = control_mode::TORQUE;
-    tube_speed           = 0.01;
+    tube_speed           = 0.05;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
     robot_driver.initialize(robot_model_id, environment, compansate_gravity);
@@ -383,7 +383,7 @@ int main(int argc, char **argv)
     // robot_driver.initialize(robot_model_id, environment, compansate_gravity);
 
     //loop rate in Hz
-    int rate_hz = 625;
+    int rate_hz = 650;
     dynamics_controller controller(&robot_driver, rate_hz);
 
     define_task(&controller, task_model::moveTo);
