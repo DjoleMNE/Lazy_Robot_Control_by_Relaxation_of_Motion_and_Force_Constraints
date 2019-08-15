@@ -878,7 +878,11 @@ int dynamics_controller::apply_joint_control_commands()
     switch (safe_control_mode) 
     {
         case control_mode::TORQUE:
-            if (!desired_control_mode_.is_safe) return -1;
+            if (!desired_control_mode_.is_safe) 
+            {
+                desired_control_mode_.interface = control_mode::STOP_MOTION;
+                return -1;
+            }
             return 0;
 
         case control_mode::VELOCITY:
@@ -890,6 +894,7 @@ int dynamics_controller::apply_joint_control_commands()
             return 0;
 
         default:
+            desired_control_mode_.interface = control_mode::STOP_MOTION;
             return -1;
     }
 }
@@ -1894,5 +1899,8 @@ void dynamics_controller::deinitialize()
         log_file_predictions_.close();
         log_file_null_space_.close();
     }
-    printf("Number of iterations: %d\n", loop_iteration_count_);
+
+    #ifndef NDEBUG
+        printf("Number of iterations: %d\n", loop_iteration_count_);
+    #endif
 }
