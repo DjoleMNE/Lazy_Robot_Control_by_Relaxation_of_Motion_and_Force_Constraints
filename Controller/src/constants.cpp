@@ -65,14 +65,11 @@ namespace youbot_constants
     // Rotor inertia - "d" in the algorithm: Computed from youBot store values
     const std::vector<double> joint_inertia {0.33848, 0.33848, 0.13571, 0.04698, 0.01799};
 
-    const std::string config_path = "/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config";
-    
+    const std::string config_path = "/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/config";    
    //  const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_only.urdf";
     const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_zero_inertia.urdf";
-   //  const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot_arm_zero_inertia_new_mass.urdf";
-   //  const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/youbot-ver-azamat.urdf";
 
-    const std::string root_name = "arm_link_0";
+    const std::string root_name    = "arm_link_0";
     const std::string tooltip_name = "arm_link_5";
 }
 

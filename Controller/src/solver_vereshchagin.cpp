@@ -53,7 +53,7 @@ Solver_Vereshchagin::Solver_Vereshchagin(const Chain& chain_,
     // Set vector of joint (rotor + gear) inertia: "d" in the algorithm
     assert(joint_inertia_.size() == nj);
     d = Eigen::VectorXd::Map(joint_inertia_.data(), joint_inertia_.size());
-    
+
     assert(joint_torque_limits.size() == nj);
     joint_torque_limits_ = Eigen::VectorXd::Map(joint_torque_limits.data(), joint_torque_limits.size());
 

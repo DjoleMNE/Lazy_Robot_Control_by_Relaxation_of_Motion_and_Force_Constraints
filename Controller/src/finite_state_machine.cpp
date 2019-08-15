@@ -198,9 +198,9 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
 {
     if (total_control_time_sec_ > moveTo_follow_path_task_.time_limit) 
     {
-        #ifndef NDEBUG       
+        // #ifndef NDEBUG       
             if (!time_limit_reached_) printf("Time limit reached\n");
-        #endif
+        // #endif
 
         time_limit_reached_ = true;
         return control_status::STOP_CONTROL;
@@ -211,9 +211,9 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
     if (contact_detected(moveTo_follow_path_task_.contact_threshold_linear, 
                          moveTo_follow_path_task_.contact_threshold_angular))
     {
-        #ifndef NDEBUG       
+        // #ifndef NDEBUG       
             printf("Contact occurred\n");
-        #endif
+        // #endif
 
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         contact_detected_ = true;
@@ -234,9 +234,9 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
     // Check if the robot has reached end of the tube path
     if (count == NUM_OF_CONSTRAINTS_ && final_section_reached) 
     {   
-        #ifndef NDEBUG       
+        // #ifndef NDEBUG       
             printf("Whole path covered\n");
-        #endif
+        // #endif
 
         goal_reached_ = true;
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
@@ -297,9 +297,9 @@ int finite_state_machine::update_moveTo_weight_compensation_task(state_specifica
     {
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
 
-        #ifndef NDEBUG       
-            if(!time_limit_reached_) printf("Time limit reached\n");
-        #endif
+        // #ifndef NDEBUG       
+            if (!time_limit_reached_) printf("Time limit reached\n");
+        // #endif
 
         time_limit_reached_ = true;
         return control_status::STOP_CONTROL;
@@ -310,9 +310,9 @@ int finite_state_machine::update_moveTo_weight_compensation_task(state_specifica
     if (contact_detected(moveTo_weight_compensation_task_.contact_threshold_linear, 
                          moveTo_weight_compensation_task_.contact_threshold_angular))
     {
-        #ifndef NDEBUG       
+        // #ifndef NDEBUG       
             printf("Contact occurred\n");
-        #endif
+        // #endif
 
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         contact_detected_ = true;
@@ -328,9 +328,9 @@ int finite_state_machine::update_moveTo_weight_compensation_task(state_specifica
     
     if (count == NUM_OF_CONSTRAINTS_) 
     {
-        #ifndef NDEBUG       
+        // #ifndef NDEBUG       
             printf("Goal area reached\n");
-        #endif
+        // #endif
 
         goal_reached_ = true;
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
@@ -386,9 +386,9 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
     {
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
 
-        #ifndef NDEBUG       
-            if(!time_limit_reached_) printf("Time limit reached\n");
-        #endif
+        // #ifndef NDEBUG       
+            if (!time_limit_reached_) printf("Time limit reached\n");
+        // #endif
 
         time_limit_reached_ = true;
         return control_status::STOP_CONTROL;
@@ -399,9 +399,9 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
     if (contact_detected(moveTo_task_.contact_threshold_linear, 
                          moveTo_task_.contact_threshold_angular))
     {
-        #ifndef NDEBUG       
+        // #ifndef NDEBUG       
             printf("Contact occurred\n");
-        #endif
+        // #endif
 
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         contact_detected_ = true;
@@ -417,9 +417,9 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
     
     if (count == NUM_OF_CONSTRAINTS_) 
     {
-        #ifndef NDEBUG       
+        // #ifndef NDEBUG       
             printf("Goal area reached\n");
-        #endif
+        // #endif
 
         goal_reached_ = true;
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
@@ -472,9 +472,9 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
 {
     if (total_control_time_sec_ > full_pose_task_.time_limit) 
     {
-        #ifndef NDEBUG
-            if(!time_limit_reached_) printf("Time limit reached\n");
-        #endif
+        // #ifndef NDEBUG
+            if (!time_limit_reached_) printf("Time limit reached\n");
+        // #endif
 
         time_limit_reached_ = true;
         return control_status::STOP_CONTROL;
@@ -485,9 +485,9 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
     if (contact_detected(full_pose_task_.contact_threshold_linear, 
                          full_pose_task_.contact_threshold_angular))
     {
-        #ifndef NDEBUG       
+        // #ifndef NDEBUG       
             printf("Contact occurred\n");
-        #endif
+        // #endif
         contact_detected_ = true;
         return control_status::STOP_ROBOT;
     }
@@ -500,9 +500,9 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
     
     if (count == NUM_OF_CONSTRAINTS_) 
     {
-        #ifndef NDEBUG       
+        // #ifndef NDEBUG       
             printf("Goal area reached\n");
-        #endif
+        // #endif
 
         goal_reached_ = true;
         return control_status::STOP_ROBOT;

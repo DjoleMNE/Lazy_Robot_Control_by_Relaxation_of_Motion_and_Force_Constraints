@@ -76,7 +76,7 @@ int environment                      = youbot_environment::SIMULATION;
 int robot_model_id                   = youbot_model::URDF;
 int desired_task_model               = task_model::full_pose;
 const double task_time_limit_sec     = 600.0;
-const double tube_speed              = 0.005;
+double tube_speed                    = 0.01;
 const double damper_amplitude        = 2.5;
 const bool compansate_gravity        = false;
 const bool log_data                  = true;
@@ -162,26 +162,26 @@ void define_task(dynamics_controller *dyn_controller, const int model_of_task)
     {
         case desired_pose::CANDLE:
             tube_start_position = std::vector<double>{0.045522, 0.0222869, 0.535};
-            desired_ee_pose = { 0.045522, 0.0222869, 0.435, // Linear: Vector
-                                1.0, 0.0, 0.0, // Angular: Rotation matrix
-                                0.0, 1.0, 0.0,
-                                0.0, 0.0, 1.0};
+            desired_ee_pose     = { 0.045522, 0.0222869, 0.435, // Linear: Vector
+                                    1.0, 0.0, 0.0, // Angular: Rotation matrix
+                                    0.0, 1.0, 0.0,
+                                    0.0, 0.0, 1.0};
             break;
 
         case desired_pose::LOOK_AT:
-            tube_start_position = std::vector<double>{0.0192443, 0.285581, 0.240953};
-            desired_ee_pose = { 0.0192443, 0.235581, 0.240953, // Linear: Vector
-                                1.0, 0.0, 0.0, // Angular: Rotation matrix
-                                0.0, 1.0, 0.0,
-                                0.0, 0.0, 1.0};
+            tube_start_position = std::vector<double>{0.0195779, 0.366672, 0.252514};
+            desired_ee_pose     = { 0.0192443, 0.235581, 0.240953, // Linear: Vector
+                                    1.0, 0.0, 0.0, // Angular: Rotation matrix
+                                    0.0, 1.0, 0.0,
+                                    0.0, 0.0, 1.0};
             break;
 
         default:
             tube_start_position = std::vector<double>{0.262105, 0.004157, 0.308879};
-            desired_ee_pose = { 0.262105,  0.004157,  0.27000, // Linear: Vector
-                                0.338541,  0.137563,  0.930842, // Angular: Rotation Matrix
-                                0.337720, -0.941106,  0.016253,
-                                0.878257,  0.308861, -0.365061};
+            desired_ee_pose     = { 0.262105,  0.004157,  0.27000, // Linear: Vector
+                                    0.338541,  0.137563,  0.930842, // Angular: Rotation Matrix
+                                    0.337720, -0.941106,  0.016253,
+                                    0.878257,  0.308861, -0.365061};
             break;
     }
 
@@ -337,6 +337,7 @@ int main(int argc, char **argv)
     environment     = youbot_environment::REAL;
     robot_model_id  = youbot_model::URDF;
     desired_pose_id = desired_pose::LOOK_AT;
+    tube_speed      = 0.01;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
     robot_driver.initialize(robot_model_id, environment, compansate_gravity);

@@ -278,7 +278,7 @@ int dynamics_controller::update_current_state()
                                                       robot_state_.frame_pose, 
                                                       robot_state_.frame_velocity);
     // Print Current robot state in Debug mode
-#ifndef NDEBUG
+// #ifndef NDEBUG
         // std::cout << "\nCurrent Joint state:          " << std::endl;
         // std::cout << "Joint angle:    " << robot_state_.q << std::endl;
         // std::cout << "Joint velocity: " << robot_state_.qd << std::endl;
@@ -288,12 +288,12 @@ int dynamics_controller::update_current_state()
         //           << robot_state_.frame_pose[END_EFF_].p  << std::endl;
         // std::cout << "End-effector Velocity:                \n" 
         //           << robot_state_.frame_velocity[END_EFF_] << std::endl;
-#endif 
+// #endif 
 
-#ifdef NDEBUG
+// #ifdef NDEBUG
         // std::cout << "End-effector Velocity:   \n" 
         //           << robot_state_.frame_velocity[END_EFF_] << std::endl;
-#endif
+// #endif
     return fk_solver_result;
 }
 
@@ -892,7 +892,6 @@ int dynamics_controller::apply_joint_control_commands()
             return 0;
 
         default:
-            printf("WARNING: Unsupported joint control mode.\n");
             return -1;
     }
 }
@@ -1560,7 +1559,7 @@ int dynamics_controller::evaluate_dynamics()
     // hd_solver_.get_transformed_link_acceleration(robot_state_.frame_acceleration);
     
     // Print computed state in Debug mode
-#ifndef NDEBUG
+// #ifndef NDEBUG
         // std::cout << "\nComputed Cartesian state:" << std::endl;
 
         // std::cout << "Frame ACC" << '\n';
@@ -1573,11 +1572,11 @@ int dynamics_controller::evaluate_dynamics()
         // std::cout << "\nComputed Joint state:          " << std::endl;
         // std::cout << "Joint torque:  " << robot_state_.control_torque << std::endl;
         // std::cout << "Joint acc:     " << robot_state_.qdd << std::endl;
-#endif 
+// #endif 
 
-#ifdef NDEBUG
+// #ifdef NDEBUG
         // std::cout << "Joint torque:  " << robot_state_.control_torque << std::endl;
-#endif
+// #endif
 
     return hd_solver_result;
 }
