@@ -66,7 +66,6 @@ const long SECOND                    = 1000000;
 const int MILLISECOND                = 1000;
 const int JOINTS                     = 5;
 const int NUMBER_OF_CONSTRAINTS      = 6;
-const int desired_control_mode       = control_mode::VELOCITY;
 const int desired_dynamics_interface = dynamics_interface::CART_ACCELERATION;
 const int motion_profile_id          = m_profile::CONSTANT;
 const int abag_error_type            = error_type::SIGN;
@@ -75,6 +74,7 @@ int desired_pose_id                  = desired_pose::NAVIGATION;
 int environment                      = youbot_environment::SIMULATION;
 int robot_model_id                   = youbot_model::URDF;
 int desired_task_model               = task_model::full_pose;
+int desired_control_mode             = control_mode::VELOCITY;
 const double task_time_limit_sec     = 600.0;
 double tube_speed                    = 0.01;
 const double damper_amplitude        = 2.5;
@@ -112,7 +112,7 @@ const Eigen::VectorXd gain_step           = (Eigen::VectorXd(NUMBER_OF_CONSTRAIN
                                             << 0.003152, 0.003152, 0.003152, 
                                                0.015152, 0.015152, 0.015152).finished();
 
-// moveTo ABAG parameters
+// moveTo-torque ABAG parameters
 const Eigen::VectorXd error_alpha_2         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.800000, 0.900000, 0.900000, 
                                                0.850000, 0.850000, 0.850000).finished();
@@ -126,6 +126,23 @@ const Eigen::VectorXd gain_threshold_2      = (Eigen::VectorXd(NUMBER_OF_CONSTRA
                                             << 0.452492, 0.552492, 0.552492, 
                                                0.252492, 0.252492, 0.252492).finished();
 const Eigen::VectorXd gain_step_2           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.002052, 0.003152, 0.003152, 
+                                               0.015152, 0.015152, 0.015152).finished();
+
+// moveTo-velocity ABAG parameters
+const Eigen::VectorXd error_alpha_2_1         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.800000, 0.900000, 0.900000, 
+                                               0.850000, 0.850000, 0.850000).finished();
+const Eigen::VectorXd bias_threshold_2_1      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.000507, 0.000407, 0.000407, 
+                                               0.001007, 0.001007, 0.001007).finished();
+const Eigen::VectorXd bias_step_2_1           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.000495, 0.000495, 0.000495, 
+                                               0.003495, 0.003495, 0.003495).finished();
+const Eigen::VectorXd gain_threshold_2_1      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.452492, 0.552492, 0.552492, 
+                                               0.252492, 0.252492, 0.252492).finished();
+const Eigen::VectorXd gain_step_2_1           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.002052, 0.003152, 0.003152, 
                                                0.015152, 0.015152, 0.015152).finished();
 
@@ -335,10 +352,11 @@ int main(int argc, char **argv)
     printf("youBot MAIN Started \n");
     youbot_mediator robot_driver;
 
-    environment     = youbot_environment::REAL;
-    robot_model_id  = youbot_model::URDF;
-    desired_pose_id = desired_pose::LOOK_AT;
-    tube_speed      = 0.01;
+    environment          = youbot_environment::REAL;
+    robot_model_id       = youbot_model::URDF;
+    desired_pose_id      = desired_pose::LOOK_AT;
+    desired_control_mode = control_mode::TORQUE;
+    tube_speed           = 0.01;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
     robot_driver.initialize(robot_model_id, environment, compansate_gravity);
@@ -369,18 +387,34 @@ int main(int argc, char **argv)
     dynamics_controller controller(&robot_driver, rate_hz);
 
     define_task(&controller, task_model::moveTo);
-    if (desired_task_model == task_model::full_pose) controller.set_parameters(damper_amplitude, abag_error_type, 
-                                                                               max_command, error_alpha,
-                                                                               bias_threshold, bias_step, gain_threshold,
-                                                                               gain_step, min_bias_sat, min_command_sat,
-                                                                               null_space_abag_parameters,
-                                                                               compensation_parameters);
-    else controller.set_parameters(damper_amplitude, abag_error_type, 
-                                   max_command, error_alpha_2,
-                                   bias_threshold_2, bias_step_2, gain_threshold_2,
-                                   gain_step_2, min_bias_sat, min_command_sat,
-                                   null_space_abag_parameters,
-                                   compensation_parameters);
+    if (desired_task_model == task_model::full_pose) 
+    {
+        controller.set_parameters(damper_amplitude, abag_error_type, 
+                                  max_command, error_alpha,
+                                  bias_threshold, bias_step, gain_threshold,
+                                  gain_step, min_bias_sat, min_command_sat,
+                                  null_space_abag_parameters,
+                                  compensation_parameters);
+    }
+    else if ((desired_task_model == task_model::moveTo) && (desired_control_mode == control_mode::VELOCITY)) 
+    {
+        controller.set_parameters(damper_amplitude, abag_error_type, 
+                                  max_command, error_alpha_2_1,
+                                  bias_threshold_2_1, bias_step_2_1, gain_threshold_2_1,
+                                  gain_step_2_1, min_bias_sat, min_command_sat,
+                                  null_space_abag_parameters,
+                                  compensation_parameters);
+    }
+
+    else
+    {
+     controller.set_parameters(damper_amplitude, abag_error_type, 
+                               max_command, error_alpha_2,
+                               bias_threshold_2, bias_step_2, gain_threshold_2,
+                               gain_step_2, min_bias_sat, min_command_sat,
+                               null_space_abag_parameters,
+                               compensation_parameters);
+    }
 
     int initial_result = controller.initialize(desired_control_mode, 
                                                desired_dynamics_interface,
