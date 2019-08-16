@@ -183,6 +183,49 @@ void youbot_mediator::set_joint_command(const KDL::JntArray &joint_positions,
     }
 }
 
+bool youbot_mediator::get_bit(unsigned int flag, const int position)
+{
+    return (flag >> position) & 0x1;
+}
+
+bool youbot_mediator::robot_stopped()
+{
+    unsigned int status_flag = 0;
+
+    for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
+    {
+        // Check if velocity control mode is active
+        youbot_arm_->getArmJoint(i + 1).getStatus(status_flag);
+        if (!get_bit(status_flag, 9)) return false;
+
+        // Check if velocity setpoint is zero
+        youbot_arm_->getArmJoint(i + 1).getData(qd_setpoint_[i]);
+        if ((qd_setpoint_[i].angularVelocity.value() != 0.0) || \
+            !std::isfinite(qd_setpoint_[i].angularVelocity.value())) return false;
+    }
+    return true;
+}
+
+// Set Zero Joint Velocities and wait until robot has stopped completely
+void youbot_mediator::stop_robot_motion()
+{   
+    // Send the zero velocity commands to motors
+    for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
+        qd_setpoint_[i].angularVelocity = 0.0 * radian_per_second;
+
+    if (youbot_environment_ != youbot_environment::SIMULATION)
+    {
+        youbot_arm_->setJointData(qd_setpoint_);
+
+        // Monitor robot state until robot has stopped completely
+        bool wait_for_driver = true;
+        while (wait_for_driver)
+        {
+            if (robot_stopped()) wait_for_driver = false;
+        }
+    }
+}
+
 std::vector<double> youbot_mediator::get_maximum_joint_pos_limits()
 {
     if(youbot_model_ == youbot_model::YB_STORE) 

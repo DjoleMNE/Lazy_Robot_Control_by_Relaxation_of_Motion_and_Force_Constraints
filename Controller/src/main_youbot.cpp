@@ -81,8 +81,8 @@ const double damper_amplitude        = 2.5;
 const bool compansate_gravity        = false;
 const bool log_data                  = true;
 
-const std::vector<bool> control_dims      = {true, true, true, // Linear
-                                             false, false, false}; // Angular
+std::vector<bool> control_dims      = {true, true, true, // Linear
+                                       false, false, false}; // Angular
 // Last parameter: Numer of points
 const std::vector<double> path_parameters = {0.5, 4.5, 0.05, 0.008, 70};
 
@@ -352,6 +352,8 @@ int main(int argc, char **argv)
     printf("youBot MAIN Started \n");
     youbot_mediator robot_driver;
 
+    control_dims         = std::vector<bool>{true, true, true, // Linear
+                                             false, false, false}; // Angular
     environment          = youbot_environment::REAL;
     robot_model_id       = youbot_model::URDF;
     desired_pose_id      = desired_pose::LOOK_AT;
@@ -376,6 +378,8 @@ int main(int argc, char **argv)
     //                            number_of_segments + 1, NUMBER_OF_CONSTRAINTS);
     // robot_driver.get_joint_positions(motion.q);
     // robot_driver.get_joint_velocities(motion.qd);
+    // printf("FAFA\n");
+    // robot_driver.stop_robot_motion();
     // return 0;
 
     // Extract robot model and if not simulation, establish connection with motor drivers

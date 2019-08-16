@@ -59,7 +59,7 @@ class robot_mediator
 							   		   const int desired_control_mode) = 0;
 
 		// Get current joint positions
-		virtual void get_joint_positions(KDL::JntArray &joint_positions)  = 0 ;
+		virtual void get_joint_positions(KDL::JntArray &joint_positions)  = 0;
 		// Get current joint velocities 
 		virtual void get_joint_velocities(KDL::JntArray &joint_velocities) = 0;
 		// Get current joint torques
@@ -71,6 +71,8 @@ class robot_mediator
 		virtual void set_joint_velocities(const KDL::JntArray &joint_velocities) = 0;
 		// Set joint torque command
 		virtual void set_joint_torques(const KDL::JntArray &joint_torques) = 0; 
+		// Set Zero Joint Velocities and wait until robot has stopped completely
+		virtual void stop_robot_motion() = 0;
 
 		virtual std::vector<double> get_maximum_joint_pos_limits() = 0;
 		virtual std::vector<double> get_minimum_joint_pos_limits() = 0;

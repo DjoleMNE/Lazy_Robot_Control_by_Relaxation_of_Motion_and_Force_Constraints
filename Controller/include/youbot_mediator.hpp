@@ -80,6 +80,8 @@ class youbot_mediator: public robot_mediator
 		virtual void set_joint_velocities(const KDL::JntArray &joint_velocities);
 		// Set joint torque command
 		virtual void set_joint_torques(const KDL::JntArray &joint_torques); 
+		// Set Zero Joint Velocities and wait until robot has stopped completely
+		virtual void stop_robot_motion();
 
 		virtual std::vector<double> get_maximum_joint_pos_limits();
 		virtual std::vector<double> get_minimum_joint_pos_limits();
@@ -130,5 +132,8 @@ class youbot_mediator: public robot_mediator
 
         //Extract youBot model from urdf file
         int get_model_from_urdf();
+
+		bool get_bit(unsigned int flag, const int position);
+		bool robot_stopped();
 };
 #endif /* YOUBOT_MEDIATOR_HPP */
