@@ -78,6 +78,16 @@ int finite_state_machine::initialize_with_moveTo(const moveTo_task &task,
     return control_status::NOMINAL;
 }
 
+int finite_state_machine::initialize_with_moveGuarded(const moveGuarded_task &task,
+                                                      const int motion_profile)
+{
+    desired_task_model_ = task_model::moveGuarded;
+    moveGuarded_task_   = task;
+    motion_profile_     = motion_profile;
+
+    return control_status::NOMINAL;
+}
+
 int finite_state_machine::initialize_with_moveTo_weight_compensation(const moveTo_weight_compensation_task &task,
                                                                      const int motion_profile,
                                                                      const Eigen::VectorXd &compensation_parameters)
@@ -468,6 +478,50 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
     return control_status::CRUISE_THROUGH_TUBE;
 }
 
+
+int finite_state_machine::update_moveGuarded_task(state_specification &desired_state)
+{
+    if (total_control_time_sec_ > moveGuarded_task_.time_limit) 
+    {
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+
+        // #ifndef NDEBUG       
+            if (!time_limit_reached_) printf("Time limit reached\n");
+        // #endif
+
+        time_limit_reached_ = true;
+        return control_status::STOP_CONTROL;
+    }
+
+    if (contact_detected_) return control_status::STOP_ROBOT;
+    
+    if (contact_detected(moveGuarded_task_.contact_threshold_linear, 
+                         moveGuarded_task_.contact_threshold_angular))
+    {
+        // #ifndef NDEBUG       
+            printf("Contact occurred\n");
+        // #endif
+
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+        contact_detected_ = true;
+        return control_status::STOP_ROBOT;
+    }
+
+    // Check if robot is inside the tube
+    for (int i = 1; i < NUM_OF_CONSTRAINTS_; i++)
+    {
+        if (std::fabs(current_error_(i)) > moveGuarded_task_.tube_tolerances[i])
+        {
+            desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
+            return control_status::START_TO_CRUISE;
+        }
+    }
+    
+    // TODO: Add motion profile here
+    desired_state.frame_velocity[END_EFF_].vel(0) = moveGuarded_task_.tube_speed;              
+    return control_status::CRUISE_THROUGH_TUBE;
+}
+
 int finite_state_machine::update_full_pose_task(state_specification &desired_state)
 {
     if (total_control_time_sec_ > full_pose_task_.time_limit) 
@@ -537,6 +591,11 @@ int finite_state_machine::update_motion_task_status(const state_specification &r
         case task_model::moveTo:
             ext_wrench_ = ext_force;
             return update_moveTo_task(desired_state);
+            break;
+
+        case task_model::moveGuarded:
+            ext_wrench_ = ext_force;
+            return update_moveGuarded_task(desired_state);
             break;
 
         case task_model::moveTo_weight_compensation:

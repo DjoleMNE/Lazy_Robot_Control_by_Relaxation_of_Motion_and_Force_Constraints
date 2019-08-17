@@ -102,6 +102,18 @@ struct moveTo_task
     double time_limit = 0.0;
 };
 
+struct moveGuarded_task
+{
+    KDL::Frame tf_pose, goal_pose;
+    std::vector<double> tube_start_position{std::vector<double>(3, 0.0)};
+    std::vector<double> tube_end_position{std::vector<double>(3, 0.0)};
+    std::vector<double> tube_tolerances{std::vector<double>(7, 0.0)};
+    double tube_speed = 0.0;
+    double contact_threshold_linear = 0.0;
+    double contact_threshold_angular = 0.0;
+    double time_limit = 0.0;
+};
+
 struct moveTo_weight_compensation_task
 {
     KDL::Frame tf_pose, goal_pose;
@@ -135,6 +147,7 @@ class finite_state_machine
         int initialize_with_moveTo_weight_compensation(const moveTo_weight_compensation_task &task, const int motion_profile,
                                                        const Eigen::VectorXd &compensation_parameters);
         int initialize_with_moveTo(const moveTo_task &task, const int motion_profile);
+        int initialize_with_moveGuarded(const moveGuarded_task &task, const int motion_profile);
         int initialize_with_full_pose(const full_pose_task &task, const int motion_profile);
         int update_weight_compensation_task_status(const int loop_iteration_count,
                                                    const Eigen::VectorXd &bias_signal,
@@ -165,6 +178,7 @@ class finite_state_machine
         KDL::Twist current_error_;
         KDL::Wrench ext_wrench_;
         moveTo_task moveTo_task_;
+        moveGuarded_task moveGuarded_task_;
         moveTo_weight_compensation_task moveTo_weight_compensation_task_;
         full_pose_task full_pose_task_;
         moveTo_follow_path_task moveTo_follow_path_task_;
@@ -173,6 +187,7 @@ class finite_state_machine
 
         int update_full_pose_task(state_specification &desired_state);
         int update_moveTo_task(state_specification &desired_state);
+        int update_moveGuarded_task(state_specification &desired_state);
         int update_moveTo_weight_compensation_task(state_specification &desired_state);
         int update_moveTo_follow_path_task(state_specification &desired_state,
                                            const int tube_section_count);
