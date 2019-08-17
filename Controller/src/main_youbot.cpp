@@ -438,12 +438,24 @@ int main(int argc, char **argv)
     }
     else
     {
-     controller.set_parameters(time_horizon_sec, abag_error_type, 
-                               max_command, error_alpha_2,
-                               bias_threshold_2, bias_step_2, gain_threshold_2,
-                               gain_step_2, min_bias_sat, min_command_sat,
-                               null_space_abag_parameters,
-                               compensation_parameters);
+        if (desired_control_mode == control_mode::TORQUE)
+        {
+            controller.set_parameters(time_horizon_sec, abag_error_type, 
+                                      max_command, error_alpha_2,
+                                      bias_threshold_2, bias_step_2, gain_threshold_2,
+                                      gain_step_2, min_bias_sat, min_command_sat,
+                                      null_space_abag_parameters,
+                                      compensation_parameters);
+        }
+        else
+        {
+            controller.set_parameters(time_horizon_sec, abag_error_type, 
+                                      max_command, error_alpha_2_1,
+                                      bias_threshold_2_1, bias_step_2_1, gain_threshold_2_1,
+                                      gain_step_2_1, min_bias_sat, min_command_sat,
+                                      null_space_abag_parameters,
+                                      compensation_parameters);
+        }
     }
 
     int initial_result = controller.initialize(desired_control_mode, 
