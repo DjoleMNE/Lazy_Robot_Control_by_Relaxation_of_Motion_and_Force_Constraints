@@ -77,7 +77,7 @@ int desired_task_model               = task_model::full_pose;
 int desired_control_mode             = control_mode::VELOCITY;
 const double task_time_limit_sec     = 600.0;
 double tube_speed                    = 0.01;
-const double damper_amplitude        = 2.5;
+const double time_horizon_sec        = 1.5;
 const bool compansate_gravity        = false;
 const bool log_data                  = true;
 
@@ -87,7 +87,7 @@ std::vector<bool> control_dims      = {true, true, true, // Linear
 const std::vector<double> path_parameters = {0.5, 4.5, 0.05, 0.008, 70};
 
 std::vector<double> tube_start_position   = {0.262105, 0.004157, 0.300};
-const std::vector<double> tube_tolerances = {0.001, 0.02, 0.02, 
+const std::vector<double> tube_tolerances = {0.001, 0.01, 0.01, 
                                              0.17, 0.17, 0.17, 
                                              0.0, 0.1};
 
@@ -114,19 +114,19 @@ const Eigen::VectorXd gain_step           = (Eigen::VectorXd(NUMBER_OF_CONSTRAIN
 
 // moveTo-torque ABAG parameters
 const Eigen::VectorXd error_alpha_2         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.800000, 0.900000, 0.900000, 
+                                            << 0.850000, 0.900000, 0.900000, 
                                                0.850000, 0.850000, 0.850000).finished();
 const Eigen::VectorXd bias_threshold_2      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.000507, 0.000407, 0.000407, 
+                                            << 0.000407, 0.000407, 0.000407, 
                                                0.001007, 0.001007, 0.001007).finished();
 const Eigen::VectorXd bias_step_2           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.000495, 0.000495, 0.000495, 
+                                            << 0.000550, 0.000495, 0.000495, 
                                                0.003495, 0.003495, 0.003495).finished();
 const Eigen::VectorXd gain_threshold_2      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.452492, 0.552492, 0.552492, 
+                                            << 0.552492, 0.552492, 0.552492, 
                                                0.252492, 0.252492, 0.252492).finished();
 const Eigen::VectorXd gain_step_2           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.002052, 0.003152, 0.003152, 
+                                            << 0.003152, 0.003152, 0.003152, 
                                                0.015152, 0.015152, 0.015152).finished();
 
 // moveTo-velocity ABAG parameters
