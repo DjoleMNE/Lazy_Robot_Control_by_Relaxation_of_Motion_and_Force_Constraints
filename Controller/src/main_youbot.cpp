@@ -52,7 +52,9 @@ enum desired_pose
     TABLE        = 4,
     CANDLE2      = 5,
     FOLDED2      = 6,
-    LOOK_AT      = 7
+    LOOK_AT_1    = 7,
+    LOOK_AT_2    = 8,
+    LOOK_DOWN    = 9
 };
 
 enum path_types
@@ -178,24 +180,42 @@ void define_task(dynamics_controller *dyn_controller, const int model_of_task)
     switch (desired_pose_id)
     {
         case desired_pose::CANDLE:
-            tube_start_position = std::vector<double>{0.045522, 0.0222869, 0.535};
-            desired_ee_pose     = { 0.045522, 0.0222869, 0.435, // Linear: Vector
+            tube_start_position = std::vector<double>{0.0329645, 0.374577, 0.0945052};
+            desired_ee_pose     = { 0.0324134, 0.253591, 0.504317, // Linear: Vector
                                     1.0, 0.0, 0.0, // Angular: Rotation matrix
                                     0.0, 1.0, 0.0,
                                     0.0, 0.0, 1.0};
             break;
 
-        case desired_pose::LOOK_AT:
-            tube_start_position = std::vector<double>{0.0195779, 0.366672, 0.252514};
-            desired_ee_pose     = { 0.0192443, 0.235581, 0.240953, // Linear: Vector
+
+        case desired_pose::LOOK_AT_2:
+            tube_start_position = std::vector<double>{0.0195779, 0.366672, 0.240953};
+            desired_ee_pose     = { 0.0192443, 0.185581, 0.240953, // Linear: Vector
+                                    1.0, 0.0, 0.0, // Angular: Rotation matrix
+                                    0.0, 1.0, 0.0,
+                                    0.0, 0.0, 1.0};
+            break;
+
+        case desired_pose::LOOK_AT_1:
+            tube_start_position = std::vector<double>{0.0217448, 0.186527, 0.245774};
+            desired_ee_pose     = { 0.0195779, 0.366668, 0.245774, // Linear: Vector
+                                    1.0, 0.0, 0.0, // Angular: Rotation matrix
+                                    0.0, 1.0, 0.0,
+                                    0.0, 0.0, 1.0};
+            break;
+
+        case desired_pose::LOOK_DOWN:
+            tube_start_position = std::vector<double>{0.262105, 0.004157, 0.308879};
+            desired_ee_pose     = { 0.262105,  0.004157,  0.11000, // Linear: Vector
                                     1.0, 0.0, 0.0, // Angular: Rotation matrix
                                     0.0, 1.0, 0.0,
                                     0.0, 0.0, 1.0};
             break;
 
         default:
-            tube_start_position = std::vector<double>{0.262105, 0.004157, 0.308879};
-            desired_ee_pose     = { 0.262105,  0.004157,  0.27000, // Linear: Vector
+            // Navigation pose
+            tube_start_position = std::vector<double>{0.264474, 0.00421041, 0.110878};
+            desired_ee_pose     = { 0.262104,  0.00415452, 0.308892, // Linear: Vector
                                     0.338541,  0.137563,  0.930842, // Angular: Rotation Matrix
                                     0.337720, -0.941106,  0.016253,
                                     0.878257,  0.308861, -0.365061};
@@ -263,7 +283,7 @@ void go_candle_2(youbot_mediator &arm){
 // Go to Candle 3 configuration  
 void go_candle_3(youbot_mediator &arm){
     KDL::JntArray candle_pose(JOINTS);
-    double candle[] = {2.9496, 1.1344, -2.54818, 1.78896, 2.9234};
+    double candle[] = {1.4548, 1.08761, -2.16883, 2.07761, 2.94358};
     for (int i = 0; i < JOINTS; i++) 
         candle_pose(i) = candle[i];  
     arm.set_joint_positions(candle_pose);
@@ -319,15 +339,33 @@ void go_navigation_3(youbot_mediator &arm){
     if (environment != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
 }
 
-void go_look_at(youbot_mediator &arm){
+void go_look_at_2(youbot_mediator &arm){
     KDL::JntArray desired_config(JOINTS);
-    double navigation[] = {1.3842, 1.59705, -1.49501, 1.92562, 2.95774};
-    // double navigation[] = {1.3796, 1.29471, -1.53241, 2.85201, 2.93825};
+    double navigation[] = { 1.38416, 0.349291, -0.359869, 1.98252, 2.95996};
     for (int i = 0; i < JOINTS; i++) 
         desired_config(i) = navigation[i];  
     arm.set_joint_positions(desired_config);
     if (environment != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
 }
+
+void go_look_at_1(youbot_mediator &arm){
+    KDL::JntArray desired_config(JOINTS);
+    double navigation[] = {1.3842, 1.59705, -1.49501, 1.92562, 2.95774};
+    for (int i = 0; i < JOINTS; i++) 
+        desired_config(i) = navigation[i];  
+    arm.set_joint_positions(desired_config);
+    if (environment != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
+}
+
+void go_look_down(youbot_mediator &arm){
+    KDL::JntArray desired_config(JOINTS);
+    double down[] = {2.94957, 1.30183, -1.03303, 2.87425, 2.9406};
+    for (int i = 0; i < JOINTS; i++) 
+        desired_config(i) = down[i];  
+    arm.set_joint_positions(desired_config);
+    if (environment != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
+}
+
 
 //Set velocities of arm's joints to 0 value
 void stop_robot_motion(youbot_mediator &arm){
@@ -369,9 +407,11 @@ int main(int argc, char **argv)
     assert(JOINTS == number_of_segments);
 
     stop_robot_motion(robot_driver);
-    if (desired_pose_id == desired_pose::LOOK_AT) go_look_at(robot_driver);
-    else if (desired_pose_id == desired_pose::CANDLE) go_candle_1(robot_driver);
-    else go_navigation_2(robot_driver);
+    if      (desired_pose_id == desired_pose::LOOK_AT_2)  go_look_at_1(robot_driver);
+    else if (desired_pose_id == desired_pose::LOOK_AT_1)  go_look_at_2(robot_driver);
+    else if (desired_pose_id == desired_pose::NAVIGATION) go_look_down(robot_driver);
+    else if (desired_pose_id == desired_pose::LOOK_DOWN)  go_navigation_2(robot_driver);
+    else return 0;
     // rotate_joint(robot_driver, 5, 0.1);
 
     // state_specification motion(number_of_joints, number_of_segments,
