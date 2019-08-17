@@ -174,7 +174,7 @@ bool safety_controller::reaching_position_limits(const state_specification &stat
 
     if ((joint_position_limits_max_[joint] - state.q(joint)) < joint_position_thresholds_[joint])
     {
-        if (state.qd(joint) > 0.02)
+        if (state.qd(joint) > 0.05)
         {
             printf("Joint %d is too close to the max limit %f %f \n", joint, state.q(joint), state.qd(joint));
             return true;
@@ -183,7 +183,7 @@ bool safety_controller::reaching_position_limits(const state_specification &stat
     
     else if ((joint_position_limits_min_[joint] - state.q(joint)) > -joint_position_thresholds_[joint])
     {
-        if (state.qd(joint) < -0.02)
+        if (state.qd(joint) < -0.05)
         {
             printf("Joint %d is too close to the min limit %f %f \n", joint, state.q(joint), state.qd(joint));
             return true;
