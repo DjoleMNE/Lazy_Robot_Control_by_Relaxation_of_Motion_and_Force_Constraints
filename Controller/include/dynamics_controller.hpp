@@ -106,6 +106,15 @@ class dynamics_controller
                             const double task_time_limit_sec,
                             std::vector<double> &task_frame_pose);
 
+    void define_moveGuarded_task(const std::vector<bool> &constraint_direction,
+                                 const std::vector<double> &tube_start_position,
+                                 const std::vector<double> &tube_tolerances,
+                                 const double tube_speed,
+                                 const double contact_threshold_linear,
+                                 const double contact_threshold_angular,
+                                 const double task_time_limit_sec,
+                                 std::vector<double> &tube_end_position);
+
     void define_moveTo_weight_compensation_task(const std::vector<bool> &constraint_direction,
                                                 const std::vector<double> &tube_start_position,
                                                 const std::vector<double> &tube_tolerances,
@@ -180,6 +189,7 @@ class dynamics_controller
          compensate_unknown_weight_;
     
     moveTo_task moveTo_task_;
+    moveGuarded_task moveGuarded_task_;
     moveTo_weight_compensation_task moveTo_weight_compensation_task_;
     full_pose_task full_pose_task_;
     moveTo_follow_path_task moveTo_follow_path_task_;
@@ -215,6 +225,7 @@ class dynamics_controller
     void compute_moveConstrained_null_space_task_error();
     void compute_moveTo_follow_path_task_error();
     void compute_moveTo_task_error();
+    void compute_moveGuarded_task_error();
     void compute_moveTo_weight_compensation_task_error();
     void compute_full_pose_task_error();
     void compute_control_error();

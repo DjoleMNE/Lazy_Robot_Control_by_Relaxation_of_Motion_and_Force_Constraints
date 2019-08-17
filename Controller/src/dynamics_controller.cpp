@@ -708,6 +708,77 @@ void dynamics_controller::define_moveTo_weight_compensation_task(
     compensate_unknown_weight_  = true;
 }
 
+void dynamics_controller::define_moveGuarded_task(
+                                const std::vector<bool> &constraint_direction,
+                                const std::vector<double> &tube_start_position,
+                                const std::vector<double> &tube_tolerances,
+                                const double tube_speed,
+                                const double contact_threshold_linear,
+                                const double contact_threshold_angular,
+                                const double task_time_limit_sec,
+                                std::vector<double> &tube_end_position)
+{
+    assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
+    assert(tube_tolerances.size()      == NUM_OF_CONSTRAINTS_ + 2);
+    assert(tube_end_position.size()    == 12);
+    assert(tube_start_position.size()  == 3);
+
+    CTRL_DIM_ = constraint_direction;
+    MOTION_CTRL_DIM_ = CTRL_DIM_;
+
+    // X-Y-Z linear
+    KDL::Vector x_world(1.0, 0.0, 0.0);
+    KDL::Vector tf_position = KDL::Vector(tube_end_position[0], tube_end_position[1], tube_end_position[2]);
+    KDL::Vector x_task = tf_position - KDL::Vector(tube_start_position[0], tube_start_position[1], tube_start_position[2]);
+    x_task.Normalize();
+
+    KDL::Vector cross_product = x_world * x_task;
+    double cosine             = dot(x_world, x_task);
+    double sine               = cross_product.Norm();
+    double angle              = atan2(sine, cosine);
+
+    KDL::Rotation tf_orientation;
+    if(cosine < (-1 + 1e-6))
+    {
+        tf_orientation = KDL::Rotation::EulerZYZ(M_PI, 0.0, 0.0);
+        tube_end_position[3] = -1.0; tube_end_position[4]  =  0.0; tube_end_position[5]  = 0.0;
+        tube_end_position[6] =  0.0; tube_end_position[7]  = -1.0; tube_end_position[8]  = 0.0;
+        tube_end_position[9] =  0.0; tube_end_position[10] =  0.0; tube_end_position[11] = 1.0;
+    }
+    else if(sine < 1e-6)
+    {
+        tf_orientation = KDL::Rotation::Identity();
+        tube_end_position[3] = 1.0; tube_end_position[4]  = 0.0; tube_end_position[5]  = 0.0;
+        tube_end_position[6] = 0.0; tube_end_position[7]  = 1.0; tube_end_position[8]  = 0.0;
+        tube_end_position[9] = 0.0; tube_end_position[10] = 0.0; tube_end_position[11] = 1.0;
+    }
+    else
+    {
+        tf_orientation = geometry::exp_map_so3(cross_product / sine * angle);
+        tube_end_position[3] = tf_orientation.data[0]; tube_end_position[4]  = tf_orientation.data[1]; tube_end_position[5]  = tf_orientation.data[2];
+        tube_end_position[6] = tf_orientation.data[3]; tube_end_position[7]  = tf_orientation.data[4]; tube_end_position[8]  = tf_orientation.data[5];
+        tube_end_position[9] = tf_orientation.data[6]; tube_end_position[10] = tf_orientation.data[7]; tube_end_position[11] = tf_orientation.data[8];
+    }
+
+    moveGuarded_task_.tf_pose                   = KDL::Frame(tf_orientation, tf_position);
+    moveGuarded_task_.goal_pose                 = KDL::Frame::Identity();
+    moveGuarded_task_.tube_start_position       = tube_start_position;
+    moveGuarded_task_.tube_end_position         = tube_end_position;
+    moveGuarded_task_.tube_tolerances           = tube_tolerances;
+    moveGuarded_task_.tube_speed                = tube_speed;
+    moveGuarded_task_.contact_threshold_linear  = contact_threshold_linear;
+    moveGuarded_task_.contact_threshold_angular = contact_threshold_angular;
+    moveGuarded_task_.time_limit                = task_time_limit_sec;
+
+    desired_state_.frame_pose[END_EFF_]    = moveGuarded_task_.goal_pose;
+    desired_task_model_                    = task_model::moveGuarded;
+    transform_drivers_          = true;
+    transform_force_drivers_    = false;
+    compute_null_space_command_ = false;
+    compensate_unknown_weight_  = false;
+}
+
+
 void dynamics_controller::define_desired_ee_pose(
                             const std::vector<bool> &constraint_direction,
                             const std::vector<double> &cartesian_pose,
@@ -1311,6 +1382,41 @@ void dynamics_controller::compute_moveTo_weight_compensation_task_error()
 
 
 /**
+ * Compute the control error for tube deviations and velocity setpoint.
+ * Error function for moveGuarded task.
+*/
+void dynamics_controller::compute_moveGuarded_task_error()
+{
+    //Change the reference frame of the robot state, from base frame to task frame
+    robot_state_.frame_pose[END_EFF_]     = moveGuarded_task_.tf_pose.Inverse()   * robot_state_.frame_pose[END_EFF_];
+    robot_state_.frame_velocity[END_EFF_] = moveGuarded_task_.tf_pose.M.Inverse() * robot_state_.frame_velocity[END_EFF_];
+
+    current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
+
+    make_predictions(horizon_amplitude_, 1);
+    predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
+
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+        current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
+
+    fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, 
+                                                 ext_wrench_, total_time_sec_, tube_section_count_);
+
+    abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
+
+    // Check for tube on velocity
+    if ((desired_state_.frame_velocity[END_EFF_].vel(0) != 0.0) && \
+        (std::fabs(abag_error_vector_(0)) <= moveGuarded_task_.tube_tolerances[6])) abag_error_vector_(0) = 0.0;
+
+    // Other parts of the ABAG error are position errors
+    for (int i = 1; i < NUM_OF_CONSTRAINTS_; i++)
+    {
+        if ( std::fabs(predicted_error_twist_(i)) <= moveGuarded_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
+        else abag_error_vector_(i) = predicted_error_twist_(i);        
+    }
+}
+
+/**
  * Compute the error between desired Cartesian state and predicted (integrated) Cartesian state.
  * Error function for full_pose task
 */
@@ -1348,6 +1454,10 @@ void dynamics_controller::compute_control_error()
             compute_moveTo_task_error();
             break;
 
+        case task_model::moveGuarded:
+            compute_moveGuarded_task_error();
+            break;
+
         case task_model::moveTo_weight_compensation:
             compute_moveTo_weight_compensation_task_error();
             break;
@@ -1377,6 +1487,10 @@ void dynamics_controller::transform_force_driver()
 
         case task_model::moveTo_weight_compensation:
             cart_force_command_[END_EFF_] = moveTo_weight_compensation_task_.tf_pose.M * cart_force_command_[END_EFF_];
+            break;
+
+        case task_model::moveGuarded:
+            cart_force_command_[END_EFF_] = moveGuarded_task_.tf_pose.M * cart_force_command_[END_EFF_];
             break;
 
         default:
@@ -1411,6 +1525,10 @@ void dynamics_controller::transform_motion_driver()
 
             case task_model::moveTo_weight_compensation:
                 wrench_column = moveTo_weight_compensation_task_.tf_pose.M * wrench_column;
+                break;
+
+            case task_model::moveGuarded:
+                wrench_column = moveGuarded_task_.tf_pose.M * wrench_column;
                 break;
 
             default:
@@ -1665,6 +1783,10 @@ int dynamics_controller::initialize(const int desired_control_mode,
             fsm_result_ = fsm_.initialize_with_moveTo(moveTo_task_, motion_profile);
             break;
 
+        case task_model::moveGuarded:
+            fsm_result_ = fsm_.initialize_with_moveGuarded(moveGuarded_task_, motion_profile);
+            break;
+
         case task_model::moveTo_weight_compensation:
             fsm_result_ = fsm_.initialize_with_moveTo_weight_compensation(moveTo_weight_compensation_task_, 
                                                                           motion_profile,
@@ -1690,27 +1812,16 @@ int dynamics_controller::initialize(const int desired_control_mode,
 
         for (int i = 0; i < NUM_OF_CONSTRAINTS_ + 2; i++)
         {
-            if (desired_task_model_ == task_model::moveConstrained_follow_path)
-            {
-                log_file_cart_ << moveConstrained_follow_path_task_.tube_tolerances[i] << " ";
-            }
-            
-            else if (desired_task_model_ == task_model::moveTo_follow_path)
-            {
-                log_file_cart_ << moveTo_follow_path_task_.tube_tolerances[i] << " ";
-            }
-
-            else if (desired_task_model_ == task_model::moveTo_weight_compensation)
-            {
-                log_file_cart_ << moveTo_weight_compensation_task_.tube_tolerances[i] << " ";
-            }
-
-            else log_file_cart_ << moveTo_task_.tube_tolerances[i] << " ";
+            if      (desired_task_model_ == task_model::moveConstrained_follow_path) log_file_cart_ << moveConstrained_follow_path_task_.tube_tolerances[i] << " ";            
+            else if (desired_task_model_ == task_model::moveTo_follow_path)          log_file_cart_ << moveTo_follow_path_task_.tube_tolerances[i] << " ";
+            else if (desired_task_model_ == task_model::moveTo_weight_compensation)  log_file_cart_ << moveTo_weight_compensation_task_.tube_tolerances[i] << " ";
+            else if (desired_task_model_ == task_model::moveGuarded)                 log_file_cart_ << moveGuarded_task_.tube_tolerances[i] << " ";
+            else                                                                     log_file_cart_ << moveTo_task_.tube_tolerances[i] << " ";
         }
         log_file_cart_ << std::endl;      
 
         for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
-                log_file_cart_ << max_command_(i) << " ";
+            log_file_cart_ << max_command_(i) << " ";
         log_file_cart_ << std::endl;      
 
         log_file_predictions_.open(dynamics_parameter::LOG_FILE_PREDICTIONS_PATH);
