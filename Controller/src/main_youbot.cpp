@@ -77,7 +77,7 @@ int desired_task_model               = task_model::full_pose;
 int desired_control_mode             = control_mode::VELOCITY;
 const double task_time_limit_sec     = 600.0;
 double tube_speed                    = 0.01;
-const double time_horizon_sec        = 1.5;
+const double time_horizon_sec        = 2.0;
 const bool compansate_gravity        = false;
 const bool log_data                  = true;
 
@@ -356,9 +356,9 @@ int main(int argc, char **argv)
                                              false, false, false}; // Angular
     environment          = youbot_environment::REAL;
     robot_model_id       = youbot_model::URDF;
-    desired_pose_id      = desired_pose::LOOK_AT;
+    desired_pose_id      = desired_pose::NAVIGATION;
     desired_control_mode = control_mode::TORQUE;
-    tube_speed           = 0.05;
+    tube_speed           = 0.1;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
     robot_driver.initialize(robot_model_id, environment, compansate_gravity);
@@ -382,10 +382,6 @@ int main(int argc, char **argv)
     // robot_driver.stop_robot_motion();
     // return 0;
 
-    // Extract robot model and if not simulation, establish connection with motor drivers
-    // robot_model_id = youbot_model::URDF;
-    // robot_driver.initialize(robot_model_id, environment, compansate_gravity);
-
     //loop rate in Hz
     int rate_hz = 650;
     dynamics_controller controller(&robot_driver, rate_hz);
@@ -393,26 +389,16 @@ int main(int argc, char **argv)
     define_task(&controller, task_model::moveTo);
     if (desired_task_model == task_model::full_pose) 
     {
-        controller.set_parameters(damper_amplitude, abag_error_type, 
+        controller.set_parameters(time_horizon_sec, abag_error_type, 
                                   max_command, error_alpha,
                                   bias_threshold, bias_step, gain_threshold,
                                   gain_step, min_bias_sat, min_command_sat,
                                   null_space_abag_parameters,
                                   compensation_parameters);
     }
-    else if ((desired_task_model == task_model::moveTo) && (desired_control_mode == control_mode::VELOCITY)) 
-    {
-        controller.set_parameters(damper_amplitude, abag_error_type, 
-                                  max_command, error_alpha_2_1,
-                                  bias_threshold_2_1, bias_step_2_1, gain_threshold_2_1,
-                                  gain_step_2_1, min_bias_sat, min_command_sat,
-                                  null_space_abag_parameters,
-                                  compensation_parameters);
-    }
-
     else
     {
-     controller.set_parameters(damper_amplitude, abag_error_type, 
+     controller.set_parameters(time_horizon_sec, abag_error_type, 
                                max_command, error_alpha_2,
                                bias_threshold_2, bias_step_2, gain_threshold_2,
                                gain_step_2, min_bias_sat, min_command_sat,

@@ -228,27 +228,21 @@ void youbot_mediator::stop_robot_motion()
 
 std::vector<double> youbot_mediator::get_maximum_joint_pos_limits()
 {
-    if(youbot_model_ == youbot_model::YB_STORE) 
-        return youbot_constants::joint_position_limits_max_1;
-
+    if (youbot_model_ == youbot_model::YB_STORE) return youbot_constants::joint_position_limits_max_1;
     else 
     {
-        if(youbot_environment_ != youbot_environment::SIMULATION)
-            return youbot_constants::joint_position_limits_max_2;
-        else return youbot_constants::joint_position_limits_max_2_sim;
+        if (youbot_environment_ != youbot_environment::SIMULATION) return youbot_constants::joint_position_limits_max_2;
+        return youbot_constants::joint_position_limits_max_2_sim;
     }
 }
 
 std::vector<double> youbot_mediator::get_minimum_joint_pos_limits()
 {
-    if(youbot_model_ == youbot_model::YB_STORE) 
-        return youbot_constants::joint_position_limits_min_1;
-        
+    if (youbot_model_ == youbot_model::YB_STORE) return youbot_constants::joint_position_limits_min_1;
     else 
     {
-        if(youbot_environment_ != youbot_environment::SIMULATION)
-            return youbot_constants::joint_position_limits_min_2;
-        else return youbot_constants::joint_position_limits_min_2_sim;
+        if (youbot_environment_ != youbot_environment::SIMULATION) return youbot_constants::joint_position_limits_min_2;
+        return youbot_constants::joint_position_limits_min_2_sim;
     }
 }
 
