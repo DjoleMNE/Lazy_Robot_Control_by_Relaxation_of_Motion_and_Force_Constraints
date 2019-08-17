@@ -77,8 +77,8 @@ int environment                      = youbot_environment::SIMULATION;
 int robot_model_id                   = youbot_model::URDF;
 int desired_task_model               = task_model::full_pose;
 int desired_control_mode             = control_mode::VELOCITY;
-const double task_time_limit_sec     = 600.0;
 double tube_speed                    = 0.01;
+const double task_time_limit_sec     = 600.0;
 const double time_horizon_sec        = 2.0;
 const bool compansate_gravity        = false;
 const bool log_data                  = true;
@@ -111,6 +111,23 @@ const Eigen::VectorXd gain_threshold      = (Eigen::VectorXd(NUMBER_OF_CONSTRAIN
                                             << 0.552492, 0.552492, 0.552492, 
                                                0.252492, 0.252492, 0.252492).finished();
 const Eigen::VectorXd gain_step           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.003152, 0.003152, 0.003152, 
+                                               0.015152, 0.015152, 0.015152).finished();
+
+// moveGuarded-torque ABAG parameters
+const Eigen::VectorXd error_alpha_1         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.850000, 0.900000, 0.900000, 
+                                               0.850000, 0.850000, 0.850000).finished();
+const Eigen::VectorXd bias_threshold_1      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.000407, 0.000407, 0.000407, 
+                                               0.001007, 0.001007, 0.001007).finished();
+const Eigen::VectorXd bias_step_1           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.000550, 0.000495, 0.000495, 
+                                               0.003495, 0.003495, 0.003495).finished();
+const Eigen::VectorXd gain_threshold_1      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.552492, 0.552492, 0.552492, 
+                                               0.252492, 0.252492, 0.252492).finished();
+const Eigen::VectorXd gain_step_1           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.003152, 0.003152, 0.003152, 
                                                0.015152, 0.015152, 0.015152).finished();
 
@@ -160,9 +177,8 @@ const Eigen::VectorXd compensation_parameters = (Eigen::VectorXd(7) \
                                                    0.00016, 0.0025, 0.00002,
                                                    60).finished();
 
-void define_task(dynamics_controller *dyn_controller, const int model_of_task)
+void define_task(dynamics_controller *dyn_controller)
 {
-    desired_task_model = model_of_task;
     std::vector<double> desired_ee_pose(12, 0.0);
 
     //Create End_effector Cartesian Acceleration task
@@ -233,6 +249,17 @@ void define_task(dynamics_controller *dyn_controller, const int model_of_task)
                                                1.0, 0.1, //contact_threshold linear and angular
                                                task_time_limit_sec,// time_limit
                                                desired_ee_pose); // TF pose
+            break;
+
+        case task_model::moveGuarded:
+            dyn_controller->define_moveGuarded_task(std::vector<bool>{control_dims[0], control_dims[1], control_dims[2], // Linear
+                                                                      control_dims[3], control_dims[4], control_dims[5]},// Angular
+                                                    tube_start_position,
+                                                    tube_tolerances,
+                                                    tube_speed,
+                                                    1.0, 0.1, //contact_threshold linear and angular
+                                                    task_time_limit_sec,// time_limit
+                                                    desired_ee_pose); // TF pose
             break;
 
         case task_model::moveTo_weight_compensation:
@@ -392,10 +419,11 @@ int main(int argc, char **argv)
 
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                              false, false, false}; // Angular
-    environment          = youbot_environment::REAL;
+    environment          = youbot_environment::SIMULATION;
     robot_model_id       = youbot_model::URDF;
     desired_pose_id      = desired_pose::NAVIGATION;
     desired_control_mode = control_mode::TORQUE;
+    desired_task_model   = task_model::moveGuarded;
     tube_speed           = 0.1;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
@@ -418,7 +446,7 @@ int main(int argc, char **argv)
     //                            number_of_segments + 1, NUMBER_OF_CONSTRAINTS);
     // robot_driver.get_joint_positions(motion.q);
     // robot_driver.get_joint_velocities(motion.qd);
-    // printf("FAFA\n");
+    // printf("Stops here\n");
     // robot_driver.stop_robot_motion();
     // return 0;
 
@@ -426,13 +454,22 @@ int main(int argc, char **argv)
     int rate_hz = 650;
     dynamics_controller controller(&robot_driver, rate_hz);
 
-    define_task(&controller, task_model::moveTo);
+    define_task(&controller);
     if (desired_task_model == task_model::full_pose) 
     {
         controller.set_parameters(time_horizon_sec, abag_error_type, 
                                   max_command, error_alpha,
                                   bias_threshold, bias_step, gain_threshold,
                                   gain_step, min_bias_sat, min_command_sat,
+                                  null_space_abag_parameters,
+                                  compensation_parameters);
+    }
+    else if (desired_task_model == task_model::moveGuarded)
+    {
+        controller.set_parameters(time_horizon_sec, abag_error_type, 
+                                  max_command, error_alpha_1,
+                                  bias_threshold_1, bias_step_1, gain_threshold_1,
+                                  gain_step_1, min_bias_sat, min_command_sat,
                                   null_space_abag_parameters,
                                   compensation_parameters);
     }
