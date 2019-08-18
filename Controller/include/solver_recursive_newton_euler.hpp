@@ -39,15 +39,17 @@ namespace KDL{
      * (expressed in the segments reference frame) and the dynamical
      * parameters of the segments.
      */
-    class ChainIdSolver_RNE : public ChainIdSolver{
+    class Solver_RNE : public KDL::SolverI{
     public:
         /**
          * Constructor for the solver, it will allocate all the necessary memory
          * \param chain The kinematic chain to calculate the inverse dynamics for, an internal copy will be made.
          * \param grav The gravity vector to use during the calculation.
          */
-        ChainIdSolver_RNE(const Chain& chain,Vector grav);
-        ~ChainIdSolver_RNE(){};
+        Solver_RNE(const Chain& chain, const Vector grav, 
+                   const std::vector<double> joint_inertia,
+                   const std::vector<double> joint_torque_limits);
+        ~Solver_RNE(){};
         
         /**
          * Function to calculate from Cartesian forces to joint torques.
@@ -59,7 +61,7 @@ namespace KDL{
          * Output parameters:
          * \param torques the resulting torques for the joints
          */
-        int CartToJnt(const JntArray &q, const JntArray &q_dot, const JntArray &q_dotdot, const Wrenches& f_ext,JntArray &torques);
+        int CartToJnt(const JntArray &q, const JntArray &q_dot, const JntArray &q_dotdot, const Wrenches& f_ext, JntArray &torques);
 
         /// @copydoc KDL::SolverI::updateInternalDataStructures
         virtual void updateInternalDataStructures();
@@ -73,6 +75,8 @@ namespace KDL{
         std::vector<Twist> v;
         std::vector<Twist> a;
         std::vector<Wrench> f;
+        std::vector<double> joint_inertia_;
+        std::vector<double> joint_torque_limits_;
         Twist ag;
     };
 }

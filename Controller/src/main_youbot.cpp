@@ -23,6 +23,7 @@ SOFTWARE.
 */
 #include <state_specification.hpp>
 #include <dynamics_controller.hpp>
+#include <solver_recursive_newton_euler.hpp>
 #include <fk_vereshchagin.hpp>
 #include <geometry_utils.hpp>
 #include <model_prediction.hpp>
@@ -202,7 +203,6 @@ void define_task(dynamics_controller *dyn_controller)
                                     0.0, 1.0, 0.0,
                                     0.0, 0.0, 1.0};
             break;
-
 
         case desired_pose::LOOK_AT_2:
             tube_start_position = std::vector<double>{0.0195779, 0.366672, 0.240953};
@@ -442,13 +442,22 @@ int main(int argc, char **argv)
     else return 0;
     // rotate_joint(robot_driver, 5, 0.1);
 
-    // state_specification motion(number_of_joints, number_of_segments,
-    //                            number_of_segments + 1, NUMBER_OF_CONSTRAINTS);
-    // robot_driver.get_joint_positions(motion.q);
-    // robot_driver.get_joint_velocities(motion.qd);
+    state_specification motion(number_of_joints, number_of_segments,
+                               number_of_segments + 1, NUMBER_OF_CONSTRAINTS);
+    robot_driver.get_joint_positions(motion.q);
+    robot_driver.get_joint_velocities(motion.qd);
+
+    KDL::Solver_RNE rne_solver(robot_driver.get_robot_model(), 
+                               KDL::Vector(0.0, 0.0, -9.81289),
+                               robot_driver.get_joint_inertia(), 
+                               robot_driver.get_joint_torque_limits());
+    KDL::JntArray zero_joint_acc(JOINTS);
+    rne_solver.CartToJnt(motion.q, motion.qd, zero_joint_acc, motion.external_force, motion.control_torque);
+    std::cout << motion.control_torque << std::endl;
+
     // printf("Stops here\n");
     // robot_driver.stop_robot_motion();
-    // return 0;
+    return 0;
 
     //loop rate in Hz
     int rate_hz = 650;
@@ -501,6 +510,5 @@ int main(int argc, char **argv)
                                                motion_profile_id);
     if (initial_result != 0) return -1;
     controller.control();
-
     return 0;
 }

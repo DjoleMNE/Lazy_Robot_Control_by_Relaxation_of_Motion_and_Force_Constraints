@@ -48,6 +48,7 @@ if("${ROBOT}" STREQUAL "lwr")
     src/finite_state_machine.cpp
     src/motion_profile.cpp
     src/solver_vereshchagin.cpp
+    src/solver_recursive_newton_euler.cpp
     src/fk_vereshchagin.cpp
     src/lwr_mediator.cpp
     src/lwr_kdl_model.cpp
@@ -67,6 +68,7 @@ else()
     src/finite_state_machine.cpp
     src/motion_profile.cpp
     src/solver_vereshchagin.cpp
+    src/solver_recursive_newton_euler.cpp
     src/fk_vereshchagin.cpp
     src/youbot_mediator.cpp
     src/youbot_custom_model.cpp

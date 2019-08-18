@@ -27,6 +27,7 @@ SOFTWARE.
 #define DYNAMICS_CONTROLLER_HPP_
 #include <solver_vereshchagin.hpp>
 #include <fk_vereshchagin.hpp>
+#include <solver_recursive_newton_euler.hpp>
 #include <state_specification.hpp>
 #include <robot_mediator.hpp>
 #include <geometry_utils.hpp>
