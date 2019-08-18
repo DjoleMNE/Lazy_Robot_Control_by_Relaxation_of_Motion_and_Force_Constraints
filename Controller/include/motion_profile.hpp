@@ -25,10 +25,7 @@ SOFTWARE.
 
 #ifndef MOTION_PROFILE_HPP
 #define MOTION_PROFILE_HPP
-// #include <state_specification.hpp>
-// #include <constants.hpp>
-// #include <fk_vereshchagin.hpp>
-// #include <kdl_eigen_conversions.hpp>
+#include <vector>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -46,27 +43,61 @@ enum m_profile
 
 namespace motion_profile
 {
-        double tanh_function(const double state,
-                             const double offset,
-                             const double amplitude,
-                             const double slope);
-        double tanh_inverse_function(const double state,
-                                     const double offset,
-                                     const double amplitude,
-                                     const double slope);
-        double step_function(const double state,
-                             const double magnitude,
-                             const double delta_slope,
-                             const double upper_limit,
-                             const double lower_limit);
-        double negative_step_function(const double state,
-                                      const double magnitude,
-                                      const double delta_slope,
-                                      const double upper_limit,
-                                      const double lower_limit);
-        double s_curve_function(const double state,
-                                const double offset,
-                                const double amplitude,
-                                const double slope);
+    double tanh_function(const double state,
+                            const double offset,
+                            const double amplitude,
+                            const double slope);
+    double tanh_inverse_function(const double state,
+                                    const double offset,
+                                    const double amplitude,
+                                    const double slope);
+    double step_function(const double state,
+                            const double magnitude,
+                            const double delta_slope,
+                            const double upper_limit,
+                            const double lower_limit);
+    double negative_step_function(const double state,
+                                    const double magnitude,
+                                    const double delta_slope,
+                                    const double upper_limit,
+                                    const double lower_limit);
+    double s_curve_function(const double state,
+                            const double offset,
+                            const double amplitude,
+                            const double slope);
+
+    // Path generators for X-Z plane
+    void draw_sine_xz(std::vector< std::vector<double> > &path_points,
+                      const double frequency_start,
+                      const double frequency_end,
+                      const double amplitude,
+                      const double x_scale, const double offset_x, 
+                      const double offset_y, const double offset_z);
+    void draw_inf_sign_xz(std::vector< std::vector<double> > &path_points,
+                          const double length, const double height, 
+                          const double amplitude,
+                          const double x_scale, const double offset_x, 
+                          const double offset_y, const double offset_z);
+    void draw_step_xz(std::vector< std::vector<double> > &path_points,
+                      const int step_size,
+                      const double x_scale, const double offset_x, 
+                      const double offset_y, const double offset_z);
+
+    // Path generators for X-Y plane
+    void draw_sine_xy(std::vector< std::vector<double> > &path_points,
+                      const double frequency_start,
+                      const double frequency_end,
+                      const double amplitude,
+                      const double x_scale, const double offset_x, 
+                      const double offset_y, const double offset_z);
+    void draw_inf_sign_xy(std::vector< std::vector<double> > &path_points,
+                          const double length, const double height, 
+                          const double amplitude,
+                          const double x_scale, const double offset_x, 
+                          const double offset_y, const double offset_z);
+    void draw_step_xy(std::vector< std::vector<double> > &path_points,
+                      const int step_size,
+                      const double x_scale, const double offset_x, 
+                      const double offset_y, const double offset_z);
 };
 #endif /* MOTION_PROFILE_HPP */

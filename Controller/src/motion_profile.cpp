@@ -78,4 +78,154 @@ namespace motion_profile
         // else return offset + amplitude * std::sin(slope * state);
         return offset + amplitude * std::sin(slope * state);
     }
+
+
+    void draw_sine_xz(std::vector< std::vector<double> > &path_points,
+                      const double frequency_start,
+                      const double frequency_end, 
+                      const double amplitude,
+                      const double x_scale, const double offset_x, 
+                      const double offset_y, const double offset_z)
+    {
+        double x_y, z;
+        double frequency = 0.0;
+        double freq_step = 0.0;
+        if (frequency_end > frequency_start) freq_step = (frequency_end - frequency_start) / (static_cast<float>(path_points.size() - 1));
+
+        for(int i = 0; i < path_points.size(); i++)
+        {
+            // the angle is plotted on the x-plane
+            x_y = i;
+            frequency = frequency_start + freq_step * i;
+
+            // the sine function is plotted along the z-axis
+            z = amplitude * std::sin(2 * M_PI * frequency * (x_y / path_points.size()));
+
+            path_points[i][0] = x_y * x_scale + offset_x;
+            path_points[i][1] = 0.0           + offset_y;
+            path_points[i][2] = z             + offset_z;
+        }
+    }
+
+    void draw_inf_sign_xz(std::vector< std::vector<double> > &path_points,
+                          const double length, const double height, 
+                          const double amplitude,
+                          const double x_scale, const double offset_x, 
+                          const double offset_y, const double offset_z)
+    {
+        double x_y, z;
+
+        for(int i = 0; i < path_points.size(); i++)
+        {
+            // the angle is plotted on the x-y-plane
+            x_y = x_scale * amplitude * (-length / 2.0) * std::cos(2.0 * M_PI * i / path_points.size()) + length / 2.0;
+
+            // the sine function is plotted along the z-axis
+            z = amplitude * (height / 2) * std::sin(4 * M_PI * i / path_points.size());
+
+            path_points[i][0] = x_y + offset_x;
+            path_points[i][1] = 0.0 + offset_y;
+            path_points[i][2] = z   + offset_z;
+        }
+    }
+
+    void draw_step_xz(std::vector< std::vector<double> > &path_points,
+                      const int step_size,
+                      const double x_scale, const double offset_x, 
+                      const double offset_y, const double offset_z)
+    {
+        double x_y, z;
+        int offset = int(path_points.size() / step_size);
+
+        for(int i = 0; i < path_points.size(); i++)
+        {
+            x_y = x_scale * i;
+
+            if      (i < offset)                       z =  0.0;
+            else if (i >     offset && i < 2 * offset) z =  0.07;
+            else if (i > 2 * offset && i < 3 * offset) z = -0.05;
+            else if (i > 3 * offset && i < 4 * offset) z =  0.04;
+            else                                       z =  0.01;
+
+            path_points[i][0] = x_y + offset_x;
+            path_points[i][1] = 0.0 + offset_y;
+            path_points[i][2] = z   + offset_z;
+        }
+    }
+
+
+
+    void draw_sine_xy(std::vector< std::vector<double> > &path_points,
+                      const double frequency_start,
+                      const double frequency_end, 
+                      const double amplitude,
+                      const double x_scale, const double offset_x, 
+                      const double offset_y, const double offset_z)
+    {
+        double x, y;
+        double frequency = 0.0;
+        double freq_step = 0.0;
+        if (frequency_end > frequency_start) freq_step = (frequency_end - frequency_start) / (static_cast<float>(path_points.size() - 1));
+
+        for(int i = 0; i < path_points.size(); i++)
+        {
+            // the angle is plotted on the x-plane
+            x = i;
+            frequency = frequency_start + freq_step * i;
+
+            // the sine function is plotted along the z-axis
+            y = amplitude * std::sin(2 * M_PI * frequency * (x / path_points.size()));
+
+            path_points[i][0] = x * x_scale + offset_x;
+            path_points[i][1] = y           + offset_y;
+            path_points[i][2] = 0.0         + offset_z;
+        }
+    }
+
+    void draw_inf_sign_xy(std::vector< std::vector<double> > &path_points,
+                          const double length, const double height, 
+                          const double amplitude,
+                          const double x_scale, const double offset_x, 
+                          const double offset_y, const double offset_z)
+    {
+        double x, y;
+
+        for(int i = 0; i < path_points.size(); i++)
+        {
+            // the angle is plotted on the x-y-plane
+            x = x_scale * amplitude * (-length / 2.0) * std::cos(2.0 * M_PI * i / path_points.size()) + length / 2.0;
+
+            // the sine function is plotted along the y-axis
+            y = amplitude * (height / 2) * std::sin(4 * M_PI * i / path_points.size());
+
+            path_points[i][0] = x    + offset_x;
+            path_points[i][1] = y    + offset_y;
+            path_points[i][2] = 0.0  + offset_z;
+        }
+    }
+
+    void draw_step_xy(std::vector< std::vector<double> > &path_points,
+                      const int step_size,
+                      const double x_scale, const double offset_x, 
+                      const double offset_y, const double offset_z)
+    {
+        double x, y;
+        int offset = int(path_points.size() / step_size);
+        offset = 0.1;
+
+        for(int i = 0; i < path_points.size(); i++)
+        {
+            x = x_scale * i;
+
+            if      (i < offset)                       y =  0.0;
+            else if (i >     offset && i < 2 * offset) y =  0.07;
+            else if (i > 2 * offset && i < 3 * offset) y = -0.05;
+            else if (i > 3 * offset && i < 4 * offset) y =  0.04;
+            else                                       y =  0.01;
+
+            path_points[i][0] = x   + offset_x;
+            path_points[i][1] = y   + offset_y;
+            path_points[i][2] = 0.0 + offset_z;
+        }
+    }
 }
