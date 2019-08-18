@@ -166,6 +166,23 @@ const Eigen::VectorXd gain_step_2_1           = (Eigen::VectorXd(NUMBER_OF_CONST
                                             << 0.002052, 0.003152, 0.003152, 
                                                0.015152, 0.015152, 0.015152).finished();
 
+// moveTo-follow_path-torque ABAG parameters
+const Eigen::VectorXd error_alpha_3         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.850000, 0.900000, 0.900000, 
+                                               0.850000, 0.850000, 0.850000).finished();
+const Eigen::VectorXd bias_threshold_3      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.000407, 0.000407, 0.000407, 
+                                               0.001007, 0.001007, 0.001007).finished();
+const Eigen::VectorXd bias_step_3           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.000550, 0.000495, 0.000495, 
+                                               0.003495, 0.003495, 0.003495).finished();
+const Eigen::VectorXd gain_threshold_3      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.552492, 0.552492, 0.552492, 
+                                               0.252492, 0.252492, 0.252492).finished();
+const Eigen::VectorXd gain_step_3           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.003152, 0.003152, 0.003152, 
+                                               0.015152, 0.015152, 0.015152).finished();
+
 const Eigen::VectorXd min_bias_sat                = Eigen::VectorXd::Constant(6, -1.0);
 const Eigen::VectorXd min_command_sat             = Eigen::VectorXd::Constant(6, -1.0);
 const Eigen::VectorXd null_space_abag_parameters  = Eigen::VectorXd::Constant(5, 0.01);
@@ -477,6 +494,15 @@ int main(int argc, char **argv)
                                   max_command, error_alpha_1,
                                   bias_threshold_1, bias_step_1, gain_threshold_1,
                                   gain_step_1, min_bias_sat, min_command_sat,
+                                  null_space_abag_parameters,
+                                  compensation_parameters);
+    }
+    else if (desired_task_model == task_model::moveTo_follow_path)
+    {
+        controller.set_parameters(time_horizon_sec, abag_error_type, 
+                                  max_command, error_alpha_3,
+                                  bias_threshold_3, bias_step_3, gain_threshold_3,
+                                  gain_step_3, min_bias_sat, min_command_sat,
                                   null_space_abag_parameters,
                                   compensation_parameters);
     }
