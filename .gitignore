@@ -4,6 +4,8 @@ Controller/build_youbot/*
 Controller/build_lwr/*
 Controller/release_build_lwr/*
 Controller/release_build_youbot/*
+Controller/visualization/archive/*
+
 lwr_rtt_ws/build/*
 lwr_rtt_ws/devel/*
 lwr_rtt_ws/logs/*
@@ -14,27 +16,3 @@ lwr_rtt_ws/.catkin_tools/*
 ABAG_testing/\.ipynb_checkpoints/
 
 \.vscode/
-
-Controller/visualization/compensation_data.txt
-
-Controller/visualization/control_error.txt
-
-Controller/visualization/current_twist.txt
-
-Controller/visualization/joint_torques.pdf
-
-Controller/visualization/joint_torques.txt
-
-Controller/visualization/measured_pose.txt
-
-Controller/visualization/null_space_error.txt
-
-Controller/visualization/predicted_pose.txt
-
-Controller/visualization/x_linear_control.pdf
-
-Controller/visualization/x_linear_velocity_control.pdf
-
-Controller/visualization/y_linear_control.pdf
-
-Controller/visualization/z_linear_control.pdf
