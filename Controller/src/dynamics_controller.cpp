@@ -1610,13 +1610,6 @@ void dynamics_controller::compute_cart_control_commands()
         // Transform the Cartesian force from arm's plane-frame to base frame
         cart_force_command_[3].force = moveConstrained_follow_path_task_.null_space_plane_orientation * cart_force_command_[3].force;
     }
-
-#ifndef NDEBUG
-    // std::cout << "Ext Force:                 " << ext_wrench_ << std::endl;
-    // std::cout << "ABAG Commands:         "<< abag_command_.transpose() << std::endl;
-    // std::cout << "Virtual Force Command: " << cart_force_command_[END_EFF_] << std::endl;
-    // printf("\n");
-#endif
 }
 
 void dynamics_controller::compute_weight_compensation_control_commands()
@@ -1996,21 +1989,6 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
         printf("Warning: FK solver returned an error! %d \n", fk_solver_result);
         return -1;
     }
-
-    // Print Current robot state in Debug mode
-    #ifndef NDEBUG
-        // std::cout << "\nCurrent Joint state:          " << std::endl;
-        // std::cout << "Joint angle:    " << robot_state_.q << std::endl;
-        // std::cout << "Joint velocity: " << robot_state_.qd << std::endl;
-        
-        // std::cout << "\nCurrent Cartesian state:                 " << std::endl;
-        // std::cout << "End-effector Position:   " 
-        //           << robot_state_.frame_pose[END_EFF_].p  << std::endl;
-        // std::cout << "End-effector Orientation:   \n" 
-        //           << robot_state_.frame_pose[END_EFF_].M  << std::endl;
-        // std::cout << "End-effector Velocity:                \n" 
-        //           << robot_state_.frame_velocity[END_EFF_] << std::endl;
-    #endif 
 
     compute_control_error();
 
