@@ -12,7 +12,7 @@ desired_dim = np.int(sys.argv[1])
 print("Selected dimension: ", desired_dim)
 variable_num = 7
 
-filename = "../control_error.txt"
+filename = "../archive/control_error.txt"
 
 def restart_program(): #restart application
     python = sys.executable
@@ -154,16 +154,5 @@ plt.grid(True)
 
 plt.draw()
 plt.pause(0.001)
-# if(desired_dim is 0):   plt.savefig('../x_linear_control.pdf')
-# elif(desired_dim is 1): plt.savefig('../y_linear_control.pdf')
-# elif(desired_dim is 2): plt.savefig('../z_linear_control.pdf')
-# elif(desired_dim is 3): plt.savefig('../x_angular_control.pdf')
-# elif(desired_dim is 4): plt.savefig('../y_angular_control.pdf')
-# elif(desired_dim is 5): plt.savefig('../z_angular_control.pdf')
-# elif(desired_dim is 6): plt.savefig('../x_linear_velocity_control.pdf')
-# elif(desired_dim is 7): plt.savefig('../z_angular_velocity_control.pdf')
-# elif(desired_dim is 8): plt.savefig('../z_linear_force_control.pdf')
-# elif(desired_dim is 9): plt.savefig('../x_angular_force_control.pdf')
-# elif(desired_dim is 10): plt.savefig('../y_angular_force_control.pdf')
 
 notifier.loop()

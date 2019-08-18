@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import pyinotify
 
 variable_num = 7
-filename = "../prediction_effects.txt"
+filename = "../archive/prediction_effects.txt"
 
 def restart_program(): #restart application
     python = sys.executable
@@ -96,6 +96,6 @@ plt.grid(True)
 
 plt.draw()
 plt.pause(0.001)
-plt.savefig('../prediction_effects.pdf')
+plt.savefig('../archive/prediction_effects.pdf')
 
 notifier.loop()

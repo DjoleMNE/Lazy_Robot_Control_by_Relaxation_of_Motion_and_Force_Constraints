@@ -20,9 +20,9 @@ label_size = 8
 plt.rcParams['xtick.labelsize'] = label_size
 
 # Read Pose DATA
-measured_pose_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/measured_pose.txt"
-predicted_pose_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/predicted_pose.txt"
-twist_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/current_twist.txt"
+measured_pose_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/measured_pose.txt"
+predicted_pose_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/predicted_pose.txt"
+twist_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/current_twist.txt"
 
 def restart_program(): #restart application
     python = sys.executable

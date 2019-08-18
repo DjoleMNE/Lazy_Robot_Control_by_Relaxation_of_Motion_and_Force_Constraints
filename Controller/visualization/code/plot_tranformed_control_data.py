@@ -11,7 +11,7 @@ desired_dim = np.int(sys.argv[1])
 print("Selected dimension: ", desired_dim)
 variable_num = 6
 
-filename = "../transformed_error.txt"
+filename = "../archive/transformed_error.txt"
 
 def restart_program(): #restart application
     python = sys.executable
@@ -127,6 +127,6 @@ plt.grid(True)
 
 plt.draw()
 plt.pause(0.001)
-if(desired_dim is 0):   plt.savefig('../linear_tranformed_control.pdf')
-elif(desired_dim is 3): plt.savefig('../angular_tranformed_control.pdf')
+if(desired_dim is 0):   plt.savefig('../archive/linear_tranformed_control.pdf')
+elif(desired_dim is 3): plt.savefig('../archive/angular_tranformed_control.pdf')
 notifier.loop()

@@ -7,7 +7,7 @@ from sympy import *
 import matplotlib.pyplot as plt
 import pyinotify
 
-filename = "../ext_force_data.txt"
+filename = "../archive/ext_force_data.txt"
 
 def restart_program(): #restart application
     python = sys.executable
@@ -114,6 +114,6 @@ plt.grid(True)
 
 plt.draw()
 plt.pause(0.001)
-plt.savefig('../ext_force_data.pdf')
+plt.savefig('../archive/ext_force_data.pdf')
 
 notifier.loop()

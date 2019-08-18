@@ -13,7 +13,7 @@ desired_dim = np.int(sys.argv[1])
 print("Selected dimension: ", desired_dim)
 variable_num = 7
 
-filename = "../compensation_data.txt"
+filename = "../archive/compensation_data.txt"
 
 def restart_program(): #restart application
     python = sys.executable
@@ -141,16 +141,16 @@ plt.ylim(-0.00005, 0.00005)
 
 plt.draw()
 plt.pause(0.001)
-# if(desired_dim is 0):   plt.savefig('../x_linear_control.pdf')
-# elif(desired_dim is 1): plt.savefig('../y_linear_control.pdf')
-# elif(desired_dim is 2): plt.savefig('../z_linear_control.pdf')
-# elif(desired_dim is 3): plt.savefig('../x_angular_control.pdf')
-# elif(desired_dim is 4): plt.savefig('../y_angular_control.pdf')
-# elif(desired_dim is 5): plt.savefig('../z_angular_control.pdf')
-# elif(desired_dim is 6): plt.savefig('../x_linear_velocity_control.pdf')
-# elif(desired_dim is 7): plt.savefig('../z_angular_velocity_control.pdf')
-# elif(desired_dim is 8): plt.savefig('../z_linear_force_control.pdf')
-# elif(desired_dim is 9): plt.savefig('../x_angular_force_control.pdf')
-# elif(desired_dim is 10): plt.savefig('../y_angular_force_control.pdf')
+# if(desired_dim is 0):   plt.savefig('../archive/x_linear_control.pdf')
+# elif(desired_dim is 1): plt.savefig('../archive/y_linear_control.pdf')
+# elif(desired_dim is 2): plt.savefig('../archive/z_linear_control.pdf')
+# elif(desired_dim is 3): plt.savefig('../archive/x_angular_control.pdf')
+# elif(desired_dim is 4): plt.savefig('../archive/y_angular_control.pdf')
+# elif(desired_dim is 5): plt.savefig('../archive/z_angular_control.pdf')
+# elif(desired_dim is 6): plt.savefig('../archive/x_linear_velocity_control.pdf')
+# elif(desired_dim is 7): plt.savefig('../archive/z_angular_velocity_control.pdf')
+# elif(desired_dim is 8): plt.savefig('../archive/z_linear_force_control.pdf')
+# elif(desired_dim is 9): plt.savefig('../archive/x_angular_force_control.pdf')
+# elif(desired_dim is 10): plt.savefig('../archive/y_angular_force_control.pdf')
 
 notifier.loop()

@@ -10,7 +10,7 @@ import pyinotify
 joint_num = np.int(sys.argv[1])
 
 variable_num = joint_num
-filename = "../joint_torques.txt"
+filename = "../archive/joint_torques.txt"
 
 def restart_program(): #restart application
     python = sys.executable
@@ -150,6 +150,6 @@ if (joint_num > 5):
 
 plt.draw()
 plt.pause(0.001)
-plt.savefig('../joint_torques.pdf')
+plt.savefig('../archive/joint_torques.pdf')
 
 notifier.loop()

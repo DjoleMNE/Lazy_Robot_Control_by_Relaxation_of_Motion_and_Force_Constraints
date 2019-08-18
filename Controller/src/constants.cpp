@@ -192,15 +192,15 @@ namespace dynamics_parameter
     const Eigen::VectorXd MAX_CART_ACC = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                     << 100.0, 100.0, 200.0, 2.0, 2.0, 2.0).finished();
     const Eigen::IOFormat WRITE_FORMAT(6, Eigen::DontAlignCols, " ", "", "", "\n");
-    const std::string LOG_FILE_CART_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/control_error.txt");
-    const std::string LOG_FILE_JOINT_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/joint_torques.txt");
-    const std::string LOG_FILE_PREDICTIONS_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/prediction_effects.txt");
-    const std::string LOG_FILE_NULL_SPACE_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/null_space_error.txt");
+    const std::string LOG_FILE_CART_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/control_error.txt");
+    const std::string LOG_FILE_JOINT_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/joint_torques.txt");
+    const std::string LOG_FILE_PREDICTIONS_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/prediction_effects.txt");
+    const std::string LOG_FILE_NULL_SPACE_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/null_space_error.txt");
 }
 
 namespace prediction_parameter
 {
-		const std::string CURRENT_POSE_DATA_PATH = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/measured_pose.txt";
-		const std::string PREDICTED_POSE_DATA_PATH = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/predicted_pose.txt";
-		const std::string TWIST_DATA_PATH = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/current_twist.txt";
+		const std::string CURRENT_POSE_DATA_PATH = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/measured_pose.txt";
+		const std::string PREDICTED_POSE_DATA_PATH = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/predicted_pose.txt";
+		const std::string TWIST_DATA_PATH = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/current_twist.txt";
 }

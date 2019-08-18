@@ -10,7 +10,7 @@ import pyinotify
 # show_tube = np.int(sys.argv[1])
 variable_num = 7
 
-filename = "../null_space_error.txt"
+filename = "../archive/null_space_error.txt"
 
 def restart_program(): #restart application
     python = sys.executable
@@ -127,6 +127,6 @@ plt.grid(True)
 
 plt.draw()
 plt.pause(0.001)
-plt.savefig('../null_space_control.pdf')
+plt.savefig('../archive/null_space_control.pdf')
 
 notifier.loop()
