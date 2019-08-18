@@ -64,9 +64,9 @@ int Solver_RNE::CartToJnt(const JntArray &q, const JntArray &q_dot, const JntArr
         double q_, qdot_, qdotdot_;
         if (chain.getSegment(i).getJoint().getType() != Joint::None)
         {
-            q_=q(j);
-            qdot_=q_dot(j);
-            qdotdot_=q_dotdot(j);
+            q_ = q(j);
+            qdot_ = q_dot(j);
+            qdotdot_ = q_dotdot(j);
             j++;
         }
         else q_= qdot_= qdotdot_ = 0.0;
@@ -83,13 +83,13 @@ int Solver_RNE::CartToJnt(const JntArray &q, const JntArray &q_dot, const JntArr
         //calculate velocity and acceleration of the segment (in segment coordinates)
         if (i == 0)
         {
-            v[i]=vj;
-            a[i]=X[i].Inverse(ag)+S[i]*qdotdot_+v[i]*vj;
+            v[i] = vj;
+            a[i] = X[i].Inverse(ag) + S[i] * qdotdot_ + v[i] * vj;
         } 
         else
         {
-            v[i]=X[i].Inverse(v[i-1])+vj;
-            a[i]=X[i].Inverse(a[i-1])+S[i]*qdotdot_+v[i]*vj;
+            v[i] = X[i].Inverse(v[i-1]) + vj;
+            a[i] = X[i].Inverse(a[i-1]) + S[i] * qdotdot_ + v[i] * vj;
         }
 
         //Calculate the force for the joint
