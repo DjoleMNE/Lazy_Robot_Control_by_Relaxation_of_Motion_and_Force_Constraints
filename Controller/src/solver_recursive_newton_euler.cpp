@@ -22,19 +22,23 @@
 #include "solver_recursive_newton_euler.hpp"
 #include "kdl/frames_io.hpp"
 
-namespace KDL{
+namespace KDL
+{
     
 Solver_RNE::Solver_RNE(const Chain& chain, const Vector grav, 
-                        const std::vector<double> joint_inertia,
-                        const std::vector<double> joint_torque_limits):
-    chain(chain),nj(chain.getNrOfJoints()),ns(chain.getNrOfSegments()),
-    X(ns),S(ns),v(ns),a(ns),f(ns),
+                       const std::vector<double> joint_inertia,
+                       const std::vector<double> joint_torque_limits):
+    chain(chain), nj(chain.getNrOfJoints()), ns(chain.getNrOfSegments()),
+    X(ns), S(ns), v(ns), a(ns), f(ns), 
     joint_inertia_(joint_inertia), joint_torque_limits_(joint_torque_limits)
 {
-    ag=-Twist(grav,Vector::Zero());
+    ag = -Twist(grav, Vector::Zero());
+    assert(joint_inertia.size() == nj);
+    assert(joint_torque_limits.size() == nj);
 }
 
-void Solver_RNE::updateInternalDataStructures() {
+void Solver_RNE::updateInternalDataStructures()
+{
     nj = chain.getNrOfJoints();
     ns = chain.getNrOfSegments();
     X.resize(ns);
@@ -44,60 +48,67 @@ void Solver_RNE::updateInternalDataStructures() {
     f.resize(ns);
 }
 
-int Solver_RNE::CartToJnt(const JntArray &q, const JntArray &q_dot, const JntArray &q_dotdot, const Wrenches& f_ext,JntArray &torques)
+int Solver_RNE::CartToJnt(const JntArray &q, const JntArray &q_dot, const JntArray &q_dotdot, const Wrenches& f_ext, JntArray &torques)
 {
-    if(nj != chain.getNrOfJoints() || ns != chain.getNrOfSegments())
-        return (error = -3);
+    if (nj != chain.getNrOfJoints() || ns != chain.getNrOfSegments()) return (error = -3);
 
     //Check sizes when in debug mode
-    if(q.rows()!=nj || q_dot.rows()!=nj || q_dotdot.rows()!=nj || torques.rows()!=nj || f_ext.size()!=ns)
-        return (error = -4);
-    unsigned int j=0;
+    if (q.rows()!=nj || q_dot.rows()!=nj || q_dotdot.rows()!=nj || torques.rows()!=nj || f_ext.size()!=ns) return (error = -4);
+    unsigned int j = 0;
 
     //Sweep from root to leaf
-    for(unsigned int i=0;i<ns;i++){
-        double q_,qdot_,qdotdot_;
-        if(chain.getSegment(i).getJoint().getType()!=Joint::None){
+    for (unsigned int i = 0; i < ns; i++)
+    {
+        double q_, qdot_, qdotdot_;
+        if (chain.getSegment(i).getJoint().getType() != Joint::None)
+        {
             q_=q(j);
             qdot_=q_dot(j);
             qdotdot_=q_dotdot(j);
             j++;
-        }else
-            q_=qdot_=qdotdot_=0.0;
-
+        }
+        else q_= qdot_= qdotdot_ = 0.0;
+        
         //Calculate segment properties: X,S,vj,cj
-        X[i]=chain.getSegment(i).pose(q_);//Remark this is the inverse of the 
+        X[i] = chain.getSegment(i).pose(q_);//Remark this is the inverse of the
                                             //frame for transformations from
                                             //the parent to the current coord frame
         //Transform velocity and unit velocity to segment frame
-        Twist vj=X[i].M.Inverse(chain.getSegment(i).twist(q_,qdot_));
-        S[i]=X[i].M.Inverse(chain.getSegment(i).twist(q_,1.0));
+        Twist vj = X[i].M.Inverse(chain.getSegment(i).twist(q_, qdot_));
+        S[i] = X[i].M.Inverse(chain.getSegment(i).twist(q_, 1.0));
+
         //We can take cj=0, see remark section 3.5, page 55 since the unit velocity vector S of our joints is always time constant
         //calculate velocity and acceleration of the segment (in segment coordinates)
-        if(i==0){
+        if (i == 0)
+        {
             v[i]=vj;
             a[i]=X[i].Inverse(ag)+S[i]*qdotdot_+v[i]*vj;
-        }else{
+        } 
+        else
+        {
             v[i]=X[i].Inverse(v[i-1])+vj;
             a[i]=X[i].Inverse(a[i-1])+S[i]*qdotdot_+v[i]*vj;
         }
+
         //Calculate the force for the joint
         //Collect RigidBodyInertia and external forces
-        RigidBodyInertia Ii=chain.getSegment(i).getInertia();
-        f[i]=Ii*a[i]+v[i]*(Ii*v[i])-f_ext[i];
-    //std::cout << "a[i]=" << a[i] << "\n f[i]=" << f[i] << "\n S[i]" << S[i] << std::endl;
+        RigidBodyInertia Ii = chain.getSegment(i).getInertia();
+        f[i] = Ii * a[i] + v[i] * (Ii * v[i]) - f_ext[i];
     }
+
     //Sweep from leaf to root
-    j=nj-1;
-    for(int i=ns-1;i>=0;i--){
-        if(chain.getSegment(i).getJoint().getType()!=Joint::None){
-            torques(j)=dot(S[i],f[i]);
-            torques(j)+= joint_inertia_[j] * q_dotdot(j);  // add torque from joint inertia
+    j = nj-1;
+    for (int i = ns - 1; i >= 0; i--)
+    {
+        if (chain.getSegment(i).getJoint().getType()!=Joint::None)
+        {
+            torques(j)  = dot(S[i], f[i]);
+            torques(j) += joint_inertia_[j] * q_dotdot(j);  // add torque from joint inertia
             --j;
         }
-        if(i!=0)
-            f[i-1]=f[i-1]+X[i]*f[i];
+        if (i != 0) f[i-1] = f[i-1] + X[i] * f[i];
     }
+
     return (error = E_NOERROR);
 }
 }//namespace
