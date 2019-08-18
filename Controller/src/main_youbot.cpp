@@ -81,8 +81,8 @@ int desired_control_mode             = control_mode::VELOCITY;
 double tube_speed                    = 0.01;
 const double task_time_limit_sec     = 600.0;
 const double time_horizon_sec        = 2.0;
-const bool compansate_gravity        = false;
 const bool log_data                  = true;
+bool compensate_gravity              = false;
 
 std::vector<bool> control_dims      = {true, true, true, // Linear
                                        false, false, false}; // Angular
@@ -425,9 +425,10 @@ int main(int argc, char **argv)
     desired_control_mode = control_mode::TORQUE;
     desired_task_model   = task_model::moveGuarded;
     tube_speed           = 0.1;
+    compensate_gravity   = true;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
-    robot_driver.initialize(robot_model_id, environment, compansate_gravity);
+    robot_driver.initialize(robot_model_id, environment, compensate_gravity);
     assert(("Robot is not initialized", robot_driver.is_initialized()));
     
     int number_of_segments = robot_driver.get_robot_model().getNrOfSegments();
@@ -442,29 +443,18 @@ int main(int argc, char **argv)
     else return 0;
     // rotate_joint(robot_driver, 5, 0.1);
 
-    state_specification motion(number_of_joints, number_of_segments,
-                               number_of_segments + 1, NUMBER_OF_CONSTRAINTS);
-    robot_driver.get_joint_positions(motion.q);
-    robot_driver.get_joint_velocities(motion.qd);
-
-    KDL::Solver_RNE rne_solver(robot_driver.get_robot_model(), 
-                               KDL::Vector(0.0, 0.0, -9.81289),
-                               robot_driver.get_joint_inertia(), 
-                               robot_driver.get_joint_torque_limits(),
-                               true);
-    KDL::JntArray zero_joint_acc(JOINTS);
-    for (int i = 0; i < JOINTS; i++) zero_joint_acc(i) = zero_joint_acc(i) + 200.0;
-    
-    rne_solver.CartToJnt(motion.q, motion.qd, zero_joint_acc, motion.external_force, motion.control_torque);
-    std::cout << motion.control_torque << std::endl;
+    // state_specification motion(number_of_joints, number_of_segments,
+    //                            number_of_segments + 1, NUMBER_OF_CONSTRAINTS);
+    // robot_driver.get_joint_positions(motion.q);
+    // robot_driver.get_joint_velocities(motion.qd);
 
     // printf("Stops here\n");
     // robot_driver.stop_robot_motion();
-    return 0;
+    // return 0;
 
     //loop rate in Hz
     int rate_hz = 650;
-    dynamics_controller controller(&robot_driver, rate_hz);
+    dynamics_controller controller(&robot_driver, rate_hz, compensate_gravity);
 
     define_task(&controller);
     if (desired_task_model == task_model::full_pose) 

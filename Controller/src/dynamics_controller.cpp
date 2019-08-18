@@ -48,9 +48,9 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     fsm_result_(control_status::NOMINAL), fsm_force_task_result_(control_status::APPROACH),
     previous_control_status_(fsm_result_), tube_section_count_(0), 
     transform_drivers_(false), transform_force_drivers_(false),
-    apply_feedforward_force_(false),
-    compute_null_space_command_(false),
+    apply_feedforward_force_(false), compute_null_space_command_(false),
     write_contact_time_to_file_(false), compensate_unknown_weight_(false),
+    compensate_gravity_(compensate_gravity),
     JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
     current_error_twist_(KDL::Twist::Zero()),
     abag_error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
@@ -65,10 +65,15 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     min_sat_limits_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     filtered_bias_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     cart_force_command_(NUM_OF_SEGMENTS_, KDL::Wrench::Zero()), 
+    zero_wrenches_(NUM_OF_SEGMENTS_, KDL::Wrench::Zero()),
     ext_wrench_(KDL::Wrench::Zero()), compensated_weight_(KDL::Wrench::Zero()),
+    zero_joint_array_(NUM_OF_JOINTS_), gravity_torque_(NUM_OF_JOINTS_),
     hd_solver_(robot_chain_, robot_driver->get_joint_inertia(), 
-               robot_driver->get_joint_torque_limits(), !compensate_gravity,
-               robot_driver->get_root_acceleration(), NUM_OF_CONSTRAINTS_),
+               robot_driver->get_joint_torque_limits(), !compensate_gravity_,
+               compensate_gravity_? KDL::Twist::Zero() : robot_driver->get_root_acceleration(), 
+               NUM_OF_CONSTRAINTS_),
+    id_solver_(robot_chain_, KDL::Vector(0.0, 0.0, -9.81289), robot_driver->get_joint_inertia(), 
+               robot_driver->get_joint_torque_limits(), false),
     fk_vereshchagin_(robot_chain_),
     safety_control_(robot_driver, true), 
     fsm_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
@@ -350,8 +355,8 @@ void dynamics_controller::write_to_file()
     log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
 
     // Write null-space control state
-    log_file_null_space_ << RAD_TO_DEG(null_space_angle_)         << " " << 0.0 << " "; // Measured and desired state
-    log_file_null_space_ << RAD_TO_DEG(null_space_abag_error_(0))         << " " << abag_null_space_.get_error()(0) << " "; // Raw and filtered error
+    log_file_null_space_ << RAD_TO_DEG(null_space_angle_) << " " << 0.0 << " "; // Measured and desired state
+    log_file_null_space_ << RAD_TO_DEG(null_space_abag_error_(0)) << " " << abag_null_space_.get_error()(0) << " "; // Raw and filtered error
     log_file_null_space_ << abag_null_space_.get_bias()(0)    << " " << abag_null_space_.get_gain()(0) << " ";
     log_file_null_space_ << abag_null_space_.get_command()(0) << " ";
     if (write_contact_time_to_file_) 
@@ -1703,6 +1708,23 @@ int dynamics_controller::evaluate_dynamics()
     return hd_solver_result;
 }
 
+int dynamics_controller::compute_gravity_compensation_control_commands()
+{
+    int id_solver_result = id_solver_.CartToJnt(robot_state_.q, zero_joint_array_, zero_joint_array_, 
+                                                zero_wrenches_, gravity_torque_);
+    if (id_solver_result != 0) return id_solver_result;
+    
+    robot_state_.control_torque.data = robot_state_.control_torque.data + gravity_torque_.data;
+    
+    for (int j = 0; j < NUM_OF_JOINTS_; j++)
+    {
+        if      (robot_state_.control_torque(j) >=  JOINT_TORQUE_LIMITS_[j]) robot_state_.control_torque(j) =  JOINT_TORQUE_LIMITS_[j] - 0.001;
+        else if (robot_state_.control_torque(j) <= -JOINT_TORQUE_LIMITS_[j]) robot_state_.control_torque(j) = -JOINT_TORQUE_LIMITS_[j] + 0.001;
+    }
+
+    return id_solver_result;
+}
+
 void dynamics_controller::set_parameters(const double horizon_amplitude,
                                          const int abag_error_type,
                                          const Eigen::VectorXd &max_command,
@@ -1900,17 +1922,28 @@ int dynamics_controller::control()
         compute_cart_control_commands();
         if (compensate_unknown_weight_) compute_weight_compensation_control_commands();
 
-        if (store_control_data_) write_to_file();        
-
-        // Calculate robot dynamics using the Vereshchagin HD solver
+        // Evaluate robot dynamics using the Vereshchagin HD solver
         ctrl_status = evaluate_dynamics();
         if (ctrl_status != 0)
         {
             deinitialize();
-            printf("WARNING: Dynamics Solver returned error: %d. Stopping the robot!", ctrl_status);
+            printf("WARNING: Hybrid Dynamics Solver returned error: %d. Stopping the robot!", ctrl_status);
             return -1;
         }
 
+        // Compute necessary torques for compensating gravity, using the RNE ID solver
+        if (compensate_gravity_) 
+        {
+            ctrl_status = compute_gravity_compensation_control_commands();
+            if (ctrl_status != 0)
+            {
+                deinitialize();
+                printf("WARNING: Inverse Dynamics Solver returned error: %d. Stopping the robot!", ctrl_status);
+                return -1;
+            }
+        }
+
+        if (store_control_data_) write_to_file();
         // return 0;
 
         // Apply joint commands using safe control interface.
@@ -1986,15 +2019,26 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
     compute_cart_control_commands();
     if (compensate_unknown_weight_) compute_weight_compensation_control_commands();
 
-    if (store_control_data_) write_to_file();   
-
-    // Calculate robot dynamics using the Vereshchagin HD solver
+    // Evaluate robot dynamics using the Vereshchagin HD solver
     if (evaluate_dynamics() != 0)
     {
         deinitialize();
-        printf("WARNING: Dynamics Solver returned error. Stopping the robot!\n");
+        printf("WARNING: Hybrid Dynamics Solver returned error. Stopping the robot!\n");
         return -1;
     }
+
+    // Compute necessary torques for compensating gravity, using the RNE ID solver
+    if (compensate_gravity_) 
+    {
+        if (compute_gravity_compensation_control_commands() != 0)
+        {
+            deinitialize();
+            printf("WARNING: Inverse Dynamics Solver returned error. Stopping the robot!\n");
+            return -1;
+        }
+    }
+
+    if (store_control_data_) write_to_file();
 
     tau_output = robot_state_.control_torque.data;
     return 0;
