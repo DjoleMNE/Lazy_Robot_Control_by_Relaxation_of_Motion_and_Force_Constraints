@@ -43,11 +43,12 @@ using namespace Eigen;
 
 Solver_Vereshchagin::Solver_Vereshchagin(const Chain& chain_,
                                          const std::vector<double> joint_inertia_,
-                                         const std::vector<double> joint_torque_limits,  
-                                         const Twist root_acc, 
+                                         const std::vector<double> joint_torque_limits,
+                                         const bool saturate_torques,
+                                         const Twist root_acc,
                                          const unsigned int _nc) :
     chain(chain_), nj(chain.getNrOfJoints()), ns(chain.getNrOfSegments()), nc(_nc),
-    results(ns + 1, segment_info(nc))
+    saturate_torques_(saturate_torques), results(ns + 1, segment_info(nc))
     //nc -> number of constraints
 {
     // Set vector of joint (rotor + gear) inertia: "d" in the algorithm
@@ -516,8 +517,11 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
         // controlTorque(j) = ext_torque(j);
 
         // Torque saturation
-        if      (controlTorque(j) >  joint_torque_limits_(j)) controlTorque(j) =  joint_torque_limits_(j) - 0.001;
-        else if (controlTorque(j) < -joint_torque_limits_(j)) controlTorque(j) = -joint_torque_limits_(j) + 0.001;
+        if (saturate_torques_)
+        {
+            if      (controlTorque(j) >=  joint_torque_limits_(j)) controlTorque(j) =  joint_torque_limits_(j) - 0.001;
+            else if (controlTorque(j) <= -joint_torque_limits_(j)) controlTorque(j) = -joint_torque_limits_(j) + 0.001;
+        }
 
         s.constAccComp = constraint_torque / s.D;
         s.nullspaceAccComp = s.u / s.D;

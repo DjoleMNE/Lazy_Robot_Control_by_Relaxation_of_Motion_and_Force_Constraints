@@ -139,7 +139,7 @@ bool LwrRttControl::configureHook()
                                                                  KDL::Vector(0.0, 0.0, -9.81289));
     this->fk_solver_      = std::make_shared<KDL::ChainFkSolverPos_recursive>(gazebo_arm_.Chain());
     gazebo_arm_eef_       = gazebo_arm_.Chain().getNrOfSegments() - 1;
-    this->controller_     = std::make_shared<dynamics_controller>(&robot_driver_, RATE_HZ_);
+    this->controller_     = std::make_shared<dynamics_controller>(&robot_driver_, RATE_HZ_, false);
 
     //Create End_effector Cartesian Acceleration task 
     controller_->define_ee_acc_constraint(std::vector<bool>{false, false, false, // Linear

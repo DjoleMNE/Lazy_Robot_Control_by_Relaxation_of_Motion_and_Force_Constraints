@@ -28,7 +28,8 @@ SOFTWARE.
 const double MIN_NORM = 1e-3;
 
 dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
-                                         const int rate_hz):
+                                         const int rate_hz,
+                                         const bool compensate_gravity):
     RATE_HZ_(rate_hz),
     // Time period defined in microseconds: 1s = 1 000 000us
     DT_MICRO_(SECOND / RATE_HZ_),  DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
@@ -66,7 +67,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     cart_force_command_(NUM_OF_SEGMENTS_, KDL::Wrench::Zero()), 
     ext_wrench_(KDL::Wrench::Zero()), compensated_weight_(KDL::Wrench::Zero()),
     hd_solver_(robot_chain_, robot_driver->get_joint_inertia(), 
-               robot_driver->get_joint_torque_limits(),
+               robot_driver->get_joint_torque_limits(), !compensate_gravity,
                robot_driver->get_root_acceleration(), NUM_OF_CONSTRAINTS_),
     fk_vereshchagin_(robot_chain_),
     safety_control_(robot_driver, true), 

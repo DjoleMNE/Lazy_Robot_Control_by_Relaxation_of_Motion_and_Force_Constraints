@@ -56,7 +56,8 @@ public:
      */
     Solver_Vereshchagin(const Chain& chain_, 
                         const std::vector<double> joint_inertia_,
-                        const std::vector<double> joint_torque_limits,  
+                        const std::vector<double> joint_torque_limits,
+                        const bool saturate_torques,  
                         const Twist root_acc, const unsigned int _nc);
 
     ~Solver_Vereshchagin()
@@ -124,6 +125,7 @@ private:
     const unsigned int nj;
     const unsigned int ns;
     const unsigned int nc;
+    const bool saturate_torques_;
     Twist acc_root;
     Jacobian alfa_N;
     Jacobian alfa_N2;
