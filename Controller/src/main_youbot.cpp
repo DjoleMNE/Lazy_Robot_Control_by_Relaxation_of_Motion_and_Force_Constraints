@@ -178,7 +178,7 @@ const Eigen::VectorXd compensation_parameters = (Eigen::VectorXd(7) \
                                                    0.00016, 0.0025, 0.00002,
                                                    60).finished();
 
-void define_task(dynamics_controller *dyn_controller)
+int define_task(dynamics_controller *dyn_controller)
 {
     std::vector<double> desired_ee_pose(12, 0.0);
 
@@ -283,8 +283,11 @@ void define_task(dynamics_controller *dyn_controller)
 
         default:
             assert(("Unsupported task model", false));
+            return -1;
             break;
     }
+
+    return 0;
 }
 
 // Go to Candle 1 configuration  
@@ -456,7 +459,9 @@ int main(int argc, char **argv)
     int rate_hz = 650;
     dynamics_controller controller(&robot_driver, rate_hz, compensate_gravity);
 
-    define_task(&controller);
+    int initial_result = define_task(&controller);
+    if (initial_result != 0) return -1;
+
     if (desired_task_model == task_model::full_pose) 
     {
         controller.set_parameters(time_horizon_sec, abag_error_type, 
@@ -497,10 +502,10 @@ int main(int argc, char **argv)
         }
     }
 
-    int initial_result = controller.initialize(desired_control_mode, 
-                                               desired_dynamics_interface,
-                                               log_data,
-                                               motion_profile_id);
+    initial_result = controller.initialize(desired_control_mode, 
+                                           desired_dynamics_interface,
+                                           log_data,
+                                           motion_profile_id);
     if (initial_result != 0) return -1;
     controller.control();
     return 0;
