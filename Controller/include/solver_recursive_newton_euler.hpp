@@ -48,7 +48,8 @@ namespace KDL{
          */
         Solver_RNE(const Chain& chain, const Vector grav, 
                    const std::vector<double> joint_inertia,
-                   const std::vector<double> joint_torque_limits);
+                   const std::vector<double> joint_torque_limits,
+                   const bool saturate_torques);
         ~Solver_RNE(){};
         
         /**
@@ -68,6 +69,7 @@ namespace KDL{
 
     private:
         const Chain& chain;
+        const bool saturate_torques_;
         unsigned int nj;
         unsigned int ns;
         std::vector<Frame> X;

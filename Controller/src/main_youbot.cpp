@@ -450,8 +450,11 @@ int main(int argc, char **argv)
     KDL::Solver_RNE rne_solver(robot_driver.get_robot_model(), 
                                KDL::Vector(0.0, 0.0, -9.81289),
                                robot_driver.get_joint_inertia(), 
-                               robot_driver.get_joint_torque_limits());
+                               robot_driver.get_joint_torque_limits(),
+                               true);
     KDL::JntArray zero_joint_acc(JOINTS);
+    for (int i = 0; i < JOINTS; i++) zero_joint_acc(i) = zero_joint_acc(i) + 200.0;
+    
     rne_solver.CartToJnt(motion.q, motion.qd, zero_joint_acc, motion.external_force, motion.control_torque);
     std::cout << motion.control_torque << std::endl;
 

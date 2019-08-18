@@ -27,8 +27,10 @@ namespace KDL
     
 Solver_RNE::Solver_RNE(const Chain& chain, const Vector grav, 
                        const std::vector<double> joint_inertia,
-                       const std::vector<double> joint_torque_limits):
-    chain(chain), nj(chain.getNrOfJoints()), ns(chain.getNrOfSegments()),
+                       const std::vector<double> joint_torque_limits,
+                       const bool saturate_torques):
+    chain(chain), saturate_torques_(saturate_torques),
+    nj(chain.getNrOfJoints()), ns(chain.getNrOfSegments()),
     X(ns), S(ns), v(ns), a(ns), f(ns), 
     joint_inertia_(joint_inertia), joint_torque_limits_(joint_torque_limits)
 {
@@ -104,6 +106,13 @@ int Solver_RNE::CartToJnt(const JntArray &q, const JntArray &q_dot, const JntArr
         {
             torques(j)  = dot(S[i], f[i]);
             torques(j) += joint_inertia_[j] * q_dotdot(j);  // add torque from joint inertia
+
+            if (saturate_torques_)
+            {
+                if      (torques(j) >=  joint_torque_limits_[j]) torques(j) =  joint_torque_limits_[j] - 0.001;
+                else if (torques(j) <= -joint_torque_limits_[j]) torques(j) = -joint_torque_limits_[j] + 0.001;
+            }
+
             --j;
         }
         if (i != 0) f[i-1] = f[i-1] + X[i] * f[i];
