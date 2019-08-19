@@ -90,9 +90,11 @@ std::vector<bool> control_dims      = {true, true, true, // Linear
 const std::vector<double> path_parameters = {0.5, 4.5, 0.05, 0.008, 70};
 
 std::vector<double> tube_start_position   = {0.262105, 0.004157, 0.300};
-const std::vector<double> tube_tolerances = {0.001, 0.01, 0.01, 
+std::vector<double> tube_tolerances       = {0.001, 0.01, 0.01, 
                                              0.17, 0.17, 0.17, 
                                              0.0, 0.1};
+std::vector< std::vector<double> > tube_path_points(path_parameters[4], std::vector<double>(3, 0.0));
+std::vector< std::vector<double> > path_poses(path_parameters[4] - 1, std::vector<double>(12, 0.0));
 
 const Eigen::VectorXd max_command         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 10.0, 10.0, 10.0, 
@@ -222,7 +224,7 @@ int define_task(dynamics_controller *dyn_controller)
             break;
 
         case desired_pose::LOOK_AT_2:
-            tube_start_position = std::vector<double>{0.0195779, 0.366672, 0.240953};
+            tube_start_position = std::vector<double>{0.0192443, 0.366672, 0.240953};
             desired_ee_pose     = { 0.0192443, 0.185581, 0.240953, // Linear: Vector
                                     1.0, 0.0, 0.0, // Angular: Rotation matrix
                                     0.0, 1.0, 0.0,
@@ -439,13 +441,17 @@ int main(int argc, char **argv)
 
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                              false, false, false}; // Angular
-    environment          = youbot_environment::SIMULATION;
+    environment          = youbot_environment::REAL;
     robot_model_id       = youbot_model::URDF;
-    desired_pose_id      = desired_pose::NAVIGATION;
+    desired_pose_id      = desired_pose::LOOK_AT_2;
     desired_control_mode = control_mode::TORQUE;
-    desired_task_model   = task_model::moveGuarded;
-    tube_speed           = 0.1;
-    compensate_gravity   = true;
+    desired_task_model   = task_model::moveTo;
+    path_type            = path_types::STEP_PATH;
+    tube_speed           = 0.07;
+    compensate_gravity   = false;
+    tube_tolerances      = std::vector<double>{0.001, 0.01, 0.01, 
+                                               0.17, 0.17, 0.17, 
+                                               0.0, 0.1};
 
     // Extract robot model and if not simulation, establish connection with motor drivers
     robot_driver.initialize(robot_model_id, environment, compensate_gravity);
