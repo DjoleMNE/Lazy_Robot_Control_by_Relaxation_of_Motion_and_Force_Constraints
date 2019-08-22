@@ -216,8 +216,8 @@ int define_task(dynamics_controller *dyn_controller)
     switch (desired_pose_id)
     {
         case desired_pose::CANDLE:
-            tube_start_position = std::vector<double>{0.0329645, 0.374577, 0.0945052};
-            desired_ee_pose     = { 0.0324134, 0.253591, 0.504317, // Linear: Vector
+            tube_start_position = std::vector<double>{-0.0874542, 0.317419, 0.286294};
+            desired_ee_pose     = { -0.0874542, 0.317419, 0.286294, // Linear: Vector
                                     1.0, 0.0, 0.0, // Angular: Rotation matrix
                                     0.0, 1.0, 0.0,
                                     0.0, 0.0, 1.0};
@@ -381,7 +381,7 @@ void go_navigation_2(youbot_mediator &arm){
 // Go to Navigation 3 configuration  
 void go_navigation_3(youbot_mediator &arm){
     KDL::JntArray desired_config(JOINTS);
-    double navigation[] = {1.3796, 1.0, -1.53240, 2.85214, 2.93816};
+    double navigation[] = {1.0586, 1.55696, -1.10994, 0.959358, 3.65608};
     for (int i = 0; i < JOINTS; i++) 
         desired_config(i) = navigation[i];  
     arm.set_joint_positions(desired_config);
@@ -471,7 +471,7 @@ int main(int argc, char **argv)
     else if (desired_pose_id == desired_pose::LOOK_DOWN)  go_navigation_2(robot_driver);
     else if (desired_pose_id == desired_pose::CANDLE)     go_navigation_3(robot_driver);
     else return 0;
-    // rotate_joint(robot_driver, 5, 0.1);
+    // rotate_joint(robot_driver, 0, 0.1);
     // robot_driver.get_joint_positions(motion.q);
     // robot_driver.get_joint_velocities(motion.qd);
 
