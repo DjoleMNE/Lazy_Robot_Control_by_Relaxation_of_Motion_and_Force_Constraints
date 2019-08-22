@@ -241,7 +241,7 @@ int define_task(dynamics_controller *dyn_controller)
 
         case desired_pose::LOOK_DOWN:
             tube_start_position = std::vector<double>{0.262105, 0.004157, 0.308879};
-            desired_ee_pose     = { 0.262105,  0.004157,  0.11000, // Linear: Vector
+            desired_ee_pose     = { 0.262105, 0.004157, 0.11000, // Linear: Vector
                                     1.0, 0.0, 0.0, // Angular: Rotation matrix
                                     0.0, 1.0, 0.0,
                                     0.0, 0.0, 1.0};
@@ -250,10 +250,10 @@ int define_task(dynamics_controller *dyn_controller)
         default:
             // Navigation pose
             tube_start_position = std::vector<double>{0.264474, 0.00421041, 0.110878};
-            desired_ee_pose     = { 0.262104,  0.00415452, 0.308892, // Linear: Vector
-                                    0.338541,  0.137563,  0.930842, // Angular: Rotation Matrix
-                                    0.337720, -0.941106,  0.016253,
-                                    0.878257,  0.308861, -0.365061};
+            desired_ee_pose     = { 0.262104, 0.00415452, 0.308892, // Linear: Vector
+                                    1.0, 0.0, 0.0, // Angular: Rotation matrix
+                                    0.0, 1.0, 0.0,
+                                    0.0, 0.0, 1.0};
             break;
     }
 
@@ -431,7 +431,7 @@ void rotate_joint(youbot_mediator &arm, const int joint, const double rate){
         rotate_joint(i) = 0.0;
     rotate_joint(joint) = rate; 
     arm.set_joint_velocities(rotate_joint);
-    usleep(3000 * MILLISECOND);
+    usleep(5000 * MILLISECOND);
 }
 
 int main(int argc, char **argv)
@@ -461,21 +461,24 @@ int main(int argc, char **argv)
     int number_of_joints   = robot_driver.get_robot_model().getNrOfJoints();
     assert(JOINTS == number_of_segments);
 
+    state_specification motion(number_of_joints, number_of_segments,
+                               number_of_segments + 1, NUMBER_OF_CONSTRAINTS);
+
     stop_robot_motion(robot_driver);
     if      (desired_pose_id == desired_pose::LOOK_AT_2)  go_look_at_1(robot_driver);
     else if (desired_pose_id == desired_pose::LOOK_AT_1)  go_look_at_2(robot_driver);
     else if (desired_pose_id == desired_pose::NAVIGATION) go_look_down(robot_driver);
     else if (desired_pose_id == desired_pose::LOOK_DOWN)  go_navigation_2(robot_driver);
+    else if (desired_pose_id == desired_pose::CANDLE)     go_navigation_3(robot_driver);
     else return 0;
     // rotate_joint(robot_driver, 5, 0.1);
-
-    // state_specification motion(number_of_joints, number_of_segments,
-    //                            number_of_segments + 1, NUMBER_OF_CONSTRAINTS);
     // robot_driver.get_joint_positions(motion.q);
     // robot_driver.get_joint_velocities(motion.qd);
 
     // printf("Stops here\n");
     // robot_driver.stop_robot_motion();
+    // go_folded(robot_driver);
+    // rotate_joint(robot_driver, 4, 0.05);
     // return 0;
 
     //loop rate in Hz

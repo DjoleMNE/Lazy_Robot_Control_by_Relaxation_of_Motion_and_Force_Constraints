@@ -1028,9 +1028,7 @@ double dynamics_controller::kinetic_energy(const KDL::Twist &twist,
 void dynamics_controller::compute_moveConstrained_null_space_task_error()
 {
     // X-axis of the null-space plane
-    KDL::Vector plane_x(robot_state_.frame_pose[END_EFF_].p(0),
-                        robot_state_.frame_pose[END_EFF_].p(1), 
-                        0.0);
+    KDL::Vector plane_x(robot_state_.frame_pose[END_EFF_].p(0), robot_state_.frame_pose[END_EFF_].p(1), 0.0);
     double norm = plane_x.Normalize();
     
     if (norm < MIN_NORM)
