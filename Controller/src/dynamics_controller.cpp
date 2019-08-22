@@ -1411,7 +1411,7 @@ void dynamics_controller::compute_moveGuarded_task_error()
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
     // Check for tube on velocity
-    if ((desired_state_.frame_velocity[END_EFF_].vel(0) != 0.0) && \
+    if ((fsm_result_ == control_status::CRUISE_THROUGH_TUBE) && \
         (std::fabs(abag_error_vector_(0)) <= moveGuarded_task_.tube_tolerances[6])) abag_error_vector_(0) = 0.0;
 
     // Other parts of the ABAG error are position errors
