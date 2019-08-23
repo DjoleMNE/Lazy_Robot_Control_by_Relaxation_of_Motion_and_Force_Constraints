@@ -80,14 +80,14 @@ int desired_task_model               = task_model::full_pose;
 int desired_control_mode             = control_mode::VELOCITY;
 double tube_speed                    = 0.01;
 const double task_time_limit_sec     = 600.0;
-const double time_horizon_sec        = 2.0;
+const double time_horizon_sec        = 2.5;
 const bool log_data                  = true;
 bool compensate_gravity              = false;
 
 std::vector<bool> control_dims      = {true, true, true, // Linear
                                        false, false, false}; // Angular
 // Last parameter: Numer of points
-const std::vector<double> path_parameters = {0.5, 4.5, 0.05, 0.008, 70};
+const std::vector<double> path_parameters = {0.5, 4.5, 0.05, 0.008, 90};
 
 std::vector<double> tube_start_position   = {0.262105, 0.004157, 0.300};
 std::vector<double> tube_tolerances       = {0.001, 0.01, 0.01, 
@@ -216,8 +216,8 @@ int define_task(dynamics_controller *dyn_controller)
     switch (desired_pose_id)
     {
         case desired_pose::CANDLE:
-            tube_start_position = std::vector<double>{-0.0887956,    0.270235,    0.238717};
-            desired_ee_pose     = { -0.0887956,    0.270235,    0.238717, // Linear: Vector
+            tube_start_position = std::vector<double>{-0.0887956, 0.270235, 0.238717};
+            desired_ee_pose     = { -0.0887956, 0.270235, 0.238717, // Linear: Vector
                                     1.0, 0.0, 0.0, // Angular: Rotation matrix
                                     0.0, 1.0, 0.0,
                                     0.0, 0.0, 1.0};
@@ -269,7 +269,7 @@ int define_task(dynamics_controller *dyn_controller)
                 
                 case path_types::INF_SIGN_PATH:
                     motion_profile::draw_inf_sign_xy(tube_path_points, 0.5, 0.4, 0.3, 0.3, 
-                                                     desired_ee_pose[0] - 0.23, desired_ee_pose[1], desired_ee_pose[2]);
+                                                     desired_ee_pose[0] - 0.228, desired_ee_pose[1], desired_ee_pose[2]);
                     break;
 
                 case path_types::SINE_PATH:
@@ -485,7 +485,7 @@ int main(int argc, char **argv)
     path_type            = path_types::INF_SIGN_PATH;
     tube_speed           = 0.05;
     compensate_gravity   = true;
-    tube_tolerances      = std::vector<double>{0.001, 0.01, 0.02, 
+    tube_tolerances      = std::vector<double>{0.001, 0.01, 0.01, 
                                                0.17, 0.17, 0.17, 
                                                0.0, 0.1};
 
