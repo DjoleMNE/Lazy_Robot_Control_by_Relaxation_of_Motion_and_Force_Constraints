@@ -211,17 +211,16 @@ namespace motion_profile
     {
         double x, y;
         int offset = int(path_points.size() / step_size);
-        offset = 0.1;
 
-        for(int i = 0; i < path_points.size(); i++)
+        for (int i = 0; i < path_points.size(); i++)
         {
             x = x_scale * i;
 
-            if      (i < offset)                       y =  0.0;
-            else if (i >     offset && i < 2 * offset) y =  0.07;
-            else if (i > 2 * offset && i < 3 * offset) y = -0.05;
-            else if (i > 3 * offset && i < 4 * offset) y =  0.04;
-            else                                       y =  0.01;
+            if      (i <     offset                  ) y =  0.0;
+            else if (i >     offset && i < 2 * offset) y =  0.02;
+            else if (i > 2 * offset && i < 3 * offset) y = -0.03;
+            else if (i > 3 * offset && i < 4 * offset) y =  0.01;
+            else                                       y =  0.04;
 
             path_points[i][0] = x   + offset_x;
             path_points[i][1] = y   + offset_y;

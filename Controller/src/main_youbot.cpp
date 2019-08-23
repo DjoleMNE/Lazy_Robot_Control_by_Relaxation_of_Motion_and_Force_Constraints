@@ -94,7 +94,7 @@ std::vector<double> tube_tolerances       = {0.001, 0.01, 0.01,
                                              0.17, 0.17, 0.17, 
                                              0.0, 0.1};
 std::vector< std::vector<double> > tube_path_points(path_parameters[4], std::vector<double>(3, 0.0));
-std::vector< std::vector<double> > path_poses(path_parameters[4] - 1, std::vector<double>(12, 0.0));
+std::vector< std::vector<double> > path_poses(path_parameters[4] - 1,   std::vector<double>(12, 0.0));
 
 const Eigen::VectorXd max_command         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 10.0, 10.0, 10.0, 
@@ -259,6 +259,41 @@ int define_task(dynamics_controller *dyn_controller)
 
     switch (desired_task_model)
     {
+        case task_model::moveTo_follow_path:
+            switch (path_type)
+            {
+                case path_types::STEP_PATH:
+                    motion_profile::draw_step_xy(tube_path_points, 6, 0.001,
+                                                  desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
+                    break;
+                
+                case path_types::INF_SIGN_PATH:
+                    motion_profile::draw_inf_sign_xy(tube_path_points, 0.3, 0.2, 0.3, 0.3, 
+                                                     desired_ee_pose[0]-0.14, desired_ee_pose[1], desired_ee_pose[2]);
+                    break;
+
+                case path_types::SINE_PATH:
+                    motion_profile::draw_sine_xy(tube_path_points, path_parameters[0], path_parameters[1],
+                                                 path_parameters[2], path_parameters[3], 
+                                                 desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
+                    break;
+                
+                default:
+                    printf("Unsupported path type");
+                    return -1;
+                    break;
+            }
+
+            dyn_controller->define_moveTo_follow_path_task(std::vector<bool>{control_dims[0], control_dims[1], control_dims[2], // Linear
+                                                                             control_dims[3], control_dims[4], control_dims[5]},// Angular
+                                                            tube_path_points,
+                                                            tube_tolerances,
+                                                            tube_speed,
+                                                            1.0, 0.1, //contact_threshold linear and angular
+                                                            task_time_limit_sec,// time_limit
+                                                            path_poses); // TF pose
+            break;
+
         case task_model::moveTo:
             dyn_controller->define_moveTo_task(std::vector<bool>{control_dims[0], control_dims[1], control_dims[2], // Linear
                                                                  control_dims[3], control_dims[4], control_dims[5]},// Angular
@@ -443,13 +478,13 @@ int main(int argc, char **argv)
                                              false, false, false}; // Angular
     environment          = youbot_environment::REAL;
     robot_model_id       = youbot_model::URDF;
-    desired_pose_id      = desired_pose::LOOK_AT_2;
+    desired_pose_id      = desired_pose::CANDLE;
     desired_control_mode = control_mode::TORQUE;
-    desired_task_model   = task_model::moveTo;
-    path_type            = path_types::STEP_PATH;
-    tube_speed           = 0.07;
-    compensate_gravity   = false;
-    tube_tolerances      = std::vector<double>{0.001, 0.01, 0.01, 
+    desired_task_model   = task_model::moveTo_follow_path;
+    path_type            = path_types::INF_SIGN_PATH;
+    tube_speed           = 0.05;
+    compensate_gravity   = true;
+    tube_tolerances      = std::vector<double>{0.001, 0.02, 0.02, 
                                                0.17, 0.17, 0.17, 
                                                0.0, 0.1};
 
