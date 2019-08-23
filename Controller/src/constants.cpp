@@ -193,6 +193,7 @@ namespace dynamics_parameter
                                     << 100.0, 100.0, 200.0, 2.0, 2.0, 2.0).finished();
     const Eigen::IOFormat WRITE_FORMAT(6, Eigen::DontAlignCols, " ", "", "", "\n");
     const std::string LOG_FILE_CART_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/control_error.txt");
+    const std::string LOG_FILE_CART_BASE_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/control_base_error.txt");
     const std::string LOG_FILE_JOINT_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/joint_torques.txt");
     const std::string LOG_FILE_PREDICTIONS_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/prediction_effects.txt");
     const std::string LOG_FILE_NULL_SPACE_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/null_space_error.txt");

@@ -162,7 +162,7 @@ class dynamics_controller
     const long DT_MICRO_;
     const double DT_SEC_;
 
-    std::ofstream log_file_cart_, log_file_joint_, log_file_predictions_, log_file_null_space_;
+    std::ofstream log_file_cart_, log_file_joint_, log_file_predictions_, log_file_null_space_, log_file_cart_base_;
     bool store_control_data_;
     int desired_dynamics_interface_, desired_task_model_;
 
@@ -205,7 +205,7 @@ class dynamics_controller
     Eigen::VectorXd abag_command_, max_command_, compensation_parameters_,
                     force_task_parameters_, min_sat_limits_, filtered_bias_;
     KDL::Wrenches cart_force_command_, zero_wrenches_;
-    KDL::Wrench ext_wrench_, compensated_weight_;
+    KDL::Wrench ext_wrench_, ext_wrench_base_, compensated_weight_;
     KDL::JntArray zero_joint_array_, gravity_torque_;
 
     KDL::Solver_Vereshchagin hd_solver_;
@@ -216,8 +216,8 @@ class dynamics_controller
     finite_state_machine fsm_;
     model_prediction predictor_;
 
-    state_specification robot_state_;
-    state_specification desired_state_;
+    state_specification robot_state_, robot_state_base_;
+    state_specification desired_state_, desired_state_base_;
     state_specification predicted_state_;
 
     int check_fsm_status();

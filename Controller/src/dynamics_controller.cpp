@@ -66,7 +66,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     filtered_bias_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     cart_force_command_(NUM_OF_SEGMENTS_, KDL::Wrench::Zero()), 
     zero_wrenches_(NUM_OF_SEGMENTS_, KDL::Wrench::Zero()),
-    ext_wrench_(KDL::Wrench::Zero()), compensated_weight_(KDL::Wrench::Zero()),
+    ext_wrench_(KDL::Wrench::Zero()), ext_wrench_base_(KDL::Wrench::Zero()),
+    compensated_weight_(KDL::Wrench::Zero()),
     zero_joint_array_(NUM_OF_JOINTS_), gravity_torque_(NUM_OF_JOINTS_),
     hd_solver_(robot_chain_, robot_driver->get_joint_inertia(), 
                robot_driver->get_joint_torque_limits(), !compensate_gravity_,
@@ -81,8 +82,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     abag_null_space_(1, abag_parameter::USE_ERROR_SIGN),
     predictor_(robot_chain_),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
-    desired_state_(robot_state_),
-    predicted_state_(robot_state_)
+    robot_state_base_(robot_state_), desired_state_(robot_state_),
+    desired_state_base_(robot_state_), predicted_state_(robot_state_)
 {
     assert(("Robot is not initialized", robot_driver->is_initialized()));
     // KDL Solver constraint  
@@ -316,9 +317,9 @@ void dynamics_controller::update_dynamics_interfaces()
 void dynamics_controller::write_to_file()
 {   
     // Write measured state
-    for(int i = 0; i < 3; i++) 
+    for (int i = 0; i < 3; i++) 
         log_file_cart_ << robot_state_.frame_pose[END_EFF_].p(i) << " ";
-    for(int i = 3; i < 6; i++) 
+    for (int i = 3; i < 6; i++) 
         log_file_cart_ << 0.0 << " ";
     log_file_cart_ << robot_state_.frame_velocity[END_EFF_](0) << " "; 
     log_file_cart_ << robot_state_.frame_velocity[END_EFF_](5) << " ";
@@ -329,10 +330,10 @@ void dynamics_controller::write_to_file()
     log_file_cart_ << std::endl;
 
     // Write desired state
-    for(int i = 0; i < 3; i++) 
+    for (int i = 0; i < 3; i++) 
         log_file_cart_ << desired_state_.frame_pose[END_EFF_].p(i) << " ";
-    for(int i = 3; i < 6; i++) 
-        log_file_cart_ << 0.0 << " ";        
+    for (int i = 3; i < 6; i++) 
+        log_file_cart_ << 0.0 << " ";
     log_file_cart_ << desired_state_.frame_velocity[END_EFF_](0) << " ";
     log_file_cart_ << desired_state_.frame_velocity[END_EFF_](5) << " ";
     for (int i = 2; i < 5; i++)
@@ -341,7 +342,7 @@ void dynamics_controller::write_to_file()
 
     // Write control error
     log_file_cart_ << predicted_error_twist_(0) << " ";
-    for(int i = 1; i < 6; i++) 
+    for (int i = 1; i < 6; i++) 
         log_file_cart_ << abag_error_vector_(i) << " ";
     log_file_cart_ << abag_error_vector_(0) << std::endl;
 
@@ -350,6 +351,44 @@ void dynamics_controller::write_to_file()
     log_file_cart_ << abag_.get_bias().transpose().format(dynamics_parameter::WRITE_FORMAT);
     log_file_cart_ << abag_.get_gain().transpose().format(dynamics_parameter::WRITE_FORMAT);
     log_file_cart_ << abag_.get_command().transpose().format(dynamics_parameter::WRITE_FORMAT);
+
+    // Log data in the base frame
+    if (desired_task_model_ != task_model::full_pose)
+    {
+        // Write measured state in base frame
+        for (int i = 0; i < 3; i++) 
+            log_file_cart_base_ << robot_state_base_.frame_pose[END_EFF_].p(i) << " ";
+
+        for (int i = 0; i < 6; i++)
+            log_file_cart_base_ << ext_wrench_base_(i) << " ";
+
+        if (write_contact_time_to_file_) log_file_cart_base_ << loop_iteration_count_ << " ";
+        else log_file_cart_base_ << 0.0 << " ";
+
+        if (compensate_unknown_weight_)
+        {
+            for (int i = 0; i < 3; i++)
+                log_file_cart_base_ << robot_state_.external_force[END_EFF_].force(i) << " ";
+        }
+        log_file_cart_base_ << std::endl;
+
+        // Write desired state in base frame
+        for (int i = 0; i < 3; i++) 
+            log_file_cart_base_ << desired_state_base_.frame_pose[END_EFF_].p(i) << " ";
+
+        for (int i = 0; i < 6; i++)
+            log_file_cart_base_ << desired_state_base_.external_force[END_EFF_](i) << " ";
+
+        if (write_contact_time_to_file_) log_file_cart_base_ << loop_iteration_count_ << " ";
+        else log_file_cart_base_ << 0.0 << " ";
+
+        if (compensate_unknown_weight_)
+        {
+            for (int i = 0; i < 3; i++)
+                log_file_cart_base_ << 0.0 << " ";
+        }
+        log_file_cart_base_ << std::endl;
+    }
 
     // Write joint space state
     log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
@@ -518,7 +557,7 @@ void dynamics_controller::define_moveTo_follow_path_task(
 
     for (int i = 0; i < tube_path_points.size() - 1; i++)
     {
-        KDL::Vector tube_start_position = KDL::Vector(tube_path_points[i][0], tube_path_points[i][1], tube_path_points[i][2]);
+        KDL::Vector tube_start_position = KDL::Vector(tube_path_points[i    ][0], tube_path_points[i    ][1], tube_path_points[i    ][2]);
         KDL::Vector tf_position         = KDL::Vector(tube_path_points[i + 1][0], tube_path_points[i + 1][1], tube_path_points[i + 1][2]);
         KDL::Vector x_task              = tf_position - tube_start_position;
         x_task.Normalize();
@@ -1090,6 +1129,8 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 
     // End-effector/Sensor Frame is the task frame for force DOFs
     moveConstrained_follow_path_task_.tf_force = robot_state_.frame_pose[END_EFF_].M;
+    ext_wrench_base_ = moveConstrained_follow_path_task_.tf_force * ext_wrench_;
+    desired_state_base_.external_force[END_EFF_] = moveConstrained_follow_path_task_.tf_force * desired_state_.external_force[END_EFF_];
 
     // Force-task FSM has priority over motion-task FSM
     if (previous_control_status_ != control_status::STOP_ROBOT)
@@ -1175,9 +1216,10 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             make_predictions(horizon_amplitude_, 1);
 
             //Change the reference frame of the robot motion state, from base frame to task frame
-            robot_state_.frame_pose[END_EFF_]     = moveConstrained_follow_path_task_.tf_poses[tube_section_count_].Inverse()   * robot_state_.frame_pose[END_EFF_];
-            robot_state_.frame_velocity[END_EFF_] = moveConstrained_follow_path_task_.tf_poses[tube_section_count_].M.Inverse() * robot_state_.frame_velocity[END_EFF_];
-            predicted_state_.frame_pose[END_EFF_] = moveConstrained_follow_path_task_.tf_poses[tube_section_count_].Inverse()   * predicted_state_.frame_pose[END_EFF_];
+            robot_state_.frame_pose[END_EFF_]        = moveConstrained_follow_path_task_.tf_poses[tube_section_count_].Inverse()   * robot_state_.frame_pose[END_EFF_];
+            robot_state_.frame_velocity[END_EFF_]    = moveConstrained_follow_path_task_.tf_poses[tube_section_count_].M.Inverse() * robot_state_.frame_velocity[END_EFF_];
+            predicted_state_.frame_pose[END_EFF_]    = moveConstrained_follow_path_task_.tf_poses[tube_section_count_].Inverse()   * predicted_state_.frame_pose[END_EFF_];
+            desired_state_base_.frame_pose[END_EFF_] = moveConstrained_follow_path_task_.tf_poses[tube_section_count_]             * desired_state_.frame_pose[END_EFF_];
 
             current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
             predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
@@ -1279,8 +1321,9 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
     if (tube_section_count_ > moveTo_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveTo_follow_path_task_.tf_poses.size() - 1;
 
     //Change the reference frame of the robot state, from base frame to task frame
-    robot_state_.frame_pose[END_EFF_]     = moveTo_follow_path_task_.tf_poses[tube_section_count_].Inverse()   * robot_state_.frame_pose[END_EFF_];
-    robot_state_.frame_velocity[END_EFF_] = moveTo_follow_path_task_.tf_poses[tube_section_count_].M.Inverse() * robot_state_.frame_velocity[END_EFF_];
+    robot_state_.frame_pose[END_EFF_]        = moveTo_follow_path_task_.tf_poses[tube_section_count_].Inverse()   * robot_state_.frame_pose[END_EFF_];
+    robot_state_.frame_velocity[END_EFF_]    = moveTo_follow_path_task_.tf_poses[tube_section_count_].M.Inverse() * robot_state_.frame_velocity[END_EFF_];
+    desired_state_base_.frame_pose[END_EFF_] = moveTo_follow_path_task_.tf_poses[tube_section_count_]             * desired_state_.frame_pose[END_EFF_];
 
     current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
 
@@ -1315,8 +1358,9 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
 void dynamics_controller::compute_moveTo_task_error()
 {
     //Change the reference frame of the robot state, from base frame to task frame
-    robot_state_.frame_pose[END_EFF_]     = moveTo_task_.tf_pose.Inverse()   * robot_state_.frame_pose[END_EFF_];
-    robot_state_.frame_velocity[END_EFF_] = moveTo_task_.tf_pose.M.Inverse() * robot_state_.frame_velocity[END_EFF_];
+    robot_state_.frame_pose[END_EFF_]        = moveTo_task_.tf_pose.Inverse()   * robot_state_.frame_pose[END_EFF_];
+    robot_state_.frame_velocity[END_EFF_]    = moveTo_task_.tf_pose.M.Inverse() * robot_state_.frame_velocity[END_EFF_];
+    desired_state_base_.frame_pose[END_EFF_] = moveTo_task_.tf_pose             * desired_state_.frame_pose[END_EFF_];
 
     current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
 
@@ -1353,8 +1397,9 @@ void dynamics_controller::compute_moveTo_task_error()
 void dynamics_controller::compute_moveTo_weight_compensation_task_error()
 {
     //Change the reference frame of the robot state, from base frame to task frame
-    robot_state_.frame_pose[END_EFF_]     = moveTo_weight_compensation_task_.tf_pose.Inverse()   * robot_state_.frame_pose[END_EFF_];
-    robot_state_.frame_velocity[END_EFF_] = moveTo_weight_compensation_task_.tf_pose.M.Inverse() * robot_state_.frame_velocity[END_EFF_];
+    robot_state_.frame_pose[END_EFF_]        = moveTo_weight_compensation_task_.tf_pose.Inverse()   * robot_state_.frame_pose[END_EFF_];
+    robot_state_.frame_velocity[END_EFF_]    = moveTo_weight_compensation_task_.tf_pose.M.Inverse() * robot_state_.frame_velocity[END_EFF_];
+    desired_state_base_.frame_pose[END_EFF_] = moveTo_weight_compensation_task_.tf_pose             * desired_state_.frame_pose[END_EFF_];
 
     current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
 
@@ -1392,8 +1437,9 @@ void dynamics_controller::compute_moveTo_weight_compensation_task_error()
 void dynamics_controller::compute_moveGuarded_task_error()
 {
     //Change the reference frame of the robot state, from base frame to task frame
-    robot_state_.frame_pose[END_EFF_]     = moveGuarded_task_.tf_pose.Inverse()   * robot_state_.frame_pose[END_EFF_];
-    robot_state_.frame_velocity[END_EFF_] = moveGuarded_task_.tf_pose.M.Inverse() * robot_state_.frame_velocity[END_EFF_];
+    robot_state_.frame_pose[END_EFF_]        = moveGuarded_task_.tf_pose.Inverse()   * robot_state_.frame_pose[END_EFF_];
+    robot_state_.frame_velocity[END_EFF_]    = moveGuarded_task_.tf_pose.M.Inverse() * robot_state_.frame_velocity[END_EFF_];
+    desired_state_base_.frame_pose[END_EFF_] = moveGuarded_task_.tf_pose             * desired_state_.frame_pose[END_EFF_];
 
     current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
 
@@ -1832,11 +1878,24 @@ int dynamics_controller::initialize(const int desired_control_mode,
             else if (desired_task_model_ == task_model::moveGuarded)                 log_file_cart_ << moveGuarded_task_.tube_tolerances[i] << " ";
             else                                                                     log_file_cart_ << moveTo_task_.tube_tolerances[i] << " ";
         }
-        log_file_cart_ << std::endl;      
+        log_file_cart_ << std::endl;
 
         for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
             log_file_cart_ << max_command_(i) << " ";
         log_file_cart_ << std::endl;      
+
+        log_file_cart_base_.open(dynamics_parameter::LOG_FILE_CART_BASE_PATH);
+        assert(log_file_cart_base_.is_open());
+
+        for (int i = 0; i < NUM_OF_CONSTRAINTS_ + 2; i++)
+        {
+            if      (desired_task_model_ == task_model::moveConstrained_follow_path) log_file_cart_base_ << moveConstrained_follow_path_task_.tube_tolerances[i] << " ";            
+            else if (desired_task_model_ == task_model::moveTo_follow_path)          log_file_cart_base_ << moveTo_follow_path_task_.tube_tolerances[i] << " ";
+            else if (desired_task_model_ == task_model::moveTo_weight_compensation)  log_file_cart_base_ << moveTo_weight_compensation_task_.tube_tolerances[i] << " ";
+            else if (desired_task_model_ == task_model::moveGuarded)                 log_file_cart_base_ << moveGuarded_task_.tube_tolerances[i] << " ";
+            else                                                                     log_file_cart_base_ << moveTo_task_.tube_tolerances[i] << " ";
+        }
+        log_file_cart_base_ << std::endl;
 
         log_file_predictions_.open(dynamics_parameter::LOG_FILE_PREDICTIONS_PATH);
         assert(log_file_predictions_.is_open());
@@ -1895,6 +1954,8 @@ int dynamics_controller::control()
             printf("Warning: FK solver returned an error! %d \n", ctrl_status);
             return -1;
         }
+        // Save the state expressed in base frame
+        robot_state_base_.frame_pose = robot_state_.frame_pose;
 
         compute_control_error();
 
@@ -1987,6 +2048,8 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
         printf("Warning: FK solver returned an error! %d \n", fk_solver_result);
         return -1;
     }
+    // Save the state expressed in base frame
+    robot_state_base_.frame_pose = robot_state_.frame_pose;
 
     compute_control_error();
 
@@ -2027,6 +2090,7 @@ void dynamics_controller::deinitialize()
     if (store_control_data_) 
     {
         log_file_cart_.close();
+        log_file_cart_base_.close();
         log_file_joint_.close();
         log_file_predictions_.close();
         log_file_null_space_.close();
