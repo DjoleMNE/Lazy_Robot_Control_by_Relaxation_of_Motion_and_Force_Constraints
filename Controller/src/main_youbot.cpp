@@ -87,7 +87,7 @@ bool compensate_gravity              = false;
 std::vector<bool> control_dims      = {true, true, true, // Linear
                                        false, false, false}; // Angular
 // Last parameter: Numer of points
-const std::vector<double> path_parameters = {0.5, 4.5, 0.05, 0.008, 90};
+const std::vector<double> path_parameters = {0.5, 4.5, 0.05, 0.0035, 90};
 
 std::vector<double> tube_start_position   = {0.262105, 0.004157, 0.300};
 std::vector<double> tube_tolerances       = {0.001, 0.01, 0.01, 
@@ -482,7 +482,7 @@ int main(int argc, char **argv)
     desired_control_mode = control_mode::TORQUE;
     desired_task_model   = task_model::moveTo_follow_path;
     // desired_task_model   = task_model::full_pose;
-    path_type            = path_types::INF_SIGN_PATH;
+    path_type            = path_types::SINE_PATH;
     tube_speed           = 0.05;
     compensate_gravity   = true;
     tube_tolerances      = std::vector<double>{0.001, 0.01, 0.01, 
