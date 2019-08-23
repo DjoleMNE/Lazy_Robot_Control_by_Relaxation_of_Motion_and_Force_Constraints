@@ -19,15 +19,19 @@ variable_num = 2
 
 filename = "../archive/control_base_error.txt"
 
-def restart_program(): #restart application
-    python = sys.executable
-    os.execl(python, python, * sys.argv)
+# def restart_program(): #restart application
+#     python = sys.executable
+#     os.execl(python, python, * sys.argv)
 
-class ModHandler(pyinotify.ProcessEvent):
-    # evt has useful properties, including pathname
-    def process_IN_CLOSE_WRITE(self, evt):
-        print("Data file has changed")
-        restart_program()
+# class ModHandler(pyinotify.ProcessEvent):
+#     # evt has useful properties, including pathname
+#     def process_IN_CLOSE_WRITE(self, evt):
+#         print("Data file has changed")
+#         restart_program()
+# handler = ModHandler()
+# wm = pyinotify.WatchManager()
+# notifier = pyinotify.Notifier(wm, handler)
+# wdd = wm.add_watch(filename, pyinotify.IN_CLOSE_WRITE)
 
 class Arrow3D(FancyArrowPatch):
     def __init__(self, xs, ys, zs, *args, **kwargs):
@@ -63,11 +67,6 @@ def set_axes_equal(ax):
     origin = np.mean(limits, axis=1)
     radius = 0.5 * np.max(np.abs(limits[:, 1] - limits[:, 0]))
     set_axes_radius(ax, origin, radius)
-
-handler = ModHandler()
-wm = pyinotify.WatchManager()
-notifier = pyinotify.Notifier(wm, handler)
-wdd = wm.add_watch(filename, pyinotify.IN_CLOSE_WRITE)
 
 with open(filename, "r") as f:
     all_data = [x.split() for x in f.readlines()]
@@ -143,7 +142,7 @@ for sample_ in range (1, rows + 1, variable_num):
         desired_weight_y.append(  np.float32( input_data[1 + sample_][11]) )
         desired_weight_z.append(  np.float32( input_data[1 + sample_][12]) )
 
-samples   = np.arange(0, num_samples, 1)
+samples           = np.arange(0, num_samples, 1)
 measured_pos_x    = np.array(measured_pos_x)
 measured_pos_y    = np.array(measured_pos_y)
 measured_pos_z    = np.array(measured_pos_z)
@@ -174,7 +173,7 @@ desired_weight_z     = np.array(desired_weight_z)
 
 # plt.ion()
 if (desired_dim != 0): figure = plt.figure(figsize = (18, 10))
-else: figure = plt.figure(figsize = (10, 10))
+else: figure = plt.figure(figsize = (12, 12))
 if  (desired_dim is 0): plt.suptitle('Position in Base Frame', fontsize=20)
 elif(desired_dim is 1): plt.suptitle('End-Effector Wrench in Base Frame', fontsize=20)
 elif(desired_dim is 2): plt.suptitle('Estimated Weight in Base Frame', fontsize=20)
@@ -191,6 +190,11 @@ if (desired_dim != 0):
     plt.subplots_adjust(hspace = 0.02, wspace = 15)
     plt.subplots_adjust(left=0.05, right=0.99, top=0.95, bottom=0.03)
     plt.margins(0,0)
+else:
+    plt.gca().set_axis_off()
+    plt.subplots_adjust(hspace = 0.02, wspace = 15)
+    plt.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.01)
+    plt.margins(0,0)
 
 num_of_plots = 0
 if   (desired_dim == 0): num_of_plots = 1
@@ -198,15 +202,18 @@ elif (desired_dim == 1): num_of_plots = 6
 elif (desired_dim == 2): num_of_plots = 3
 
 if (desired_dim == 0):
-    # ax = plt.axes(projection='3d')
     ax = figure.add_subplot(111, projection='3d')
     # ax.view_init(25, 105)
     ax.plot3D(measured_pos_x, measured_pos_y, measured_pos_z, c = 'limegreen', label='Measured', linewidth = 2, zorder = 2)
     ax.plot3D(desired_pos_x,  desired_pos_y,  desired_pos_z, label='Desired', linewidth = 2, color = 'black', zorder = 3)
+    ax.scatter3D(measured_pos_x[0], measured_pos_y[0], measured_pos_z[0], s=40, c = 'red', label='Start Position', zorder = 3)
     ax.legend(loc=3, fontsize = 'x-large')
     ax.set_xlim3d(min(measured_pos_x), max(measured_pos_x))
     ax.set_ylim3d(min(measured_pos_y), max(measured_pos_y))
     ax.set_zlim3d(min(measured_pos_z), max(measured_pos_z))
+    ax.set_xlabel('$X \ \ [m]$', fontsize=15, rotation=150)
+    ax.set_ylabel('$Y \ \ [m]$', fontsize=15)
+    ax.set_zlabel(r'$Z \ \ [m]$', fontsize=15, rotation=60)
     set_axes_equal(ax) # important!
 else: 
     plt.subplot(num_of_plots, 1, 1)
@@ -280,13 +287,13 @@ if (desired_dim == 1):
     plt.xticks(np.arange(0, num_samples, tick_freq))
     plt.grid(True)
 
-plt.pause(0.001)
+# plt.pause(0.001)
 if (desired_dim != 0): 
     plt.draw()
-elif(desired_dim is 1): plt.savefig('../archive/ee_wrench_base.pdf')
-elif(desired_dim is 2): plt.savefig('../archive/weight_base.pdf')
+    if (desired_dim is 1): plt.savefig('../archive/ee_wrench_base.pdf')
+    if(desired_dim is 2): plt.savefig('../archive/weight_base.pdf')
 else:
     plt.grid(True)
     plt.show()
     plt.savefig('../archive/position_base.pdf')
-notifier.loop()
+# notifier.loop()
