@@ -216,8 +216,8 @@ int define_task(dynamics_controller *dyn_controller)
     switch (desired_pose_id)
     {
         case desired_pose::CANDLE:
-            tube_start_position = std::vector<double>{-0.0874542, 0.317419, 0.286294};
-            desired_ee_pose     = { -0.0874542, 0.317419, 0.286294, // Linear: Vector
+            tube_start_position = std::vector<double>{-0.0887956,    0.270235,    0.238717};
+            desired_ee_pose     = { -0.0887956,    0.270235,    0.238717, // Linear: Vector
                                     1.0, 0.0, 0.0, // Angular: Rotation matrix
                                     0.0, 1.0, 0.0,
                                     0.0, 0.0, 1.0};
@@ -268,8 +268,8 @@ int define_task(dynamics_controller *dyn_controller)
                     break;
                 
                 case path_types::INF_SIGN_PATH:
-                    motion_profile::draw_inf_sign_xy(tube_path_points, 0.3, 0.2, 0.3, 0.3, 
-                                                     desired_ee_pose[0]-0.14, desired_ee_pose[1], desired_ee_pose[2]);
+                    motion_profile::draw_inf_sign_xy(tube_path_points, 0.5, 0.4, 0.3, 0.3, 
+                                                     desired_ee_pose[0] - 0.23, desired_ee_pose[1], desired_ee_pose[2]);
                     break;
 
                 case path_types::SINE_PATH:
@@ -416,7 +416,7 @@ void go_navigation_2(youbot_mediator &arm){
 // Go to Navigation 3 configuration  
 void go_navigation_3(youbot_mediator &arm){
     KDL::JntArray desired_config(JOINTS);
-    double navigation[] = {1.0586, 1.55696, -1.10994, 0.959358, 3.65608};
+    double navigation[] = {1.00084, 1.35324, -0.549936, 0.732544, 2.96296};
     for (int i = 0; i < JOINTS; i++) 
         desired_config(i) = navigation[i];  
     arm.set_joint_positions(desired_config);
@@ -481,10 +481,11 @@ int main(int argc, char **argv)
     desired_pose_id      = desired_pose::CANDLE;
     desired_control_mode = control_mode::TORQUE;
     desired_task_model   = task_model::moveTo_follow_path;
+    // desired_task_model   = task_model::full_pose;
     path_type            = path_types::INF_SIGN_PATH;
     tube_speed           = 0.05;
     compensate_gravity   = true;
-    tube_tolerances      = std::vector<double>{0.001, 0.02, 0.02, 
+    tube_tolerances      = std::vector<double>{0.001, 0.01, 0.02, 
                                                0.17, 0.17, 0.17, 
                                                0.0, 0.1};
 
