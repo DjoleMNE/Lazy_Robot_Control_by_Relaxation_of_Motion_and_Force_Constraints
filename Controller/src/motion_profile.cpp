@@ -216,11 +216,11 @@ namespace motion_profile
         {
             x = x_scale * i;
 
-            if      (i <     offset                  ) y =  0.0;
-            else if (i >     offset && i < 2 * offset) y =  0.02;
-            else if (i > 2 * offset && i < 3 * offset) y = -0.03;
-            else if (i > 3 * offset && i < 4 * offset) y =  0.01;
-            else                                       y =  0.04;
+            if      (i <=     offset                  ) y =  0.0;
+            else if (i >     offset && i <= 2 * offset) y =  0.02;
+            else if (i > 2 * offset && i <= 3 * offset) y = -0.03;
+            else if (i > 3 * offset && i <= 4 * offset) y =  0.01;
+            else                                        y =  0.04;
 
             path_points[i][0] = x   + offset_x;
             path_points[i][1] = y   + offset_y;

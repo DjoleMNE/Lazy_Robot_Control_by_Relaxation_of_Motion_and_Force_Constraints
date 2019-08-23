@@ -170,19 +170,19 @@ const Eigen::VectorXd gain_step_2_1           = (Eigen::VectorXd(NUMBER_OF_CONST
 
 // moveTo-follow_path-torque ABAG parameters
 const Eigen::VectorXd error_alpha_3         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.850000, 0.900000, 0.900000, 
+                                            << 0.850000, 0.850000, 0.850000, 
                                                0.850000, 0.850000, 0.850000).finished();
 const Eigen::VectorXd bias_threshold_3      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.000407, 0.000407, 0.000407, 
+                                            << 0.000457, 0.000407, 0.000407, 
                                                0.001007, 0.001007, 0.001007).finished();
 const Eigen::VectorXd bias_step_3           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.000550, 0.000495, 0.000495, 
+                                            << 0.000550, 0.000550, 0.000550, 
                                                0.003495, 0.003495, 0.003495).finished();
 const Eigen::VectorXd gain_threshold_3      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.552492, 0.552492, 0.552492, 
+                                            << 0.502492, 0.502492, 0.502492, 
                                                0.252492, 0.252492, 0.252492).finished();
 const Eigen::VectorXd gain_step_3           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.003152, 0.003152, 0.003152, 
+                                            << 0.003152, 0.003552, 0.003552, 
                                                0.015152, 0.015152, 0.015152).finished();
 
 const Eigen::VectorXd min_bias_sat                = Eigen::VectorXd::Constant(6, -1.0);
@@ -510,7 +510,7 @@ int main(int argc, char **argv)
     // rotate_joint(robot_driver, 0, 0.1);
     // robot_driver.get_joint_positions(motion.q);
     // robot_driver.get_joint_velocities(motion.qd);
-
+    // std::cout << motion.q << std::endl;
     // printf("Stops here\n");
     // robot_driver.stop_robot_motion();
     // go_folded(robot_driver);
