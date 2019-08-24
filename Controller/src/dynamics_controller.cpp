@@ -610,7 +610,8 @@ void dynamics_controller::define_moveTo_follow_path_task(
     desired_task_model_                    = task_model::moveTo_follow_path;
     transform_drivers_          = true;
     transform_force_drivers_    = false;
-    compute_null_space_command_ = false;
+    if (ROBOT_ID_ == robot_id::YOUBOT) compute_null_space_command_ = true;
+    else compute_null_space_command_ = false;
     compensate_unknown_weight_  = false;
 }
 
@@ -680,7 +681,8 @@ void dynamics_controller::define_moveTo_task(
     desired_task_model_                    = task_model::moveTo;
     transform_drivers_          = true;
     transform_force_drivers_    = false;
-    compute_null_space_command_ = false;
+    if (ROBOT_ID_ == robot_id::YOUBOT) compute_null_space_command_ = true;
+    else compute_null_space_command_ = false;
     compensate_unknown_weight_  = false;
 }
 
@@ -819,7 +821,8 @@ void dynamics_controller::define_moveGuarded_task(
     desired_task_model_                    = task_model::moveGuarded;
     transform_drivers_          = true;
     transform_force_drivers_    = false;
-    compute_null_space_command_ = false;
+    if (ROBOT_ID_ == robot_id::YOUBOT) compute_null_space_command_ = true;
+    else compute_null_space_command_ = false;
     compensate_unknown_weight_  = false;
 }
 
@@ -854,7 +857,8 @@ void dynamics_controller::define_desired_ee_pose(
     desired_task_model_                       = task_model::full_pose;
     transform_drivers_          = false;
     transform_force_drivers_    = false;
-    compute_null_space_command_ = false;
+    if (ROBOT_ID_ == robot_id::YOUBOT) compute_null_space_command_ = true;
+    else compute_null_space_command_ = false;
     compensate_unknown_weight_  = false;
 }
 
@@ -1348,6 +1352,9 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
         if ( std::fabs(predicted_error_twist_(i)) <= moveTo_follow_path_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
         else abag_error_vector_(i) = predicted_error_twist_(i);        
     }
+
+    // Additional Cartesian force to keep residual part of the robot in a good configuration
+    if (compute_null_space_command_) compute_moveToGuarded_null_space_task_error();
 }
 
 
@@ -1388,6 +1395,9 @@ void dynamics_controller::compute_moveTo_task_error()
         if ( std::fabs(predicted_error_twist_(i)) <= moveTo_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
         else abag_error_vector_(i) = predicted_error_twist_(i);        
     }
+
+    // Additional Cartesian force to keep residual part of the robot in a good configuration
+    if (compute_null_space_command_) compute_moveToGuarded_null_space_task_error();
 }
 
 /**
@@ -1427,6 +1437,9 @@ void dynamics_controller::compute_moveTo_weight_compensation_task_error()
         if ( std::fabs(predicted_error_twist_(i)) <= moveTo_weight_compensation_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
         else abag_error_vector_(i) = predicted_error_twist_(i);        
     }
+
+    // Additional Cartesian force to keep residual part of the robot in a good configuration
+    if (compute_null_space_command_) compute_moveToGuarded_null_space_task_error();
 }
 
 
@@ -1464,6 +1477,9 @@ void dynamics_controller::compute_moveGuarded_task_error()
         if ( std::fabs(predicted_error_twist_(i)) <= moveGuarded_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
         else abag_error_vector_(i) = predicted_error_twist_(i);        
     }
+
+    // Additional Cartesian force to keep residual part of the robot in a good configuration
+    if (compute_null_space_command_) compute_moveToGuarded_null_space_task_error();
 }
 
 /**
@@ -1482,6 +1498,9 @@ void dynamics_controller::compute_full_pose_task_error()
     fsm_result_            = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, 
                                                             ext_wrench_, total_time_sec_, tube_section_count_);
     abag_error_vector_     = predicted_error_twist_;
+
+    // Additional Cartesian force to keep residual part of the robot in a good configuration
+    if (compute_null_space_command_) compute_moveToGuarded_null_space_task_error();
 }
 
 /**
