@@ -90,14 +90,14 @@ class youbot_mediator: public robot_mediator
 		virtual std::vector<double> get_joint_torque_limits();
 		virtual std::vector<double> get_joint_inertia();
 		virtual std::vector<double> get_joint_offsets();
-		virtual std::string get_robot_ID();
+		virtual int get_robot_ID();
 		
 		virtual KDL::Twist get_root_acceleration();
 		virtual KDL::Chain get_robot_model();
 
 	private:
 		bool is_initialized_;
-		const std::string ROBOT_ID_;
+		const int ROBOT_ID_;
 		int youbot_model_;
 		int youbot_environment_;
 

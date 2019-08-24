@@ -57,7 +57,7 @@ class lwr_mediator: public robot_mediator
                                 const bool gravity_compensated);
 		
 		virtual bool is_initialized();
-		virtual std::string get_robot_ID();
+		virtual int get_robot_ID();
 
 		// Set desired joint commands to move robot and save them for sake of simulation
 		virtual void set_joint_command(const KDL::JntArray &joint_positions,
@@ -91,7 +91,7 @@ class lwr_mediator: public robot_mediator
 		virtual KDL::Chain get_robot_model();
 
 	private:
-		const std::string ROBOT_ID_;
+		const int ROBOT_ID_;
 		bool add_offsets_;
 		bool is_initialized_;
 		bool connection_established_;

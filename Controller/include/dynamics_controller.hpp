@@ -184,6 +184,7 @@ class dynamics_controller
     const int NUM_OF_FRAMES_;
     const int NUM_OF_CONSTRAINTS_;
     const int END_EFF_;
+    const int ROBOT_ID_;
     const std::vector<double> JOINT_TORQUE_LIMITS_;
     std::vector<bool> CTRL_DIM_, POS_TUBE_DIM_, MOTION_CTRL_DIM_, FORCE_CTRL_DIM_;
     int fsm_result_, fsm_force_task_result_, previous_control_status_, tube_section_count_;

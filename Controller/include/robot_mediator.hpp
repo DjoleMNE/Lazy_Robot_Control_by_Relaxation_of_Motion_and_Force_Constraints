@@ -39,13 +39,20 @@ enum control_mode
     STOP_MOTION = -1   
 };
 
+enum robot_id
+{
+    YOUBOT = 0,
+    LWR_4 = 1,
+    KINOVA_GEN3 = 2
+};
+
 class robot_mediator
 {
 	public:
 		// virtual ~robot_mediator() = 0;
 
 		virtual bool is_initialized() = 0;
-		virtual std::string get_robot_ID() = 0;
+		virtual int get_robot_ID() = 0;
 
 		// Initializes variables and calibrates the manipulator
 		virtual void initialize(const int robot_model,

@@ -27,7 +27,7 @@ SOFTWARE.
 #include "youbot_mediator.hpp"
 
 youbot_mediator::youbot_mediator(): 
-    is_initialized_(false), ROBOT_ID_(youbot_constants::ID),
+    is_initialized_(false), ROBOT_ID_(robot_id::YOUBOT),
     youbot_model_(youbot_model::URDF),
     youbot_environment_(youbot_environment::SIMULATION),
     add_offsets_(false), connection_established_(false),
@@ -304,7 +304,7 @@ int youbot_mediator::get_model_from_urdf()
     return 0;
 }
 
-std::string youbot_mediator::get_robot_ID()
+int youbot_mediator::get_robot_ID()
 {
     return ROBOT_ID_;
 }

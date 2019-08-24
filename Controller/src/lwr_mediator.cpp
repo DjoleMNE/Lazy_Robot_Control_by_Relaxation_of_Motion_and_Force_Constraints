@@ -27,7 +27,7 @@ SOFTWARE.
 #include "lwr_mediator.hpp"
 
 lwr_mediator::lwr_mediator(): 
-    ROBOT_ID_(lwr_constants::ID), add_offsets_(false), is_initialized_(false),
+    ROBOT_ID_(robot_id::LWR_4), add_offsets_(false), is_initialized_(false),
     connection_established_(false), lwr_model_(lwr_model::LWR_URDF),
     lwr_environment_(lwr_environment::LWR_SIMULATION),
     lwr_chain_(), lwr_tree_(), lwr_urdf_model_(),
@@ -242,7 +242,7 @@ void lwr_mediator::get_kdl_model()
     lwr_kdl_model kdl_lwr(lwr_chain_);
 }
 
-std::string lwr_mediator::get_robot_ID()
+int lwr_mediator::get_robot_ID()
 {
     return ROBOT_ID_;
 }

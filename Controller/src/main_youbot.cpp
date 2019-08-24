@@ -51,7 +51,6 @@ enum desired_pose
     NAVIGATION_2 = 2,
     FOLDED       = 3,
     TABLE        = 4,
-    CANDLE2      = 5,
     FOLDED2      = 6,
     LOOK_AT_1    = 7,
     LOOK_AT_2    = 8,
@@ -187,7 +186,10 @@ const Eigen::VectorXd gain_step_3           = (Eigen::VectorXd(NUMBER_OF_CONSTRA
 
 const Eigen::VectorXd min_bias_sat                = Eigen::VectorXd::Constant(6, -1.0);
 const Eigen::VectorXd min_command_sat             = Eigen::VectorXd::Constant(6, -1.0);
-const Eigen::VectorXd null_space_abag_parameters  = Eigen::VectorXd::Constant(5, 0.01);
+const Eigen::VectorXd null_space_abag_parameters  = (Eigen::VectorXd(5) \
+                                                    << 0.850000, 
+                                                       0.000507, 0.000455, 
+                                                       0.452492, 0.001552).finished();
 
 //  Parameters for weight compensation: K proportional, error-tube, bias-offset,
 //                                      bias-variance, gain-variance, bias slope, 
