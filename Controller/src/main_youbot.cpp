@@ -268,8 +268,8 @@ int define_task(dynamics_controller *dyn_controller)
                     break;
                 
                 case path_types::INF_SIGN_PATH:
-                    motion_profile::draw_inf_sign_xy(tube_path_points, 0.5, 0.4, 0.25, 0.4, 
-                                                     desired_ee_pose[0] - 0.226, desired_ee_pose[1], desired_ee_pose[2]);
+                    motion_profile::draw_inf_sign_xy(tube_path_points, 0.5, 0.4, 0.18, 0.5, 
+                                                     desired_ee_pose[0] - 0.228, desired_ee_pose[1], desired_ee_pose[2]);
                     break;
 
                 case path_types::SINE_PATH:
