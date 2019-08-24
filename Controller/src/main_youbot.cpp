@@ -268,8 +268,8 @@ int define_task(dynamics_controller *dyn_controller)
                     break;
                 
                 case path_types::INF_SIGN_PATH:
-                    motion_profile::draw_inf_sign_xy(tube_path_points, 0.5, 0.4, 0.3, 0.3, 
-                                                     desired_ee_pose[0] - 0.228, desired_ee_pose[1], desired_ee_pose[2]);
+                    motion_profile::draw_inf_sign_xy(tube_path_points, 0.5, 0.4, 0.25, 0.4, 
+                                                     desired_ee_pose[0] - 0.226, desired_ee_pose[1], desired_ee_pose[2]);
                     break;
 
                 case path_types::SINE_PATH:
@@ -482,7 +482,7 @@ int main(int argc, char **argv)
     desired_control_mode = control_mode::TORQUE;
     desired_task_model   = task_model::moveTo_follow_path;
     // desired_task_model   = task_model::full_pose;
-    path_type            = path_types::SINE_PATH;
+    path_type            = path_types::INF_SIGN_PATH;
     tube_speed           = 0.05;
     compensate_gravity   = true;
     tube_tolerances      = std::vector<double>{0.001, 0.01, 0.01, 
