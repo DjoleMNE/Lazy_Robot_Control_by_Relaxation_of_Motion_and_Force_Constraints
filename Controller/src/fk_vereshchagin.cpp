@@ -59,21 +59,12 @@ KDL::FK_Vereshchagin::FK_Vereshchagin(const KDL::Chain& chain_) :
 int KDL::FK_Vereshchagin::JntToCart(const KDL::JntArray &q, const KDL::JntArray &q_dot, 
                                     Frames& cart_pose, Twists& cart_vel)
 {
-    if (nj != chain.getNrOfJoints())
-        return (error = -3);
-
-    if (ns != chain.getNrOfSegments())
-        return (error = -3);
+    if (nj != chain.getNrOfJoints()) return (error = -3);
+    if (ns != chain.getNrOfSegments()) return (error = -3);
 
     //Check sizes always
-    if (q.rows() != nj || q_dot.rows() != nj){ 
-        return (error = -4);
-    }
-
-    if(cart_pose.size() != ns || cart_vel.size() != ns) {
-        std::cout << "HERE   " << (cart_pose.size() == ns) <<std::endl;
-        return (error = -4);
-    }
+    if (q.rows() != nj || q_dot.rows() != nj) return (error = -4);
+    if (cart_pose.size() != ns || cart_vel.size() != ns) return (error = -4);
 
     //do an upward recursion for position(X) and velocities(X_dot)
     this->upwards_sweep(q, q_dot, cart_pose, cart_vel);
