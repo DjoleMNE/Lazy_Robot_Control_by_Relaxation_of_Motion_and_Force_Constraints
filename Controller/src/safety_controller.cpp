@@ -112,22 +112,22 @@ bool safety_controller::is_state_finite(const state_specification &state,
                                         const int joint)
 {
     if (!std::isfinite(state.control_torque(joint))){
-        if (PRINT_LOGS_) printf("Computed torque for joint: %d is not finite!\n", joint);
+        if (PRINT_LOGS_) printf("Computed torque for joint: %d is not finite!\n", joint + 1);
         return false;
     }
     else if (!std::isfinite(state.qdd(joint))){
-        if (PRINT_LOGS_) printf("Computed joint: %d acceleration is not finite!\n", joint);
+        if (PRINT_LOGS_) printf("Computed joint: %d acceleration is not finite!\n", joint + 1);
         return false;
     }
     else if (!std::isfinite(state.qd(joint))){
-        if (PRINT_LOGS_) printf("Computed joint: %d velocity is not finite!\n", joint);
+        if (PRINT_LOGS_) printf("Computed joint: %d velocity is not finite!\n", joint + 1);
         return false;
     }
     else if (!std::isfinite(state.q(joint))){
-        if (PRINT_LOGS_) printf("Computed joint: %d position is not finite!\n", joint);
+        if (PRINT_LOGS_) printf("Computed joint: %d position is not finite!\n", joint + 1);
         return false;
     }
-    
+
     return true;
 }
 
@@ -136,7 +136,7 @@ bool safety_controller::torque_limit_reached(const state_specification &state,
 {
     if (std::fabs(state.control_torque(joint)) >= joint_torque_limits_[joint])
     {
-        if (PRINT_LOGS_) printf("Joint %d torque limit reached: %f \n", joint, state.control_torque(joint));
+        if (PRINT_LOGS_) printf("Joint %d torque limit reached: %f \n", joint + 1, state.control_torque(joint));
         return true;        
     }
 
@@ -148,7 +148,7 @@ bool safety_controller::velocity_limit_reached(const state_specification &state,
 {
     if (std::fabs(state.qd(joint)) >= joint_velocity_limits_[joint])
     {
-        if (PRINT_LOGS_) printf("Joint %d velocity limit reached: %f \n", joint, state.qd(joint));
+        if (PRINT_LOGS_) printf("Joint %d velocity limit reached: %f \n", joint + 1, state.qd(joint));
         return true;        
     }
     
@@ -161,10 +161,10 @@ bool safety_controller::position_limit_reached(const state_specification &state,
     if ((state.q(joint) >= joint_position_limits_max_[joint]) || \
         (state.q(joint) <= joint_position_limits_min_[joint]))
     {
-        if (PRINT_LOGS_) printf("Joint %d position limit reached: %f \n", joint, state.q(joint));
+        if (PRINT_LOGS_) printf("Joint %d position limit reached: %f \n", joint + 1, state.q(joint));
         return true; 
     }
-    
+
     return false;
 }
 
@@ -176,16 +176,16 @@ bool safety_controller::reaching_position_limits(const state_specification &stat
     {
         if (state.qd(joint) > 0.05)
         {
-            printf("Joint %d is too close to the max limit %f %f \n", joint, state.q(joint), state.qd(joint));
+            printf("Joint %d is too close to the max limit %f %f \n", joint + 1, state.q(joint), state.qd(joint));
             return true;
         } 
     } 
-    
+
     else if ((joint_position_limits_min_[joint] - state.q(joint)) > -joint_position_thresholds_[joint])
     {
         if (state.qd(joint) < -0.05)
         {
-            printf("Joint %d is too close to the min limit %f %f \n", joint, state.q(joint), state.qd(joint));
+            printf("Joint %d is too close to the min limit %f %f \n", joint + 1, state.q(joint), state.qd(joint));
             return true;
         }
     } 
@@ -205,7 +205,7 @@ int safety_controller::check_future_state(const int desired_control_mode)
 
         case control_mode::POSITION:
             return check_positions();
-    
+
         default: return control_mode::STOP_MOTION;
     }
 }
@@ -251,7 +251,6 @@ int safety_controller::check_velocities()
             position_limit_reached(predicted_states_[0], i) || \
             position_limit_reached(predicted_states_[1], i))
         {
-            // stop_robot_motion();
             if (PRINT_LOGS_) printf("Velocity commands not safe \n");
             return control_mode::STOP_MOTION;
         }
@@ -275,7 +274,6 @@ int safety_controller::check_positions()
     {
         if (position_limit_reached(commands_, i))
         {
-            // stop_robot_motion();
             if (PRINT_LOGS_) printf("Position commands not safe \n");
             return control_mode::STOP_MOTION;
         }
@@ -291,21 +289,20 @@ int safety_controller::check_positions()
 void safety_controller::generate_commands(const state_specification &current_state)
 {
     commands_.control_torque = current_state.control_torque;
-    commands_.qd = predicted_states_[0].qd;
-    commands_.q = predicted_states_[0].q;
+    commands_.qd             = predicted_states_[0].qd;
+    commands_.q              = predicted_states_[0].q;
 }
 
 void safety_controller::get_control_commands(state_specification &commands)
 {
     commands.control_torque = commands_.control_torque;
-    commands.qd = commands_.qd;
-    commands.q = commands_.q;
+    commands.qd             = commands_.qd;
+    commands.q              = commands_.q;
 }
 
 //Set velocities of arm's joints to 0 and send commands to the robot driver
 void safety_controller::stop_robot_motion()
 {   
-    // robot_driver_->set_joint_velocities(zero_joint_velocities_);
     robot_driver_->stop_robot_motion();
 }
 
