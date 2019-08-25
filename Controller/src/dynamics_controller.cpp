@@ -1670,6 +1670,39 @@ void dynamics_controller::transform_motion_driver()
     }
 }
 
+void dynamics_controller::compute_null_space_control_commands()
+{
+    // First reset force magnitudes for the null space task control
+    KDL::SetToZero(cart_force_command_[3].force);
+
+    // Null space control commands to align third segment with arm's plane
+    if (compute_null_space_command_)
+    {
+        // Used for moveConstrained task execution with LWR 4 robot
+        if (desired_task_model_ == task_model::moveConstrained_follow_path)
+        {
+            // Compute null-space control command
+            null_space_abag_command_     = abag_null_space_.update_state(null_space_abag_error_)(0) * 250.0;
+
+            // Span the command over unit force vector space
+            cart_force_command_[3].force = moveConstrained_follow_path_task_.null_space_force_direction * null_space_abag_command_;
+
+            // Transform the Cartesian force from arm's plane-frame to base frame
+            cart_force_command_[3].force = moveConstrained_follow_path_task_.null_space_plane_orientation * cart_force_command_[3].force;
+        }
+        // Used for moveTo (follow_path) / moveGuarded task execution with youBot
+        else
+        {
+            // Compute null-space control command
+            null_space_abag_command_ = abag_null_space_.update_state(null_space_abag_error_)(0) * 30.0;
+            
+            // Force is always acting in positive Z linear direction(base frame) to keep link 4 aligned with table plane
+            cart_force_command_[3].force(2) = null_space_abag_command_;
+            // robot_state_.feedforward_torque(3) = null_space_abag_command_;
+        }
+    }
+}
+
 void dynamics_controller::compute_cart_control_commands()
 {   
     abag_command_ = abag_.update_state(abag_error_vector_).transpose();
@@ -1717,35 +1750,7 @@ void dynamics_controller::compute_cart_control_commands()
             break;
     }
 
-    // First reset force magnitudes for the null space task control
-    KDL::SetToZero(cart_force_command_[3].force);
-
-    // Null space control commands to align third segment with arm's plane
-    if (compute_null_space_command_)
-    {
-        // Used for moveConstrained task execution with LWR 4 robot
-        if (desired_task_model_ == task_model::moveConstrained_follow_path)
-        {
-            // Compute null-space control command
-            null_space_abag_command_     = abag_null_space_.update_state(null_space_abag_error_)(0) * 250.0;
-
-            // Span the command over unit force vector space
-            cart_force_command_[3].force = moveConstrained_follow_path_task_.null_space_force_direction * null_space_abag_command_;
-
-            // Transform the Cartesian force from arm's plane-frame to base frame
-            cart_force_command_[3].force = moveConstrained_follow_path_task_.null_space_plane_orientation * cart_force_command_[3].force;
-        }
-        // Used for moveTo (follow_path) / moveGuarded task execution with youBot
-        else
-        {
-            // Compute null-space control command
-            null_space_abag_command_ = abag_null_space_.update_state(null_space_abag_error_)(0) * 30.0;
-            
-            // Force is always acting in positive Z linear direction(base frame) to keep link 4 aligned with table plane
-            cart_force_command_[3].force(2) = null_space_abag_command_;
-            // robot_state_.feedforward_torque(3) = null_space_abag_command_;
-        }
-    }
+    compute_null_space_control_commands();
 }
 
 void dynamics_controller::compute_weight_compensation_control_commands()

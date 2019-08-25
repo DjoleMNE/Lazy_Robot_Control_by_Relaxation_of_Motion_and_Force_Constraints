@@ -241,6 +241,7 @@ class dynamics_controller
     void transform_motion_driver();
     void make_predictions(const double dt_sec, const int num_steps);
     void compute_cart_control_commands();
+    void compute_null_space_control_commands();
     void compute_weight_compensation_control_commands();
     KDL::Twist finite_displacement_twist(const state_specification &state_a, 
                                          const state_specification &state_b);
