@@ -334,7 +334,8 @@ int define_task(dynamics_controller *dyn_controller)
                                                                      control_dims[3], control_dims[4], control_dims[5]}, // Angular
                                                    desired_ee_pose,
                                                    1.0, 0.2, //contact_threshold linear and angular
-                                                   task_time_limit_sec);
+                                                   task_time_limit_sec,
+                                                   tube_tolerances[7]);// Null space tolerance
             break;
 
         default:

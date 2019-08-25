@@ -149,7 +149,8 @@ class dynamics_controller
                                 const std::vector<double> &cartesian_pose,
                                 const double contact_threshold_linear,
                                 const double contact_threshold_angular,
-                                const double task_time_limit_sec);
+                                const double task_time_limit_sec,
+                                const double null_space_tolerance);
 
     // Methods for defining robot task via 3 interfaces exposed by Vereshchagin
     void define_ee_acc_constraint(const std::vector<bool> &constraint_direction,

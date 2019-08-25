@@ -85,6 +85,8 @@ struct moveTo_follow_path_task
     std::vector<KDL::Frame> tf_poses, goal_poses;
     std::vector< std::vector<double> > tube_path_points{1, std::vector<double>(3, 0.0)};
     std::vector<double> tube_tolerances{std::vector<double>(7, 0.0)};
+    KDL::Vector null_space_force_direction;
+    double null_space_tolerance = 0.0;  // Tolerance unit in degrees
     double tube_speed = 0.0;
     double contact_threshold_linear = 0.0;
     double contact_threshold_angular = 0.0;
@@ -96,6 +98,8 @@ struct moveTo_task
     KDL::Frame tf_pose, goal_pose;
     std::vector<double> tube_start_position{std::vector<double>(3, 0.0)};
     std::vector<double> tube_tolerances{std::vector<double>(7, 0.0)};
+    KDL::Vector null_space_force_direction;
+    double null_space_tolerance = 0.0;  // Tolerance unit in degrees
     double tube_speed = 0.0;
     double contact_threshold_linear = 0.0;
     double contact_threshold_angular = 0.0;
@@ -108,6 +112,8 @@ struct moveGuarded_task
     std::vector<double> tube_start_position{std::vector<double>(3, 0.0)};
     std::vector<double> tube_end_position{std::vector<double>(3, 0.0)};
     std::vector<double> tube_tolerances{std::vector<double>(7, 0.0)};
+    KDL::Vector null_space_force_direction;
+    double null_space_tolerance = 0.0;  // Tolerance unit in degrees
     double tube_speed = 0.0;
     double contact_threshold_linear = 0.0;
     double contact_threshold_angular = 0.0;
@@ -119,6 +125,8 @@ struct moveTo_weight_compensation_task
     KDL::Frame tf_pose, goal_pose;
     std::vector<double> tube_start_position{std::vector<double>(3, 0.0)};
     std::vector<double> tube_tolerances{std::vector<double>(7, 0.0)};
+    KDL::Vector null_space_force_direction;
+    double null_space_tolerance = 0.0;  // Tolerance unit in degrees
     double tube_speed = 0.0;
     double contact_threshold_linear = 0.0;
     double contact_threshold_angular = 0.0;
@@ -129,6 +137,8 @@ struct full_pose_task
 {
     KDL::Frame tf_pose, goal_pose;
     std::vector<double> goal_area{std::vector<double>(6, 0.0)};
+    KDL::Vector null_space_force_direction;
+    double null_space_tolerance = 0.0;  // Tolerance unit in degrees
     double contact_threshold_linear = 0.0;
     double contact_threshold_angular = 0.0;
     double time_limit = 0.0;

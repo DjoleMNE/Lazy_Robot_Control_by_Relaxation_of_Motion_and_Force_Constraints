@@ -394,7 +394,9 @@ void dynamics_controller::write_to_file()
     log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
 
     // Write null-space control state
-    log_file_null_space_ << RAD_TO_DEG(null_space_angle_) << " " << 0.0 << " "; // Measured and desired state
+    log_file_null_space_ << RAD_TO_DEG(null_space_angle_) << " "; // Measured state
+    if (desired_task_model_ == task_model::moveConstrained_follow_path) log_file_null_space_ << 0.0 << " ";  // desired state for LWR 4
+    else log_file_null_space_ << 92.0 << " ";  // desired state for YouBot
     log_file_null_space_ << RAD_TO_DEG(null_space_abag_error_(0)) << " " << abag_null_space_.get_error()(0) << " "; // Raw and filtered error
     log_file_null_space_ << abag_null_space_.get_bias()(0)    << " " << abag_null_space_.get_gain()(0) << " ";
     log_file_null_space_ << abag_null_space_.get_command()(0) << " ";
@@ -605,13 +607,17 @@ void dynamics_controller::define_moveTo_follow_path_task(
     moveTo_follow_path_task_.contact_threshold_linear  = contact_threshold_linear;
     moveTo_follow_path_task_.contact_threshold_angular = contact_threshold_angular;
     moveTo_follow_path_task_.time_limit                = task_time_limit_sec;
+    
+    // Set null-space error tolerance; small null-space oscillations are desired in this mode
+    moveTo_follow_path_task_.null_space_force_direction = KDL::Vector::Zero();
+    moveTo_follow_path_task_.null_space_tolerance       = tube_tolerances[7];
 
     desired_state_.frame_pose[END_EFF_]    = moveTo_follow_path_task_.goal_poses[0];
     desired_task_model_                    = task_model::moveTo_follow_path;
     transform_drivers_          = true;
     transform_force_drivers_    = false;
     if (ROBOT_ID_ == robot_id::YOUBOT) compute_null_space_command_ = true;
-    else compute_null_space_command_ = false;
+    else                               compute_null_space_command_ = false;
     compensate_unknown_weight_  = false;
 }
 
@@ -677,12 +683,16 @@ void dynamics_controller::define_moveTo_task(
     moveTo_task_.contact_threshold_angular = contact_threshold_angular;
     moveTo_task_.time_limit                = task_time_limit_sec;
 
+    // Set null-space error tolerance; small null-space oscillations are desired in this mode
+    moveTo_task_.null_space_force_direction = KDL::Vector::Zero();
+    moveTo_task_.null_space_tolerance       = tube_tolerances[7];
+
     desired_state_.frame_pose[END_EFF_]    = moveTo_task_.goal_pose;
     desired_task_model_                    = task_model::moveTo;
     transform_drivers_          = true;
     transform_force_drivers_    = false;
     if (ROBOT_ID_ == robot_id::YOUBOT) compute_null_space_command_ = true;
-    else compute_null_space_command_ = false;
+    else                               compute_null_space_command_ = false;
     compensate_unknown_weight_  = false;
 }
 
@@ -746,6 +756,10 @@ void dynamics_controller::define_moveTo_weight_compensation_task(
     moveTo_weight_compensation_task_.contact_threshold_linear  = contact_threshold_linear;
     moveTo_weight_compensation_task_.contact_threshold_angular = contact_threshold_angular;
     moveTo_weight_compensation_task_.time_limit                = task_time_limit_sec;
+
+    // Set null-space error tolerance; small null-space oscillations are desired in this mode
+    moveTo_weight_compensation_task_.null_space_force_direction = KDL::Vector::Zero();
+    moveTo_weight_compensation_task_.null_space_tolerance       = tube_tolerances[7];
 
     desired_state_.frame_pose[END_EFF_]    = moveTo_weight_compensation_task_.goal_pose;
     desired_task_model_                    = task_model::moveTo_weight_compensation;
@@ -817,12 +831,16 @@ void dynamics_controller::define_moveGuarded_task(
     moveGuarded_task_.contact_threshold_angular = contact_threshold_angular;
     moveGuarded_task_.time_limit                = task_time_limit_sec;
 
+    // Set null-space error tolerance; small null-space oscillations are desired in this mode
+    moveGuarded_task_.null_space_force_direction = KDL::Vector::Zero();
+    moveGuarded_task_.null_space_tolerance       = tube_tolerances[7];
+
     desired_state_.frame_pose[END_EFF_]    = moveGuarded_task_.goal_pose;
     desired_task_model_                    = task_model::moveGuarded;
     transform_drivers_          = true;
     transform_force_drivers_    = false;
     if (ROBOT_ID_ == robot_id::YOUBOT) compute_null_space_command_ = true;
-    else compute_null_space_command_ = false;
+    else                               compute_null_space_command_ = false;
     compensate_unknown_weight_  = false;
 }
 
@@ -832,7 +850,8 @@ void dynamics_controller::define_desired_ee_pose(
                             const std::vector<double> &cartesian_pose,
                             const double contact_threshold_linear,
                             const double contact_threshold_angular,
-                            const double task_time_limit_sec)
+                            const double task_time_limit_sec,
+                            const double null_space_tolerance)
 {
     assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
     assert(cartesian_pose.size()       == NUM_OF_CONSTRAINTS_ * 2);
@@ -854,11 +873,16 @@ void dynamics_controller::define_desired_ee_pose(
     full_pose_task_.contact_threshold_linear  = contact_threshold_linear;
     full_pose_task_.contact_threshold_angular = contact_threshold_angular;
     full_pose_task_.time_limit                = task_time_limit_sec;
+  
+    // Set null-space error tolerance; small null-space oscillations are desired in this mode
+    full_pose_task_.null_space_force_direction = KDL::Vector::Zero();
+    full_pose_task_.null_space_tolerance       = null_space_tolerance;
+
     desired_task_model_                       = task_model::full_pose;
     transform_drivers_          = false;
     transform_force_drivers_    = false;
     if (ROBOT_ID_ == robot_id::YOUBOT) compute_null_space_command_ = true;
-    else compute_null_space_command_ = false;
+    else                               compute_null_space_command_ = false;
     compensate_unknown_weight_  = false;
 }
 
@@ -1315,6 +1339,41 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
     }
 }
 
+void dynamics_controller::compute_moveToGuarded_null_space_task_error()
+{
+    // Youbot (URDF model) joint 2, 3 and 4 offset angles for candle pose are 1.13446, -2.54818 and 1.78896
+    null_space_angle_ = (robot_state_.q(1) - 1.13446) + (robot_state_.q(2) + 2.54818) + (robot_state_.q(3) - 1.78896);
+
+    // Desired orientation of the link is to be aligned with the table
+    // 90 Deg is _relative_ desired angle from Z axis. Anti-Clock wise direction.
+    null_space_abag_error_(0) = null_space_angle_ - DEG_TO_RAD(92);
+    // null_space_abag_error_(0) = DEG_TO_RAD(92) - null_space_angle_;
+
+    // Unit of this tube tolerance is degree
+    switch (desired_task_model_)
+    {
+        case task_model::moveTo_follow_path:
+            if (std::fabs(null_space_abag_error_(0)) <= DEG_TO_RAD(moveTo_follow_path_task_.null_space_tolerance)) null_space_abag_error_(0) = 0.0;
+            break;
+
+        case task_model::moveTo_weight_compensation:
+            if (std::fabs(null_space_abag_error_(0)) <= DEG_TO_RAD(moveTo_weight_compensation_task_.null_space_tolerance)) null_space_abag_error_(0) = 0.0;
+            break;
+
+        case task_model::moveGuarded:
+            if (std::fabs(null_space_abag_error_(0)) <= DEG_TO_RAD(moveGuarded_task_.null_space_tolerance)) null_space_abag_error_(0) = 0.0;
+            break;
+
+        case task_model::moveTo:
+            if (std::fabs(null_space_abag_error_(0)) <= DEG_TO_RAD(moveTo_task_.null_space_tolerance)) null_space_abag_error_(0) = 0.0;
+            break;
+
+        default:
+            if (std::fabs(null_space_abag_error_(0)) <= DEG_TO_RAD(full_pose_task_.null_space_tolerance)) null_space_abag_error_(0) = 0.0;
+            break;
+    }
+}
+
 /**
  * Compute the control error for position and velocity tube deviations.
  * Error function for moveTo_follow_path task.
@@ -1658,20 +1717,34 @@ void dynamics_controller::compute_cart_control_commands()
             break;
     }
 
-    // First reset the force magnitudes
+    // First reset force magnitudes for the null space task control
     KDL::SetToZero(cart_force_command_[3].force);
 
     // Null space control commands to align third segment with arm's plane
     if (compute_null_space_command_)
     {
-        // Compute controll command
-        null_space_abag_command_     = abag_null_space_.update_state(null_space_abag_error_)(0) * 250.0;
+        // Used for moveConstrained task execution with LWR 4 robot
+        if (desired_task_model_ == task_model::moveConstrained_follow_path)
+        {
+            // Compute null-space control command
+            null_space_abag_command_     = abag_null_space_.update_state(null_space_abag_error_)(0) * 250.0;
 
-        // Span the command over unit force vector space
-        cart_force_command_[3].force = moveConstrained_follow_path_task_.null_space_force_direction * null_space_abag_command_;
+            // Span the command over unit force vector space
+            cart_force_command_[3].force = moveConstrained_follow_path_task_.null_space_force_direction * null_space_abag_command_;
 
-        // Transform the Cartesian force from arm's plane-frame to base frame
-        cart_force_command_[3].force = moveConstrained_follow_path_task_.null_space_plane_orientation * cart_force_command_[3].force;
+            // Transform the Cartesian force from arm's plane-frame to base frame
+            cart_force_command_[3].force = moveConstrained_follow_path_task_.null_space_plane_orientation * cart_force_command_[3].force;
+        }
+        // Used for moveTo (follow_path) / moveGuarded task execution with youBot
+        else
+        {
+            // Compute null-space control command
+            null_space_abag_command_ = abag_null_space_.update_state(null_space_abag_error_)(0) * 30.0;
+            
+            // Force is always acting in positive Z linear direction(base frame) to keep link 4 aligned with table plane
+            cart_force_command_[3].force(2) = null_space_abag_command_;
+            // robot_state_.feedforward_torque(3) = null_space_abag_command_;
+        }
     }
 }
 
@@ -1921,7 +1994,12 @@ int dynamics_controller::initialize(const int desired_control_mode,
 
         log_file_null_space_.open(dynamics_parameter::LOG_FILE_NULL_SPACE_PATH);
         assert(log_file_null_space_.is_open());
-        log_file_null_space_ << moveConstrained_follow_path_task_.tube_tolerances[5] << std::endl;
+        if      (desired_task_model_ == task_model::moveConstrained_follow_path) log_file_null_space_ << moveConstrained_follow_path_task_.null_space_tolerance << std::endl;           
+        else if (desired_task_model_ == task_model::moveTo_follow_path)          log_file_null_space_ << moveTo_follow_path_task_.null_space_tolerance << std::endl;
+        else if (desired_task_model_ == task_model::moveTo_weight_compensation)  log_file_null_space_ << moveTo_weight_compensation_task_.null_space_tolerance << std::endl;
+        else if (desired_task_model_ == task_model::moveGuarded)                 log_file_null_space_ << moveGuarded_task_.null_space_tolerance << std::endl;
+        else if (desired_task_model_ == task_model::moveTo)                      log_file_null_space_ << moveTo_task_.null_space_tolerance << std::endl;
+        else                                                                     log_file_null_space_ << full_pose_task_.null_space_tolerance << std::endl;
 
         log_file_joint_.open(dynamics_parameter::LOG_FILE_JOINT_PATH);
         assert(log_file_joint_.is_open());
