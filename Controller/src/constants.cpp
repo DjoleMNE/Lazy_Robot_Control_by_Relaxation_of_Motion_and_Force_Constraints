@@ -44,7 +44,7 @@ namespace youbot_constants
    //  // youBot store's max torques 
    //  const std::vector<double> joint_torque_limits {9.5, 9.5, 6.0, 2.0, 1.0};
 
-    // custom max torques 
+    // custom max torques
     const std::vector<double> joint_torque_limits {13.9012, 13.9012, 8.0, 3.3, 1.2};
 
     // Benjamin Keiser' max torques (fast version)

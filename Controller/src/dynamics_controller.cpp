@@ -396,7 +396,7 @@ void dynamics_controller::write_to_file()
     // Write null-space control state
     log_file_null_space_ << RAD_TO_DEG(null_space_angle_) << " "; // Measured state
     if (desired_task_model_ == task_model::moveConstrained_follow_path) log_file_null_space_ << 0.0 << " ";  // desired state for LWR 4
-    else log_file_null_space_ << 92.0 << " ";  // desired state for YouBot
+    else log_file_null_space_ << 94.0 << " ";  // desired state for YouBot
     log_file_null_space_ << RAD_TO_DEG(null_space_abag_error_(0)) << " " << abag_null_space_.get_error()(0) << " "; // Raw and filtered error
     log_file_null_space_ << abag_null_space_.get_bias()(0)    << " " << abag_null_space_.get_gain()(0) << " ";
     log_file_null_space_ << abag_null_space_.get_command()(0) << " ";
@@ -1345,9 +1345,8 @@ void dynamics_controller::compute_moveToGuarded_null_space_task_error()
     null_space_angle_ = (robot_state_.q(1) - 1.13446) + (robot_state_.q(2) + 2.54818) + (robot_state_.q(3) - 1.78896);
 
     // Desired orientation of the link is to be aligned with the table
-    // 90 Deg is _relative_ desired angle from Z axis. Anti-Clock wise direction.
-    null_space_abag_error_(0) = null_space_angle_ - DEG_TO_RAD(92);
-    // null_space_abag_error_(0) = DEG_TO_RAD(92) - null_space_angle_;
+    //_Relative_ desired angle from Z (base) axis. Anti-Clock wise direction.
+    null_space_abag_error_(0) = DEG_TO_RAD(94.0) - null_space_angle_;
 
     // Unit of this tube tolerance is degree
     switch (desired_task_model_)
@@ -1694,11 +1693,10 @@ void dynamics_controller::compute_null_space_control_commands()
         else
         {
             // Compute null-space control command
-            null_space_abag_command_ = abag_null_space_.update_state(null_space_abag_error_)(0) * 30.0;
+            null_space_abag_command_ = abag_null_space_.update_state(null_space_abag_error_)(0) * 5.0;
             
-            // Force is always acting in positive Z linear direction(base frame) to keep link 4 aligned with table plane
-            cart_force_command_[3].force(2) = null_space_abag_command_;
-            // robot_state_.feedforward_torque(3) = null_space_abag_command_;
+            // Feed-Forward Torque is applied in order to keep end-effector link aligned with table plane
+            robot_state_.feedforward_torque(3) = null_space_abag_command_;
         }
     }
 }

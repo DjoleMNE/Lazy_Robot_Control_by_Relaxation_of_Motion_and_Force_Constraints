@@ -507,13 +507,13 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
         // I.e. projection of ext force into joint subspace (0 0 Z)
         ext_torque(j) = -dot(s.Z, s.F_ext_virtual);
 
-        //The constraint force and acceleration force projected on the joint axes -> axis torque/force
+        // The constraint force and acceleration force projected on the joint axes -> axis torque/force
         double constraint_torque = -dot(s.Z, constraint_force);
-        //The result should be the torque at this joint.
+        // The result should be the torque at this joint.
         constraintTorque(j) = constraint_torque;
 
-        // Summing 2 contributions for true control torque:
-        controlTorque(j) = constraintTorque(j) + ext_torque(j);
+        // Summing contributions for true control torque:
+        controlTorque(j) = constraintTorque(j) + ext_torque(j) + torques(j);
         // controlTorque(j) = ext_torque(j);
 
         // Torque saturation

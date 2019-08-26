@@ -187,9 +187,9 @@ const Eigen::VectorXd gain_step_3           = (Eigen::VectorXd(NUMBER_OF_CONSTRA
 const Eigen::VectorXd min_bias_sat                = Eigen::VectorXd::Constant(6, -1.0);
 const Eigen::VectorXd min_command_sat             = Eigen::VectorXd::Constant(6, -1.0);
 const Eigen::VectorXd null_space_abag_parameters  = (Eigen::VectorXd(5) \
-                                                    << 0.850000, 
-                                                       0.000507, 0.000455, 
-                                                       0.452492, 0.001552).finished();
+                                                    << 0.900000,
+                                                       0.000407, 0.000495, 
+                                                       0.502492, 0.002552).finished();
 
 //  Parameters for weight compensation: K proportional, error-tube, bias-offset,
 //                                      bias-variance, gain-variance, bias slope, 
@@ -481,16 +481,16 @@ int main(int argc, char **argv)
                                              false, false, false}; // Angular
     environment          = youbot_environment::REAL;
     robot_model_id       = youbot_model::URDF;
-    desired_pose_id      = desired_pose::CANDLE;
+    desired_pose_id      = desired_pose::LOOK_AT_1;
     desired_control_mode = control_mode::TORQUE;
-    desired_task_model   = task_model::moveTo_follow_path;
+    desired_task_model   = task_model::moveTo;
     // desired_task_model   = task_model::full_pose;
     path_type            = path_types::INF_SIGN_PATH;
     tube_speed           = 0.05;
-    compensate_gravity   = true;
+    compensate_gravity   = false;
     tube_tolerances      = std::vector<double>{0.001, 0.01, 0.01, 
                                                0.17, 0.17, 0.17, 
-                                               0.0, 0.1};
+                                               0.0, 5.0}; // Last tolerance is in unit of degrees - Null-space tolerance
 
     // Extract robot model and if not simulation, establish connection with motor drivers
     robot_driver.initialize(robot_model_id, environment, compensate_gravity);
