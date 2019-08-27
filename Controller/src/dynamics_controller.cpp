@@ -658,7 +658,7 @@ void dynamics_controller::define_moveTo_task(
     double angle              = atan2(sine, cosine);
 
     KDL::Rotation tf_orientation;
-    if(cosine < (-1 + 1e-6))
+    if (cosine < (-1 + 1e-6))
     {
         tf_orientation = KDL::Rotation::EulerZYZ(M_PI, 0.0, 0.0);
         task_frame_pose[3] = -1.0; task_frame_pose[4]  =  0.0; task_frame_pose[5]  = 0.0;
@@ -734,7 +734,7 @@ void dynamics_controller::define_moveTo_weight_compensation_task(
     double angle              = atan2(sine, cosine);
 
     KDL::Rotation tf_orientation;
-    if(cosine < (-1 + 1e-6))
+    if (cosine < (-1 + 1e-6))
     {
         tf_orientation = KDL::Rotation::EulerZYZ(M_PI, 0.0, 0.0);
         task_frame_pose[3] = -1.0; task_frame_pose[4]  =  0.0; task_frame_pose[5]  = 0.0;
@@ -810,7 +810,7 @@ void dynamics_controller::define_moveGuarded_task(
     double angle              = atan2(sine, cosine);
 
     KDL::Rotation tf_orientation;
-    if(cosine < (-1 + 1e-6))
+    if (cosine < (-1 + 1e-6))
     {
         tf_orientation = KDL::Rotation::EulerZYZ(M_PI, 0.0, 0.0);
         tube_end_position[3] = -1.0; tube_end_position[4]  =  0.0; tube_end_position[5]  = 0.0;
@@ -1506,11 +1506,8 @@ void dynamics_controller::compute_moveTo_weight_compensation_task_error()
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
     // Check for tube on velocity
-    if ((desired_state_.frame_velocity[END_EFF_].vel(0) != 0.0) && \
-        (std::fabs(abag_error_vector_(0)) <= moveTo_weight_compensation_task_.tube_tolerances[6]))
-    {
-        abag_error_vector_(0) = 0.0;
-    }
+    if ((fsm_result_ == control_status::CRUISE_THROUGH_TUBE) && \
+        (std::fabs(abag_error_vector_(0)) <= moveTo_weight_compensation_task_.tube_tolerances[6]))  abag_error_vector_(0) = 0.0;
 
     // Other parts of the ABAG error are position errors
     for (int i = 1; i < NUM_OF_CONSTRAINTS_; i++)

@@ -97,7 +97,7 @@ int finite_state_machine::initialize_with_moveTo_weight_compensation(const moveT
     motion_profile_                  = motion_profile;
     compensation_parameters_         = compensation_parameters;
 
-    log_file_compensation_.open("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/compensation_data.txt");
+    log_file_compensation_.open("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/compensation_data.txt");
     assert(log_file_compensation_.is_open());
     log_file_compensation_ << compensation_parameters_(3) << " ";
     log_file_compensation_ << compensation_parameters_(4) << " ";

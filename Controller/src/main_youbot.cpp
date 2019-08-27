@@ -493,23 +493,23 @@ int main(int argc, char **argv)
                                              false, false, false}; // Angular
     environment          = youbot_environment::REAL;
     robot_model_id       = youbot_model::URDF;
-    desired_pose_id      = desired_pose::CANDLE;
+    desired_pose_id      = desired_pose::LOOK_DOWN_2;
     desired_control_mode = control_mode::TORQUE;
-    desired_task_model   = task_model::moveTo_follow_path;
+    desired_task_model   = task_model::moveTo_weight_compensation;
     // desired_task_model   = task_model::full_pose;
     path_type            = path_types::SINE_PATH;
-    tube_speed           = 0.05;
+    tube_speed           = 0.1;
     compensate_gravity   = false;
     tube_tolerances      = std::vector<double>{0.001, 0.01, 0.01, 
                                                0.17, 0.17, 0.17, 
                                                0.0, 5.0}; // Last tolerance is in unit of degrees - Null-space tolerance
 
-    if (desired_pose_id == desired_pose::LOOK_AT_1)
+    if (desired_pose_id == desired_pose::LOOK_AT_1 && desired_task_model == task_model::moveTo)
     {
         control_null_space       = true;
         desired_null_space_angle = 94.0; // Unit degrees
     }
-    else if (desired_pose_id == desired_pose::CANDLE)
+    else if (desired_pose_id == desired_pose::CANDLE && desired_task_model == task_model::moveTo_follow_path)
     {
         if (path_type == path_types::STEP_PATH) 
         {
@@ -531,6 +531,7 @@ int main(int argc, char **argv)
             // tube_tolerances[7] = 3.0; // Unit degrees
         }
     }
+    else control_null_space = false;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
     robot_driver.initialize(robot_model_id, environment, compensate_gravity);
