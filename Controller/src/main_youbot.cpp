@@ -78,9 +78,11 @@ int robot_model_id                   = youbot_model::URDF;
 int desired_task_model               = task_model::full_pose;
 int desired_control_mode             = control_mode::VELOCITY;
 double tube_speed                    = 0.01;
+double desired_null_space_angle      = 90.0; // Unit degrees
 const double task_time_limit_sec     = 600.0;
 const double time_horizon_sec        = 2.5;
 const bool log_data                  = true;
+bool control_null_space              = false;
 bool compensate_gravity              = false;
 
 std::vector<bool> control_dims      = {true, true, true, // Linear
@@ -186,10 +188,10 @@ const Eigen::VectorXd gain_step_3           = (Eigen::VectorXd(NUMBER_OF_CONSTRA
 
 const Eigen::VectorXd min_bias_sat                = Eigen::VectorXd::Constant(6, -1.0);
 const Eigen::VectorXd min_command_sat             = Eigen::VectorXd::Constant(6, -1.0);
-const Eigen::VectorXd null_space_abag_parameters  = (Eigen::VectorXd(5) \
+const Eigen::VectorXd null_space_abag_parameters  = (Eigen::VectorXd(6) \
                                                     << 0.900000,
                                                        0.000407, 0.000495, 
-                                                       0.502492, 0.002552).finished();
+                                                       0.452492, 0.002052, 3.0).finished(); // Last param is max command
 
 //  Parameters for weight compensation: K proportional, error-tube, bias-offset,
 //                                      bias-variance, gain-variance, bias slope, 
@@ -293,6 +295,8 @@ int define_task(dynamics_controller *dyn_controller)
                                                             tube_speed,
                                                             1.0, 0.1, //contact_threshold linear and angular
                                                             task_time_limit_sec,// time_limit
+                                                            control_null_space,
+                                                            desired_null_space_angle,
                                                             path_poses); // TF pose
             break;
 
@@ -304,6 +308,8 @@ int define_task(dynamics_controller *dyn_controller)
                                                tube_speed,
                                                1.0, 0.1, //contact_threshold linear and angular
                                                task_time_limit_sec,// time_limit
+                                               control_null_space,
+                                               desired_null_space_angle,
                                                desired_ee_pose); // TF pose
             break;
 
@@ -315,6 +321,8 @@ int define_task(dynamics_controller *dyn_controller)
                                                     tube_speed,
                                                     1.0, 0.1, //contact_threshold linear and angular
                                                     task_time_limit_sec,// time_limit
+                                                    control_null_space,
+                                                    desired_null_space_angle,
                                                     desired_ee_pose); // TF pose
             break;
 
@@ -326,6 +334,8 @@ int define_task(dynamics_controller *dyn_controller)
                                                                    tube_speed,
                                                                    1.0, 0.1, // contact_threshold linear and angular
                                                                    task_time_limit_sec,// time_limit
+                                                                   control_null_space,
+                                                                   desired_null_space_angle,
                                                                    desired_ee_pose); // TF pose
             break;
 
@@ -335,7 +345,9 @@ int define_task(dynamics_controller *dyn_controller)
                                                    desired_ee_pose,
                                                    1.0, 0.2, //contact_threshold linear and angular
                                                    task_time_limit_sec,
-                                                   tube_tolerances[7]);// Null space tolerance
+                                                   control_null_space,
+                                                   desired_null_space_angle,
+                                                   tube_tolerances[7]); // Null space tolerance
             break;
 
         default:
@@ -481,16 +493,44 @@ int main(int argc, char **argv)
                                              false, false, false}; // Angular
     environment          = youbot_environment::REAL;
     robot_model_id       = youbot_model::URDF;
-    desired_pose_id      = desired_pose::LOOK_AT_1;
+    desired_pose_id      = desired_pose::CANDLE;
     desired_control_mode = control_mode::TORQUE;
-    desired_task_model   = task_model::moveTo;
+    desired_task_model   = task_model::moveTo_follow_path;
     // desired_task_model   = task_model::full_pose;
-    path_type            = path_types::INF_SIGN_PATH;
+    path_type            = path_types::SINE_PATH;
     tube_speed           = 0.05;
     compensate_gravity   = false;
     tube_tolerances      = std::vector<double>{0.001, 0.01, 0.01, 
                                                0.17, 0.17, 0.17, 
                                                0.0, 5.0}; // Last tolerance is in unit of degrees - Null-space tolerance
+
+    if (desired_pose_id == desired_pose::LOOK_AT_1)
+    {
+        control_null_space       = true;
+        desired_null_space_angle = 94.0; // Unit degrees
+    }
+    else if (desired_pose_id == desired_pose::CANDLE)
+    {
+        if (path_type == path_types::STEP_PATH) 
+        {
+            control_null_space       = true;
+            desired_null_space_angle = 75.0; // Unit degrees
+            tube_tolerances[7]       = 5.0; // Unit degrees
+        }
+        else if (path_type == path_types::INF_SIGN_PATH)
+        {
+            control_null_space       = true;
+            desired_null_space_angle = 83.0; // Unit degrees
+            tube_tolerances[7]       = 7.0; // Unit degrees
+        } 
+        else
+        {
+            control_null_space = false;
+            compensate_gravity = true;
+            // desired_null_space_angle = 80.0; // Unit degrees
+            // tube_tolerances[7] = 3.0; // Unit degrees
+        }
+    }
 
     // Extract robot model and if not simulation, establish connection with motor drivers
     robot_driver.initialize(robot_model_id, environment, compensate_gravity);

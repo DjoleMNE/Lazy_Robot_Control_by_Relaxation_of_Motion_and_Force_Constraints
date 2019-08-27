@@ -57,10 +57,12 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     null_space_abag_error_(Eigen::VectorXd::Zero(1)),
     predicted_error_twist_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     compensation_error_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
-    horizon_amplitude_(1.0), null_space_abag_command_(0.0), null_space_angle_(0.0),
+    horizon_amplitude_(1.0), null_space_abag_command_(0.0), 
+    null_space_angle_(0.0), desired_null_space_angle_(0.0),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     max_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     compensation_parameters_(Eigen::VectorXd::Constant(7, 0.0)),
+    null_space_parameters_(Eigen::VectorXd::Constant(6, 0.1)),
     force_task_parameters_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     min_sat_limits_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     filtered_bias_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
@@ -394,9 +396,7 @@ void dynamics_controller::write_to_file()
     log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
 
     // Write null-space control state
-    log_file_null_space_ << RAD_TO_DEG(null_space_angle_) << " "; // Measured state
-    if (desired_task_model_ == task_model::moveConstrained_follow_path) log_file_null_space_ << 0.0 << " ";  // desired state for LWR 4
-    else log_file_null_space_ << 94.0 << " ";  // desired state for YouBot
+    log_file_null_space_ << RAD_TO_DEG(null_space_angle_) << " " << desired_null_space_angle_ << " ";  // Measured and desired state
     log_file_null_space_ << RAD_TO_DEG(null_space_abag_error_(0)) << " " << abag_null_space_.get_error()(0) << " "; // Raw and filtered error
     log_file_null_space_ << abag_null_space_.get_bias()(0)    << " " << abag_null_space_.get_gain()(0) << " ";
     log_file_null_space_ << abag_null_space_.get_command()(0) << " ";
@@ -436,6 +436,8 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
                                 const double contact_threshold_linear,
                                 const double contact_threshold_angular,
                                 const double task_time_limit_sec,
+                                const bool control_null_space,
+                                const double desired_null_space_angle,
                                 std::vector< std::vector<double> > &task_frame_poses)
 {
     assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
@@ -525,11 +527,11 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     desired_state_.external_force[END_EFF_](2) = tube_force;
     desired_state_.external_force[END_EFF_](3) = 0.0;
     desired_state_.external_force[END_EFF_](4) = 0.0;
-    compute_null_space_command_ = true;
+    compute_null_space_command_ = control_null_space;
+    desired_null_space_angle_   = desired_null_space_angle;
     transform_force_drivers_    = true;
     compensate_unknown_weight_  = false;
 }
-
 
 void dynamics_controller::define_moveTo_follow_path_task(
                                 const std::vector<bool> &constraint_direction,
@@ -539,6 +541,8 @@ void dynamics_controller::define_moveTo_follow_path_task(
                                 const double contact_threshold_linear,
                                 const double contact_threshold_angular,
                                 const double task_time_limit_sec,
+                                const bool control_null_space,
+                                const double desired_null_space_angle,
                                 std::vector< std::vector<double> > &task_frame_poses)
 {
     assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
@@ -616,8 +620,8 @@ void dynamics_controller::define_moveTo_follow_path_task(
     desired_task_model_                    = task_model::moveTo_follow_path;
     transform_drivers_          = true;
     transform_force_drivers_    = false;
-    if (ROBOT_ID_ == robot_id::YOUBOT) compute_null_space_command_ = true;
-    else                               compute_null_space_command_ = false;
+    compute_null_space_command_ = control_null_space;
+    desired_null_space_angle_   = desired_null_space_angle;
     compensate_unknown_weight_  = false;
 }
 
@@ -630,6 +634,8 @@ void dynamics_controller::define_moveTo_task(
                                 const double contact_threshold_linear,
                                 const double contact_threshold_angular,
                                 const double task_time_limit_sec,
+                                const bool control_null_space,
+                                const double desired_null_space_angle,
                                 std::vector<double> &task_frame_pose)
 {
     assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
@@ -691,8 +697,8 @@ void dynamics_controller::define_moveTo_task(
     desired_task_model_                    = task_model::moveTo;
     transform_drivers_          = true;
     transform_force_drivers_    = false;
-    if (ROBOT_ID_ == robot_id::YOUBOT) compute_null_space_command_ = true;
-    else                               compute_null_space_command_ = false;
+    compute_null_space_command_ = control_null_space;
+    desired_null_space_angle_   = desired_null_space_angle;
     compensate_unknown_weight_  = false;
 }
 
@@ -704,6 +710,8 @@ void dynamics_controller::define_moveTo_weight_compensation_task(
                                     const double contact_threshold_linear,
                                     const double contact_threshold_angular,
                                     const double task_time_limit_sec,
+                                    const bool control_null_space,
+                                    const double desired_null_space_angle,
                                     std::vector<double> &task_frame_pose)
 {
     assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
@@ -765,7 +773,8 @@ void dynamics_controller::define_moveTo_weight_compensation_task(
     desired_task_model_                    = task_model::moveTo_weight_compensation;
     transform_drivers_          = true;
     transform_force_drivers_    = false;
-    compute_null_space_command_ = false;
+    compute_null_space_command_ = control_null_space;
+    desired_null_space_angle_   = desired_null_space_angle;
     compensate_unknown_weight_  = true;
 }
 
@@ -777,6 +786,8 @@ void dynamics_controller::define_moveGuarded_task(
                                 const double contact_threshold_linear,
                                 const double contact_threshold_angular,
                                 const double task_time_limit_sec,
+                                const bool control_null_space,
+                                const double desired_null_space_angle,
                                 std::vector<double> &tube_end_position)
 {
     assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
@@ -839,8 +850,8 @@ void dynamics_controller::define_moveGuarded_task(
     desired_task_model_                    = task_model::moveGuarded;
     transform_drivers_          = true;
     transform_force_drivers_    = false;
-    if (ROBOT_ID_ == robot_id::YOUBOT) compute_null_space_command_ = true;
-    else                               compute_null_space_command_ = false;
+    compute_null_space_command_ = control_null_space;
+    desired_null_space_angle_   = desired_null_space_angle;
     compensate_unknown_weight_  = false;
 }
 
@@ -851,6 +862,8 @@ void dynamics_controller::define_desired_ee_pose(
                             const double contact_threshold_linear,
                             const double contact_threshold_angular,
                             const double task_time_limit_sec,
+                            const bool control_null_space,
+                            const double desired_null_space_angle,
                             const double null_space_tolerance)
 {
     assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
@@ -881,8 +894,8 @@ void dynamics_controller::define_desired_ee_pose(
     desired_task_model_                       = task_model::full_pose;
     transform_drivers_          = false;
     transform_force_drivers_    = false;
-    if (ROBOT_ID_ == robot_id::YOUBOT) compute_null_space_command_ = true;
-    else                               compute_null_space_command_ = false;
+    compute_null_space_command_ = control_null_space;
+    desired_null_space_angle_   = desired_null_space_angle;
     compensate_unknown_weight_  = false;
 }
 
@@ -1673,6 +1686,7 @@ void dynamics_controller::compute_null_space_control_commands()
 {
     // First reset force magnitudes for the null space task control
     KDL::SetToZero(cart_force_command_[3].force);
+    robot_state_.feedforward_torque(3) = 0.0;
 
     // Null space control commands to align third segment with arm's plane
     if (compute_null_space_command_)
@@ -1681,7 +1695,7 @@ void dynamics_controller::compute_null_space_control_commands()
         if (desired_task_model_ == task_model::moveConstrained_follow_path)
         {
             // Compute null-space control command
-            null_space_abag_command_     = abag_null_space_.update_state(null_space_abag_error_)(0) * 250.0;
+            null_space_abag_command_     = abag_null_space_.update_state(null_space_abag_error_)(0) * null_space_parameters_(5);
 
             // Span the command over unit force vector space
             cart_force_command_[3].force = moveConstrained_follow_path_task_.null_space_force_direction * null_space_abag_command_;
@@ -1693,7 +1707,7 @@ void dynamics_controller::compute_null_space_control_commands()
         else
         {
             // Compute null-space control command
-            null_space_abag_command_ = abag_null_space_.update_state(null_space_abag_error_)(0) * 5.0;
+            null_space_abag_command_ = abag_null_space_.update_state(null_space_abag_error_)(0) * null_space_parameters_(5);
             
             // Feed-Forward Torque is applied in order to keep end-effector link aligned with table plane
             robot_state_.feedforward_torque(3) = null_space_abag_command_;
@@ -1867,7 +1881,7 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
                                          const Eigen::VectorXd &gain_step,
                                          const Eigen::VectorXd &min_bias_sat,
                                          const Eigen::VectorXd &min_command_sat,
-                                         const Eigen::VectorXd &null_space_abag_parameters,
+                                         const Eigen::VectorXd &null_space_parameters,
                                          const Eigen::VectorXd &compensation_parameters)
 {
     //First check input dimensions
@@ -1877,6 +1891,8 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
     assert(bias_step.size()      == NUM_OF_CONSTRAINTS_); 
     assert(gain_threshold.size() == NUM_OF_CONSTRAINTS_); 
     assert(gain_step.size()      == NUM_OF_CONSTRAINTS_); 
+    assert(null_space_parameters.size()   == NUM_OF_CONSTRAINTS_); 
+    assert(compensation_parameters.size() == NUM_OF_CONSTRAINTS_ + 1); 
 
     this->horizon_amplitude_        = horizon_amplitude;
     this->max_command_              = max_command;
@@ -1900,12 +1916,13 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
     abag_.set_min_command_sat_limit(min_command_sat);
     abag_.set_error_type(abag_error_type);
 
-    abag_null_space_.set_error_alpha(   null_space_abag_parameters(0), 0);
-    abag_null_space_.set_bias_threshold(null_space_abag_parameters(1), 0);
-    abag_null_space_.set_bias_step(     null_space_abag_parameters(2), 0);
-    abag_null_space_.set_gain_threshold(null_space_abag_parameters(3), 0);
-    abag_null_space_.set_gain_step(     null_space_abag_parameters(4), 0);
+    abag_null_space_.set_error_alpha(   null_space_parameters(0), 0);
+    abag_null_space_.set_bias_threshold(null_space_parameters(1), 0);
+    abag_null_space_.set_bias_step(     null_space_parameters(2), 0);
+    abag_null_space_.set_gain_threshold(null_space_parameters(3), 0);
+    abag_null_space_.set_gain_step(     null_space_parameters(4), 0);
 
+    this->null_space_parameters_   = null_space_parameters;
     this->compensation_parameters_ = compensation_parameters;
 }
 

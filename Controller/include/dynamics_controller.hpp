@@ -90,7 +90,7 @@ class dynamics_controller
                         const Eigen::VectorXd &gain_step,
                         const Eigen::VectorXd &min_bias_sat,
                         const Eigen::VectorXd &min_command_sat,
-                        const Eigen::VectorXd &null_space_abag_parameters,
+                        const Eigen::VectorXd &null_space_parameters,
                         const Eigen::VectorXd &compensation_parameters);
     int initialize(const int desired_control_mode, 
                    const int desired_dynamics_interface,
@@ -107,6 +107,8 @@ class dynamics_controller
                             const double contact_threshold_linear,
                             const double contact_threshold_angular,
                             const double task_time_limit_sec,
+                            const bool control_null_space,
+                            const double desired_null_space_angle,
                             std::vector<double> &task_frame_pose);
 
     void define_moveGuarded_task(const std::vector<bool> &constraint_direction,
@@ -116,6 +118,8 @@ class dynamics_controller
                                  const double contact_threshold_linear,
                                  const double contact_threshold_angular,
                                  const double task_time_limit_sec,
+                                 const bool control_null_space,
+                                 const double desired_null_space_angle,
                                  std::vector<double> &tube_end_position);
 
     void define_moveTo_weight_compensation_task(const std::vector<bool> &constraint_direction,
@@ -125,6 +129,8 @@ class dynamics_controller
                                                 const double contact_threshold_linear,
                                                 const double contact_threshold_angular,
                                                 const double task_time_limit_sec,
+                                                const bool control_null_space,
+                                                const double desired_null_space_angle,
                                                 std::vector<double> &task_frame_pose);
 
     void define_moveConstrained_follow_path_task(const std::vector<bool> &constraint_direction,
@@ -135,6 +141,8 @@ class dynamics_controller
                                                  const double contact_threshold_linear,
                                                  const double contact_threshold_angular,
                                                  const double task_time_limit_sec,
+                                                 const bool control_null_space,
+                                                 const double desired_null_space_angle,
                                                  std::vector< std::vector<double> > &task_frame_poses);
 
     void define_moveTo_follow_path_task(const std::vector<bool> &constraint_direction,
@@ -144,12 +152,16 @@ class dynamics_controller
                                         const double contact_threshold_linear,
                                         const double contact_threshold_angular,
                                         const double task_time_limit_sec,
+                                        const bool control_null_space,
+                                        const double desired_null_space_angle,
                                         std::vector< std::vector<double> > &task_frame_poses);
     void define_desired_ee_pose(const std::vector<bool> &constraint_direction,
                                 const std::vector<double> &cartesian_pose,
                                 const double contact_threshold_linear,
                                 const double contact_threshold_angular,
                                 const double task_time_limit_sec,
+                                const bool control_null_space,
+                                const double desired_null_space_angle,
                                 const double null_space_tolerance);
 
     // Methods for defining robot task via 3 interfaces exposed by Vereshchagin
@@ -203,8 +215,8 @@ class dynamics_controller
     KDL::Twist current_error_twist_;
     Eigen::VectorXd abag_error_vector_, null_space_abag_error_, 
                     predicted_error_twist_, compensation_error_;
-    double horizon_amplitude_, null_space_abag_command_, null_space_angle_;
-    Eigen::VectorXd abag_command_, max_command_, compensation_parameters_,
+    double horizon_amplitude_, null_space_abag_command_, null_space_angle_, desired_null_space_angle_;
+    Eigen::VectorXd abag_command_, max_command_, compensation_parameters_, null_space_parameters_,
                     force_task_parameters_, min_sat_limits_, filtered_bias_;
     KDL::Wrenches cart_force_command_, zero_wrenches_;
     KDL::Wrench ext_wrench_, ext_wrench_base_, compensated_weight_;
