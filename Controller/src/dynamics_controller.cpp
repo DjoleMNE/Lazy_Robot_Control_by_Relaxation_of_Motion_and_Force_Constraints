@@ -235,7 +235,7 @@ int dynamics_controller::check_fsm_status()
             break;
 
         case control_status::CRUISE_THROUGH_TUBE:
-            if (previous_control_status_ != control_status::CRUISE_THROUGH_TUBE) printf("Control status changed to CRUISE_THROUGH_TUBE\n");
+            if ((previous_control_status_ != control_status::CRUISE_THROUGH_TUBE) && (previous_control_status_ != control_status::CHANGE_TUBE_SECTION)) printf("Control status changed to CRUISE_THROUGH_TUBE\n");
             previous_control_status_ = fsm_result_;
             return 0;
             break;
@@ -247,7 +247,7 @@ int dynamics_controller::check_fsm_status()
             break;
 
         case control_status::CHANGE_TUBE_SECTION:
-            if (previous_control_status_ != control_status::CHANGE_TUBE_SECTION) printf("Control status changed to CHANGE_TUBE_SECTION\n");
+            // if (previous_control_status_ != control_status::CHANGE_TUBE_SECTION) printf("Control status changed to CHANGE_TUBE_SECTION\n");
             previous_control_status_ = fsm_result_;
             return 0;
             break;
