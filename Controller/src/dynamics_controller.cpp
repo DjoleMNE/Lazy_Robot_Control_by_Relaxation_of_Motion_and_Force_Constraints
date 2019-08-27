@@ -1354,12 +1354,22 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 
 void dynamics_controller::compute_moveToGuarded_null_space_task_error()
 {
+    KDL::JntArray temp_joint_pos = robot_state_.q;
+    for (int i = 0; i < 2; i++)
+    {
+        predictor_.integrate_to_position(zero_joint_array_, robot_state_.qd, temp_joint_pos, 
+                                         predicted_state_.q, integration_method::SYMPLECTIC_EULER, DT_SEC_);
+        temp_joint_pos = predicted_state_.q;
+    }
+
     // Youbot (URDF model) joint 2, 3 and 4 offset angles for candle pose are 1.13446, -2.54818 and 1.78896
-    null_space_angle_ = (robot_state_.q(1) - 1.13446) + (robot_state_.q(2) + 2.54818) + (robot_state_.q(3) - 1.78896);
+    // null_space_angle_ = (robot_state_.q(1) - 1.13446) + (robot_state_.q(2) + 2.54818) + (robot_state_.q(3) - 1.78896);
+    null_space_angle_ = (predicted_state_.q(1) - 1.13446) + (predicted_state_.q(2) + 2.54818) + (predicted_state_.q(3) - 1.78896);
+    // printf("angle: %f\n", RAD_TO_DEG(null_space_angle_));
 
     // Desired orientation of the link is to be aligned with the table
     //_Relative_ desired angle from Z (base) axis. Anti-Clock wise direction.
-    null_space_abag_error_(0) = DEG_TO_RAD(94.0) - null_space_angle_;
+    null_space_abag_error_(0) = DEG_TO_RAD(desired_null_space_angle_) - null_space_angle_;
 
     // Unit of this tube tolerance is degree
     switch (desired_task_model_)
