@@ -54,7 +54,9 @@ enum desired_pose
     FOLDED2      = 6,
     LOOK_AT_1    = 7,
     LOOK_AT_2    = 8,
-    LOOK_DOWN    = 9
+    LOOK_DOWN    = 9,
+    LOOK_DOWN_2  = 10,
+    LOOK_UP      = 11
 };
 
 enum path_types
@@ -251,10 +253,26 @@ int define_task(dynamics_controller *dyn_controller)
                                     0.0, 0.0, 1.0};
             break;
 
+        case desired_pose::LOOK_UP:
+            tube_start_position = std::vector<double>{0.0195846, 0.366728, 0.123489};
+            desired_ee_pose     = { 0.0195846, 0.366728, 0.221379,  // Linear: Vector
+                                    1.0, 0.0, 0.0, // Angular: Rotation matrix
+                                    0.0, 1.0, 0.0,
+                                    0.0, 0.0, 1.0};
+            break;
+
+        case desired_pose::LOOK_DOWN_2:
+            tube_start_position = std::vector<double>{0.0195846, 0.366728, 0.221379};
+            desired_ee_pose     = { 0.0195846, 0.366728, 0.123489, // Linear: Vector
+                                    1.0, 0.0, 0.0, // Angular: Rotation matrix
+                                    0.0, 1.0, 0.0,
+                                    0.0, 0.0, 1.0};
+            break;
+
         default:
             // Navigation pose
-            tube_start_position = std::vector<double>{0.264474, 0.00421041, 0.110878};
-            desired_ee_pose     = { 0.262104, 0.00415452, 0.308892, // Linear: Vector
+            tube_start_position = std::vector<double>{0.266267, 0.00423936, 0.132482};
+            desired_ee_pose     = { 0.266267, 0.00423936, 0.308892, // Linear: Vector
                                     1.0, 0.0, 0.0, // Angular: Rotation matrix
                                     0.0, 1.0, 0.0,
                                     0.0, 0.0, 1.0};
@@ -465,6 +483,23 @@ void go_look_down(youbot_mediator &arm){
     if (environment != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
 }
 
+void go_look_down_2(youbot_mediator &arm){
+    KDL::JntArray desired_config(JOINTS);
+    double down[] = {1.38421, 1.79438, -1.25054, 1.924, 2.96292};
+    for (int i = 0; i < JOINTS; i++) 
+        desired_config(i) = down[i];  
+    arm.set_joint_positions(desired_config);
+    if (environment != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
+}
+
+void go_look_up(youbot_mediator &arm){
+    KDL::JntArray desired_config(JOINTS);
+    double up[] = {1.38365, 1.63416, -1.23915, 1.55002, 2.96307};
+    for (int i = 0; i < JOINTS; i++) 
+        desired_config(i) = up[i];  
+    arm.set_joint_positions(desired_config);
+    if (environment != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
+}
 
 //Set velocities of arm's joints to 0 value
 void stop_robot_motion(youbot_mediator &arm){
@@ -540,17 +575,18 @@ int main(int argc, char **argv)
     int number_of_segments = robot_driver.get_robot_model().getNrOfSegments();
     int number_of_joints   = robot_driver.get_robot_model().getNrOfJoints();
     assert(JOINTS == number_of_segments);
-
-    state_specification motion(number_of_joints, number_of_segments,
-                               number_of_segments + 1, NUMBER_OF_CONSTRAINTS);
+    state_specification motion(number_of_joints, number_of_segments, number_of_segments + 1, NUMBER_OF_CONSTRAINTS);
 
     stop_robot_motion(robot_driver);
-    if      (desired_pose_id == desired_pose::LOOK_AT_2)  go_look_at_1(robot_driver);
-    else if (desired_pose_id == desired_pose::LOOK_AT_1)  go_look_at_2(robot_driver);
-    else if (desired_pose_id == desired_pose::NAVIGATION) go_look_down(robot_driver);
-    else if (desired_pose_id == desired_pose::LOOK_DOWN)  go_navigation_2(robot_driver);
-    else if (desired_pose_id == desired_pose::CANDLE)     go_navigation_3(robot_driver);
+    if      (desired_pose_id == desired_pose::LOOK_AT_2)   go_look_at_1(robot_driver);
+    else if (desired_pose_id == desired_pose::LOOK_AT_1)   go_look_at_2(robot_driver);
+    else if (desired_pose_id == desired_pose::NAVIGATION)  go_look_down(robot_driver);
+    else if (desired_pose_id == desired_pose::LOOK_DOWN)   go_navigation_2(robot_driver);
+    else if (desired_pose_id == desired_pose::LOOK_DOWN_2) go_look_up(robot_driver);
+    else if (desired_pose_id == desired_pose::LOOK_UP)     go_look_down_2(robot_driver);
+    else if (desired_pose_id == desired_pose::CANDLE)      go_navigation_3(robot_driver);
     else return 0;
+
     // rotate_joint(robot_driver, 0, 0.1);
     // robot_driver.get_joint_positions(motion.q);
     // robot_driver.get_joint_velocities(motion.qd);
@@ -558,6 +594,7 @@ int main(int argc, char **argv)
     // printf("Stops here\n");
     // robot_driver.stop_robot_motion();
     // go_folded(robot_driver);
+    // go_look_at_2(robot_driver);
     // rotate_joint(robot_driver, 4, 0.05);
     // return 0;
 
