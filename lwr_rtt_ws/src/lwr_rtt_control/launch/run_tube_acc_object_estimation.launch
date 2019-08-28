@@ -124,12 +124,12 @@
     <arg name="GAIN_STEP" default="     [0.002600, 0.002600, 0.002600,
                                          0.015152, 0.015152, 0.655152]"/>
 
-    <!-- Parameters for weight compensation: K proportional, error-tube, bias-offset,
+    <!-- Parameters for weight compensation: x_bias-offset (-1.0 <-> 1.0), y_bias-offset, z_bias-offset, K proportional, error-tube(0.0 <-> 1.0),
                                              bias-variance, gain-variance, bias slope, 
-                                             control-period -->
-    <arg name="compensation_parameters" default=" [1.7, 0.025, 0.0,
+                                             control-period, x_max_trigger_count, y_max_trigger_count, z_max_trigger_count -->
+    <arg name="compensation_parameters" default=" [0.0, 0.0, 0.0, 1.7, 0.025,
                                                    0.00016, 0.0025, 0.00002,
-                                                   60]"/>
+                                                   60, 3, 3, 3]"/>
 
 <!--============ LwrRttControl Params ============-->
     <!-- Set some parameters for LwrRttControl

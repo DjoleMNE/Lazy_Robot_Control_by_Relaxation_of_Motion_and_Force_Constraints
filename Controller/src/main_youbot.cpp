@@ -212,13 +212,13 @@ const Eigen::VectorXd null_space_abag_parameters  = (Eigen::VectorXd(6) \
                                                        0.000407, 0.000495, 
                                                        0.452492, 0.002052, 3.0).finished(); // Last param is max command
 
-//  Parameters for weight compensation: K proportional, error-tube, bias-offset,
+//  Parameters for weight compensation: x_bias-offset (-1.0 <-> 1.0), y_bias-offset, z_bias-offset, K proportional, error-tube(0.0 <-> 1.0),
 //                                      bias-variance, gain-variance, bias slope, 
-//                                      control-period 
-const Eigen::VectorXd compensation_parameters = (Eigen::VectorXd(7) \
-                                                << 1.7, 0.025, 0.0,
+//                                      control-period, x_max_trigger_count, y_max_trigger_count, z_max_trigger_count
+const Eigen::VectorXd compensation_parameters = (Eigen::VectorXd(12) \
+                                                << 0.07, 0.0, 0.0, 1.0, 0.025,
                                                    0.00016, 0.0025, 0.00002,
-                                                   60).finished();
+                                                   60, 4, 3, 3).finished();
 
 int define_task(dynamics_controller *dyn_controller)
 {

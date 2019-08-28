@@ -61,7 +61,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     null_space_angle_(0.0), desired_null_space_angle_(0.0),
     abag_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     max_command_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
-    compensation_parameters_(Eigen::VectorXd::Constant(7, 0.0)),
+    compensation_parameters_(Eigen::VectorXd::Constant(12, 0.0)),
     null_space_parameters_(Eigen::VectorXd::Constant(6, 0.1)),
     force_task_parameters_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     min_sat_limits_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
@@ -1785,37 +1785,29 @@ void dynamics_controller::compute_weight_compensation_control_commands()
         switch (compensation_status)
         {
             case 1: // Update error and control command for linear X axis
-                compensation_error_(0) = compensation_parameters_(2) - filtered_bias_(0);
-                if (std::fabs(compensation_error_(0)) <= compensation_parameters_(1)) compensation_error_(0) = 0.0;
+                compensation_error_(0) = compensation_parameters_(0) - filtered_bias_(0);
+                if (std::fabs(compensation_error_(0)) <= compensation_parameters_(4)) compensation_error_(0) = 0.0;
 
                 // Force in task frame = error in percentage * max command * proportional gain
-                compensated_weight_.force = compensated_weight_.force + KDL::Vector(compensation_error_(0) * max_command_(0) * compensation_parameters_(0), 0.0, 0.0);
+                compensated_weight_.force = compensated_weight_.force + KDL::Vector(compensation_error_(0) * max_command_(0) * compensation_parameters_(3), 0.0, 0.0);
                 printf("X Force: %f\n", compensated_weight_.force(0));
                 break;
 
             case 2: // Update error and control command for linear Y axis
-                compensation_error_(1) = 0.0 - filtered_bias_(1);
-                if (std::fabs(compensation_error_(1)) <= compensation_parameters_(1)) compensation_error_(1) = 0.0;
-
-                // compensation_error_(1) = compensation_parameters_(2) + filtered_bias_(1);
-                // if (compensation_error_(1) >= -compensation_parameters_(1)) compensation_error_(1) = 0.0;
+                compensation_error_(1) = compensation_parameters_(1) - filtered_bias_(1);
+                if (std::fabs(compensation_error_(1)) <= compensation_parameters_(4)) compensation_error_(1) = 0.0;
 
                 // Force in task frame = error in percentage * max command * proportional gain
-                compensated_weight_.force = compensated_weight_.force + KDL::Vector(0.0, compensation_error_(1) * max_command_(1) * compensation_parameters_(0) * 0.8, 0.0);
-                // compensated_weight_.force = compensated_weight_.force + KDL::Vector(compensation_error_(1) * max_command_(1) * compensation_parameters_(0) * 0.8, 0.0, 0.0);
+                compensated_weight_.force = compensated_weight_.force + KDL::Vector(0.0, compensation_error_(1) * max_command_(1) * compensation_parameters_(3), 0.0);
                 printf("Y Force: %f\n", compensated_weight_.force(1));
                 break;
 
             case 3: // Update error and control command for linear Z axis
-                compensation_error_(2) = 0.0 - filtered_bias_(2);
-                if (std::fabs(compensation_error_(2)) <= compensation_parameters_(1)) compensation_error_(2) = 0.0;
-
-                // compensation_error_(2) = compensation_parameters_(2) + filtered_bias_(2);
-                // if (compensation_error_(2) >= -compensation_parameters_(1)) compensation_error_(2) = 0.0;
+                compensation_error_(2) = compensation_parameters_(2)- filtered_bias_(2);
+                if (std::fabs(compensation_error_(2)) <= compensation_parameters_(4)) compensation_error_(2) = 0.0;
 
                 // Force in task frame = error in percentage * max command * proportional gain
-                compensated_weight_.force = compensated_weight_.force + KDL::Vector(0.0, 0.0, compensation_error_(2) * max_command_(2) * compensation_parameters_(0) * 0.8);
-                // compensated_weight_.force = compensated_weight_.force + KDL::Vector(compensation_error_(2) * max_command_(2) * compensation_parameters_(0) * 0.8, 0.0, 0.0);
+                compensated_weight_.force = compensated_weight_.force + KDL::Vector(0.0, 0.0, compensation_error_(2) * max_command_(2) * compensation_parameters_(3));
                 printf("Z Force: %f\n", compensated_weight_.force(2));
                 break;
 

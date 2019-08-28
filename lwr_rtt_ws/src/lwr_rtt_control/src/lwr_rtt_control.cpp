@@ -49,7 +49,7 @@ LwrRttControl::LwrRttControl(const std::string& name):
     min_bias_sat_(Eigen::VectorXd::Constant(6, -1.0)), 
     min_command_sat_(Eigen::VectorXd::Constant(6, -1.0)),
     null_space_abag_parameters_(Eigen::VectorXd::Constant(6, 0.1)),
-    compensation_parameters_(Eigen::VectorXd::Constant(7, 0.0)),
+    compensation_parameters_(Eigen::VectorXd::Constant(12, 0.0)),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_SEGMENTS_ + 1, NUM_OF_CONSTRAINTS_),
     return_msg_(RTT::NoData)
 {

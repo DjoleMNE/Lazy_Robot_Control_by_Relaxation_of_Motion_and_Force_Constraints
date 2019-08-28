@@ -37,7 +37,7 @@ finite_state_machine::finite_state_machine(const int num_of_joints,
     previous_task_time_(0.0), total_contact_time_(0.0),
     goal_reached_(false), time_limit_reached_(false), contact_detected_(false),
     contact_alignment_performed_(false), write_compensation_time_to_file_(false), 
-    filtered_bias_(Eigen::VectorXd::Zero(6)), compensation_parameters_(Eigen::VectorXd::Zero(7)),
+    filtered_bias_(Eigen::VectorXd::Zero(6)), compensation_parameters_(Eigen::VectorXd::Zero(12)),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     desired_state_(robot_state_), 
     variance_gain_(100, 6), variance_bias_(100, 6), slope_bias_(100, 6),
@@ -99,9 +99,9 @@ int finite_state_machine::initialize_with_moveTo_weight_compensation(const moveT
 
     log_file_compensation_.open("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/compensation_data.txt");
     assert(log_file_compensation_.is_open());
-    log_file_compensation_ << compensation_parameters_(3) << " ";
-    log_file_compensation_ << compensation_parameters_(4) << " ";
-    log_file_compensation_ << compensation_parameters_(5) << std::endl;
+    log_file_compensation_ << compensation_parameters_(5) << " ";
+    log_file_compensation_ << compensation_parameters_(6) << " ";
+    log_file_compensation_ << compensation_parameters_(7) << std::endl;
     return control_status::NOMINAL;
 }
 
@@ -627,11 +627,11 @@ int finite_state_machine::update_weight_compensation_task_status(const int loop_
     slope_bias_.update(filtered_bias_);
 
     // Check for X linear axis
-    if (compensator_trigger_count_ < 4)
+    if (compensator_trigger_count_ < compensation_parameters_(9))
     {
-        if ( (variance_bias_.get_variance(0)      <= compensation_parameters_(3)) && \
-             (variance_gain_.get_variance(0)      <= compensation_parameters_(4)) && \
-             (std::fabs(slope_bias_.get_slope(0)) <= compensation_parameters_(5)) )
+        if ( (variance_bias_.get_variance(0)      <= compensation_parameters_(5)) && \
+             (variance_gain_.get_variance(0)      <= compensation_parameters_(6)) && \
+             (std::fabs(slope_bias_.get_slope(0)) <= compensation_parameters_(7)) )
         {
             loop_period_count_++;
         }
@@ -641,10 +641,10 @@ int finite_state_machine::update_weight_compensation_task_status(const int loop_
             return 0;
         }
         
-        double compensation_error = compensation_parameters_(2) - filtered_bias_(0);
-        if (std::fabs(compensation_error) <= compensation_parameters_(1)) compensation_error = 0.0;
+        double compensation_error = compensation_parameters_(0) - filtered_bias_(0);
+        if (std::fabs(compensation_error) <= compensation_parameters_(4)) compensation_error = 0.0;
 
-        if ((loop_period_count_ >= compensation_parameters_(6)) && (compensation_error != 0.0))
+        if ((loop_period_count_ >= compensation_parameters_(8)) && (compensation_error != 0.0))
         {
             printf("Triger X\n");
             filtered_bias(0)   = filtered_bias_(0);
@@ -653,21 +653,22 @@ int finite_state_machine::update_weight_compensation_task_status(const int loop_
             compensator_trigger_count_++;
             return 1;
         }
-        else if ((compensation_error == 0.0) && (loop_period_count_ > 2 * compensation_parameters_(6)))
+        else if ((compensation_error == 0.0) && (loop_period_count_ > 2 * compensation_parameters_(8)))
         {
-            printf("X Estimation completed\n");
+            printf("X Estimation completed\n\n");
             loop_period_count_ = 0;
-            compensator_trigger_count_ = 4;
+            compensator_trigger_count_ = compensation_parameters_(9);
             return 0;
         }
     }
 
     // Check for Y linear axis
-    else if (compensator_trigger_count_ >= 4 && compensator_trigger_count_ < 7)
+    else if (compensator_trigger_count_ >= compensation_parameters_(9) && \
+             compensator_trigger_count_  < (compensation_parameters_(9) + compensation_parameters_(10)))
     {
-        if ( (variance_bias_.get_variance(1)      <= compensation_parameters_(3)) && \
-             (variance_gain_.get_variance(1)      <= compensation_parameters_(4)) && \
-             (std::fabs(slope_bias_.get_slope(1)) <= compensation_parameters_(5)) )
+        if ( (variance_bias_.get_variance(1)      <= compensation_parameters_(5)) && \
+             (variance_gain_.get_variance(1)      <= compensation_parameters_(6)) && \
+             (std::fabs(slope_bias_.get_slope(1)) <= compensation_parameters_(7)) )
         {
             loop_period_count_++;
         }
@@ -677,13 +678,10 @@ int finite_state_machine::update_weight_compensation_task_status(const int loop_
             return 0;
         }
         
-        double compensation_error = 0.0 - filtered_bias_(1);
-        if (std::fabs(compensation_error) <= compensation_parameters_(1)) compensation_error = 0.0;
+        double compensation_error = compensation_parameters_(1) - filtered_bias_(1);
+        if (std::fabs(compensation_error) <= compensation_parameters_(4)) compensation_error = 0.0;
 
-        // double compensation_error = compensation_parameters_(2) + filtered_bias_(1);
-        // if (compensation_error >= -compensation_parameters_(1)) compensation_error = 0.0;
-
-        if ((loop_period_count_ >= compensation_parameters_(6)) && (compensation_error != 0.0))
+        if ((loop_period_count_ >= compensation_parameters_(8)) && (compensation_error != 0.0))
         {
             printf("Triger Y\n");
             filtered_bias(1)   = filtered_bias_(1);
@@ -692,21 +690,22 @@ int finite_state_machine::update_weight_compensation_task_status(const int loop_
             compensator_trigger_count_++;
             return 2;
         }
-        else if ((compensation_error == 0.0) && (loop_period_count_ > 2 * compensation_parameters_(6)))
+        else if ((compensation_error == 0.0) && (loop_period_count_ > 2 * compensation_parameters_(8)))
         {
-            printf("Y Estimation completed\n");
+            printf("Y Estimation completed\n\n");
             loop_period_count_ = 0;
-            compensator_trigger_count_ = 7;
+            compensator_trigger_count_ = compensation_parameters_(9) + compensation_parameters_(10);
             return 0;
         }
     }
 
     // Check for Z linear axis
-    else if (compensator_trigger_count_ >= 7 && compensator_trigger_count_ < 10)
+    else if (compensator_trigger_count_ >= (compensation_parameters_(9) + compensation_parameters_(10)) && \
+             compensator_trigger_count_  < (compensation_parameters_(9) + compensation_parameters_(10) + compensation_parameters_(11)))
     {
-        if ( (variance_bias_.get_variance(2)      <= compensation_parameters_(3)) && \
-             (variance_gain_.get_variance(2)      <= compensation_parameters_(4)) && \
-             (std::fabs(slope_bias_.get_slope(2)) <= compensation_parameters_(5)) )
+        if ( (variance_bias_.get_variance(2)      <= compensation_parameters_(5)) && \
+             (variance_gain_.get_variance(2)      <= compensation_parameters_(6)) && \
+             (std::fabs(slope_bias_.get_slope(2)) <= compensation_parameters_(7)) )
         {
             loop_period_count_++;
         }
@@ -716,13 +715,10 @@ int finite_state_machine::update_weight_compensation_task_status(const int loop_
             return 0;
         }
         
-        double compensation_error = 0.0 - filtered_bias_(2);
-        if (std::fabs(compensation_error) <= compensation_parameters_(1)) compensation_error = 0.0;
+        double compensation_error = compensation_parameters_(2) - filtered_bias_(2);
+        if (std::fabs(compensation_error) <= compensation_parameters_(4)) compensation_error = 0.0;
 
-        // double compensation_error = compensation_parameters_(2) + filtered_bias_(2);
-        // if (compensation_error >= -compensation_parameters_(1)) compensation_error = 0.0;
-
-        if ((loop_period_count_ >= compensation_parameters_(6)) && (compensation_error != 0.0))
+        if ((loop_period_count_ >= compensation_parameters_(8)) && (compensation_error != 0.0))
         {
             printf("Triger Z\n");
             filtered_bias(2)   = filtered_bias_(2);
@@ -731,11 +727,11 @@ int finite_state_machine::update_weight_compensation_task_status(const int loop_
             compensator_trigger_count_++;
             return 3;
         }
-        else if ((compensation_error == 0.0) && (loop_period_count_ > 2 * compensation_parameters_(6)))
+        else if ((compensation_error == 0.0) && (loop_period_count_ > 2 * compensation_parameters_(8)))
         {
-            printf("Z Estimation completed\n");
+            printf("Z Estimation completed\n\n");
             loop_period_count_ = 0;
-            compensator_trigger_count_ = 10;
+            compensator_trigger_count_ = compensation_parameters_(9) + compensation_parameters_(10) + compensation_parameters_(11);
             return 0;
         }
     }
