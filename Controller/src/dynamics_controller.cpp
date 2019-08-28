@@ -1779,41 +1779,50 @@ void dynamics_controller::compute_weight_compensation_control_commands()
                                                                           abag_.get_bias(), 
                                                                           abag_.get_gain(), 
                                                                           filtered_bias_);
-    // Update error and control command for linear X axis
-    if (compensation_status == 1) 
+    if (compensation_status != 0)
     {
         // Values expressed in the task frame: offset - current bias
-        compensation_error_(0) = compensation_parameters_(2) - filtered_bias_(0);
-        if (std::fabs(compensation_error_(0)) <= compensation_parameters_(1)) compensation_error_(0) = 0.0;
+        switch (compensation_status)
+        {
+            case 1: // Update error and control command for linear X axis
+                compensation_error_(0) = compensation_parameters_(2) - filtered_bias_(0);
+                if (std::fabs(compensation_error_(0)) <= compensation_parameters_(1)) compensation_error_(0) = 0.0;
 
-        // Force in task frame = error in procentage * max command * proportional gain
-        compensated_weight_.force = compensated_weight_.force + KDL::Vector(compensation_error_(0) * max_command_(0) * compensation_parameters_(0), 0.0, 0.0);
-        
-        #ifndef NDEBUG
-            printf("X Force: %f\n", compensated_weight_.force(0));
-        #endif
+                // Force in task frame = error in percentage * max command * proportional gain
+                compensated_weight_.force = compensated_weight_.force + KDL::Vector(compensation_error_(0) * max_command_(0) * compensation_parameters_(0), 0.0, 0.0);
+                printf("X Force: %f\n", compensated_weight_.force(0));
+                break;
 
-        // Transform external force from task frame to the base frame
-        robot_state_.external_force[END_EFF_].force = moveTo_weight_compensation_task_.tf_pose.M * compensated_weight_.force;
-    }
-    
-    // Update error and control command for linear Z axis
-    else if (compensation_status == 2) 
-    {
-        // Values expressed in the task frame: offset - current bias
-        compensation_error_(2) = compensation_parameters_(2) - filtered_bias_(2);
-        if (std::fabs(compensation_error_(2)) <= compensation_parameters_(1)) compensation_error_(2) = 0.0;
+            case 2: // Update error and control command for linear Y axis
+                compensation_error_(1) = 0.0 - filtered_bias_(1);
+                if (std::fabs(compensation_error_(1)) <= compensation_parameters_(1)) compensation_error_(1) = 0.0;
 
-        // compensation_error_(2) = compensation_parameters_(2) + filtered_bias_(2);
-        // if (compensation_error_(2) >= -compensation_parameters_(1)) compensation_error_(2) = 0.0;
+                // compensation_error_(1) = compensation_parameters_(2) + filtered_bias_(1);
+                // if (compensation_error_(1) >= -compensation_parameters_(1)) compensation_error_(1) = 0.0;
 
-        // Force in task frame = error in procentage * max command * proportional gain
-        compensated_weight_.force = compensated_weight_.force + KDL::Vector(0.0, 0.0, compensation_error_(2) * max_command_(2) * compensation_parameters_(0) * 0.8);
-        // compensated_weight_.force = compensated_weight_.force + KDL::Vector(compensation_error_(2) * max_command_(2) * compensation_parameters_(0)*0.9, 0.0, 0.0);
-        
-        #ifndef NDEBUG
-            printf("Z Force: %f\n", compensated_weight_.force(2));
-        #endif
+                // Force in task frame = error in percentage * max command * proportional gain
+                compensated_weight_.force = compensated_weight_.force + KDL::Vector(0.0, compensation_error_(1) * max_command_(1) * compensation_parameters_(0) * 0.8, 0.0);
+                // compensated_weight_.force = compensated_weight_.force + KDL::Vector(compensation_error_(1) * max_command_(1) * compensation_parameters_(0) * 0.8, 0.0, 0.0);
+                printf("Y Force: %f\n", compensated_weight_.force(1));
+                break;
+
+            case 3: // Update error and control command for linear Z axis
+                compensation_error_(2) = 0.0 - filtered_bias_(2);
+                if (std::fabs(compensation_error_(2)) <= compensation_parameters_(1)) compensation_error_(2) = 0.0;
+
+                // compensation_error_(2) = compensation_parameters_(2) + filtered_bias_(2);
+                // if (compensation_error_(2) >= -compensation_parameters_(1)) compensation_error_(2) = 0.0;
+
+                // Force in task frame = error in percentage * max command * proportional gain
+                compensated_weight_.force = compensated_weight_.force + KDL::Vector(0.0, 0.0, compensation_error_(2) * max_command_(2) * compensation_parameters_(0) * 0.8);
+                // compensated_weight_.force = compensated_weight_.force + KDL::Vector(compensation_error_(2) * max_command_(2) * compensation_parameters_(0) * 0.8, 0.0, 0.0);
+                printf("Z Force: %f\n", compensated_weight_.force(2));
+                break;
+
+            default:
+                assert(("Unknown status values from weight estimation FSM.", false));
+                break;
+        }
 
         // Transform external force from task frame to the base frame
         robot_state_.external_force[END_EFF_].force = moveTo_weight_compensation_task_.tf_pose.M * compensated_weight_.force;
