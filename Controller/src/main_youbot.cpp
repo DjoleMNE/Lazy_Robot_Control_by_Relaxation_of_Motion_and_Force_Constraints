@@ -142,7 +142,7 @@ const Eigen::VectorXd error_alpha_2         = (Eigen::VectorXd(NUMBER_OF_CONSTRA
                                             << 0.850000, 0.900000, 0.900000, 
                                                0.850000, 0.850000, 0.850000).finished();
 const Eigen::VectorXd bias_threshold_2      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.000407, 0.000407, 0.000407, 
+                                            << 0.000457, 0.000407, 0.000407, 
                                                0.001007, 0.001007, 0.001007).finished();
 const Eigen::VectorXd bias_step_2           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.000550, 0.000495, 0.000495, 
@@ -186,6 +186,23 @@ const Eigen::VectorXd gain_threshold_3      = (Eigen::VectorXd(NUMBER_OF_CONSTRA
                                                0.252492, 0.252492, 0.252492).finished();
 const Eigen::VectorXd gain_step_3           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.003152, 0.003552, 0.003552, 
+                                               0.015152, 0.015152, 0.015152).finished();
+
+// moveTo_weight_compensation-torque ABAG parameters
+const Eigen::VectorXd error_alpha_4         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.850000, 0.900000, 0.900000, 
+                                               0.850000, 0.850000, 0.850000).finished();
+const Eigen::VectorXd bias_threshold_4      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.000457, 0.000407, 0.000407, 
+                                               0.001007, 0.001007, 0.001007).finished();
+const Eigen::VectorXd bias_step_4           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.000550, 0.000495, 0.000495, 
+                                               0.003495, 0.003495, 0.003495).finished();
+const Eigen::VectorXd gain_threshold_4      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.552492, 0.552492, 0.552492, 
+                                               0.252492, 0.252492, 0.252492).finished();
+const Eigen::VectorXd gain_step_4           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.003152, 0.003152, 0.003152, 
                                                0.015152, 0.015152, 0.015152).finished();
 
 const Eigen::VectorXd min_bias_sat                = Eigen::VectorXd::Constant(6, -1.0);
@@ -528,16 +545,16 @@ int main(int argc, char **argv)
                                              false, false, false}; // Angular
     environment          = youbot_environment::REAL;
     robot_model_id       = youbot_model::URDF;
-    desired_pose_id      = desired_pose::LOOK_DOWN_2;
+    desired_pose_id      = desired_pose::LOOK_UP;
     desired_control_mode = control_mode::TORQUE;
     desired_task_model   = task_model::moveTo_weight_compensation;
     // desired_task_model   = task_model::full_pose;
     path_type            = path_types::SINE_PATH;
-    tube_speed           = 0.1;
+    tube_speed           = 0.0;
     compensate_gravity   = false;
     tube_tolerances      = std::vector<double>{0.001, 0.01, 0.01, 
-                                               0.17, 0.17, 0.17, 
-                                               0.0, 5.0}; // Last tolerance is in unit of degrees - Null-space tolerance
+                                               0.0, 0.0, 0.0, 
+                                               0.001, 5.0}; // Last tolerance is in unit of degrees - Null-space tolerance
 
     if (desired_pose_id == desired_pose::LOOK_AT_1 && desired_task_model == task_model::moveTo)
     {
@@ -629,6 +646,15 @@ int main(int argc, char **argv)
                                   max_command, error_alpha_3,
                                   bias_threshold_3, bias_step_3, gain_threshold_3,
                                   gain_step_3, min_bias_sat, min_command_sat,
+                                  null_space_abag_parameters,
+                                  compensation_parameters);
+    }
+    else if (desired_task_model == task_model::moveTo_weight_compensation)
+    {
+        controller.set_parameters(time_horizon_sec, abag_error_type, 
+                                  max_command, error_alpha_4,
+                                  bias_threshold_4, bias_step_4, gain_threshold_4,
+                                  gain_step_4, min_bias_sat, min_command_sat,
                                   null_space_abag_parameters,
                                   compensation_parameters);
     }
