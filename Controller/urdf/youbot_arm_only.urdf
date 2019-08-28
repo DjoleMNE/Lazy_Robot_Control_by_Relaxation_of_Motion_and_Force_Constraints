@@ -262,6 +262,7 @@
   </joint>
   <link name="arm_link_5">
     <inertial>
+      <!-- <mass value="1.387"/> -->
       <mass value="0.687"/>
       <origin rpy="0 0 0" xyz="0.0 0.00115 -0.01683"/>
       <inertia ixx="0.0001934" ixy="0.0" ixz="0.0" iyy="0.0001602" iyz="0.0" izz="0.0000689"/>
@@ -350,7 +351,7 @@
       <hardwareInterface>EffortJointInterface</hardwareInterface>
     </joint>
   </transmission>
-  <!-- joint between arm_7_link and sdh_palm_link -->
+  <!-- joint between arm_5_link and sdh_palm_link -->
   <joint name="gripper_palm_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <parent link="arm_link_5"/>
@@ -359,7 +360,7 @@
   <link name="gripper_palm_link">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <mass value="0.1"/>
+      <mass value="0.199"/>
       <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
     </inertial>
     <visual>
