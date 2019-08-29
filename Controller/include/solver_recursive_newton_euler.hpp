@@ -46,7 +46,7 @@ namespace KDL{
          * \param chain The kinematic chain to calculate the inverse dynamics for, an internal copy will be made.
          * \param grav The gravity vector to use during the calculation.
          */
-        Solver_RNE(const Chain& chain, const Vector grav, 
+        Solver_RNE(const Chain& chain_, const Vector grav, 
                    const std::vector<double> joint_inertia,
                    const std::vector<double> joint_torque_limits,
                    const bool saturate_torques);

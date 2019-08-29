@@ -1803,7 +1803,7 @@ void dynamics_controller::compute_weight_compensation_control_commands()
                 break;
 
             case 3: // Update error and control command for linear Z axis
-                compensation_error_(2) = compensation_parameters_(2)- filtered_bias_(2);
+                compensation_error_(2) = compensation_parameters_(2) - filtered_bias_(2);
                 if (std::fabs(compensation_error_(2)) <= compensation_parameters_(4)) compensation_error_(2) = 0.0;
 
                 // Force in task frame = error in percentage * max command * proportional gain
