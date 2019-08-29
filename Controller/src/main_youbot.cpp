@@ -220,9 +220,9 @@ const Eigen::VectorXd compensation_parameters = (Eigen::VectorXd(12) \
                                                 << -0.08, -0.08, 0.0, 1.2, 0.025,
                                                    0.00016, 0.0025, 0.00002,
                                                    60, 4, 3, 3).finished();
-// Without weight and gripper %: X -> -8 <-> -13,   Y=> -7 <-> -9, Z->  0
-// With unkown weight         %: X ->  9 <->  17.8, Y_>  0 <->  1, Z-> -2.5 <-> 0
-
+// Without weight and gripper %: X -> -8   <-> -13,   Y=> -7   <-> -9.0, Z->  0
+// With unkown steel weight   %: X ->  9   <->  17.8, Y_>  0   <->  1.0, Z-> -2.5 <-> 0
+// With _known_ steel weight  %: X -> -8.5 <-> -3.0,  Y_> -5.7 <-> -4.0, Z-> -0.1 <-> 0
 int define_task(dynamics_controller *dyn_controller)
 {
     std::vector<double> desired_ee_pose(12, 0.0);
