@@ -263,7 +263,7 @@
   <link name="arm_link_5">
     <inertial>
       <!-- mass with steal weights -->
-      <!-- <mass value="1.362"/> -->
+      <!-- <mass value="1.364"/> -->
 
       <!-- mass with original gripper -->
       <!-- <mass value="0.941"/> -->
