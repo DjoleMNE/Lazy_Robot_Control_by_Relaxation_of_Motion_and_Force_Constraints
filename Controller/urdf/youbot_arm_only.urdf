@@ -262,7 +262,13 @@
   </joint>
   <link name="arm_link_5">
     <inertial>
-      <!-- <mass value="1.387"/> -->
+      <!-- mass with steal weights -->
+      <!-- <mass value="1.362"/> -->
+
+      <!-- mass with original gripper -->
+      <!-- <mass value="0.941"/> -->
+
+      <!-- mass of link alone -->
       <mass value="0.687"/>
       <origin rpy="0 0 0" xyz="0.0 0.00115 -0.01683"/>
       <inertia ixx="0.0001934" ixy="0.0" ixz="0.0" iyy="0.0001602" iyz="0.0" izz="0.0000689"/>
