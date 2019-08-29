@@ -193,7 +193,7 @@ const Eigen::VectorXd error_alpha_4         = (Eigen::VectorXd(NUMBER_OF_CONSTRA
                                             << 0.900000, 0.900000, 0.900000, 
                                                0.850000, 0.850000, 0.850000).finished();
 const Eigen::VectorXd bias_threshold_4      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.000457, 0.000457, 0.000457, 
+                                            << 0.000550, 0.000457, 0.000457, 
                                                0.001007, 0.001007, 0.001007).finished();
 const Eigen::VectorXd bias_step_4           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.000500, 0.000450, 0.000450, 
@@ -216,9 +216,12 @@ const Eigen::VectorXd null_space_abag_parameters  = (Eigen::VectorXd(6) \
 //                                      bias-variance, gain-variance, bias slope, 
 //                                      control-period, x_max_trigger_count, y_max_trigger_count, z_max_trigger_count
 const Eigen::VectorXd compensation_parameters = (Eigen::VectorXd(12) \
-                                                << -0.08, -0.08, 0.0, 1.5, 0.025,
+                                                // << 0.0, 0.0, 0.0, 1.2, 0.025,
+                                                << -0.08, -0.08, 0.0, 1.2, 0.025,
                                                    0.00016, 0.0025, 0.00002,
                                                    60, 4, 3, 3).finished();
+// Without weight and gripper %: X -> -8 <-> -13,   Y=> -7 <-> -9, Z->  0
+// With unkown weight         %: X ->  9 <->  17.8, Y_>  0 <->  1, Z-> -2.5 <-> 0
 
 int define_task(dynamics_controller *dyn_controller)
 {
