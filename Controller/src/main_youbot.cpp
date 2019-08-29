@@ -190,19 +190,19 @@ const Eigen::VectorXd gain_step_3           = (Eigen::VectorXd(NUMBER_OF_CONSTRA
 
 // moveTo_weight_compensation-torque ABAG parameters
 const Eigen::VectorXd error_alpha_4         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.850000, 0.900000, 0.900000, 
+                                            << 0.900000, 0.900000, 0.900000, 
                                                0.850000, 0.850000, 0.850000).finished();
 const Eigen::VectorXd bias_threshold_4      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.000457, 0.000407, 0.000407, 
+                                            << 0.000457, 0.000457, 0.000457, 
                                                0.001007, 0.001007, 0.001007).finished();
 const Eigen::VectorXd bias_step_4           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.000550, 0.000495, 0.000495, 
+                                            << 0.000500, 0.000450, 0.000450, 
                                                0.003495, 0.003495, 0.003495).finished();
 const Eigen::VectorXd gain_threshold_4      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.552492, 0.552492, 0.552492, 
+                                            << 0.452492, 0.452492, 0.452492, 
                                                0.252492, 0.252492, 0.252492).finished();
 const Eigen::VectorXd gain_step_4           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.003152, 0.003152, 0.003152, 
+                                            << 0.002600, 0.002600, 0.002600, 
                                                0.015152, 0.015152, 0.015152).finished();
 
 const Eigen::VectorXd min_bias_sat                = Eigen::VectorXd::Constant(6, -1.0);
@@ -216,7 +216,7 @@ const Eigen::VectorXd null_space_abag_parameters  = (Eigen::VectorXd(6) \
 //                                      bias-variance, gain-variance, bias slope, 
 //                                      control-period, x_max_trigger_count, y_max_trigger_count, z_max_trigger_count
 const Eigen::VectorXd compensation_parameters = (Eigen::VectorXd(12) \
-                                                << 0.07, 0.0, 0.0, 1.0, 0.025,
+                                                << -0.08, -0.08, 0.0, 1.5, 0.025,
                                                    0.00016, 0.0025, 0.00002,
                                                    60, 4, 3, 3).finished();
 
@@ -272,7 +272,7 @@ int define_task(dynamics_controller *dyn_controller)
 
         case desired_pose::LOOK_UP:
             tube_start_position = std::vector<double>{0.0195846, 0.366728, 0.123489};
-            desired_ee_pose     = { 0.0195846, 0.366728, 0.221379,  // Linear: Vector
+            desired_ee_pose     = { 0.0195846, 0.366728, 0.201379,  // Linear: Vector
                                     1.0, 0.0, 0.0, // Angular: Rotation matrix
                                     0.0, 1.0, 0.0,
                                     0.0, 0.0, 1.0};
@@ -554,7 +554,7 @@ int main(int argc, char **argv)
     compensate_gravity   = false;
     tube_tolerances      = std::vector<double>{0.001, 0.01, 0.01, 
                                                0.0, 0.0, 0.0, 
-                                               0.001, 5.0}; // Last tolerance is in unit of degrees - Null-space tolerance
+                                               0.0, 5.0}; // Last tolerance is in unit of degrees - Null-space tolerance
 
     if (desired_pose_id == desired_pose::LOOK_AT_1 && desired_task_model == task_model::moveTo)
     {
