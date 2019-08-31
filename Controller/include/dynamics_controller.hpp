@@ -191,7 +191,7 @@ class dynamics_controller
     double total_time_sec_;
     int loop_iteration_count_, feedforward_loop_count_;
 
-    const KDL::Chain robot_chain_;
+    KDL::Chain robot_chain_;
     const int NUM_OF_JOINTS_;
     const int NUM_OF_SEGMENTS_;
     const int NUM_OF_FRAMES_;
@@ -225,8 +225,8 @@ class dynamics_controller
     KDL::Wrench ext_wrench_, ext_wrench_base_, compensated_weight_;
     KDL::JntArray zero_joint_array_, gravity_torque_;
 
-    KDL::Solver_Vereshchagin hd_solver_;
-    KDL::Solver_RNE id_solver_;
+    std::shared_ptr<KDL::Solver_Vereshchagin> hd_solver_;
+    std::shared_ptr<KDL::Solver_RNE> id_solver_;
     KDL::FK_Vereshchagin fk_vereshchagin_;
     safety_controller safety_control_;
     ABAG abag_, abag_null_space_;

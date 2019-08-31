@@ -74,12 +74,6 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     ext_wrench_(KDL::Wrench::Zero()), ext_wrench_base_(KDL::Wrench::Zero()),
     compensated_weight_(KDL::Wrench::Zero()),
     zero_joint_array_(NUM_OF_JOINTS_), gravity_torque_(NUM_OF_JOINTS_),
-    hd_solver_(robot_chain_, JOINT_INERTIA_, 
-               JOINT_TORQUE_LIMITS_, !compensate_gravity_,
-               compensate_gravity_? KDL::Twist::Zero() : ROOT_ACC_, 
-               NUM_OF_CONSTRAINTS_),
-    id_solver_(robot_chain_, KDL::Vector(0.0, 0.0, -9.81289), JOINT_INERTIA_, 
-               JOINT_TORQUE_LIMITS_, false),
     fk_vereshchagin_(robot_chain_),
     safety_control_(robot_driver, true), 
     fsm_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
@@ -98,7 +92,16 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     assert(("Selected frequency is too low", 1 <= RATE_HZ_));
     // Control loop frequency must be lower than or equal to 1000 Hz
     assert(("Selected frequency is too high", RATE_HZ_<= 10000));
-    
+
+    printf("Initial End-Effector mass: %f\n", INITIAL_END_EFF_MASS_);
+
+    this->hd_solver_ = std::make_shared<KDL::Solver_Vereshchagin>(robot_chain_, JOINT_INERTIA_,
+                                                                  JOINT_TORQUE_LIMITS_, !COMPENSATE_GRAVITY_,
+                                                                  COMPENSATE_GRAVITY_? KDL::Twist::Zero() : ROOT_ACC_, 
+                                                                  NUM_OF_CONSTRAINTS_);
+    this->id_solver_ = std::make_shared<KDL::Solver_RNE>(robot_chain_, KDL::Vector(0.0, 0.0, -9.81289),
+                                                         JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, false);
+
     // Set default command interface to stop motion mode and initialize it as not safe
     desired_control_mode_.interface = control_mode::STOP_MOTION;
     desired_control_mode_.is_safe = false;
@@ -1827,20 +1830,20 @@ void dynamics_controller::compute_weight_compensation_control_commands()
 //Calculate robot dynamics - Resolve motion and forces using the Vereshchagin HD solver
 int dynamics_controller::evaluate_dynamics()
 {
-    int hd_solver_result = hd_solver_.CartToJnt(robot_state_.q,
-                                                robot_state_.qd,
-                                                robot_state_.qdd,
-                                                robot_state_.ee_unit_constraint_force,
-                                                robot_state_.ee_acceleration_energy,
-                                                robot_state_.external_force,
-                                                cart_force_command_,
-                                                robot_state_.feedforward_torque);
+    int hd_solver_result = this->hd_solver_->CartToJnt(robot_state_.q,
+                                                       robot_state_.qd,
+                                                       robot_state_.qdd,
+                                                       robot_state_.ee_unit_constraint_force,
+                                                       robot_state_.ee_acceleration_energy,
+                                                       robot_state_.external_force,
+                                                       cart_force_command_,
+                                                       robot_state_.feedforward_torque);
 
     if (hd_solver_result != 0) return hd_solver_result;
 
-    hd_solver_.get_control_torque(robot_state_.control_torque);
+    this->hd_solver_->get_control_torque(robot_state_.control_torque);
 
-    // hd_solver_.get_transformed_link_acceleration(robot_state_.frame_acceleration);
+    // this->hd_solver_->get_transformed_link_acceleration(robot_state_.frame_acceleration);
     
     // Print computed state in Debug mode
 // #ifndef NDEBUG
@@ -1867,8 +1870,8 @@ int dynamics_controller::evaluate_dynamics()
 
 int dynamics_controller::compute_gravity_compensation_control_commands()
 {
-    int id_solver_result = id_solver_.CartToJnt(robot_state_.q, zero_joint_array_, zero_joint_array_, 
-                                                zero_wrenches_, gravity_torque_);
+    int id_solver_result = this->id_solver_->CartToJnt(robot_state_.q, zero_joint_array_, zero_joint_array_, 
+                                                       zero_wrenches_, gravity_torque_);
     if (id_solver_result != 0) return id_solver_result;
     
     robot_state_.control_torque.data = robot_state_.control_torque.data + gravity_torque_.data;
