@@ -83,6 +83,10 @@ public:
                   const Wrenches& force_ext_virtual, 
                   JntArray &torques);
 
+    /// @copydoc KDL::SolverI::updateInternalDataStructures
+    virtual void updateInternalDataStructures() {};
+
+    // Getters and Setters
     void set_joint_inertia(const std::vector<double> &joint_inertia);
     void get_transformed_link_pose(Frames& x);
     void get_screw_twist(Twists& xDot);

@@ -68,6 +68,9 @@ namespace KDL
         int JntToCart(const JntArray &q, const JntArray &q_dot,
                       Frames& cart_pose, Twists& cart_vel);
 
+        /// @copydoc KDL::SolverI::updateInternalDataStructures
+        virtual void updateInternalDataStructures() {};
+
     private:
         /**
          *  This method calculates all cartesian space poses, twists.

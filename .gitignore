@@ -6,9 +6,11 @@ Controller/release_build_lwr/*
 Controller/release_build_youbot/*
 Controller/visualization/archive/*
 
+kdl_parser/*
 lwr_rtt_ws/build/*
 lwr_rtt_ws/devel/*
 lwr_rtt_ws/logs/*
+lwr_rtt_ws/src/kdl_parser/*
 lwr_rtt_ws/.catkin_tools/*
 
 \.ipynb_checkpoints/*

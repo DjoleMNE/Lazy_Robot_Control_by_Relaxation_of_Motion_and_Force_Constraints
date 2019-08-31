@@ -15,7 +15,10 @@ endif()
 set(ROBOT youBot CACHE STRING "Robot ID")
 message("Selected Robot: ${ROBOT}")
 
-find_package(orocos_kdl)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(orocos_kdl REQUIRED orocos_kdl)
+
+#find_package(orocos_kdl PATHS /home/djole/Master/Thesis/GIT/MT_testing/KDL/KDL_install_dir/)
 find_package(kdl_parser)
 find_package(Boost COMPONENTS system filesystem REQUIRED)
 #find_package(youbot_driver)
@@ -23,12 +26,14 @@ find_package(Boost COMPONENTS system filesystem REQUIRED)
 include_directories(
   include
   ${orocos_kdl_INCLUDE_DIRS}
+  ${kdl_parser_INCLUDE_DIRS}
   #${youbot_driver_INCLUDE_DIRS}
   /home/djole/youBot_driver_inst_dir/usr/local/include
   /home/djole/youBot_driver_inst_dir/usr/local/include/youbot_driver/soem
   /home/djole/youBot_driver_inst_dir/usr/local/include/youbot_driver/soem/osal
   /home/djole/youBot_driver_inst_dir/usr/local/include/youbot_driver/soem/oshw/linux
 )
+
 
 link_directories(
   #${youbot_driver_INCLUDE_DIRS}
