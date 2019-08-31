@@ -718,6 +718,7 @@ void dynamics_controller::define_moveTo_weight_compensation_task(
                                     const double task_time_limit_sec,
                                     const bool control_null_space,
                                     const double desired_null_space_angle,
+                                    const bool use_mass_alternation,
                                     std::vector<double> &task_frame_pose)
 {
     assert(constraint_direction.size() == NUM_OF_CONSTRAINTS_);
@@ -770,6 +771,7 @@ void dynamics_controller::define_moveTo_weight_compensation_task(
     moveTo_weight_compensation_task_.contact_threshold_linear  = contact_threshold_linear;
     moveTo_weight_compensation_task_.contact_threshold_angular = contact_threshold_angular;
     moveTo_weight_compensation_task_.time_limit                = task_time_limit_sec;
+    moveTo_weight_compensation_task_.use_mass_alternation      = use_mass_alternation;
 
     // Set null-space error tolerance; small null-space oscillations are desired in this mode
     moveTo_weight_compensation_task_.null_space_force_direction = KDL::Vector::Zero();
@@ -1787,6 +1789,7 @@ void dynamics_controller::compute_weight_compensation_control_commands()
                                                                           filtered_bias_);
     if (compensation_status != 0)
     {
+        double updated_mass = 0.0;
         // Values expressed in the task frame: offset - current bias
         switch (compensation_status)
         {
@@ -1794,27 +1797,48 @@ void dynamics_controller::compute_weight_compensation_control_commands()
                 compensation_error_(0) = compensation_parameters_(0) - filtered_bias_(0);
                 if (std::fabs(compensation_error_(0)) <= compensation_parameters_(4)) compensation_error_(0) = 0.0;
 
-                // Force in task frame = error in percentage * max command * proportional gain
-                compensated_weight_.force = compensated_weight_.force + KDL::Vector(compensation_error_(0) * max_command_(0) * compensation_parameters_(3), 0.0, 0.0);
-                printf("X Force: %f\n", compensated_weight_.force(0));
+                if (moveTo_weight_compensation_task_.use_mass_alternation)
+                {
+                    updated_mass = robot_chain_.getSegment(END_EFF_).getInertia().getMass() - compensation_error_(0) * max_command_(0) * compensation_parameters_(3) * 0.13;
+                }
+                else
+                {
+                    // Force in task frame = error in percentage * max command * proportional gain
+                    compensated_weight_.force = compensated_weight_.force + KDL::Vector(compensation_error_(0) * max_command_(0) * compensation_parameters_(3), 0.0, 0.0);
+                    printf("X Force: %f\n", compensated_weight_.force(0));
+                }
                 break;
 
             case 2: // Update error and control command for linear Y axis
                 compensation_error_(1) = compensation_parameters_(1) - filtered_bias_(1);
                 if (std::fabs(compensation_error_(1)) <= compensation_parameters_(4)) compensation_error_(1) = 0.0;
 
-                // Force in task frame = error in percentage * max command * proportional gain
-                compensated_weight_.force = compensated_weight_.force + KDL::Vector(0.0, compensation_error_(1) * max_command_(1) * compensation_parameters_(3), 0.0);
-                printf("Y Force: %f\n", compensated_weight_.force(1));
+                if (moveTo_weight_compensation_task_.use_mass_alternation)
+                {
+                    updated_mass = robot_chain_.getSegment(END_EFF_).getInertia().getMass() - compensation_error_(1) * max_command_(1) * compensation_parameters_(3) * 0.13;
+                }
+                else
+                {
+                    // Force in task frame = error in percentage * max command * proportional gain
+                    compensated_weight_.force = compensated_weight_.force + KDL::Vector(0.0, compensation_error_(1) * max_command_(1) * compensation_parameters_(3), 0.0);
+                    printf("Y Force: %f\n", compensated_weight_.force(1));
+                }
                 break;
 
             case 3: // Update error and control command for linear Z axis
                 compensation_error_(2) = compensation_parameters_(2) - filtered_bias_(2);
                 if (std::fabs(compensation_error_(2)) <= compensation_parameters_(4)) compensation_error_(2) = 0.0;
 
-                // Force in task frame = error in percentage * max command * proportional gain
-                compensated_weight_.force = compensated_weight_.force + KDL::Vector(0.0, 0.0, compensation_error_(2) * max_command_(2) * compensation_parameters_(3));
-                printf("Z Force: %f\n", compensated_weight_.force(2));
+                if (moveTo_weight_compensation_task_.use_mass_alternation)
+                {
+                    updated_mass = robot_chain_.getSegment(END_EFF_).getInertia().getMass() - compensation_error_(2) * max_command_(2) * compensation_parameters_(3) * 0.13;
+                }
+                else
+                {
+                    // Force in task frame = error in percentage * max command * proportional gain
+                    compensated_weight_.force = compensated_weight_.force + KDL::Vector(0.0, 0.0, compensation_error_(2) * max_command_(2) * compensation_parameters_(3));
+                    printf("Z Force: %f\n", compensated_weight_.force(2));
+                }
                 break;
 
             default:
@@ -1822,8 +1846,26 @@ void dynamics_controller::compute_weight_compensation_control_commands()
                 break;
         }
 
-        // Transform external force from task frame to the base frame
-        robot_state_.external_force[END_EFF_].force = moveTo_weight_compensation_task_.tf_pose.M * compensated_weight_.force;
+        // Apply model changes
+        if (moveTo_weight_compensation_task_.use_mass_alternation)
+        {
+            robot_chain_.getSegment(END_EFF_).setMass(updated_mass);
+            printf("Updated mass: %f \n", robot_chain_.getSegment(END_EFF_).getInertia().getMass());
+
+            // Reset solvers with updated model
+            this->hd_solver_.reset(new KDL::Solver_Vereshchagin(robot_chain_, JOINT_INERTIA_,
+                                                                JOINT_TORQUE_LIMITS_, !COMPENSATE_GRAVITY_,
+                                                                COMPENSATE_GRAVITY_? KDL::Twist::Zero() : ROOT_ACC_, 
+                                                                NUM_OF_CONSTRAINTS_));
+
+            this->id_solver_.reset(new KDL::Solver_RNE(robot_chain_, KDL::Vector(0.0, 0.0, -9.81289),
+                                                       JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, false));
+        }
+        else
+        {
+            // Transform external force from task frame to the base frame
+            robot_state_.external_force[END_EFF_].force = moveTo_weight_compensation_task_.tf_pose.M * compensated_weight_.force;
+        }
     }
 }
 

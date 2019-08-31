@@ -131,6 +131,7 @@ class dynamics_controller
                                                 const double task_time_limit_sec,
                                                 const bool control_null_space,
                                                 const double desired_null_space_angle,
+                                                const bool use_mass_alternation,
                                                 std::vector<double> &task_frame_pose);
 
     void define_moveConstrained_follow_path_task(const std::vector<bool> &constraint_direction,

@@ -86,6 +86,7 @@ const double time_horizon_sec        = 2.5;
 const bool log_data                  = true;
 bool control_null_space              = false;
 bool compensate_gravity              = false;
+bool use_mass_alternation            = false;
 
 std::vector<bool> control_dims      = {true, true, true, // Linear
                                        false, false, false}; // Angular
@@ -216,10 +217,10 @@ const Eigen::VectorXd null_space_abag_parameters  = (Eigen::VectorXd(6) \
 //                                      bias-variance, gain-variance, bias slope, 
 //                                      control-period, x_max_trigger_count, y_max_trigger_count, z_max_trigger_count
 const Eigen::VectorXd compensation_parameters = (Eigen::VectorXd(12) \
-                                                // << 0.0, 0.0, 0.0, 1.2, 0.025,
-                                                << -0.08, -0.08, 0.0, 1.2, 0.025,
+                                                // << 0.0, 0.0, 0.0, 1.2, 0.015,
+                                                << -0.08, -0.07, 0.0, 1.2, 0.015,
                                                    0.00016, 0.0025, 0.00002,
-                                                   60, 4, 3, 3).finished();
+                                                   60, 6, 3, 3).finished();
 // Without weight and gripper %: X -> -13.0 <-> -8.0,  Y=> -7   <-> -9.0, Z->  0
 // With unkown steel weight   %: X ->  9.0  <->  17.8, Y_>  0   <->  1.0, Z-> -2.5 <-> 0
 // With _known_ steel weight  %: X -> -8.5  <-> -3.0,  Y_> -5.7 <-> -4.0, Z-> -0.1 <-> 0
@@ -374,6 +375,7 @@ int define_task(dynamics_controller *dyn_controller)
                                                                    task_time_limit_sec,// time_limit
                                                                    control_null_space,
                                                                    desired_null_space_angle,
+                                                                   use_mass_alternation,
                                                                    desired_ee_pose); // TF pose
             break;
 
@@ -555,6 +557,7 @@ int main(int argc, char **argv)
     path_type            = path_types::SINE_PATH;
     tube_speed           = 0.0;
     compensate_gravity   = false;
+    use_mass_alternation = true;
     tube_tolerances      = std::vector<double>{0.001, 0.01, 0.01, 
                                                0.0, 0.0, 0.0, 
                                                0.0, 5.0}; // Last tolerance is in unit of degrees - Null-space tolerance

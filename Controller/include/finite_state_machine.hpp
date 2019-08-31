@@ -131,6 +131,7 @@ struct moveTo_weight_compensation_task
     double contact_threshold_linear = 0.0;
     double contact_threshold_angular = 0.0;
     double time_limit = 0.0;
+    bool use_mass_alternation = false;
 };
 
 struct full_pose_task

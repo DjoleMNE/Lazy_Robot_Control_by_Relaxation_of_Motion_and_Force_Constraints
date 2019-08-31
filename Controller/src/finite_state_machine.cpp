@@ -646,7 +646,7 @@ int finite_state_machine::update_weight_compensation_task_status(const int loop_
 
         if ((loop_period_count_ >= compensation_parameters_(8)) && (compensation_error != 0.0))
         {
-            printf("Triger X %d:, %f \n", compensator_trigger_count_ + 1, filtered_bias_(0));
+            printf("Triger X %d: %f, %f, %f \n", compensator_trigger_count_ + 1, filtered_bias_(0), filtered_bias_(1), filtered_bias_(2));
             filtered_bias(0)   = filtered_bias_(0);
             loop_period_count_ = 0;
             write_compensation_time_to_file_ = true;
@@ -683,7 +683,7 @@ int finite_state_machine::update_weight_compensation_task_status(const int loop_
 
         if ((loop_period_count_ >= compensation_parameters_(8)) && (compensation_error != 0.0))
         {
-            printf("Triger Y %d:, %f \n", compensator_trigger_count_ + 1, filtered_bias_(1));
+            printf("Triger Y %d: %f, %f, %f \n", compensator_trigger_count_ + 1, filtered_bias_(0), filtered_bias_(1), filtered_bias_(2));
             filtered_bias(1)   = filtered_bias_(1);
             loop_period_count_ = 0;
             write_compensation_time_to_file_ = true;
@@ -720,7 +720,7 @@ int finite_state_machine::update_weight_compensation_task_status(const int loop_
 
         if ((loop_period_count_ >= compensation_parameters_(8)) && (compensation_error != 0.0))
         {
-            printf("Triger Z %d:, %f \n", compensator_trigger_count_ + 1, filtered_bias_(2));
+            printf("Triger Z %d: %f, %f, %f \n", compensator_trigger_count_ + 1, filtered_bias_(0), filtered_bias_(1), filtered_bias_(2));
             filtered_bias(2)   = filtered_bias_(2);
             loop_period_count_ = 0;
             write_compensation_time_to_file_ = true;
