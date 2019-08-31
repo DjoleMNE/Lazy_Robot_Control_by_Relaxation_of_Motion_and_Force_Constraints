@@ -198,12 +198,15 @@ class dynamics_controller
     const int NUM_OF_CONSTRAINTS_;
     const int END_EFF_;
     const int ROBOT_ID_;
-    const std::vector<double> JOINT_TORQUE_LIMITS_;
+    const double INITIAL_END_EFF_MASS_;
+    const bool COMPENSATE_GRAVITY_;
+    const std::vector<double> JOINT_TORQUE_LIMITS_, JOINT_INERTIA_;
+    const KDL::Twist ROOT_ACC_; 
     std::vector<bool> CTRL_DIM_, POS_TUBE_DIM_, MOTION_CTRL_DIM_, FORCE_CTRL_DIM_;
     int fsm_result_, fsm_force_task_result_, previous_control_status_, tube_section_count_;
     bool transform_drivers_, transform_force_drivers_, apply_feedforward_force_, 
          compute_null_space_command_, write_contact_time_to_file_,
-         compensate_unknown_weight_, compensate_gravity_;
+         compensate_unknown_weight_;
     
     moveTo_task moveTo_task_;
     moveGuarded_task moveGuarded_task_;

@@ -43,6 +43,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     NUM_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
     NUM_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
     END_EFF_(NUM_OF_SEGMENTS_ - 1), ROBOT_ID_(robot_driver->get_robot_ID()),
+    INITIAL_END_EFF_MASS_(robot_chain_.getSegment(END_EFF_).getInertia().getMass()),
+    COMPENSATE_GRAVITY_(compensate_gravity),
     CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), POS_TUBE_DIM_(NUM_OF_CONSTRAINTS_, false),
     MOTION_CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), FORCE_CTRL_DIM_(NUM_OF_CONSTRAINTS_, false),
     fsm_result_(control_status::NOMINAL), fsm_force_task_result_(control_status::APPROACH),
@@ -50,8 +52,9 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     transform_drivers_(false), transform_force_drivers_(false),
     apply_feedforward_force_(false), compute_null_space_command_(false),
     write_contact_time_to_file_(false), compensate_unknown_weight_(false),
-    compensate_gravity_(compensate_gravity),
     JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
+    JOINT_INERTIA_(robot_driver->get_joint_inertia()),
+    ROOT_ACC_(robot_driver->get_root_acceleration()),
     current_error_twist_(KDL::Twist::Zero()),
     abag_error_vector_(Eigen::VectorXd::Zero(abag_parameter::DIMENSIONS)),
     null_space_abag_error_(Eigen::VectorXd::Zero(1)),
@@ -71,12 +74,12 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     ext_wrench_(KDL::Wrench::Zero()), ext_wrench_base_(KDL::Wrench::Zero()),
     compensated_weight_(KDL::Wrench::Zero()),
     zero_joint_array_(NUM_OF_JOINTS_), gravity_torque_(NUM_OF_JOINTS_),
-    hd_solver_(robot_chain_, robot_driver->get_joint_inertia(), 
-               robot_driver->get_joint_torque_limits(), !compensate_gravity_,
-               compensate_gravity_? KDL::Twist::Zero() : robot_driver->get_root_acceleration(), 
+    hd_solver_(robot_chain_, JOINT_INERTIA_, 
+               JOINT_TORQUE_LIMITS_, !compensate_gravity_,
+               compensate_gravity_? KDL::Twist::Zero() : ROOT_ACC_, 
                NUM_OF_CONSTRAINTS_),
-    id_solver_(robot_chain_, KDL::Vector(0.0, 0.0, -9.81289), robot_driver->get_joint_inertia(), 
-               robot_driver->get_joint_torque_limits(), false),
+    id_solver_(robot_chain_, KDL::Vector(0.0, 0.0, -9.81289), JOINT_INERTIA_, 
+               JOINT_TORQUE_LIMITS_, false),
     fk_vereshchagin_(robot_chain_),
     safety_control_(robot_driver, true), 
     fsm_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
@@ -2109,7 +2112,7 @@ int dynamics_controller::control()
         }
 
         // Compute necessary torques for compensating gravity, using the RNE ID solver
-        if (compensate_gravity_) 
+        if (COMPENSATE_GRAVITY_) 
         {
             ctrl_status = compute_gravity_compensation_control_commands();
             if (ctrl_status != 0)
@@ -2192,7 +2195,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
     }
 
     // Compute necessary torques for compensating gravity, using the RNE ID solver
-    if (compensate_gravity_) 
+    if (COMPENSATE_GRAVITY_) 
     {
         if (compute_gravity_compensation_control_commands() != 0)
         {

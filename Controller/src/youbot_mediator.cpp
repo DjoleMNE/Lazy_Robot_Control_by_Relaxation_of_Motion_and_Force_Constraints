@@ -39,7 +39,7 @@ youbot_mediator::youbot_mediator():
                       youbot_constants::root_acceleration[4],
                       youbot_constants::root_acceleration[5]),
     root_acc_(linear_root_acc_, angular_root_acc_) 
-{   
+{
     //Resize measurement variables
     q_measured_.resize(youbot_constants::NUMBER_OF_JOINTS);
     qd_measured_.resize(youbot_constants::NUMBER_OF_JOINTS);
@@ -319,11 +319,9 @@ void youbot_mediator::initialize(const int robot_model,
                                  const int robot_environment,
                                  const bool gravity_compensated)
 {
-    youbot_model_ = robot_model;
+    youbot_model_       = robot_model;
     youbot_environment_ = robot_environment;
-    yb_chain_ = KDL::Chain();
-
-    // if (gravity_compensated) root_acc_ = KDL::Twist::Zero();
+    yb_chain_           = KDL::Chain();
 
     // Reset Flags
     is_initialized_   = false;
