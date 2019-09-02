@@ -208,7 +208,7 @@ bool youbot_mediator::robot_stopped()
 
 // Set Zero Joint Velocities and wait until robot has stopped completely
 void youbot_mediator::stop_robot_motion()
-{   
+{
     // Send the zero velocity commands to motors
     for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
         qd_setpoint_[i].angularVelocity = 0.0 * radian_per_second;

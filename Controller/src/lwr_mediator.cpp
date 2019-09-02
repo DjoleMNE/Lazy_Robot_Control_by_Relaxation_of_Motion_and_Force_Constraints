@@ -111,6 +111,26 @@ void lwr_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
     // if (lwr_environment_ != lwr_environment::SIMULATION)
 }
 
+// Set Zero Joint Velocities and wait until robot has stopped completely
+void lwr_mediator::stop_robot_motion()
+{
+    // Send the zero velocity commands to motors
+    for (int i = 0; i < lwr_constants::NUMBER_OF_JOINTS; i++)
+        qd_setpoint_(i) = 0.0;
+
+    // if (lwr_environment_ != lwr_environment::SIMULATION)
+    // {
+    //     youbot_arm_->setJointData(qd_setpoint_);
+
+    //     // Monitor robot state until robot has stopped completely
+    //     bool wait_for_driver = true;
+    //     while (wait_for_driver)
+    //     {
+    //         if (robot_stopped()) wait_for_driver = false;
+    //     }
+    // }
+}
+
 void lwr_mediator::set_joint_command(const KDL::JntArray &joint_positions,
                                      const KDL::JntArray &joint_velocities,
                                      const KDL::JntArray &joint_torques,
