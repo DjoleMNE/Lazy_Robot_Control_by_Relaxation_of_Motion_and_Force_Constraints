@@ -1948,7 +1948,7 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
     assert(gain_threshold.size() == NUM_OF_CONSTRAINTS_); 
     assert(gain_step.size()      == NUM_OF_CONSTRAINTS_); 
     assert(null_space_parameters.size()   == NUM_OF_CONSTRAINTS_); 
-    assert(compensation_parameters.size() == NUM_OF_CONSTRAINTS_ + 1); 
+    assert(compensation_parameters.size() == 2 * NUM_OF_CONSTRAINTS_); 
 
     this->horizon_amplitude_        = horizon_amplitude;
     this->max_command_              = max_command;

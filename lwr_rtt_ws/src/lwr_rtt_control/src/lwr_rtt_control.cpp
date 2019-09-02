@@ -33,9 +33,10 @@ LwrRttControl::LwrRttControl(const std::string& name):
     robot_model_(lwr_model::LWR_URDF), iteration_count_(0), gazebo_arm_eef_(0),
     simulation_loop_iterations_(10000), total_time_(0.0), task_time_limit_sec_(0.0),
     krc_compensate_gravity_(false), load_ati_sensor_(false),
+    control_null_space_(false), use_mass_alternation_(false),
     desired_task_model_(2), desired_control_mode_(0), desired_dynamics_interface_(1),
     desired_pose_(1), motion_profile_(0), path_type_(0),
-    damper_amplitude_(1.0), tube_speed_(0.0), tube_force_(0.0),
+    damper_amplitude_(1.0), tube_speed_(0.0), tube_force_(0.0), desired_null_space_angle_(0.0),
     control_dims_(NUM_OF_CONSTRAINTS_, false), tube_path_points_(1, std::vector<double>(3, 0.0)),
     path_poses_(1, std::vector<double>(12, 0.0)), path_parameters_(5, 0.0),
     desired_ee_pose_(12, 0.0), tube_tolerances_(8, 0.0), tube_start_position_(3, 0.0),
@@ -88,10 +89,13 @@ LwrRttControl::LwrRttControl(const std::string& name):
     this->addProperty("GAIN_THRESHOLD", gain_threshold_).doc("GAIN_THRESHOLD");
     this->addProperty("GAIN_STEP", gain_step_).doc("GAIN_STEP");
     this->addProperty("compensation_parameters", compensation_parameters_).doc("compensation_parameters");
+    this->addProperty("use_mass_alternation", use_mass_alternation_).doc("use_mass_alternation");
     this->addProperty("abag_error_type", abag_error_type_).doc("abag_error_type");
     this->addProperty("min_bias_sat", min_bias_sat_).doc("min_bias_sat");
     this->addProperty("min_command_sat", min_command_sat_).doc("min_command_sat");
     this->addProperty("null_space_abag_parameters", null_space_abag_parameters_).doc("null_space_abag_parameters");
+    this->addProperty("control_null_space", control_null_space_).doc("control_null_space");
+    this->addProperty("desired_null_space_angle", desired_null_space_angle_).doc("desired_null_space_angle");
 }
 
 bool LwrRttControl::configureHook()
@@ -250,6 +254,8 @@ bool LwrRttControl::configureHook()
                                                                  tube_force_,
                                                                  0.005, 0.0004, //contact_threshold linear and angular
                                                                  task_time_limit_sec_,// time_limit
+                                                                 control_null_space_,
+                                                                 desired_null_space_angle_,
                                                                  path_poses_); // TF pose
             break;
 
@@ -288,6 +294,8 @@ bool LwrRttControl::configureHook()
                                                         tube_speed_,
                                                         1.0, 0.1, //contact_threshold linear and angular
                                                         task_time_limit_sec_,// time_limit
+                                                        control_null_space_,
+                                                        desired_null_space_angle_,
                                                         path_poses_); // TF pose
             break;
 
@@ -299,6 +307,8 @@ bool LwrRttControl::configureHook()
                                             tube_speed_,
                                             1.0, 0.1, //contact_threshold linear and angular
                                             task_time_limit_sec_,// time_limit
+                                            control_null_space_,
+                                            desired_null_space_angle_,
                                             desired_ee_pose_); // TF pose
             break;
 
@@ -310,6 +320,9 @@ bool LwrRttControl::configureHook()
                                                                 tube_speed_,
                                                                 1.0, 0.1, //contact_threshold linear and angular
                                                                 task_time_limit_sec_,// time_limit
+                                                                control_null_space_,
+                                                                desired_null_space_angle_,
+                                                                use_mass_alternation_,
                                                                 desired_ee_pose_); // TF pose
             break;
 
@@ -318,7 +331,10 @@ bool LwrRttControl::configureHook()
                                                                   control_dims_[3], control_dims_[4], control_dims_[5]}, // Angular
                                                 desired_ee_pose_,
                                                 1.0, 0.2, //contact_threshold linear and angular
-                                                task_time_limit_sec_);
+                                                task_time_limit_sec_,
+                                                control_null_space_,
+                                                desired_null_space_angle_,
+                                                5.0);
             break;
 
         default:

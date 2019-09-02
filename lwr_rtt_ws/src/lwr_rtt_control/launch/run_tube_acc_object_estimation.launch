@@ -127,9 +127,11 @@
     <!-- Parameters for weight compensation: x_bias-offset (-1.0 <-> 1.0), y_bias-offset, z_bias-offset, K proportional, error-tube(0.0 <-> 1.0),
                                              bias-variance, gain-variance, bias slope, 
                                              control-period, x_max_trigger_count, y_max_trigger_count, z_max_trigger_count -->
-    <arg name="compensation_parameters" default=" [0.0, 0.0, 0.0, 1.7, 0.025,
+    <arg name="compensation_parameters" default=" [0.0, 0.0, 0.0, 1.7, 0.015,
                                                    0.00016, 0.0025, 0.00002,
-                                                   60, 3, 3, 3]"/>
+                                                   60, 4, 3, 3]"/>
+
+    <arg name="use_mass_alternation" default="false"/>
 
 <!--============ LwrRttControl Params ============-->
     <!-- Set some parameters for LwrRttControl
@@ -159,6 +161,7 @@
         <rosparam param="GAIN_THRESHOLD" subst_value="True">$(arg GAIN_THRESHOLD)</rosparam>
         <rosparam param="GAIN_STEP" subst_value="True">$(arg GAIN_STEP)</rosparam>
         <rosparam param="compensation_parameters" subst_value="True">$(arg compensation_parameters)</rosparam>
+        <rosparam param="use_mass_alternation" subst_value="True">$(arg use_mass_alternation)</rosparam>
         <rosparam param="abag_error_type" subst_value="True">$(arg abag_error_type)</rosparam>
         <rosparam param="min_bias_sat" subst_value="True">$(arg min_bias_sat)</rosparam>
         <rosparam param="min_command_sat" subst_value="True">$(arg min_command_sat)</rosparam>

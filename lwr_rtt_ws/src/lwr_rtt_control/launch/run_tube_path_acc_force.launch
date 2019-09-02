@@ -143,6 +143,7 @@
     <arg name="null_space_abag_parameters" default="[0.850000, 
                                                      0.000507, 0.000455, 
                                                      0.452492, 0.001552, 250.0]"/>
+    <arg name="control_null_space"   default="true"/>
 
 <!--============ LwrRttControl Params ============-->
     <!-- Set some parameters for LwrRttControl
@@ -178,6 +179,7 @@
         <rosparam param="min_bias_sat" subst_value="True">$(arg min_bias_sat)</rosparam>
         <rosparam param="min_command_sat" subst_value="True">$(arg min_command_sat)</rosparam>
         <rosparam param="null_space_abag_parameters" subst_value="True">$(arg null_space_abag_parameters)</rosparam>
+        <rosparam param="control_null_space" subst_value="True">$(arg control_null_space)</rosparam>
     </node>
 
 <!-- ============ Runner script =============== -->
