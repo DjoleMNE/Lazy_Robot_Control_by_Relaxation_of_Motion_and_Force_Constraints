@@ -472,7 +472,7 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
         tube_start_position = task_orientation * tube_start_position;
         tf_position         = task_orientation * tf_position;
 
-        KDL::Vector x_task              = tf_position - tube_start_position;
+        KDL::Vector x_task  = tf_position - tube_start_position;
         x_task.Normalize();
 
         KDL::Vector cross_product = x_world * x_task;
@@ -1194,7 +1194,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
     switch (fsm_force_task_result_)
     {
         case control_status::APPROACH:
-            // Set ABAG parameters for linear Z axis velocity control 
+            // Set ABAG parameters for linear Z axis velocity control
             if (previous_control_status_ == control_status::NOMINAL)
             {
                 // Parameters for Velocity controlled DOF
@@ -1235,7 +1235,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             break;
 
         case control_status::CRUISE:
-            // Set ABAG parameters for linear Z axis force control 
+            // Set ABAG parameters for linear Z axis force control
             if (previous_control_status_ == control_status::APPROACH)
             {
                 abag_.reset_state(0);
@@ -1322,7 +1322,6 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             if (std::fabs(abag_error_vector_(4)) <= moveConstrained_follow_path_task_.tube_tolerances[4]) abag_error_vector_(4) = 0.0;
             FORCE_CTRL_DIM_[4]  = true;
 
-
             // Check for tube on angular velocity: Z-angular
             // abag_error_vector_(5) = 0.0 - robot_state_.frame_velocity[END_EFF_](5);
             // if (std::fabs(abag_error_vector_(5)) <= moveConstrained_follow_path_task_.tube_tolerances[7]) abag_error_vector_(5) = 0.0;
@@ -1335,6 +1334,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             transform_drivers_ = true;
 
             // Feedforward force for ensuring stable contact alignment once control mode switch occurs
+            // Maybe it would be good to make this part as an intermediate state.. see Markus Klotzbücher PhD thesis (p. 110)
             if (apply_feedforward_force_)
             {
                 feedforward_loop_count_++;
@@ -1784,8 +1784,8 @@ void dynamics_controller::compute_weight_compensation_control_commands()
 {
     // Values expressed in the task frames
     int compensation_status = fsm_.update_weight_compensation_task_status(loop_iteration_count_,
-                                                                          abag_.get_bias(), 
-                                                                          abag_.get_gain(), 
+                                                                          abag_.get_bias(),
+                                                                          abag_.get_gain(),
                                                                           filtered_bias_);
     if (compensation_status != 0)
     {
@@ -2157,7 +2157,7 @@ int dynamics_controller::control()
         }
 
         // Compute necessary torques for compensating gravity, using the RNE ID solver
-        if (COMPENSATE_GRAVITY_) 
+        if (COMPENSATE_GRAVITY_)
         {
             ctrl_status = compute_gravity_compensation_control_commands();
             if (ctrl_status != 0)
