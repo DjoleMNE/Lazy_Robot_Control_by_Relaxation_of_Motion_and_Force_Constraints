@@ -1787,7 +1787,7 @@ void dynamics_controller::compute_weight_compensation_control_commands()
                                                                           abag_.get_bias(),
                                                                           abag_.get_gain(),
                                                                           filtered_bias_);
-    if (compensation_status != 0)
+    if (compensation_status > 0)
     {
         double updated_mass = 0.0;
         // Values expressed in the task frame: offset - current bias
@@ -2180,8 +2180,12 @@ int dynamics_controller::control()
         }
 
         // Make sure that the loop is always running with the same frequency
-        if (enforce_loop_frequency() != 0) printf("WARNING: Control loop runs too slow \n");
-
+        #ifdef NDEBUG
+            if (enforce_loop_frequency() != 0) printf("WARNING: Control loop runs too slow \n");
+        #endif
+        #ifndef NDEBUG
+            enforce_loop_frequency();
+        #endif
         // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_).count();
         // if (loop_iteration_count_ == 50) 
         // {
