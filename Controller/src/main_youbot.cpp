@@ -146,13 +146,13 @@ const Eigen::VectorXd bias_threshold_2      = (Eigen::VectorXd(NUMBER_OF_CONSTRA
                                             << 0.000457, 0.000407, 0.000407, 
                                                0.001007, 0.001007, 0.001007).finished();
 const Eigen::VectorXd bias_step_2           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.000500, 0.000495, 0.000495, 
+                                            << 0.000500, 0.000400, 0.000400, 
                                                0.003495, 0.003495, 0.003495).finished();
 const Eigen::VectorXd gain_threshold_2      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.502492, 0.552492, 0.552492, 
+                                            << 0.502492, 0.502492, 0.502492, 
                                                0.252492, 0.252492, 0.252492).finished();
 const Eigen::VectorXd gain_step_2           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.002552, 0.003152, 0.003152, 
+                                            << 0.002552, 0.002552, 0.002552, 
                                                0.015152, 0.015152, 0.015152).finished();
 
 // moveTo-velocity ABAG parameters
