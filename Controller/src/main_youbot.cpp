@@ -71,18 +71,18 @@ const int MILLISECOND                = 1000;
 const int JOINTS                     = 5;
 const int NUMBER_OF_CONSTRAINTS      = 6;
 const int desired_dynamics_interface = dynamics_interface::CART_ACCELERATION;
-const int motion_profile_id          = m_profile::CONSTANT;
 const int abag_error_type            = error_type::SIGN;
+int motion_profile_id                = m_profile::CONSTANT;
 int path_type                        = path_types::STEP_PATH;
 int desired_pose_id                  = desired_pose::NAVIGATION;
 int environment                      = youbot_environment::SIMULATION;
 int robot_model_id                   = youbot_model::URDF;
 int desired_task_model               = task_model::full_pose;
-int desired_control_mode             = control_mode::VELOCITY;
+int desired_control_mode             = control_mode::TORQUE;
+const double time_horizon_sec        = 2.5;
 double tube_speed                    = 0.01;
 double desired_null_space_angle      = 90.0; // Unit degrees
-const double task_time_limit_sec     = 600.0;
-const double time_horizon_sec        = 2.5;
+double task_time_limit_sec           = 600.0;
 const bool log_data                  = true;
 bool control_null_space              = false;
 bool compensate_gravity              = false;
@@ -140,19 +140,19 @@ const Eigen::VectorXd gain_step_1           = (Eigen::VectorXd(NUMBER_OF_CONSTRA
 
 // moveTo-torque ABAG parameters
 const Eigen::VectorXd error_alpha_2         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.850000, 0.900000, 0.900000, 
+                                            << 0.900000, 0.900000, 0.900000, 
                                                0.850000, 0.850000, 0.850000).finished();
 const Eigen::VectorXd bias_threshold_2      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.000457, 0.000407, 0.000407, 
                                                0.001007, 0.001007, 0.001007).finished();
 const Eigen::VectorXd bias_step_2           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.000550, 0.000495, 0.000495, 
+                                            << 0.000500, 0.000495, 0.000495, 
                                                0.003495, 0.003495, 0.003495).finished();
 const Eigen::VectorXd gain_threshold_2      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.552492, 0.552492, 0.552492, 
+                                            << 0.502492, 0.552492, 0.552492, 
                                                0.252492, 0.252492, 0.252492).finished();
 const Eigen::VectorXd gain_step_2           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.003152, 0.003152, 0.003152, 
+                                            << 0.002552, 0.003152, 0.003152, 
                                                0.015152, 0.015152, 0.015152).finished();
 
 // moveTo-velocity ABAG parameters
@@ -251,7 +251,7 @@ int define_task(dynamics_controller *dyn_controller)
             break;
 
         case desired_pose::LOOK_AT_2:
-            tube_start_position = std::vector<double>{0.0192443, 0.366672, 0.240953};
+            tube_start_position = std::vector<double>{0.0192443, 0.366672, 0.160953};
             desired_ee_pose     = { 0.0192443, 0.185581, 0.240953, // Linear: Vector
                                     1.0, 0.0, 0.0, // Angular: Rotation matrix
                                     0.0, 1.0, 0.0,
@@ -550,17 +550,19 @@ int main(int argc, char **argv)
                                              false, false, false}; // Angular
     environment          = youbot_environment::REAL;
     robot_model_id       = youbot_model::URDF;
-    desired_pose_id      = desired_pose::LOOK_UP;
+    desired_pose_id      = desired_pose::LOOK_AT_2;
     desired_control_mode = control_mode::TORQUE;
-    desired_task_model   = task_model::moveTo_weight_compensation;
+    desired_task_model   = task_model::moveTo;
     // desired_task_model   = task_model::full_pose;
     path_type            = path_types::SINE_PATH;
-    tube_speed           = 0.0;
+    motion_profile_id    = m_profile::S_CURVE;
+    task_time_limit_sec  = 10.0;
+    tube_speed           = 0.05;
     compensate_gravity   = false;
     use_mass_alternation = true;
-    tube_tolerances      = std::vector<double>{0.001, 0.01, 0.01, 
+    tube_tolerances      = std::vector<double>{0.02, 0.015, 0.015, 
                                                0.0, 0.0, 0.0, 
-                                               0.0, 5.0}; // Last tolerance is in unit of degrees - Null-space tolerance
+                                               0.003, 5.0}; // Last tolerance is in unit of degrees - Null-space tolerance
 
     if (desired_pose_id == desired_pose::LOOK_AT_1 && desired_task_model == task_model::moveTo)
     {
@@ -622,7 +624,7 @@ int main(int argc, char **argv)
     // return 0;
 
     //loop rate in Hz
-    int rate_hz = 650;
+    int rate_hz = 660;
     dynamics_controller controller(&robot_driver, rate_hz, compensate_gravity);
 
     int initial_result = define_task(&controller);

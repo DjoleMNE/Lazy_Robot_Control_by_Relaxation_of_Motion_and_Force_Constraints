@@ -463,7 +463,7 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 
             case m_profile::S_CURVE:
                 speed = motion_profile::s_curve_function(std::fabs(current_error_(0)), 
-                                                         0.05, moveTo_task_.tube_speed, 5.0);
+                                                         0.0, moveTo_task_.tube_speed, 15.0);
                 break;
 
             default:
