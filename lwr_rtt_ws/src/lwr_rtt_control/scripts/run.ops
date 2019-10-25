@@ -12,7 +12,7 @@ loadStatePublisher(true)
 // Set initial robot configuration: Default is candle pose
 if (isSim()) then
   // Navigation Pose
-  //setRobotInitialJointConfiguration(1.0, 0.0, 0.0, -1.57, 0.0, 1.57, 0.0)
+  setRobotInitialJointConfiguration(1.0, 0.0, 0.0, -1.57, 0.0, 1.57, 0.0)
   // Semi Candle Pose
   //setRobotInitialJointConfiguration(0.0, 0.2, 0.0, 0.0, 0.0, 0.0, 0.0)
   // Folded Pose
@@ -22,9 +22,9 @@ if (isSim()) then
   // Table Pose 2
   //setRobotInitialJointConfiguration(0.870617, 0.620455, 0.0204834, -2.10655, -0.0290253, 0.451482, 0.021415)
   // Down Pose
-  setRobotInitialJointConfiguration(2.96, 1.01597, -0.00247816, 3.09441, 0.00712046, 0.7, 0.0185914)
+  //setRobotInitialJointConfiguration(2.96, 1.01597, -0.00247816, 3.09441, 0.00712046, 0.7, 0.0185914)
   // Up Pose 2
-  setRobotInitialJointConfiguration(2.96706, 1.02312, -0.131436, 1.612, 0.221282, 0.177134, 0.0155614)
+  //setRobotInitialJointConfiguration(2.96706, 1.02312, -0.131436, 1.612, 0.221282, 0.177134, 0.0155614)
   // Candle 2 Pose
   //setRobotInitialJointConfiguration(2.96004, 0.236575, 0.012681, 0.810056, 0.00639899, 2.09441, -1.81095)
 
