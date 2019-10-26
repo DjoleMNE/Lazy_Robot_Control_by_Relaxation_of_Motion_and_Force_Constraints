@@ -183,7 +183,7 @@ const Eigen::VectorXd bias_step_3           = (Eigen::VectorXd(NUMBER_OF_CONSTRA
                                             << 0.000550, 0.000550, 0.000550, 
                                                0.003495, 0.003495, 0.003495).finished();
 const Eigen::VectorXd gain_threshold_3      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.502492, 0.502492, 0.502492, 
+                                            << 0.502492, 0.454092, 0.454092, 
                                                0.252492, 0.252492, 0.252492).finished();
 const Eigen::VectorXd gain_step_3           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.003152, 0.003552, 0.003552, 
@@ -211,7 +211,7 @@ const Eigen::VectorXd min_command_sat             = Eigen::VectorXd::Constant(6,
 const Eigen::VectorXd null_space_abag_parameters  = (Eigen::VectorXd(6) \
                                                     << 0.900000,
                                                        0.000407, 0.000495, 
-                                                       0.452492, 0.002052, 3.0).finished(); // Last param is max command
+                                                       0.452492, 0.001552, 3.0).finished(); // Last param is max command
 
 //  Parameters for weight compensation: x_bias-offset (-1.0 <-> 1.0), y_bias-offset, z_bias-offset, K proportional, error-tube(0.0 <-> 1.0),
 //                                      bias-variance, gain-variance, bias slope, 
@@ -550,17 +550,17 @@ int main(int argc, char **argv)
                                              false, false, false}; // Angular
     environment          = youbot_environment::REAL;
     robot_model_id       = youbot_model::URDF;
-    desired_pose_id      = desired_pose::LOOK_AT_2;
+    desired_pose_id      = desired_pose::CANDLE;
     desired_control_mode = control_mode::TORQUE;
-    desired_task_model   = task_model::moveTo;
+    desired_task_model   = task_model::moveTo_follow_path;
     // desired_task_model   = task_model::full_pose;
     path_type            = path_types::SINE_PATH;
-    motion_profile_id    = m_profile::S_CURVE;
-    task_time_limit_sec  = 10.0;
+    motion_profile_id    = m_profile::CONSTANT;
+    task_time_limit_sec  = 18.5;
     tube_speed           = 0.05;
     compensate_gravity   = false;
     use_mass_alternation = true;
-    tube_tolerances      = std::vector<double>{0.02, 0.015, 0.015, 
+    tube_tolerances      = std::vector<double>{0.01, 0.015, 0.015, 
                                                0.0, 0.0, 0.0, 
                                                0.003, 5.0}; // Last tolerance is in unit of degrees - Null-space tolerance
 
@@ -585,10 +585,10 @@ int main(int argc, char **argv)
         } 
         else
         {
-            control_null_space = false;
-            compensate_gravity = true;
-            // desired_null_space_angle = 80.0; // Unit degrees
-            // tube_tolerances[7] = 3.0; // Unit degrees
+            // compensate_gravity = true;
+            control_null_space = true;
+            desired_null_space_angle = 83.0; // Unit degrees
+            tube_tolerances[7] = 4.0; // Unit degrees
         }
     }
     else control_null_space = false;
