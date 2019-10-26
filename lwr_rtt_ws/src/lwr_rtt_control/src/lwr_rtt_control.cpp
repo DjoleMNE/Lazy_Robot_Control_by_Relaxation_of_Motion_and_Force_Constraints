@@ -774,22 +774,33 @@ void LwrRttControl::draw_step_xz(std::vector< std::vector<double> > &path_points
                                  const double x_scale, const double offset_x, 
                                  const double offset_y, const double offset_z)
 {
-    double x_y, z;
+    double x_y = 0.0;
+    double z = 0.0;
     int offset = int(path_points.size() / step_size);
 
+    // for(int i = 0; i < path_points.size(); i++)
+    // {
+    //     x_y = x_scale * i;
+
+    //     if      (i < offset)                       z =  0.0;
+    //     else if (i >     offset && i < 2 * offset) z =  0.07;
+    //     else if (i > 2 * offset && i < 3 * offset) z = -0.05;
+    //     else if (i > 3 * offset && i < 4 * offset) z =  0.04;
+    //     else                                       z =  0.01;
+
+    //     path_points[i][0] = x_y + offset_x;
+    //     path_points[i][1] = 0.0 + offset_y;
+    //     path_points[i][2] = z   + offset_z;
+    // }
+
+    std::vector<double> z_axis = {0.0, 0.0, 0.07, 0.07, -0.05, -0.05, 0.04, 0.04,  0.01, 0.01, -0.02, -0.02};
     for(int i = 0; i < path_points.size(); i++)
     {
-        x_y = x_scale * i;
+        if(i%2 != 0) x_y = i * 0.03;
 
-        if      (i < offset)                       z =  0.0;
-        else if (i >     offset && i < 2 * offset) z =  0.07;
-        else if (i > 2 * offset && i < 3 * offset) z = -0.05;
-        else if (i > 3 * offset && i < 4 * offset) z =  0.04;
-        else                                       z =  0.01;
-
-        path_points[i][0] = x_y + offset_x;
-        path_points[i][1] = 0.0 + offset_y;
-        path_points[i][2] = z   + offset_z;
+        path_points[i][0] = x_y       + offset_x -0.03;
+        path_points[i][1] = 0.0       + offset_y - 0.04;
+        path_points[i][2] = z_axis[i] + offset_z;
     }
 }
 

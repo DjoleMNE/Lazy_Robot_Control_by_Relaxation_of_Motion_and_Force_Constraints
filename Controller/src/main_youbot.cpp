@@ -303,6 +303,7 @@ int define_task(dynamics_controller *dyn_controller)
     switch (desired_task_model)
     {
         case task_model::moveTo_follow_path:
+            // path_parameters = {0.5, 4.5, 0.05, 0.0035, 90};
             switch (path_type)
             {
                 case path_types::STEP_PATH:
