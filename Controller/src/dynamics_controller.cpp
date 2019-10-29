@@ -1731,7 +1731,7 @@ void dynamics_controller::compute_null_space_control_commands()
 }
 
 void dynamics_controller::compute_cart_control_commands()
-{   
+{
     abag_command_ = abag_.update_state(abag_error_vector_).transpose();
     KDL::SetToZero(cart_force_command_[END_EFF_]);
 
