@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import pyinotify
 
 desired_dim = np.int(sys.argv[1])
+control_freq = 660/2
 # show_tube = np.int(sys.argv[2])
 
 print("Selected dimension: ", desired_dim)
@@ -69,16 +70,16 @@ slope_bias    = np.array(slope_bias)
 
 plt.ion()
 plt.figure(figsize = (18, 10))
-if(desired_dim is 0):   plt.suptitle('Linear X Compensation', fontsize=20)
-elif(desired_dim is 1): plt.suptitle('Linear Y Compensation', fontsize=20)
-elif(desired_dim is 2): plt.suptitle('Linear Z Compensation', fontsize=20)
-elif(desired_dim is 3): plt.suptitle('Angular X Compensation', fontsize=20)
-elif(desired_dim is 4): plt.suptitle('Angular Y Compensation', fontsize=20)
-elif(desired_dim is 5): plt.suptitle('Angular Z Compensation', fontsize=20)
+if(desired_dim is 0):   plt.suptitle('Compensation in Linear X direction', fontsize=20)
+elif(desired_dim is 1): plt.suptitle('Compensation in Linear Y direction', fontsize=20)
+elif(desired_dim is 2): plt.suptitle('Compensation in Linear Z direction', fontsize=20)
+elif(desired_dim is 3): plt.suptitle('Compensation in Angular X direction', fontsize=20)
+elif(desired_dim is 4): plt.suptitle('Compensation in Angular Y direction', fontsize=20)
+elif(desired_dim is 5): plt.suptitle('Compensation in Angular Z direction', fontsize=20)
 
 
 tick_freq = 1000
-if (num_samples > 4000 and num_samples < 7000): tick_freq = 500
+if   (num_samples > 4000 and num_samples < 7000): tick_freq = 500
 elif (num_samples < 4000 and num_samples > 1000): tick_freq = 200
 elif (num_samples < 1000 and num_samples > 500): tick_freq = 100
 elif (num_samples < 500): tick_freq = 50
@@ -94,10 +95,13 @@ plt.plot(gain, c = 'red', label=r'gain * sign(e)', linewidth = 2, zorder = 2)
 plt.plot(filtered_bias, c = 'blue', label='filered_bias', linewidth = 1.0, zorder = 3)
 for tick in contact_time_tick:
     plt.axvline(x = tick, linewidth = 1.2,  color='blue', zorder = 4)
-plt.ylim(-1.05, 1.05)
-plt.yticks(np.arange(-1.0, 1.05, 0.25))
+# plt.ylim(-1.05, 1.05)
+# plt.yticks(np.arange(-1.0, 1.05, 0.25))
 plt.legend(fontsize = 'x-large')
-plt.xticks(np.arange(0, num_samples, tick_freq))
+time_ticks = np.arange(0, num_samples / control_freq, 0.5)
+plt.xlim(0, time_ticks[-1])
+plt.xticks(np.arange(0, num_samples, control_freq), " ")
+# plt.xticks(np.arange(0, num_samples, tick_freq))
 plt.grid(True)
 
 plt.subplot(4, 1, 2)
@@ -109,7 +113,8 @@ plt.plot(tube_tolerance_2, c = 'blue', label='tube_upper_limit', linewidth = 1.3
 for tick in contact_time_tick:
     plt.axvline(x = tick, linewidth = 1.2,  color='blue', zorder = 4)
 plt.legend(loc=4, fontsize = 'x-large')
-plt.xticks(np.arange(0, num_samples, tick_freq))
+plt.xlim(0, time_ticks[-1])
+plt.xticks(np.arange(0, num_samples, control_freq), " ")
 plt.ylim(-0.0001, 0.0003)
 plt.grid(True)
 
@@ -122,7 +127,8 @@ plt.plot(tube_tolerance_2, c = 'blue', label='tube_upper_limit', linewidth = 1.3
 for tick in contact_time_tick:
     plt.axvline(x = tick, linewidth = 1.2,  color='blue', zorder = 4)
 plt.legend(loc=4, fontsize = 'x-large')
-plt.xticks(np.arange(0, num_samples, tick_freq))
+plt.xlim(0, time_ticks[-1])
+plt.xticks(np.arange(0, num_samples, control_freq), " ")
 plt.ylim(-0.001, 0.003)
 plt.grid(True)
 
@@ -134,7 +140,8 @@ plt.plot(-tube_tolerance, c = 'blue', label='tube_upper_limit', linewidth = 1.3,
 for tick in contact_time_tick:
     plt.axvline(x = tick, linewidth = 1.2,  color='blue', zorder = 4)
 plt.legend(fontsize = 'x-large')
-plt.xticks(np.arange(0, num_samples, tick_freq))
+plt.xlim(0, time_ticks[-1])
+plt.xticks(np.arange(0, num_samples, control_freq), time_ticks, fontsize=14)
 plt.grid(True)
 plt.ylim(-0.00005, 0.00005)
 
