@@ -551,19 +551,19 @@ int main(int argc, char **argv)
                                              false, false, false}; // Angular
     environment          = youbot_environment::REAL;
     robot_model_id       = youbot_model::URDF;
-    desired_pose_id      = desired_pose::CANDLE;
+    desired_pose_id      = desired_pose::LOOK_UP;
     desired_control_mode = control_mode::TORQUE;
-    desired_task_model   = task_model::moveTo_follow_path;
+    desired_task_model   = task_model::moveTo_weight_compensation;
     // desired_task_model   = task_model::full_pose;
     path_type            = path_types::SINE_PATH;
     motion_profile_id    = m_profile::CONSTANT;
     task_time_limit_sec  = 18.5;
-    tube_speed           = 0.05;
+    tube_speed           = 0.0;
     compensate_gravity   = false;
     use_mass_alternation = true;
-    tube_tolerances      = std::vector<double>{0.01, 0.015, 0.015, 
+    tube_tolerances      = std::vector<double>{0.001, 0.01, 0.01, 
                                                0.0, 0.0, 0.0, 
-                                               0.003, 5.0}; // Last tolerance is in unit of degrees - Null-space tolerance
+                                               0.005, 5.0}; // Last tolerance is in unit of degrees - Null-space tolerance
 
     if (desired_pose_id == desired_pose::LOOK_AT_1 && desired_task_model == task_model::moveTo)
     {
