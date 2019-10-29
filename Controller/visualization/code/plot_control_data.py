@@ -13,6 +13,8 @@ show_tube = np.int(sys.argv[2])
 print("Selected dimension: ", desired_dim)
 variable_num = 7
 
+control_freq = 770/2
+
 filename = "../archive/control_error.txt"
 
 def restart_program(): #restart application
@@ -109,94 +111,156 @@ command   = np.array(command)
 
 plt.ion()
 plt.figure(figsize = (18, 10))
-if(desired_dim is 0):   plt.suptitle('Linear X', fontsize=20)
-elif(desired_dim is 1): plt.suptitle('Linear Y', fontsize=20)
-elif(desired_dim is 2): plt.suptitle('Linear Z', fontsize=20)
-elif(desired_dim is 3): plt.suptitle('Angular X', fontsize=20)
-elif(desired_dim is 4): plt.suptitle('Angular Y', fontsize=20)
-elif(desired_dim is 5): plt.suptitle('Angular Z', fontsize=20)
-elif(desired_dim is 6): plt.suptitle('Linear Velocity X', fontsize=20)
-elif(desired_dim is 7): plt.suptitle('Angular Velocity Z', fontsize=20)
-elif(desired_dim is 8): plt.suptitle('Linear Force Z', fontsize=20)
-elif(desired_dim is 9): plt.suptitle('Angular Force X', fontsize=20)
-elif(desired_dim is 10): plt.suptitle('Angular Force Y', fontsize=20)
+if(desired_dim is 0):   plt.suptitle('Robot Position in Linear X Direction', fontsize=20)
+elif(desired_dim is 1): plt.suptitle('Control of Robot Position in Linear Y Direction', fontsize=20)
+elif(desired_dim is 2): plt.suptitle('Control of Robot Position in Linear Z Direction', fontsize=20)
+elif(desired_dim is 3): plt.suptitle('Control of Robot Angular X Direction', fontsize=20)
+elif(desired_dim is 4): plt.suptitle('Control of Robot Angular Y Direction', fontsize=20)
+elif(desired_dim is 5): plt.suptitle('Control of Robot Angular Z Direction', fontsize=20)
+elif(desired_dim is 6): plt.suptitle('Control of Robot Velocity in Linear X Direction', fontsize=20)
+elif(desired_dim is 7): plt.suptitle('Control of Robot Velocity in Angular Z Direction', fontsize=20)
+elif(desired_dim is 8): plt.suptitle('Control of Robot Force in Linear Z Direction', fontsize=20)
+elif(desired_dim is 9): plt.suptitle('Control of Robot Moment in Angular X Direction', fontsize=20)
+elif(desired_dim is 10): plt.suptitle('Control of Robot Moment in Angular Y Direction', fontsize=20)
 
-tick_freq = 1000
-if (num_samples > 4000 and num_samples < 7000): tick_freq = 500
-elif (num_samples < 4000 and num_samples > 1000): tick_freq = 200
-elif (num_samples < 1000 and num_samples > 500): tick_freq = 100
-elif (num_samples < 500): tick_freq = 50
+# tick_freq = 0.1
+# if   (num_samples > 4000 and num_samples < 7000): tick_freq = 500
+# elif (num_samples < 4000 and num_samples > 1000): tick_freq = 200
+# elif (num_samples < 1000 and num_samples > 500):  tick_freq = 100
+# elif (num_samples < 500):                         tick_freq = 50
 
-plt.gca().set_axis_off()
-plt.subplots_adjust(hspace = 0.02, wspace = 15)
-plt.subplots_adjust(left=0.05, right=0.99, top=0.95, bottom=0.03)
-plt.margins(0,0)
 
-plt.subplot(4, 1, 1)
-if(desired_dim < 3 or desired_dim > 5):
-    plt.plot(measured, c = 'limegreen', label='Measured', linewidth = 2, zorder = 2)
-    plt.plot(desired, label='Desired', linewidth = 2, color = 'black', zorder = 3)
-
-if(show_tube):
-    if (desired_dim > 7):
-        tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim-6] )))
-    else:
+if(desired_dim is 0):
+    plt.figure(figsize=(25,5))
+    plt.title('Monitored Robot Position in Linear X Direction', fontsize=20)
+    plt.plot(measured, c = 'limegreen', label='measured position', linewidth = 2, zorder = 2)
+    plt.plot(desired, label='desired position', linewidth = 2, color = 'black', zorder = 3)
+    if(show_tube):
         tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim] )))
-    plt.plot(desired + tube_tolerance, c = 'red', label='tube_upper_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
-    plt.plot(desired - tube_tolerance, c = 'blue', label='tube_lower_limit', linewidth = 1.3, linestyle = '--', zorder = 2)
+    plt.plot(desired + tube_tolerance, c = 'red', label='upper tolerance', linewidth = 1.3, linestyle = '--', zorder = 2)
+    plt.plot(desired - tube_tolerance, c = 'blue', label='lower tolerance', linewidth = 1.3, linestyle = '--', zorder = 2)       
+    plt.legend(fontsize = 14)
+    # for tick in contact_time_tick:
+    plt.axvline(x = contact_time_tick[0], linewidth = 1.3,  color='blue', zorder = 1)
+    # print(tick)
+    plt.yticks(fontsize=14)
+    time_ticks = np.arange(0, num_samples / control_freq, 0.5)
+    plt.xlim(0, time_ticks[-1])
+    plt.xticks(np.arange(0, num_samples, control_freq), time_ticks, fontsize=14)
+    plt.grid(True)
+    plt.ylabel('[m]', fontsize=20)
+    plt.xlabel('time [s]', fontsize=20)
+
+else:
+    plt.gca().set_axis_off()
+    plt.subplots_adjust(hspace = 0.05, wspace = 15)
+    plt.subplots_adjust(left=0.07, right=0.99, top=0.95, bottom=0.07)
+    plt.margins(0,0)
+
+    plt.subplot(4, 1, 1)
+    if(desired_dim < 3):
+        plt.plot(measured, c = 'limegreen', label='measured position', linewidth = 2, zorder = 2)
+        plt.plot(desired, label='desired  position', linewidth = 2, color = 'black', zorder = 3)
+    
+    elif(desired_dim > 5 and desired_dim < 7):
+        plt.plot(measured, c = 'limegreen', label='measured velocity', linewidth = 2, zorder = 2)
+        plt.plot(desired, label='desired velocity', linewidth = 2, color = 'black', zorder = 3)
+
+    elif(desired_dim == 7):
+        plt.plot(measured, c = 'limegreen', label='measured angle', linewidth = 2, zorder = 2)
+        plt.plot(desired, label='desired angle', linewidth = 2, color = 'black', zorder = 3)        
+
+    elif(desired_dim == 8):
+        plt.plot(measured, c = 'limegreen', label='measured force', linewidth = 2, zorder = 2)
+        plt.plot(desired, label='desired force', linewidth = 2, color = 'black', zorder = 3) 
+
+    else:
+        plt.plot(measured, c = 'limegreen', label='measured moment', linewidth = 2, zorder = 2)
+        plt.plot(desired, label='desired moment', linewidth = 2, color = 'black', zorder = 3) 
+
+    if(show_tube):
+        if (desired_dim > 7):
+            tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim-6] )))
+        else:
+            tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim] )))
+        plt.plot(desired + tube_tolerance, c = 'red', label='upper tolerance', linewidth = 1.3, linestyle = '--', zorder = 2)
+        plt.plot(desired - tube_tolerance, c = 'blue', label='lower tolerance', linewidth = 1.3, linestyle = '--', zorder = 2)
+        for tick in contact_time_tick:
+            plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
+
+    # if (desired_dim == 8):
+        # plt.ylim(desired[0] - tube_tolerance[0] - 0.1, desired[0] - tube_tolerance[0] + 0.1)
+    plt.legend(fontsize = 14, loc=1)
+    plt.yticks(fontsize=14)
+    time_ticks = np.arange(0, num_samples / control_freq, 0.5)
+    plt.xlim(0, time_ticks[-1])
+    plt.xticks(np.arange(0, num_samples, control_freq), " ")
+    plt.grid(True)
+    plt.ylabel('[m]', fontsize=20)
+
+
+    plt.subplot(4, 1, 2)
+    plt.plot(raw_error, c = 'purple', label=r'input error: e', linewidth=1, zorder=2)
     for tick in contact_time_tick:
         plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
+    plt.legend(fontsize = 14)
+    if (desired_dim==8):
+        plt.ylim(-0.20, 0.10)
+    plt.yticks(fontsize=14)
+    plt.xlim(0, time_ticks[-1])
+    plt.xticks(np.arange(0, num_samples, control_freq), " ")
+    plt.grid(True)
+    plt.ylabel('[m]', fontsize=20)
 
-if (desired_dim == 8):
-    plt.ylim(desired[0] - tube_tolerance[0] - 0.1, desired[0] - tube_tolerance[0] + 0.1)
+
+    plt.subplot(4, 1, 3)
+    plt.plot(error, c = 'darkorange', label=r'ABAG: low-pass filtered error sign', linewidth=1, zorder=2)
+    for tick in contact_time_tick:
+        plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
+    plt.legend(fontsize = 14)
+    plt.ylim(-1.2, 1.2)
+    plt.yticks(fontsize=14)
+    plt.xlim(0, time_ticks[-1])
+    plt.xticks(np.arange(0, num_samples, control_freq), " ")
+    plt.grid(True)
+    plt.ylabel('[%]', fontsize=20)
 
 
-plt.legend(loc=4, fontsize = 'x-large')
-plt.xticks(np.arange(0, num_samples, tick_freq))
-plt.grid(True)
+    plt.subplot(4, 1, 4)
+    plt.plot(bias, c = 'green', label='ABAG: bias', linewidth = 2, zorder = 4)
+    plt.plot(gain, c = 'red', label=r'ABAG: gain * sign(e)', linewidth = 2, zorder = 2)
+    plt.plot(command, c = 'blue', label='ABAG: u', linewidth = 1.0, zorder = 3)
+    for tick in contact_time_tick:
+        plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
+    
+    # if(desired_dim is not 8):
+    #     plt.ylim(-0.70, 0.70)
+    #     plt.yticks(np.arange(-0.70, 0.70, 0.25), fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.legend(fontsize = 14, loc=8)
+    plt.xlim(0, time_ticks[-1])
+    plt.xticks(np.arange(0, num_samples, control_freq), time_ticks, fontsize=14)
+    plt.grid(True)
+    plt.ylabel('[%]', fontsize=20)
+    plt.xlabel('time [s]', fontsize=20)
 
-plt.subplot(4, 1, 2)
-plt.plot(raw_error, c = 'orange', label=r'raw error: $e = y_d - y_k$', linewidth=1, zorder=2)
-for tick in contact_time_tick:
-    plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
-plt.legend(fontsize = 'x-large')
-plt.xticks(np.arange(0, num_samples, tick_freq))
-plt.grid(True)
 
-plt.subplot(4, 1, 3)
-plt.plot(error, c = 'orange', label=r'low-pass filtered error sign: $\bar{e}$', linewidth=1, zorder=2)
-for tick in contact_time_tick:
-    plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
-plt.legend(fontsize = 'x-large')
-plt.ylim(-1.2, 1.2)
-plt.xticks(np.arange(0, num_samples, tick_freq))
-plt.grid(True)
-
-plt.subplot(4, 1, 4)
-plt.plot(bias, c = 'green', label='bias', linewidth = 2, zorder = 4)
-plt.plot(gain, c = 'red', label=r'gain * sign(e)', linewidth = 2, zorder = 2)
-plt.plot(command, c = 'blue', label='u', linewidth = 1.0, zorder = 3)
-for tick in contact_time_tick:
-    plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
-plt.ylim(-1.05, 1.05)
-plt.yticks(np.arange(-1.0, 1.05, 0.25))
-
-plt.legend(fontsize = 'x-large')
-plt.xticks(np.arange(0, num_samples, tick_freq))
-plt.grid(True)
+# for i in range (len(bias)):
+#     print(bias[i], end='   ')
+# print("\n \n \n \n \n \n \n \n \n \n \n \n \n")
 
 plt.draw()
 plt.pause(0.001)
-if(desired_dim is 0):   plt.savefig('../archive/x_linear_control.pdf')
-elif(desired_dim is 1): plt.savefig('../archive/y_linear_control.pdf')
-elif(desired_dim is 2): plt.savefig('../archive/z_linear_control.pdf')
-elif(desired_dim is 3): plt.savefig('../archive/x_angular_control.pdf')
-elif(desired_dim is 4): plt.savefig('../archive/y_angular_control.pdf')
-elif(desired_dim is 5): plt.savefig('../archive/z_angular_control.pdf')
-elif(desired_dim is 6): plt.savefig('../archive/x_linear_velocity_control.pdf')
-elif(desired_dim is 7): plt.savefig('../archive/z_angular_velocity_control.pdf')
-elif(desired_dim is 8): plt.savefig('../archive/z_linear_force_control.pdf')
-elif(desired_dim is 9): plt.savefig('../archive/x_angular_force_control.pdf')
-elif(desired_dim is 10): plt.savefig('../archive/y_angular_force_control.pdf')
+if(desired_dim is 0):   plt.savefig('../experiments/x_linear_control.pdf')
+elif(desired_dim is 1): plt.savefig('../experiments/y_linear_control.pdf')
+elif(desired_dim is 2): plt.savefig('../experiments/z_linear_control.pdf')
+elif(desired_dim is 3): plt.savefig('../experiments/x_angular_control.pdf')
+elif(desired_dim is 4): plt.savefig('../experiments/y_angular_control.pdf')
+elif(desired_dim is 5): plt.savefig('../experiments/z_angular_control.pdf')
+elif(desired_dim is 6): plt.savefig('../experiments/x_linear_velocity_control.pdf')
+elif(desired_dim is 7): plt.savefig('../experiments/z_angular_velocity_control.pdf')
+elif(desired_dim is 8): plt.savefig('../experiments/z_linear_force_control.pdf')
+elif(desired_dim is 9): plt.savefig('../experiments/x_angular_force_control.pdf')
+elif(desired_dim is 10): plt.savefig('../experiments/y_angular_force_control.pdf')
 
 notifier.loop()

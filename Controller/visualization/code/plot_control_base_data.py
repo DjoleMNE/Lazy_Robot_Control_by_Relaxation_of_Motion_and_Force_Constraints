@@ -67,6 +67,7 @@ def set_axes_equal(ax):
     origin = np.mean(limits, axis=1)
     radius = 0.5 * np.max(np.abs(limits[:, 1] - limits[:, 0]))
     set_axes_radius(ax, origin, radius)
+    ax.set_aspect('equal')
 
 with open(filename, "r") as f:
     all_data = [x.split() for x in f.readlines()]
@@ -164,17 +165,19 @@ desired_wrench_xa  = np.array(desired_wrench_xa)
 desired_wrench_ya  = np.array(desired_wrench_ya)
 desired_wrench_za  = np.array(desired_wrench_za)
 
-measured_weight_x    = np.array(measured_weight_x)
-measured_weight_y    = np.array(measured_weight_y)
-measured_weight_z    = np.array(measured_weight_z)
-desired_weight_x     = np.array(desired_weight_x)
-desired_weight_y     = np.array(desired_weight_y)
-desired_weight_z     = np.array(desired_weight_z)
+measured_weight_x  = np.array(measured_weight_x)
+measured_weight_y  = np.array(measured_weight_y)
+measured_weight_z  = np.array(measured_weight_z)
+desired_weight_x   = np.array(desired_weight_x)
+desired_weight_y   = np.array(desired_weight_y)
+desired_weight_z   = np.array(desired_weight_z)
 
 # plt.ion()
 if (desired_dim != 0): figure = plt.figure(figsize = (18, 10))
-else: figure = plt.figure(figsize = (12, 12))
-if  (desired_dim is 0): plt.suptitle('Position in Base Frame', fontsize=20)
+else: figure = plt.figure(figsize = (20, 20))
+# figure.subplots_adjust(bottom=-0.25,top=2.2)
+
+if  (desired_dim is 3): plt.suptitle('Resulting 3D Position Expressed in the Base Frame', fontsize=20, y=0.1)
 elif(desired_dim is 1): plt.suptitle('End-Effector Wrench in Base Frame', fontsize=20)
 elif(desired_dim is 2): plt.suptitle('Estimated Weight in Base Frame', fontsize=20)
 
@@ -191,10 +194,9 @@ if (desired_dim != 0):
     plt.subplots_adjust(left=0.05, right=0.99, top=0.95, bottom=0.03)
     plt.margins(0,0)
 else:
-    plt.gca().set_axis_off()
-    plt.subplots_adjust(hspace = 0.02, wspace = 15)
-    plt.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.01)
-    plt.margins(0,0)
+    # plt.gca().set_axis_off()
+    plt.subplots_adjust(left=0.0, right=0.99, top=0.99, bottom=0.0)
+    # plt.margins(0,0)
 
 num_of_plots = 0
 if   (desired_dim == 0): num_of_plots = 1
@@ -204,16 +206,16 @@ elif (desired_dim == 2): num_of_plots = 3
 if (desired_dim == 0):
     ax = figure.add_subplot(111, projection='3d')
     # ax.view_init(25, 105)
-    ax.plot3D(measured_pos_x, measured_pos_y, measured_pos_z, c = 'limegreen', label='Measured', linewidth = 2, zorder = 2)
-    ax.plot3D(desired_pos_x,  desired_pos_y,  desired_pos_z, label='Desired', linewidth = 2, color = 'black', zorder = 3)
+    ax.plot3D(measured_pos_x, measured_pos_y, measured_pos_z, c = 'limegreen', label='Measured', linewidth = 2, zorder = 3)
+    ax.plot3D(desired_pos_x,  desired_pos_y,  desired_pos_z, label='Desired', linewidth = 3, color = 'black', zorder = 1)
     ax.scatter3D(measured_pos_x[0], measured_pos_y[0], measured_pos_z[0], s=40, c = 'red', label='Start Position', zorder = 3)
-    ax.legend(loc=3, fontsize = 'x-large')
+    ax.legend(loc=8, fontsize = 'x-large')
     ax.set_xlim3d(min(measured_pos_x), max(measured_pos_x))
     ax.set_ylim3d(min(measured_pos_y), max(measured_pos_y))
     ax.set_zlim3d(min(measured_pos_z), max(measured_pos_z))
-    ax.set_xlabel('$X \ \ [m]$', fontsize=15, rotation=150)
-    ax.set_ylabel('$Y \ \ [m]$', fontsize=15)
-    ax.set_zlabel(r'$Z \ \ [m]$', fontsize=15, rotation=60)
+    ax.set_xlabel('$X \ \ [m]$', fontsize=15, rotation=150, labelpad=20)
+    ax.set_ylabel('$Y \ \ [m]$', fontsize=15, labelpad=20)
+    ax.set_zlabel(r'$Z \ \ [m]$', fontsize=15, rotation=60, labelpad=20)
     set_axes_equal(ax) # important!
 else: 
     plt.subplot(num_of_plots, 1, 1)
@@ -291,9 +293,9 @@ if (desired_dim == 1):
 if (desired_dim != 0): 
     plt.draw()
     if (desired_dim is 1): plt.savefig('../archive/ee_wrench_base.pdf')
-    if(desired_dim is 2): plt.savefig('../archive/weight_base.pdf')
+    if (desired_dim is 2): plt.savefig('../archive/weight_base.pdf')
 else:
     plt.grid(True)
     plt.show()
-    plt.savefig('../archive/position_base.pdf')
+    plt.savefig('../experiments/position_base.pdf')
 # notifier.loop()
