@@ -1780,7 +1780,7 @@ void dynamics_controller::compute_cart_control_commands()
     compute_null_space_control_commands();
 }
 
-void dynamics_controller::compute_weight_compensation_control_commands()
+int dynamics_controller::compute_weight_compensation_control_commands()
 {
     // Values expressed in the task frames
     int compensation_status = fsm_.update_weight_compensation_task_status(loop_iteration_count_,
@@ -1867,6 +1867,7 @@ void dynamics_controller::compute_weight_compensation_control_commands()
             robot_state_.external_force[END_EFF_].force = moveTo_weight_compensation_task_.tf_pose.M * compensated_weight_.force;
         }
     }
+    return compensation_status;
 }
 
 //Calculate robot dynamics - Resolve motion and forces using the Vereshchagin HD solver
@@ -2118,6 +2119,7 @@ int dynamics_controller::control()
         // Save current time point
         loop_iteration_count_++;
         loop_start_time_ = std::chrono::steady_clock::now();
+        total_time_sec_ = loop_iteration_count_ * DT_SEC_;
 
         //Get current robot state from the joint sensors: velocities and angles
         ctrl_status = update_current_state();  
@@ -2175,6 +2177,7 @@ int dynamics_controller::control()
         if (apply_joint_control_commands() != 0)
         {
             deinitialize();
+            printf("Total time: %f\n", total_time_sec_);
             printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
             return -1;
         }
@@ -2273,7 +2276,7 @@ void dynamics_controller::deinitialize()
         log_file_null_space_.close();
     }
 
-    #ifndef NDEBUG
-        printf("Number of iterations: %d\n", loop_iteration_count_);
-    #endif
+    // #ifndef NDEBUG
+        // printf("Number of iterations: %d\n", loop_iteration_count_);
+    // #endif
 }
