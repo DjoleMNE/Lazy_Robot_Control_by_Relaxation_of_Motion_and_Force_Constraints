@@ -154,7 +154,7 @@ if(desired_dim is 0):
 else:
     plt.gca().set_axis_off()
     plt.subplots_adjust(hspace = 0.05, wspace = 15)
-    plt.subplots_adjust(left=0.07, right=0.99, top=0.95, bottom=0.07)
+    plt.subplots_adjust(left=0.07, right=0.98, top=0.95, bottom=0.07)
     plt.margins(0,0)
 
     plt.subplot(4, 1, 1)
