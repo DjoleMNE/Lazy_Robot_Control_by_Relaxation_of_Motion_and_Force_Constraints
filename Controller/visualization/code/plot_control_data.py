@@ -13,7 +13,7 @@ show_tube = np.int(sys.argv[2])
 print("Selected dimension: ", desired_dim)
 variable_num = 7
 
-control_freq = 770/2
+control_freq = 600
 
 filename = "../archive/control_error.txt"
 
@@ -190,14 +190,22 @@ else:
 
     # if (desired_dim == 8):
         # plt.ylim(desired[0] - tube_tolerance[0] - 0.1, desired[0] - tube_tolerance[0] + 0.1)
-    plt.legend(fontsize = 14, loc=1)
+    plt.legend(fontsize = 14, loc=0)
     plt.yticks(fontsize=14)
-    time_ticks = np.arange(0, num_samples / control_freq, 0.5)
+    time_ticks = np.arange(0, num_samples / control_freq, 1)
     plt.xlim(0, time_ticks[-1])
     plt.xticks(np.arange(0, num_samples, control_freq), " ")
     plt.grid(True)
     plt.ylabel('[m]', fontsize=20)
 
+    if (desired_dim == 6):
+        plt.ylabel(r'$[\frac{m}{s}]$', fontsize=20)
+    elif (desired_dim == 8):
+        plt.ylabel('[N]', fontsize=20)
+    elif (desired_dim > 8):
+        plt.ylabel('[rad]', fontsize=20)
+    else:
+        plt.ylabel('[m]', fontsize=20)
 
     plt.subplot(4, 1, 2)
     plt.plot(raw_error, c = 'purple', label=r'input error: e', linewidth=1, zorder=2)
@@ -212,6 +220,14 @@ else:
     plt.grid(True)
     plt.ylabel('[m]', fontsize=20)
 
+    if (desired_dim == 6):
+        plt.ylabel(r'$[\frac{m}{s}]$', fontsize=20)
+    elif (desired_dim == 8):
+        plt.ylabel('[N]', fontsize=20)
+    elif (desired_dim > 8):
+        plt.ylabel('[rad]', fontsize=20)
+    else:
+        plt.ylabel('[m]', fontsize=20)
 
     plt.subplot(4, 1, 3)
     plt.plot(error, c = 'darkorange', label=r'ABAG: low-pass filtered error sign', linewidth=1, zorder=2)
