@@ -21,8 +21,8 @@ namespace youbot_constants
     const std::vector<double> joint_position_limits_min_1 { -2.9496 + DEG_TO_RAD(3), -1.1344 + DEG_TO_RAD(3), -2.6354 + DEG_TO_RAD(3), -1.7889 + DEG_TO_RAD(3), -2.9234 + DEG_TO_RAD(3)};
 
     //Position limit values from URDF file: positive and negative
-    const std::vector<double> joint_position_limits_max_2 {5.89921 - DEG_TO_RAD(3), 2.70526 - DEG_TO_RAD(3),  0.00000 - DEG_TO_RAD(3), 3.57792 - DEG_TO_RAD(3), 5.84685 - DEG_TO_RAD(3)};
-    const std::vector<double> joint_position_limits_min_2 {0.00000 + DEG_TO_RAD(3), 0.00000 + DEG_TO_RAD(3), -5.16617 + DEG_TO_RAD(3), 0.00000 + DEG_TO_RAD(3), 0.00000 + DEG_TO_RAD(3)};
+    const std::vector<double> joint_position_limits_max_2 {5.89921 - DEG_TO_RAD(3), 2.70526 - DEG_TO_RAD(3),  0.00000 - DEG_TO_RAD(1), 3.57792 - DEG_TO_RAD(3), 5.84685 - DEG_TO_RAD(3)};
+    const std::vector<double> joint_position_limits_min_2 {0.00000 + DEG_TO_RAD(3), 0.00000 + DEG_TO_RAD(3), -5.16617 + DEG_TO_RAD(1), 0.00000 + DEG_TO_RAD(3), 0.00000 + DEG_TO_RAD(3)};
     // const std::vector<double> joint_position_limits_max_2 { 5.899210,  2.705260,  0.000001,  3.577920,  5.846850};
     // const std::vector<double> joint_position_limits_min_2 {-0.000001, -0.000001, -5.166170, -0.000001, -0.000001};
     
@@ -30,7 +30,7 @@ namespace youbot_constants
     const std::vector<double> joint_position_limits_min_2_sim {-0.000001, -0.000001, -5.166170, -0.000001, -0.000001};
 
    //  const std::vector<double> joint_position_thresholds {DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0)};
-    const std::vector<double> joint_position_thresholds {DEG_TO_RAD(15), DEG_TO_RAD(15), DEG_TO_RAD(15), DEG_TO_RAD(15), DEG_TO_RAD(10)};
+    const std::vector<double> joint_position_thresholds {DEG_TO_RAD(15), DEG_TO_RAD(15), DEG_TO_RAD(3), DEG_TO_RAD(10), DEG_TO_RAD(10)};
 
     // Robocup URDF file parameters for velocity limits
     // const std::vector<double> joint_velocity_limits {1.5707, 0.8, 1.0, 1.5707, 1.5707};
@@ -45,7 +45,7 @@ namespace youbot_constants
    //  const std::vector<double> joint_torque_limits {9.5, 9.5, 6.0, 2.0, 1.0};
 
     // custom max torques
-    const std::vector<double> joint_torque_limits {13.9012, 13.9012, 8.0, 3.3, 1.2};
+    const std::vector<double> joint_torque_limits {14.9012, 14.9012, 8.0, 3.3, 1.2};
 
     // Benjamin Keiser' max torques (fast version)
     // const std::vector<double> joint_torque_limits {17.0, 17.0, 8.0, 2.7, 1.0}};
