@@ -2,8 +2,11 @@ youbot_driver/
 KDL/
 Controller/build_youbot/*
 Controller/build_lwr/*
+Controller/build_kinova/*
 Controller/release_build_lwr/*
 Controller/release_build_youbot/*
+Controller/release_build_kinova/*
+kortex_api/*
 Controller/visualization/archive/*
 
 kdl_parser/*
