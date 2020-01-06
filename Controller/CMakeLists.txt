@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.5.1)
 project(Controller)
+#set(BUILD_SHARED_LIBS OFF)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
@@ -13,7 +14,7 @@ else()
 endif()
 
 set(ROBOT youBot CACHE STRING "Robot ID")
-message("Selected Robot: ${ROBOT}")
+message("---- Selected Robot: ${ROBOT}")
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(orocos_kdl REQUIRED orocos_kdl)
@@ -33,7 +34,6 @@ include_directories(
   /home/djole/youBot_driver_inst_dir/usr/local/include/youbot_driver/soem/osal
   /home/djole/youBot_driver_inst_dir/usr/local/include/youbot_driver/soem/oshw/linux
 )
-
 
 link_directories(
   #${youbot_driver_INCLUDE_DIRS}
@@ -61,6 +61,28 @@ if("${ROBOT}" STREQUAL "lwr")
     src/abag.cpp
     src/dynamics_controller.cpp
   )
+
+elseif("${ROBOT}" STREQUAL "kinova")
+  add_executable(main
+    src/main_kinova.cpp
+    src/constants.cpp
+    src/kdl_eigen_conversions.cpp
+    src/moving_variance.cpp
+    src/moving_slope.cpp
+    src/geometry_utils.cpp
+    src/model_prediction.cpp
+    src/finite_state_machine.cpp
+    src/motion_profile.cpp
+    src/solver_vereshchagin.cpp
+    src/solver_recursive_newton_euler.cpp
+    src/fk_vereshchagin.cpp
+    src/lwr_mediator.cpp
+    src/lwr_kdl_model.cpp
+    src/safety_controller.cpp
+    src/abag.cpp
+    src/dynamics_controller.cpp
+  )
+
 else()
   add_executable(main
     src/main_youbot.cpp
