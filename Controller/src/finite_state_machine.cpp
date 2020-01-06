@@ -620,18 +620,6 @@ int finite_state_machine::update_weight_compensation_task_status(const int loop_
                                                                  const Eigen::VectorXd &gain_signal,
                                                                  Eigen::VectorXd &filtered_bias)
 {
-    // If all trials covered, start from the beggining
-    // if (compensator_trigger_count_ == compensation_parameters_(9))
-    // {
-    //     compensator_trigger_count_ = 0;
-    //     loop_period_count_ = 0;
-    //     filtered_bias_.setZero();
-    //     variance_bias_.clear();
-    //     variance_gain_.clear();
-    //     slope_bias_.clear();
-    //     return -1;
-    // }
-
     log_compensation_data(loop_iteration_count, bias_signal, gain_signal);
     low_pass_filter(bias_signal, 0.99);
     variance_bias_.update(bias_signal);
@@ -673,6 +661,8 @@ int finite_state_machine::update_weight_compensation_task_status(const int loop_
             return 0;
         }
     }
+
+    // if (compensator_trigger_count_ >= compensation_parameters_(9)) return -1;
 
     // Check for Y linear axis
     else if (compensator_trigger_count_ >= compensation_parameters_(9) && \
