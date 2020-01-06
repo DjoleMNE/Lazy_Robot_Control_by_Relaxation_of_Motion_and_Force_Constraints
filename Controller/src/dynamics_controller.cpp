@@ -2137,18 +2137,29 @@ int dynamics_controller::control()
         ctrl_status = check_fsm_status();
         if (ctrl_status != 0) 
         {
-            deinitialize();
-            if (ctrl_status == -1) return -1;
-            else
+            if (ctrl_status == -1) 
             {
-                printf("Control changed to Stop-Robot mode.\n");
-                return 1;
+                deinitialize();
+                printf("Total time: %f\n", total_time_sec_);
+                return -1;
             }
+            
+            // else
+            // {
+            //     printf("Control changed to Stop-Robot mode.\n");
+            //     return 1;
+            // }
         }
 
         compute_cart_control_commands();
-        if (compensate_unknown_weight_) compute_weight_compensation_control_commands();
-
+        if (compensate_unknown_weight_) ctrl_status = compute_weight_compensation_control_commands();
+        if (ctrl_status == -1) 
+        {
+            deinitialize();
+            printf("Total time: %f\n", total_time_sec_);
+            return -1;
+        }
+        
         // Evaluate robot dynamics using the Vereshchagin HD solver
         ctrl_status = evaluate_dynamics();
         if (ctrl_status != 0)
