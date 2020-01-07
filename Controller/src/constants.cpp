@@ -117,28 +117,15 @@ namespace abag_parameter
     const bool USE_ERROR_SIGN(true); 
 
     // Error parameters: Low pass filter threshold
-    const Eigen::VectorXd ERROR_ALPHA = (Eigen::VectorXd(DIMENSIONS) \
-                                          << 0.800000, 0.800000, 0.800000, 
-                                             0.650000, 0.850000, 0.178001).finished();
+    const Eigen::VectorXd ERROR_ALPHA = (Eigen::VectorXd(DIMENSIONS) << 0.800000, 0.800000, 0.800000, 0.650000, 0.850000, 0.178001).finished();
 
      // Bias parameters: threshold and step
-    const Eigen::VectorXd BIAS_THRESHOLD = (Eigen::VectorXd(DIMENSIONS) \
-                                          << 0.000507, 0.000507, 0.000507, 
-                                             0.001007, 0.001007, 0.724277).finished();
-
-    const Eigen::VectorXd BIAS_STEP = (Eigen::VectorXd(DIMENSIONS) \
-                                       << 0.000495, 0.000495, 0.000495, 
-                                          0.003495, 0.003495, 0.503495).finished();
-
+    const Eigen::VectorXd BIAS_THRESHOLD = (Eigen::VectorXd(DIMENSIONS) << 0.000507, 0.000507, 0.000507, 0.001007, 0.001007, 0.724277).finished();
+    const Eigen::VectorXd BIAS_STEP = (Eigen::VectorXd(DIMENSIONS) << 0.000495, 0.000495, 0.000495, 0.003495, 0.003495, 0.503495).finished();
 
     // Gain parameters: threshold and step
-    const Eigen::VectorXd GAIN_THRESHOLD = (Eigen::VectorXd(DIMENSIONS) \
-                                          << 0.452492, 0.452492, 0.452492, 
-                                             0.252492, 0.252492, 0.432492).finished();
-
-    const Eigen::VectorXd GAIN_STEP = (Eigen::VectorXd(DIMENSIONS) \
-                                       << 0.002052, 0.002052, 0.002052, 
-                                          0.015152, 0.015152, 0.655152).finished();
+    const Eigen::VectorXd GAIN_THRESHOLD = (Eigen::VectorXd(DIMENSIONS) << 0.452492, 0.452492, 0.452492, 0.252492, 0.252492, 0.432492).finished();
+    const Eigen::VectorXd GAIN_STEP = (Eigen::VectorXd(DIMENSIONS) << 0.002052, 0.002052, 0.002052, 0.015152, 0.015152, 0.655152).finished();
 
     // Parameters for controlling robot's nullspace motion
     const double NULL_SPACE_ERROR_ALPHA    = 0.900000;
@@ -148,49 +135,22 @@ namespace abag_parameter
     const double NULL_SPACE_GAIN_STEP      = 0.003152;
 
    //  Saturation limits   
-    const Eigen::VectorXd MIN_BIAS_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
-                                           << -1.0, -1.0, -1.0, 
-                                              -1.0, -1.0, -1.0).finished();
-
-   //  const Eigen::VectorXd MIN_BIAS_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
-   //                                         << 0.0, 0.0, 0.0, 
-   //                                            0.0, 0.0, 0.0).finished();
-
-    const Eigen::VectorXd MAX_BIAS_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
-                                           << 1.0, 1.0, 1.0, 
-                                              1.0, 1.0, 1.0).finished();
-
-
-    const Eigen::VectorXd MIN_GAIN_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
-                                           << 0.0, 0.0, 0.0, 
-                                              0.0, 0.0, 0.0).finished();
-
-    const Eigen::VectorXd MAX_GAIN_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
-                                           << 1.0, 1.0, 1.0, 
-                                              1.0, 1.0, 1.0).finished();
-
-
-    const Eigen::VectorXd MIN_COMMAND_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
-                                           << -1.0, -1.0, -1.0, 
-                                              -1.0, -1.0, -1.0).finished();
-
-   //  const Eigen::VectorXd MIN_COMMAND_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
-   //                                         <<  0.0, 0.0, 0.0, 
-   //                                             0.0, 0.0, 0.0).finished();
-
-    const Eigen::VectorXd MAX_COMMAND_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) \
-                                           << 1.0, 1.0, 1.0, 
-                                              1.0, 1.0, 1.0).finished();
+    const Eigen::VectorXd MIN_BIAS_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) << -1.0, -1.0, -1.0, -1.0, -1.0, -1.0).finished();
+   //  const Eigen::VectorXd MIN_BIAS_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0).finished();
+    const Eigen::VectorXd MAX_BIAS_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS)  << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0).finished();
+    const Eigen::VectorXd MIN_GAIN_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0).finished();
+    const Eigen::VectorXd MAX_GAIN_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0).finished();
+    const Eigen::VectorXd MIN_COMMAND_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) << -1.0, -1.0, -1.0, -1.0, -1.0, -1.0).finished();
+   //  const Eigen::VectorXd MIN_COMMAND_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) <<  0.0, 0.0, 0.0, 0.0, 0.0, 0.0).finished();
+    const Eigen::VectorXd MAX_COMMAND_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0).finished();
 }
 
 namespace dynamics_parameter
 {
     // Number of task constraints imposed on the robot, i.e. Cartesian DOFS
     const int NUMBER_OF_CONSTRAINTS(6);
-    const Eigen::VectorXd MAX_CART_FORCE = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                    << 50.0, 50.0, 200.0, 2.0, 2.0, 2.0).finished();
-    const Eigen::VectorXd MAX_CART_ACC = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                    << 100.0, 100.0, 200.0, 2.0, 2.0, 2.0).finished();
+    const Eigen::VectorXd MAX_CART_FORCE = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 50.0, 50.0, 200.0, 2.0, 2.0, 2.0).finished();
+    const Eigen::VectorXd MAX_CART_ACC = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 100.0, 100.0, 200.0, 2.0, 2.0, 2.0).finished();
     const Eigen::IOFormat WRITE_FORMAT(6, Eigen::DontAlignCols, " ", "", "", "\n");
     const std::string LOG_FILE_CART_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/control_error.txt");
     const std::string LOG_FILE_CART_BASE_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/control_base_error.txt");

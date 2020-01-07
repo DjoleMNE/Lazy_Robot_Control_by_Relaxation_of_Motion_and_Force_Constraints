@@ -2110,7 +2110,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
 // Main control loop
 int dynamics_controller::control()
 {   
-    double loop_time = 0.0;
+    // double loop_time = 0.0;
     int ctrl_status  = 0;
     printf("Control Loop Started\n");
 
