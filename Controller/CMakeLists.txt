@@ -16,6 +16,41 @@ endif()
 set(ROBOT youBot CACHE STRING "Robot ID")
 message("---- Selected Robot: ${ROBOT}")
 
+if("${ROBOT}" STREQUAL "kinova")
+  if(NOT KORTEX_SUB_DIR)
+    set(KORTEX_SUB_DIR "cpp/")
+  else()
+    set(KORTEX_SUB_DIR "${KORTEX_SUB_DIR}/")
+  endif()
+
+  set(KORTEX_DIR "${PROJECT_SOURCE_DIR}/../kortex_api/${KORTEX_SUB_DIR}")
+  message("---- KORTEX_DIR: " ${KORTEX_DIR})
+
+  # Activate C++ 11
+  set (CMAKE_CXX_STANDARD 11)
+  include_directories(${PROJECT_SOURCE_DIR}/thirdParty/cxxopts/)
+
+  add_compile_options(-Wall)
+  add_compile_options(-Wno-reorder)
+
+  add_definitions(-D_OS_UNIX)
+  ##### Link to lib
+  link_libraries(${KORTEX_DIR}lib/${CMAKE_BUILD_TYPE}/libKortexApi.a)
+
+  # link other libs
+  link_libraries(pthread)
+
+  # add include dir
+  include_directories(${KORTEX_DIR}include)
+  include_directories(${KORTEX_DIR}include/client)
+  include_directories(${KORTEX_DIR}include/common)
+  include_directories(${KORTEX_DIR}include/messages)
+  include_directories(${KORTEX_DIR}include/client_stubs)
+
+  # Link to submodule base on OS
+  link_libraries(pthread)
+endif()
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(orocos_kdl REQUIRED orocos_kdl)
 
