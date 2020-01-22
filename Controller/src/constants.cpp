@@ -123,7 +123,7 @@ namespace lwr_constants
    const std::vector<double> joint_position_limits_max {DEG_TO_RAD(170), DEG_TO_RAD(120), DEG_TO_RAD(170), DEG_TO_RAD(120), DEG_TO_RAD(170), DEG_TO_RAD(120), DEG_TO_RAD(170)};
    const std::vector<double> joint_position_limits_min {DEG_TO_RAD(-170), DEG_TO_RAD(-120), DEG_TO_RAD(-170), DEG_TO_RAD(-120), DEG_TO_RAD(-170), DEG_TO_RAD(-120), DEG_TO_RAD(-170)};
 
-   const std::vector<double> joint_velocity_limits {DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(180), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5)};
+   const std::vector<double> joint_velocity_limits {DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5)};
    const std::vector<double> joint_torque_limits {176.0, 176.0, 100.0, 100.0, 100.0, 30.0, 30.0};
 
    //  const std::vector<double> joint_position_thresholds {DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0)};
