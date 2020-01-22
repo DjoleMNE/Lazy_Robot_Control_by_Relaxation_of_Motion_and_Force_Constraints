@@ -72,6 +72,36 @@ namespace youbot_constants
     extern const std::string tooltip_name;
 }
 
+namespace kinova_constants
+{
+    //Robot ID/Name
+    extern const std::string ID;
+
+    extern const int NUMBER_OF_JOINTS;
+    extern const int NUMBER_OF_SEGMENTS;
+    extern const int NUMBER_OF_FRAMES;
+
+    //Arm's root acceleration
+    extern const std::vector<double> root_acceleration;
+
+    extern const std::vector<double> joint_position_limits_max;
+    extern const std::vector<double> joint_position_limits_min;
+    extern const std::vector<double> joint_position_thresholds;
+    extern const std::vector<double> joint_offsets;
+
+    extern const std::vector<double> joint_velocity_limits;
+
+    extern const std::vector<double> joint_torque_limits;
+
+    extern const std::vector<double> joint_inertia;
+
+    extern const std::string config_path;    
+    extern const std::string urdf_path;
+
+    extern const std::string root_name;
+    extern const std::string tooltip_name;
+}
+
 namespace lwr_constants
 {
    //Robot ID/Name

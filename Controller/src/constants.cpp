@@ -73,6 +73,39 @@ namespace youbot_constants
     const std::string tooltip_name = "arm_link_5";
 }
 
+namespace kinova_constants
+{
+   //Robot ID/Name
+   const std::string ID("kinova_gen3_arm");
+
+   // Number of joints in the manipulator
+   const int NUMBER_OF_JOINTS(7);
+   const int NUMBER_OF_SEGMENTS(7);
+   const int NUMBER_OF_FRAMES(8);
+
+   //Arm's root acceleration
+   const std::vector<double> root_acceleration {0.0, 0.0, 9.81289, 0.0, 0.0, 0.0};
+
+   // Limits from Kinova manual-> Must be confirmed
+   const std::vector<double> joint_position_limits_max {DEG_TO_RAD(0.0), DEG_TO_RAD(128.9), DEG_TO_RAD(0.0), DEG_TO_RAD(147.8), DEG_TO_RAD(0.0), DEG_TO_RAD(120.3), DEG_TO_RAD(0.0)};
+   const std::vector<double> joint_position_limits_min {DEG_TO_RAD(0.0), DEG_TO_RAD(-128.9), DEG_TO_RAD(0.0), DEG_TO_RAD(-147.8), DEG_TO_RAD(0.0), DEG_TO_RAD(-120.3), DEG_TO_RAD(0.0)};
+
+   const std::vector<double> joint_velocity_limits {DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0)};
+   const std::vector<double> joint_torque_limits {39.0, 39.0, 39.0, 39.0, 9.0, 9.0, 9.0};
+
+   //  const std::vector<double> joint_position_thresholds {DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0)};
+   const std::vector<double> joint_position_thresholds {DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10)};
+
+   const std::vector<double> joint_offsets {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    // Rotor inertia - "d" in the algorithm:
+   const std::vector<double> joint_inertia {0.5580, 0.5580, 0.5580, 0.5580, 0.1389, 0.1389, 0.1389};
+
+   const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/kinova-gen3_urdf_V12.urdf";
+
+   // 7 joints, 7 links, 8 frames. frames from link 0 to link 7
+   const std::string root_name = "link_0";   
+   const std::string tooltip_name = "link_7";
+}
 namespace lwr_constants
 {
    //Robot ID/Name
