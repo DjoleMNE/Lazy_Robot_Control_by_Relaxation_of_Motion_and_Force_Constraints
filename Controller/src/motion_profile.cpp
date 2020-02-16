@@ -92,7 +92,7 @@ namespace motion_profile
         double freq_step = 0.0;
         if (frequency_end > frequency_start) freq_step = (frequency_end - frequency_start) / (static_cast<float>(path_points.size() - 1));
 
-        for(int i = 0; i < path_points.size(); i++)
+        for(int i = 0; (unsigned)i < path_points.size(); i++)
         {
             // the angle is plotted on the x-plane
             x_y = i;
@@ -115,7 +115,7 @@ namespace motion_profile
     {
         double x_y, z;
 
-        for(int i = 0; i < path_points.size(); i++)
+        for(int i = 0; (unsigned)i < path_points.size(); i++)
         {
             // the angle is plotted on the x-y-plane
             x_y = x_scale * amplitude * (-length / 2.0) * std::cos(2.0 * M_PI * i / path_points.size()) + length / 2.0;
@@ -137,7 +137,7 @@ namespace motion_profile
         double x_y, z;
         int offset = int(path_points.size() / step_size);
 
-        for(int i = 0; i < path_points.size(); i++)
+        for(int i = 0; (unsigned)i < path_points.size(); i++)
         {
             x_y = x_scale * i;
 
@@ -167,7 +167,7 @@ namespace motion_profile
         double freq_step = 0.0;
         if (frequency_end > frequency_start) freq_step = (frequency_end - frequency_start) / (static_cast<float>(path_points.size() - 1));
 
-        for(int i = 0; i < path_points.size(); i++)
+        for(int i = 0; (unsigned)i < path_points.size(); i++)
         {
             // the angle is plotted on the x-plane
             x = i;
@@ -190,7 +190,7 @@ namespace motion_profile
     {
         double x, y;
 
-        for(int i = 0; i < path_points.size(); i++)
+        for(int i = 0; (unsigned)i < path_points.size(); i++)
         {
             // the angle is plotted on the x-y-plane
             x = x_scale * amplitude * (-length / 2.0) * std::cos(2.0 * M_PI * i / path_points.size()) + length / 2.0;
@@ -212,7 +212,7 @@ namespace motion_profile
         double x, y;
         int offset = int(path_points.size() / step_size);
 
-        for (int i = 0; i < path_points.size(); i++)
+        for (int i = 0; (unsigned)i < path_points.size(); i++)
         {
             x = x_scale * i;
 

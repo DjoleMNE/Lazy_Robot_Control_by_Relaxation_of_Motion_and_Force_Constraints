@@ -28,6 +28,7 @@ SOFTWARE.
 #include <Eigen/Core>
 #include <iostream>
 #include <list>
+#include <vector>
 #include <stdlib.h>     /* abs */
 
 class moving_slope

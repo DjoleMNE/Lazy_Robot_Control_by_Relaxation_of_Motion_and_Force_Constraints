@@ -23,6 +23,7 @@ if("${ROBOT}" STREQUAL "kinova")
     set(KORTEX_SUB_DIR "${KORTEX_SUB_DIR}/")
   endif()
 
+  #use -DKORTEX_SUB_DIR=cpp
   set(KORTEX_DIR "${PROJECT_SOURCE_DIR}/../kortex_api/${KORTEX_SUB_DIR}")
   message("---- KORTEX_DIR: " ${KORTEX_DIR})
 

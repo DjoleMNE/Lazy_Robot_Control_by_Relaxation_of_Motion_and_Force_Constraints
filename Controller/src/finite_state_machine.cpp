@@ -131,7 +131,7 @@ int finite_state_machine::update_moveConstrained_follow_path_task(state_specific
     if (goal_reached_) return control_status::STOP_ROBOT;
 
     bool final_section_reached = false;
-    if (tube_section_count == moveConstrained_follow_path_task_.tf_poses.size() - 1) final_section_reached = true;
+    if ((unsigned)tube_section_count == moveConstrained_follow_path_task_.tf_poses.size() - 1) final_section_reached = true;
     
     // Check if the current pose of the robot satisfies 2D tolerances
     int count = 0;
@@ -232,7 +232,7 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
     contact_detected_ = false;
 
     bool final_section_reached = false;
-    if (tube_section_count == moveTo_follow_path_task_.tf_poses.size() - 1) final_section_reached = true;
+    if ((unsigned)tube_section_count == moveTo_follow_path_task_.tf_poses.size() - 1) final_section_reached = true;
     
     // Check if the current pose of the robot satisfies all 6D tolerances
     int count = 0;

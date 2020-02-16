@@ -59,6 +59,9 @@ class robot_mediator
 								const int robot_environment,
 								const bool gravity_compensated) = 0;
 
+		// De-initializes variables and closes the sessions 
+		virtual void deinitialize() = 0;
+
 		// Set desired joint commands to move robot and save them for sake of simulation
 		virtual void set_joint_command(const KDL::JntArray &joint_positions,
 									   const KDL::JntArray &joint_velocities,

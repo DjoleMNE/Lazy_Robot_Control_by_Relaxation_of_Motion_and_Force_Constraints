@@ -27,6 +27,7 @@ SOFTWARE.
 #define MOVING_VARIANCE_HPP_
 #include <Eigen/Core>
 #include <iostream>
+#include <vector>
 #include <list>
 #include <stdlib.h>     /* abs */
 

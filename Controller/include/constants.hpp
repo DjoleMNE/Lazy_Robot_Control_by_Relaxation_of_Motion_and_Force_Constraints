@@ -26,6 +26,7 @@ SOFTWARE.
 #ifndef CONSTANTS_HPP_
 #define CONSTANTS_HPP_
 #include <Eigen/Core>
+#include <vector>
 #include <stdlib.h> /* abs */
 #include <unistd.h>
 #include <cmath>

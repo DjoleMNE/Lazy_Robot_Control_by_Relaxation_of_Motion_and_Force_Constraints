@@ -28,8 +28,9 @@ SOFTWARE.
 #include <solver_vereshchagin.hpp>
 #include <state_specification.hpp>
 #include <robot_mediator.hpp>
-#include <youbot_mediator.hpp>
-#include <lwr_mediator.hpp>
+// #include <youbot_mediator.hpp>
+// #include <lwr_mediator.hpp>
+// #include <kinova_mediator.hpp>
 #include <model_prediction.hpp>
 #include <constants.hpp>
 #include <iostream>

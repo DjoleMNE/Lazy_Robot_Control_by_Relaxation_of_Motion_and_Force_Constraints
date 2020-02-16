@@ -508,7 +508,7 @@ void Solver_Vereshchagin::get_transformed_link_pose(Frames& x)
 {
     assert(x.size() == ns);
 
-    for (int i = 0; i < ns; i++) {
+    for (int i = 0; (unsigned)i < ns; i++) {
         x[i] = results[i + 1].F_base;
     }
 }
@@ -519,7 +519,7 @@ void Solver_Vereshchagin::get_screw_twist(Twists& xDot)
 {
     assert(xDot.size() == ns);
 
-    for (int i = 0; i < ns; i++) {
+    for (int i = 0; (unsigned)i < ns; i++) {
         xDot[i] = results[i + 1].F_base * results[i + 1].v;
     }
 }
@@ -530,7 +530,7 @@ void Solver_Vereshchagin::get_transformed_link_velocity(Twists& xDot)
 {
     assert(xDot.size() == ns);
 
-    for (int i = 0; i < ns; i++) {
+    for (int i = 0; (unsigned)i < ns; i++) {
         xDot[i] = results[i + 1].F_base.M * results[i + 1].v;
     }
 }
@@ -540,7 +540,7 @@ void Solver_Vereshchagin::get_link_acceleration(Twists& xDotdot)
 {
     assert(xDotdot.size() == ns + 1);
     xDotdot[0] = acc_root;
-    for (int i = 1; i < ns + 1; i++) {
+    for (int i = 1; (unsigned)i < ns + 1; i++) {
         xDotdot[i] = results[i].acc;
     }
 }
@@ -550,7 +550,7 @@ void Solver_Vereshchagin::get_transformed_link_acceleration(Twists& xDotdot)
 {
     assert(xDotdot.size() == ns + 1);
     xDotdot[0] = acc_root;
-    for (int i = 1; i < ns + 1; i++) {
+    for (int i = 1; (unsigned)i < ns + 1; i++) {
         xDotdot[i] = results[i].F_base.M * results[i].acc;
     }
 }
@@ -562,7 +562,7 @@ void Solver_Vereshchagin::get_link_inertias(Inertias &h)
 {
     assert(h.size() == ns + 1);
 
-    for (int i = 0; i < ns + 1; i++) {
+    for (int i = 0; (unsigned)i < ns + 1; i++) {
         h[i] = results[i].H;
     }
 }
@@ -571,7 +571,7 @@ void Solver_Vereshchagin::get_bias_force(Wrenches &bias)
 {
     assert(bias.size() == ns + 1);
 
-    for (int i = 0; i < ns + 1; i++) {
+    for (int i = 0; (unsigned)i < ns + 1; i++) {
         bias[i] = results[i].U;
     }
 }
