@@ -59,12 +59,7 @@
 #include <TransportClientTcp.h>
 
 #include <google/protobuf/util/json_util.h>
-
-#if defined(_MSC_VER)
-#include <Windows.h>
-#else
 #include <unistd.h>
-#endif
 #include <time.h>
 
 namespace k_api = Kinova::Api;
@@ -76,50 +71,17 @@ namespace k_api = Kinova::Api;
 
 #define ACTUATOR_COUNT 7
 
-float TIME_DURATION = 30.0f; // Duration of the example (seconds)
-
-// Maximum allowed waiting time during actions
-constexpr auto TIMEOUT_PROMISE_DURATION = std::chrono::seconds{20};
+float time_duration = 30.0f; // Duration of the example (seconds)
 
 /*****************************
  * Example related function *
  *****************************/
 int64_t GetTickUs()
 {
-#if defined(_MSC_VER)
-    LARGE_INTEGER start, frequency;
-
-    QueryPerformanceFrequency(&frequency);
-    QueryPerformanceCounter(&start);
- 
-    return (start.QuadPart * 1000000) / frequency.QuadPart;
-#else
     struct timespec start;
     clock_gettime(CLOCK_MONOTONIC, &start);
 
     return (start.tv_sec * 1000000LLU) + (start.tv_nsec / 1000);
-#endif
-}
-
-// Create an event listener that will set the promise action event to the exit value
-// Will set promise to either END or ABORT
-// Use finish_promise.get_future.get() to wait and get the value
-std::function<void(k_api::Base::ActionNotification)> 
-    create_event_listener_by_promise(std::promise<k_api::Base::ActionEvent>& finish_promise)
-{
-    return [&finish_promise] (k_api::Base::ActionNotification notification)
-    {
-        const auto action_event = notification.action_event();
-        switch(action_event)
-        {
-        case k_api::Base::ActionEvent::ACTION_END:
-        case k_api::Base::ActionEvent::ACTION_ABORT:
-            finish_promise.set_value(action_event);
-            break;
-        default:
-            break;
-        }
-    };
 }
 
 /**************************
@@ -154,26 +116,8 @@ void example_move_to_home_position(k_api::Base::BaseClient* base)
     } 
     else 
     {
-        // Connect to notification action topic
-        std::promise<k_api::Base::ActionEvent> finish_promise;
-        auto finish_future = finish_promise.get_future();
-        auto promise_notification_handle = base->OnNotificationActionTopic(
-            create_event_listener_by_promise(finish_promise),
-            k_api::Common::NotificationOptions()
-        );
-
-        // Execute action
         base->ExecuteActionFromReference(action_handle);
-
-        // Wait for future value from promise
-        const auto status = finish_future.wait_for(TIMEOUT_PROMISE_DURATION);
-        base->Unsubscribe(promise_notification_handle);
-
-        if(status != std::future_status::ready)
-        {
-            std::cout << "Timeout on action notification wait" << std::endl;
-        }
-        const auto promise_event = finish_future.get();
+        std::this_thread::sleep_for(std::chrono::milliseconds(20000)); // Leave time to action to finish
     }
 }
 
@@ -239,10 +183,10 @@ bool example_cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyc
         float init_first_torque = -base_feedback.actuators(0).torque(); //Torque measure is reversed compared to actuator direction
         float torque_amplification = 2.0;
 
-        std::cout << "Running torque control example for " << TIME_DURATION << " seconds" << std::endl;
+        std::cout << "Running torque control example for " << time_duration << " seconds" << std::endl;
 
         // Real-time loop
-        while (timer_count < (TIME_DURATION * 1000))
+        while (timer_count < (time_duration * 1000))
         {
             now = GetTickUs();
 
