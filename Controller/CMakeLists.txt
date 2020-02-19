@@ -112,8 +112,7 @@ elseif("${ROBOT}" STREQUAL "kinova")
     src/solver_vereshchagin.cpp
     src/solver_recursive_newton_euler.cpp
     src/fk_vereshchagin.cpp
-    src/lwr_mediator.cpp
-    src/lwr_kdl_model.cpp
+    src/kinova_mediator.cpp
     src/safety_controller.cpp
     src/abag.cpp
     src/dynamics_controller.cpp

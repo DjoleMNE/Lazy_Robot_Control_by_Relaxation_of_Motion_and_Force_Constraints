@@ -136,12 +136,8 @@ bool example_cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyc
         return false;
     }
 
-    
     k_api::BaseCyclic::Feedback base_feedback;
     k_api::BaseCyclic::Command  base_command;
-
-    std::vector<float> commands;
-
     auto servoing_mode = k_api::Base::ServoingModeInformation();
 
     int timer_count = 0;
@@ -159,8 +155,6 @@ bool example_cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyc
         // Initialize each actuator to their current position
         for (int i = 0; i < ACTUATOR_COUNT; i++)
         {
-            commands.push_back(base_feedback.actuators(i).position());
-
             // Save the current actuator position, to avoid a following error
             base_command.add_actuators()->set_position(base_feedback.actuators(i).position());
         }
@@ -201,11 +195,11 @@ bool example_cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyc
                 // First actuator torque command is set to last actuator torque measure times an amplification
                 base_command.mutable_actuators(0)->set_torque_joint(init_first_torque + (torque_amplification * (base_feedback.actuators(6).torque() - init_last_torque)));
 
-
                 // First actuator position is sent as a command to last actuator
                 base_command.mutable_actuators(6)->set_position(base_feedback.actuators(0).position() - init_delta_position);
 
                 // Incrementing identifier ensures actuators can reject out of time frames
+                // Is this necessary because of the buffer?
                 base_command.set_frame_id(base_command.frame_id() + 1);
                 if (base_command.frame_id() > 65535)
                     base_command.set_frame_id(0);
