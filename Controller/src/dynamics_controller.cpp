@@ -30,8 +30,7 @@ const double MIN_NORM = 1e-3;
 dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
                                          const int rate_hz,
                                          const bool compensate_gravity):
-    RATE_HZ_(rate_hz),
-    // Time period defined in microseconds: 1s = 1 000 000us
+    RATE_HZ_(rate_hz), // Time period defined in microseconds: 1s = 1 000 000us
     DT_MICRO_(SECOND / RATE_HZ_),  DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
     store_control_data_(true), desired_dynamics_interface_(dynamics_interface::CART_ACCELERATION), 
     desired_task_model_(task_model::full_pose),
@@ -464,7 +463,7 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     KDL::Vector x_world(1.0, 0.0, 0.0);
     std::vector<double> task_frame_pose(12, 0.0);
     KDL::Rotation task_orientation = KDL::Rotation::EulerZYZ(0.0, 0.0, -M_PI/4);
-    for (int i = 0; i < tube_path_points.size() - 1; i++)
+    for (int i = 0; (unsigned)i < tube_path_points.size() - 1; i++)
     {
         KDL::Vector tube_start_position = KDL::Vector(tube_path_points[i    ][0], tube_path_points[i    ][1], tube_path_points[i    ][2]);
         KDL::Vector tf_position         = KDL::Vector(tube_path_points[i + 1][0], tube_path_points[i + 1][1], tube_path_points[i + 1][2]);
@@ -567,7 +566,7 @@ void dynamics_controller::define_moveTo_follow_path_task(
     KDL::Vector x_world(1.0, 0.0, 0.0);
     std::vector<double> task_frame_pose(12, 0.0);
 
-    for (int i = 0; i < tube_path_points.size() - 1; i++)
+    for (int i = 0; (unsigned)i < tube_path_points.size() - 1; i++)
     {
         KDL::Vector tube_start_position = KDL::Vector(tube_path_points[i    ][0], tube_path_points[i    ][1], tube_path_points[i    ][2]);
         KDL::Vector tf_position         = KDL::Vector(tube_path_points[i + 1][0], tube_path_points[i + 1][1], tube_path_points[i + 1][2]);
@@ -1259,7 +1258,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 
             // Update tube section count 
             if (previous_control_status_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
-            if (tube_section_count_ > moveConstrained_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveConstrained_follow_path_task_.tf_poses.size() - 1;
+            if ((unsigned)tube_section_count_ > moveConstrained_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveConstrained_follow_path_task_.tf_poses.size() - 1;
 
             // Make prediction while the state is expressed in the base frame
             make_predictions(horizon_amplitude_, 1);
@@ -1411,7 +1410,7 @@ void dynamics_controller::compute_moveToGuarded_null_space_task_error()
 void dynamics_controller::compute_moveTo_follow_path_task_error()
 {
     if (previous_control_status_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
-    if (tube_section_count_ > moveTo_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveTo_follow_path_task_.tf_poses.size() - 1;
+    if ((unsigned)tube_section_count_ > moveTo_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveTo_follow_path_task_.tf_poses.size() - 1;
 
     //Change the reference frame of the robot state, from base frame to task frame
     robot_state_.frame_pose[END_EFF_]        = moveTo_follow_path_task_.tf_poses[tube_section_count_].Inverse()   * robot_state_.frame_pose[END_EFF_];
@@ -1849,7 +1848,7 @@ int dynamics_controller::compute_weight_compensation_control_commands()
         // Apply model changes
         if (moveTo_weight_compensation_task_.use_mass_alternation)
         {
-            robot_chain_.getSegment(END_EFF_).setMass(updated_mass);
+            // robot_chain_.getSegment(END_EFF_).setMass(updated_mass);
             printf("Updated mass: %f \n", robot_chain_.getSegment(END_EFF_).getInertia().getMass());
 
             // Reset solvers with updated model
