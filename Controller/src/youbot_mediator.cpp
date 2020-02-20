@@ -77,7 +77,7 @@ void youbot_mediator::get_joint_positions(KDL::JntArray &joint_positions)
 }
 
 //Set Joint Positions
-void youbot_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
+int youbot_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
 {
     for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
     {
@@ -86,6 +86,7 @@ void youbot_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
     }
 
     if (youbot_environment_ != youbot_environment::SIMULATION) youbot_arm_->setJointData(q_setpoint_);
+    return 0;
 }
 
 // Get Joint Velocities
@@ -108,7 +109,7 @@ void youbot_mediator::get_joint_velocities(KDL::JntArray &joint_velocities)
 }
 
 // Set Joint Velocities
-void youbot_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities)
+int youbot_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities)
 {   
     for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
         qd_setpoint_[i].angularVelocity = joint_velocities(i) * radian_per_second;
@@ -116,6 +117,7 @@ void youbot_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities
     // if (add_offsets_) qd_setpoint_[4].angularVelocity = 0.0 * radian_per_second;
     if (add_offsets_) qd_setpoint_[4].angularVelocity = -1 * joint_velocities(4) * radian_per_second;
     if (youbot_environment_ != youbot_environment::SIMULATION) youbot_arm_->setJointData(qd_setpoint_);
+    return 0;
 }
 
 // Get Joint Torques
@@ -138,7 +140,7 @@ void youbot_mediator::get_joint_torques(KDL::JntArray &joint_torques)
 }
 
 // Set Joint Torques
-void youbot_mediator::set_joint_torques(const KDL::JntArray &joint_torques) 
+int youbot_mediator::set_joint_torques(const KDL::JntArray &joint_torques) 
 {
     for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
         tau_setpoint_[i].torque = joint_torques(i) * newton_meter;
@@ -146,9 +148,10 @@ void youbot_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
     // if(add_offsets_) tau_setpoint_[4].torque = 0.0 * newton_meter;
     if (add_offsets_) tau_setpoint_[4].torque = -1 * joint_torques(4) * newton_meter;
     if (youbot_environment_ != youbot_environment::SIMULATION) youbot_arm_->setJointData(tau_setpoint_);
+    return 0;
 }
 
-void youbot_mediator::set_joint_command(const KDL::JntArray &joint_positions,
+int youbot_mediator::set_joint_command(const KDL::JntArray &joint_positions,
                                         const KDL::JntArray &joint_velocities,
                                         const KDL::JntArray &joint_torques,
                                         const int desired_control_mode)
@@ -178,9 +181,10 @@ void youbot_mediator::set_joint_command(const KDL::JntArray &joint_positions,
         
             default: 
                 assert(("Unknown control mode!", false));
-                break;
+                return -1;
         }
     }
+    return 0;
 }
 
 bool youbot_mediator::get_bit(unsigned int flag, const int position)
@@ -207,7 +211,7 @@ bool youbot_mediator::robot_stopped()
 }
 
 // Set Zero Joint Velocities and wait until robot has stopped completely
-void youbot_mediator::stop_robot_motion()
+int youbot_mediator::stop_robot_motion()
 {
     // Send the zero velocity commands to motors
     for (int i = 0; i < youbot_constants::NUMBER_OF_JOINTS; i++)
@@ -224,6 +228,7 @@ void youbot_mediator::stop_robot_motion()
             if (robot_stopped()) wait_for_driver = false;
         }
     }
+    return 0;
 }
 
 std::vector<double> youbot_mediator::get_maximum_joint_pos_limits()

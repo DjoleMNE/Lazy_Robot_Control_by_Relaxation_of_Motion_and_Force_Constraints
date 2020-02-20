@@ -231,9 +231,9 @@ int safety_controller::check_torques()
     }
 
     // Commands are valid. Send them to the robot driver
-    robot_driver_->set_joint_command(commands_.q, commands_.qd,
-                                     commands_.control_torque,
-                                     control_mode::TORQUE);
+    if (robot_driver_->set_joint_command(commands_.q, commands_.qd,
+                                         commands_.control_torque,
+                                         control_mode::TORQUE) == -1) return control_mode::STOP_MOTION;
     return control_mode::TORQUE;
 }
 
@@ -257,9 +257,9 @@ int safety_controller::check_velocities()
     }
 
     // Commands are valid. Send them to the robot driver
-    robot_driver_->set_joint_command(commands_.q, commands_.qd,
-                                     commands_.control_torque,
-                                     control_mode::VELOCITY);
+    if (robot_driver_->set_joint_command(commands_.q, commands_.qd,
+                                         commands_.control_torque,
+                                         control_mode::VELOCITY) == -1) return control_mode::STOP_MOTION;
     return control_mode::VELOCITY;
 }
 
@@ -280,9 +280,9 @@ int safety_controller::check_positions()
     }
 
     // Commands are valid. Send them to the robot driver
-    robot_driver_->set_joint_command(commands_.q, commands_.qd,
-                                     commands_.control_torque,
-                                     control_mode::POSITION);
+    if (robot_driver_->set_joint_command(commands_.q, commands_.qd,
+                                         commands_.control_torque,
+                                         control_mode::POSITION) == -1) return control_mode::STOP_MOTION;
     return control_mode::POSITION;
 }
 

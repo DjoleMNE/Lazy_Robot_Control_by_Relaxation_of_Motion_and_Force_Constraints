@@ -63,10 +63,10 @@ class robot_mediator
 		virtual void deinitialize() = 0;
 
 		// Set desired joint commands to move robot and save them for sake of simulation
-		virtual void set_joint_command(const KDL::JntArray &joint_positions,
-									   const KDL::JntArray &joint_velocities,
-									   const KDL::JntArray &joint_torques,
-							   		   const int desired_control_mode) = 0;
+		virtual int set_joint_command(const KDL::JntArray &joint_positions,
+									  const KDL::JntArray &joint_velocities,
+									  const KDL::JntArray &joint_torques,
+							   		  const int desired_control_mode) = 0;
 
 		// Get current joint positions
 		virtual void get_joint_positions(KDL::JntArray &joint_positions)  = 0;
@@ -76,13 +76,13 @@ class robot_mediator
 		virtual void get_joint_torques(KDL::JntArray &joint_torques) = 0;
 
 		// Set joint position command
-		virtual void set_joint_positions(const KDL::JntArray &joint_positions) = 0;
+		virtual int set_joint_positions(const KDL::JntArray &joint_positions) = 0;
 		// Set joint velocity command
-		virtual void set_joint_velocities(const KDL::JntArray &joint_velocities) = 0;
+		virtual int set_joint_velocities(const KDL::JntArray &joint_velocities) = 0;
 		// Set joint torque command
-		virtual void set_joint_torques(const KDL::JntArray &joint_torques) = 0; 
+		virtual int set_joint_torques(const KDL::JntArray &joint_torques) = 0; 
 		// Set Zero Joint Velocities and wait until robot has stopped completely
-		virtual void stop_robot_motion() = 0;
+		virtual int stop_robot_motion() = 0;
 
 		virtual std::vector<double> get_maximum_joint_pos_limits() = 0;
 		virtual std::vector<double> get_minimum_joint_pos_limits() = 0;

@@ -63,7 +63,7 @@ class youbot_mediator: public robot_mediator
 		virtual bool is_initialized();
 
 		// Set desired joint commands to move robot and save them for sake of simulation
-		virtual void set_joint_command(const KDL::JntArray &joint_positions,
+		virtual int set_joint_command(const KDL::JntArray &joint_positions,
 							   const KDL::JntArray &joint_velocities,
 							   const KDL::JntArray &joint_torques,
 							   const int desired_control_mode);
@@ -76,13 +76,13 @@ class youbot_mediator: public robot_mediator
 		virtual void get_joint_torques(KDL::JntArray &joint_torques);
 
 		// Set joint position command
-		virtual void set_joint_positions(const KDL::JntArray &joint_positions);
+		virtual int set_joint_positions(const KDL::JntArray &joint_positions);
 		// Set joint velocity command
-		virtual void set_joint_velocities(const KDL::JntArray &joint_velocities);
+		virtual int set_joint_velocities(const KDL::JntArray &joint_velocities);
 		// Set joint torque command
-		virtual void set_joint_torques(const KDL::JntArray &joint_torques); 
+		virtual int set_joint_torques(const KDL::JntArray &joint_torques); 
 		// Set Zero Joint Velocities and wait until robot has stopped completely
-		virtual void stop_robot_motion();
+		virtual int stop_robot_motion();
 
 		virtual std::vector<double> get_maximum_joint_pos_limits();
 		virtual std::vector<double> get_minimum_joint_pos_limits();

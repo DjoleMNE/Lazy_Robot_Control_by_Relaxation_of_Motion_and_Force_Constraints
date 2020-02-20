@@ -525,14 +525,6 @@ void go_look_up(youbot_mediator &arm){
     if (environment != youbot_environment::SIMULATION) usleep(5000 * MILLISECOND);
 }
 
-//Set velocities of arm's joints to 0 value
-void stop_robot_motion(youbot_mediator &arm){
-    KDL::JntArray stop_motion(JOINTS);
-    for (int i = 0; i < JOINTS; i++) 
-        stop_motion(i) = 0.0;  
-    arm.set_joint_velocities(stop_motion);
-}
-
 // Test case for last joint
 void rotate_joint(youbot_mediator &arm, const int joint, const double rate){
     KDL::JntArray rotate_joint(JOINTS);
@@ -604,7 +596,7 @@ int main(int argc, char **argv)
     assert(JOINTS == number_of_segments);
     state_specification motion(number_of_joints, number_of_segments, number_of_segments + 1, NUMBER_OF_CONSTRAINTS);
 
-    stop_robot_motion(robot_driver);
+    if (robot_driver.stop_robot_motion() == -1) return 0;
     if      (desired_pose_id == desired_pose::LOOK_AT_2)   go_look_at_1(robot_driver);
     else if (desired_pose_id == desired_pose::LOOK_AT_1)   go_look_at_2(robot_driver);
     else if (desired_pose_id == desired_pose::NAVIGATION)  go_look_down(robot_driver);
@@ -619,7 +611,7 @@ int main(int argc, char **argv)
     // robot_driver.get_joint_velocities(motion.qd);
     // std::cout << motion.q << std::endl;
     // printf("Stops here\n");
-    // robot_driver.stop_robot_motion();
+    // if (robot_driver.stop_robot_motion() == -1) return 0;
     // go_folded(robot_driver);
     // go_look_at_2(robot_driver);
     // rotate_joint(robot_driver, 4, 0.05);
