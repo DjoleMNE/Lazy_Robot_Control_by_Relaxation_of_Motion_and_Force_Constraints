@@ -589,8 +589,12 @@ int main(int argc, char **argv)
 
     // Extract robot model and if not simulation, establish connection with motor drivers
     robot_driver.initialize(robot_model_id, environment, compensate_gravity);
-    assert(("Robot is not initialized", robot_driver.is_initialized()));
-    
+    if (!robot_driver.is_initialized())
+    {
+        printf("Robot is not initialized\n");
+        return 0;
+    }
+
     int number_of_segments = robot_driver.get_robot_model().getNrOfSegments();
     int number_of_joints   = robot_driver.get_robot_model().getNrOfJoints();
     assert(JOINTS == number_of_segments);
