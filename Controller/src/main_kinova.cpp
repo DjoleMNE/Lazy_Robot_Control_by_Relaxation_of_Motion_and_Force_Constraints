@@ -23,7 +23,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-#include <robot_mediator.hpp>
 #include <kinova_mediator.hpp>
 #include <state_specification.hpp>
 #include <dynamics_controller.hpp>
@@ -35,12 +34,71 @@ SOFTWARE.
 #include <finite_state_machine.hpp>
 #include <motion_profile.hpp>
 
-float time_duration = 30.0f; // Duration of the example (seconds)
+float time_duration = 5.0f; // Duration of the example (seconds)
+
+/*****************************
+ * Example related function *
+ *****************************/
+int64_t GetTickUs()
+{
+    struct timespec start;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
+    return (start.tv_sec * 1000000LLU) + (start.tv_nsec / 1000);
+}
+
+void run(kinova_mediator &robot_driver)
+{
+    int timer_count = 0;
+    int64_t now = 0;
+    int64_t last = 0;
+
+    KDL::JntArray jnt_array(7);
+    jnt_array(0) = 0.0;
+    jnt_array(1) = 0.0;
+    jnt_array(2) = 0.0;
+    jnt_array(3) = 0.0;
+    jnt_array(4) = 0.0;
+    jnt_array(5) = 0.0;
+    jnt_array(6) = 0.1;
+
+    // Real-time loop
+    while (timer_count < (time_duration * 1000))
+    {
+        now = GetTickUs();
+
+        if (now - last > 1000)
+        {
+            if (robot_driver.set_joint_velocities(jnt_array) == -1)
+            {
+                robot_driver.stop_robot_motion();
+                return;
+            }
+            timer_count++;
+            last = GetTickUs();
+        }
+    }
+    robot_driver.stop_robot_motion();
+    printf("task completed\n");
+}
 
 int main(int argc, char **argv)
 {
     printf("kinova MAIN Started \n");
     kinova_mediator robot_driver;
+    int environment          = kinova_environment::SIMULATION;
+    int robot_model_id       = kinova_model::URDF;
+    bool compensate_gravity  = false;
 
+    // Extract robot model and if not simulation, establish connection with motor drivers
+    robot_driver.initialize(robot_model_id, environment, compensate_gravity);
+    if (!robot_driver.is_initialized())
+    {
+        printf("Robot is not initialized\n");
+        return 0;
+    }
+
+    run(robot_driver);
+    // robot_driver.deinitialize();
     return 0;
 }
