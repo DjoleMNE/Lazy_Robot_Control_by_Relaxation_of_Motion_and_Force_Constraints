@@ -201,8 +201,7 @@ bool example_cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyc
                 // Incrementing identifier ensures actuators can reject out of time frames
                 // Is this necessary because of the buffer?
                 base_command.set_frame_id(base_command.frame_id() + 1);
-                if (base_command.frame_id() > 65535)
-                    base_command.set_frame_id(0);
+                if (base_command.frame_id() > 65535) base_command.set_frame_id(0);
 
                 for (int idx = 0; idx < ACTUATOR_COUNT; idx++)
                 {

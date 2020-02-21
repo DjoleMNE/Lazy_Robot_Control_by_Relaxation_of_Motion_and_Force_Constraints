@@ -40,20 +40,13 @@ kinova_mediator::kinova_mediator():
     angular_root_acc_(kinova_constants::root_acceleration[3],
                       kinova_constants::root_acceleration[4],
                       kinova_constants::root_acceleration[5]),
-    root_acc_(linear_root_acc_, angular_root_acc_)
+    root_acc_(linear_root_acc_, angular_root_acc_),
+    transport_(nullptr), transport_real_time_(nullptr), router_(nullptr),
+    router_real_time_(nullptr), session_manager_(nullptr),
+    session_manager_real_time_(nullptr), base_(nullptr),
+    base_cyclic_(nullptr), actuator_config_(nullptr)
 {
-    // Create API error-callback and objects
-    auto error_callback = [](Kinova::Api::KError err){ cout << "_________ callback error _________" << err.toString(); };
-    this->transport_ = std::make_shared<Kinova::Api::TransportClientTcp>();
-    this->transport_real_time_ = std::make_shared<Kinova::Api::TransportClientUdp>();
 
-    this->router_ = std::make_shared<Kinova::Api::RouterClient>(transport_.get(), error_callback);
-    this->router_real_time_ = std::make_shared< Kinova::Api::RouterClient>(transport_real_time_.get(), error_callback);
-    this->session_manager_ = std::make_shared<Kinova::Api::SessionManager>(router_.get());
-    this->session_manager_real_time_ = std::make_shared< Kinova::Api::SessionManager>(router_real_time_.get());
-    this->base_ = std::make_shared<Kinova::Api::Base::BaseClient>(router_.get());
-    this->base_cyclic_ = std::make_shared< Kinova::Api::BaseCyclic::BaseCyclicClient>(router_real_time_.get());
-    this->actuator_config_ = std::make_shared< Kinova::Api::ActuatorConfig::ActuatorConfigClient>(router_.get());
 }
 
 kinova_mediator::~kinova_mediator()
@@ -80,13 +73,8 @@ void kinova_mediator::get_joint_positions(KDL::JntArray &joint_positions)
 }
 
 //Set Joint Positions
-void kinova_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
+int kinova_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
 {
-    // Set actuators in position mode
-    control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::POSITION);
-    for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
-        actuator_config_->SetControlMode(control_mode_message_, actuator_id);
-
     for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
         base_command_.mutable_actuators(i)->set_position(RAD_TO_DEG(joint_positions(i)));
 
@@ -95,21 +83,26 @@ void kinova_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
         try
         {
             base_cyclic_->RefreshCommand(base_command_);
+            return 0;
         }
         catch (Kinova::Api::KDetailedException& ex)
         {
             std::cout << "Kortex exception: " << ex.what() << std::endl;
             std::cout << "Error sub-code: " << Kinova::Api::SubErrorCodes_Name(Kinova::Api::SubErrorCodes((ex.getErrorInfo().getError().error_sub_code()))) << std::endl;
+            return -1;
         }
         catch (std::runtime_error& ex2)
         {
             std::cout << "runtime error: " << ex2.what() << std::endl;
+            return -1;
         }
         catch(...)
         {
             std::cout << "Unknown error." << std::endl;
+            return -1;
         }
     }
+    return 0;
 }
 
 // Get Joint Velocities
@@ -131,13 +124,8 @@ void kinova_mediator::get_joint_velocities(KDL::JntArray &joint_velocities)
 }
 
 // Set Joint Velocities
-void kinova_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities)
+int kinova_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities)
 {   
-    // Set actuators in velocity mode
-    control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::VELOCITY);
-    for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
-        actuator_config_->SetControlMode(control_mode_message_, actuator_id);
-
     for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
     {
         base_command_.mutable_actuators(i)->set_position(base_feedback_.actuators(i).position());
@@ -149,21 +137,26 @@ void kinova_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities
         try
         {
             base_cyclic_->RefreshCommand(base_command_);
+            return 0;
         }
         catch (Kinova::Api::KDetailedException& ex)
         {
             std::cout << "Kortex exception: " << ex.what() << std::endl;
             std::cout << "Error sub-code: " << Kinova::Api::SubErrorCodes_Name(Kinova::Api::SubErrorCodes((ex.getErrorInfo().getError().error_sub_code()))) << std::endl;
+            return -1;
         }
         catch (std::runtime_error& ex2)
         {
             std::cout << "runtime error: " << ex2.what() << std::endl;
+            return -1;
         }
         catch(...)
         {
             std::cout << "Unknown error." << std::endl;
+            return -1;
         }
     }
+    return 0;
 }
 
 // Get Joint Torques
@@ -185,13 +178,8 @@ void kinova_mediator::get_joint_torques(KDL::JntArray &joint_torques)
 }
 
 // Set Joint Torques
-void kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques) 
+int kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques) 
 {
-    // Set actuators in torque mode
-    control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::TORQUE);
-    for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
-        actuator_config_->SetControlMode(control_mode_message_, actuator_id);
-
     for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
     {
         base_command_.mutable_actuators(i)->set_position(base_feedback_.actuators(i).position());
@@ -203,24 +191,29 @@ void kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
         try
         {
             base_cyclic_->RefreshCommand(base_command_);
+            return 0;
         }
         catch (Kinova::Api::KDetailedException& ex)
         {
             std::cout << "Kortex exception: " << ex.what() << std::endl;
             std::cout << "Error sub-code: " << Kinova::Api::SubErrorCodes_Name(Kinova::Api::SubErrorCodes((ex.getErrorInfo().getError().error_sub_code()))) << std::endl;
+            return -1;
         }
         catch (std::runtime_error& ex2)
         {
             std::cout << "runtime error: " << ex2.what() << std::endl;
+            return -1;
         }
         catch(...)
         {
             std::cout << "Unknown error." << std::endl;
+            return -1;
         }
     }
+    return 0;
 }
 
-void kinova_mediator::set_joint_command(const KDL::JntArray &joint_positions,
+int kinova_mediator::set_joint_command(const KDL::JntArray &joint_positions,
                                         const KDL::JntArray &joint_velocities,
                                         const KDL::JntArray &joint_torques,
                                         const int desired_control_mode)
@@ -248,19 +241,32 @@ void kinova_mediator::set_joint_command(const KDL::JntArray &joint_positions,
         switch (desired_control_mode)
         {   
             case control_mode::TORQUE:
+                // Set actuators in torque mode
+                control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::TORQUE);
+                for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
+                    actuator_config_->SetControlMode(control_mode_message_, actuator_id);
                 return set_joint_torques(joint_torques);
 
             case control_mode::VELOCITY:
+                // Set actuators in velocity mode
+                control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::VELOCITY);
+                for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
+                    actuator_config_->SetControlMode(control_mode_message_, actuator_id);
                 return set_joint_velocities(joint_velocities);
 
             case control_mode::POSITION:
+                // Set actuators in position mode
+                control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::POSITION);
+                for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
+                    actuator_config_->SetControlMode(control_mode_message_, actuator_id);
                 return set_joint_positions(joint_positions);
-        
+
             default: 
                 assert(("Unknown control mode!", false));
-                break;
+                return -1;
         }
     }
+    return 0;
 }
 
 bool kinova_mediator::robot_stopped()
@@ -279,7 +285,7 @@ bool kinova_mediator::robot_stopped()
 }
 
 // Set Zero Joint Velocities and wait until robot has stopped completely
-void kinova_mediator::stop_robot_motion()
+int kinova_mediator::stop_robot_motion()
 {
     // Incrementing identifier ensures actuators can reject out of time frames
     // Buffer?
@@ -289,10 +295,6 @@ void kinova_mediator::stop_robot_motion()
     for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
         base_command_.mutable_actuators(i)->set_command_id(base_command_.frame_id());
 
-    // Set actuators in velocity mode
-    control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::VELOCITY);
-    for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
-        actuator_config_->SetControlMode(control_mode_message_, actuator_id);
 
     // Send the zero velocity commands to motors
     for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
@@ -303,31 +305,42 @@ void kinova_mediator::stop_robot_motion()
 
     if (kinova_environment_ != kinova_environment::SIMULATION)
     {
+        // Set actuators in velocity mode
+        control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::VELOCITY);
+        for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
+            actuator_config_->SetControlMode(control_mode_message_, actuator_id);
+        
+        // Send commands to the actuators
         try
         {
             base_cyclic_->RefreshCommand(base_command_);
             
-            // Monitor robot state until robot has stopped completely
+            // Monitor robot state until the robot has stopped completely
             bool wait_for_driver = true;
             while (wait_for_driver)
             {
                 if (robot_stopped()) wait_for_driver = false;
             }
+            return 0;
         }
         catch (Kinova::Api::KDetailedException& ex)
         {
             std::cout << "Kortex exception: " << ex.what() << std::endl;
             std::cout << "Error sub-code: " << Kinova::Api::SubErrorCodes_Name(Kinova::Api::SubErrorCodes((ex.getErrorInfo().getError().error_sub_code()))) << std::endl;
+            return -1;
         }
         catch (std::runtime_error& ex2)
         {
             std::cout << "runtime error: " << ex2.what() << std::endl;
+            return -1;
         }
         catch(...)
         {
             std::cout << "Unknown error." << std::endl;
+            return -1;
         }
     }
+    return 0;
 }
 
 std::vector<double> kinova_mediator::get_maximum_joint_pos_limits()
@@ -423,11 +436,31 @@ void kinova_mediator::initialize(const int robot_model,
     int parser_result = 0;
 
     //Extract Kinova model from the URDF file
-    parser_result = get_model_from_urdf();
-
-    if (kinova_environment_ != kinova_environment::SIMULATION && !connection_established_)
+    if (kinova_model_ == kinova_model::URDF) parser_result = get_model_from_urdf();
+    else
     {
-        // Create API objects
+        printf("Unsupported model\n");
+        return;
+    }
+
+    // If the real robot is controlled, settup the connection
+    if (kinova_environment_ != kinova_environment::SIMULATION)
+    {
+        // Create API error-callback and objects
+        auto error_callback = [](Kinova::Api::KError err){ cout << "_________ callback error _________" << err.toString(); };
+        this->transport_ = std::make_shared<Kinova::Api::TransportClientTcp>();
+        this->transport_real_time_ = std::make_shared<Kinova::Api::TransportClientUdp>();
+        this->router_ = std::make_shared<Kinova::Api::RouterClient>(transport_.get(), error_callback);
+        this->router_real_time_ = std::make_shared< Kinova::Api::RouterClient>(transport_real_time_.get(), error_callback);
+        this->session_manager_ = std::make_shared<Kinova::Api::SessionManager>(router_.get());
+        this->session_manager_real_time_ = std::make_shared< Kinova::Api::SessionManager>(router_real_time_.get());
+
+        // Create services
+        this->base_ = std::make_shared<Kinova::Api::Base::BaseClient>(router_.get());
+        this->base_cyclic_ = std::make_shared< Kinova::Api::BaseCyclic::BaseCyclicClient>(router_real_time_.get());
+        this->actuator_config_ = std::make_shared< Kinova::Api::ActuatorConfig::ActuatorConfigClient>(router_.get());
+
+        // Connect all ports for real control
         transport_->connect(IP_ADDRESS, PORT);
         transport_real_time_->connect(IP_ADDRESS, PORT_REAL_TIME);
 
@@ -454,18 +487,24 @@ void kinova_mediator::initialize(const int robot_model,
             return;
         }
 
+        // Initializing actuators
         try
         {
             // Set the robot in low-level servoing mode
             servoing_mode_.set_servoing_mode(Kinova::Api::Base::ServoingMode::LOW_LEVEL_SERVOING);
             base_->SetServoingMode(servoing_mode_);
+
+            // Wait
+            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+
+            // Get the initial state
             base_feedback_ = base_cyclic_->RefreshFeedback();
 
             // Initialize each actuator to their current position
             for (int i = 0; i < ACTUATOR_COUNT; i++)
                 base_command_.add_actuators()->set_position(base_feedback_.actuators(i).position());
 
-            // Send a first command (time frame)... position command in this case
+            // Send a first command (time frame) -> position command in this case
             base_feedback_ = base_cyclic_->Refresh(base_command_);
         }
         catch (Kinova::Api::KDetailedException& ex)
@@ -475,16 +514,29 @@ void kinova_mediator::initialize(const int robot_model,
         }
         catch (std::runtime_error& ex2)
         {
-            std::cout << "Error: " << ex2.what() << std::endl;
+            std::cout << "Run-time Error: " << ex2.what() << std::endl;
             return;
         }
 
+        // Set connection flag
+        connection_established_ = true;
+    }
+    else
+    {
+        // Initialize each actuator to their current position
+        for (int i = 0; i < ACTUATOR_COUNT; i++)
+        {
+            base_feedback_.add_actuators();
+            base_command_.add_actuators()->set_position(base_feedback_.actuators(i).position());
+        }
+        // Set connection flag
         connection_established_ = true;
     }
 
     if (parser_result != 0)  printf("Cannot create Kinova model! \n");
     else
     {
+        // Set initialization flag for the user
         is_initialized_ = true;
         printf("Kinova initialized successfully! \n");
     } 
@@ -492,26 +544,18 @@ void kinova_mediator::initialize(const int robot_model,
 
 void kinova_mediator::deinitialize()
 {
-    // Close API session
-    session_manager_->CloseSession();
-    session_manager_real_time_->CloseSession();
+    if (kinova_environment_ != kinova_environment::SIMULATION)
+    {
+        // Close API session
+        session_manager_->CloseSession();
+        session_manager_real_time_->CloseSession();
 
-    // Deactivate the router and cleanly disconnect from the transport object
-    router_->SetActivationStatus(false);
-    transport_->disconnect();
-    router_real_time_->SetActivationStatus(false);
-    transport_real_time_->disconnect();
+        // Deactivate the router and cleanly disconnect from the transport object
+        router_->SetActivationStatus(false);
+        transport_->disconnect();
+        router_real_time_->SetActivationStatus(false);
+        transport_real_time_->disconnect();
+    }
 
-    printf("Robot deinitialized \n");
-
-    // Destroy the API
-//     delete base_;
-//     delete base_cyclic_;
-//     delete actuator_config_;
-//     delete session_manager_;
-//     delete session_manager_real_time_;
-//     delete router_;
-//     delete router_real_time_;
-//     delete transport_;
-//     delete transport_real_time_;
+    printf("Robot deinitialized! \n");
 }
