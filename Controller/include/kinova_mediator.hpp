@@ -87,7 +87,6 @@ class kinova_mediator: public robot_mediator
 		virtual void initialize(const int robot_model,
 								const int robot_environment,
 								const bool gravity_compensated);
-		virtual void deinitialize();
 
 		virtual bool is_initialized();
 
@@ -112,6 +111,8 @@ class kinova_mediator: public robot_mediator
 		virtual int set_joint_torques(const KDL::JntArray &joint_torques); 
 		// Set Zero Joint Velocities and wait until robot has stopped completely
 		virtual int stop_robot_motion();
+		// Set desired control mode for robot actuators (position/velocity/torque)
+		int set_control_mode(const int desired_control_mode);
 
 		virtual std::vector<double> get_maximum_joint_pos_limits();
 		virtual std::vector<double> get_minimum_joint_pos_limits();
@@ -130,6 +131,7 @@ class kinova_mediator: public robot_mediator
 		const int ROBOT_ID_;
 		int kinova_model_;
 		int kinova_environment_;
+		int control_mode_;
 		bool add_offsets_;
 		bool connection_established_;
 
@@ -164,7 +166,13 @@ class kinova_mediator: public robot_mediator
 		Kinova::Api::Base::ServoingModeInformation servoing_mode_;
 		Kinova::Api::ActuatorConfig::ControlModeInformation control_mode_message_;
 
-        //Extract youBot model from urdf file
+		// De-initializes variables and closes the sessions 
+		void deinitialize();
+
+		// Increses index of the command's frame id (buffer)
+		void increment_command_id();
+
+		//Extract youBot model from urdf file
         int get_model_from_urdf();
 
 		// void error_callback_(Kinova::Api::KError err);

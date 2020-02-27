@@ -33,6 +33,7 @@ kinova_mediator::kinova_mediator():
     is_initialized_(false), ROBOT_ID_(robot_id::KINOVA_GEN3),
     kinova_model_(kinova_model::URDF),
     kinova_environment_(kinova_environment::SIMULATION),
+    control_mode_(control_mode::STOP_MOTION),
     add_offsets_(false), connection_established_(false),
     linear_root_acc_(kinova_constants::root_acceleration[0],
                      kinova_constants::root_acceleration[1],
@@ -76,14 +77,18 @@ void kinova_mediator::get_joint_positions(KDL::JntArray &joint_positions)
 int kinova_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
 {
     for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
+    {
         base_command_.mutable_actuators(i)->set_position(RAD_TO_DEG(joint_positions(i)));
+    }
 
+    increment_command_id();
+    
     if (kinova_environment_ != kinova_environment::SIMULATION)
     {
+        // Send the commands
         try
         {
-            base_cyclic_->RefreshCommand(base_command_);
-            return 0;
+            base_feedback_ = base_cyclic_->Refresh(base_command_, 0);
         }
         catch (Kinova::Api::KDetailedException& ex)
         {
@@ -125,19 +130,21 @@ void kinova_mediator::get_joint_velocities(KDL::JntArray &joint_velocities)
 
 // Set Joint Velocities
 int kinova_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities)
-{   
+{
     for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
     {
         base_command_.mutable_actuators(i)->set_position(base_feedback_.actuators(i).position());
         base_command_.mutable_actuators(i)->set_velocity(RAD_TO_DEG(joint_velocities(i)));
     }
 
+    increment_command_id();
+
     if (kinova_environment_ != kinova_environment::SIMULATION)
     {
+        // Send the commands
         try
         {
-            base_cyclic_->RefreshCommand(base_command_);
-            return 0;
+            base_feedback_ = base_cyclic_->Refresh(base_command_, 0);
         }
         catch (Kinova::Api::KDetailedException& ex)
         {
@@ -186,12 +193,14 @@ int kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
         base_command_.mutable_actuators(i)->set_torque_joint(joint_torques(i));
     }
 
+    increment_command_id();
+    
     if (kinova_environment_ != kinova_environment::SIMULATION)
     {
+        // Send the commands
         try
         {
-            base_cyclic_->RefreshCommand(base_command_);
-            return 0;
+            base_feedback_ = base_cyclic_->Refresh(base_command_, 0);
         }
         catch (Kinova::Api::KDetailedException& ex)
         {
@@ -213,30 +222,10 @@ int kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
     return 0;
 }
 
-int kinova_mediator::set_joint_command(const KDL::JntArray &joint_positions,
-                                        const KDL::JntArray &joint_velocities,
-                                        const KDL::JntArray &joint_torques,
-                                        const int desired_control_mode)
+int kinova_mediator::set_control_mode(const int desired_control_mode)
 {
-    assert(joint_positions.rows()  == kinova_constants::NUMBER_OF_JOINTS);
-    assert(joint_velocities.rows() == kinova_constants::NUMBER_OF_JOINTS);
-    assert(joint_torques.rows()    == kinova_constants::NUMBER_OF_JOINTS);
-
-    // Incrementing identifier ensures actuators can reject out of time frames
-    // Buffer?
-    base_command_.set_frame_id(base_command_.frame_id() + 1);
-    if (base_command_.frame_id() > 65535) base_command_.set_frame_id(0);
-
-    for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
-        base_command_.mutable_actuators(i)->set_command_id(base_command_.frame_id());
-
-    if (kinova_environment_ == kinova_environment::SIMULATION)
-    {
-        set_joint_torques(joint_torques);
-        set_joint_velocities(joint_velocities);
-        set_joint_positions(joint_positions);
-    }
-    else
+    control_mode_ = desired_control_mode;
+    if (kinova_environment_ != kinova_environment::SIMULATION)
     {
         switch (desired_control_mode)
         {   
@@ -245,20 +234,60 @@ int kinova_mediator::set_joint_command(const KDL::JntArray &joint_positions,
                 control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::TORQUE);
                 for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
                     actuator_config_->SetControlMode(control_mode_message_, actuator_id);
-                return set_joint_torques(joint_torques);
+                return 0;
 
             case control_mode::VELOCITY:
                 // Set actuators in velocity mode
                 control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::VELOCITY);
                 for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
                     actuator_config_->SetControlMode(control_mode_message_, actuator_id);
-                return set_joint_velocities(joint_velocities);
+                return 0;
 
             case control_mode::POSITION:
                 // Set actuators in position mode
                 control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::POSITION);
                 for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
                     actuator_config_->SetControlMode(control_mode_message_, actuator_id);
+                return 0;
+
+            default: 
+                assert(("Unknown control mode!", false));
+                return -1;
+        }
+    }
+    return 0;
+}
+
+int kinova_mediator::set_joint_command(const KDL::JntArray &joint_positions,
+                                       const KDL::JntArray &joint_velocities,
+                                       const KDL::JntArray &joint_torques,
+                                       const int desired_control_mode)
+{
+    assert(joint_positions.rows()  == kinova_constants::NUMBER_OF_JOINTS);
+    assert(joint_velocities.rows() == kinova_constants::NUMBER_OF_JOINTS);
+    assert(joint_torques.rows()    == kinova_constants::NUMBER_OF_JOINTS);
+
+    if (kinova_environment_ == kinova_environment::SIMULATION)
+    {
+        set_joint_torques(joint_torques);
+        set_joint_velocities(joint_velocities);
+        set_joint_positions(joint_positions);
+        control_mode_ = desired_control_mode;
+    }
+    else
+    {
+        switch (desired_control_mode)
+        {   
+            case control_mode::TORQUE:
+                if (control_mode_ != control_mode::TORQUE) set_control_mode (desired_control_mode);
+                return set_joint_torques(joint_torques);
+
+            case control_mode::VELOCITY:
+                if (control_mode_ != control_mode::VELOCITY) set_control_mode (desired_control_mode);
+                return set_joint_velocities(joint_velocities);
+
+            case control_mode::POSITION:
+                if (control_mode_ != control_mode::POSITION) set_control_mode (desired_control_mode);
                 return set_joint_positions(joint_positions);
 
             default: 
@@ -287,14 +316,7 @@ bool kinova_mediator::robot_stopped()
 // Set Zero Joint Velocities and wait until robot has stopped completely
 int kinova_mediator::stop_robot_motion()
 {
-    // Incrementing identifier ensures actuators can reject out of time frames
-    // Buffer?
-    base_command_.set_frame_id(base_command_.frame_id() + 1);
-    if (base_command_.frame_id() > 65535) base_command_.set_frame_id(0);
-
-    for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
-        base_command_.mutable_actuators(i)->set_command_id(base_command_.frame_id());
-
+    if (control_mode_ != control_mode::VELOCITY) set_control_mode (control_mode::VELOCITY);
 
     // Send the zero velocity commands to motors
     for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
@@ -303,17 +325,14 @@ int kinova_mediator::stop_robot_motion()
         base_command_.mutable_actuators(i)->set_velocity(0.0);
     }
 
+    increment_command_id();
+
     if (kinova_environment_ != kinova_environment::SIMULATION)
     {
-        // Set actuators in velocity mode
-        control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::VELOCITY);
-        for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
-            actuator_config_->SetControlMode(control_mode_message_, actuator_id);
-        
         // Send commands to the actuators
         try
         {
-            base_cyclic_->RefreshCommand(base_command_);
+            base_feedback_ = base_cyclic_->Refresh(base_command_, 0);
             
             // Monitor robot state until the robot has stopped completely
             bool wait_for_driver = true;
@@ -321,7 +340,6 @@ int kinova_mediator::stop_robot_motion()
             {
                 if (robot_stopped()) wait_for_driver = false;
             }
-            return 0;
         }
         catch (Kinova::Api::KDetailedException& ex)
         {
@@ -341,6 +359,18 @@ int kinova_mediator::stop_robot_motion()
         }
     }
     return 0;
+}
+
+// Increses index of the command's frame id (buffer)
+void kinova_mediator::increment_command_id()
+{
+    // Incrementing identifier ensures actuators can reject out of time frames
+    // Buffer?
+    base_command_.set_frame_id(base_command_.frame_id() + 1);
+    if (base_command_.frame_id() > 65535) base_command_.set_frame_id(0);
+
+    for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
+        base_command_.mutable_actuators(i)->set_command_id(base_command_.frame_id());
 }
 
 std::vector<double> kinova_mediator::get_maximum_joint_pos_limits()
@@ -447,21 +477,14 @@ void kinova_mediator::initialize(const int robot_model,
     if (kinova_environment_ != kinova_environment::SIMULATION)
     {
         // Create API error-callback and objects
+        // Connect all ports for real control
         auto error_callback = [](Kinova::Api::KError err){ cout << "_________ callback error _________" << err.toString(); };
         this->transport_ = std::make_shared<Kinova::Api::TransportClientTcp>();
-        this->transport_real_time_ = std::make_shared<Kinova::Api::TransportClientUdp>();
         this->router_ = std::make_shared<Kinova::Api::RouterClient>(transport_.get(), error_callback);
-        this->router_real_time_ = std::make_shared< Kinova::Api::RouterClient>(transport_real_time_.get(), error_callback);
-        this->session_manager_ = std::make_shared<Kinova::Api::SessionManager>(router_.get());
-        this->session_manager_real_time_ = std::make_shared< Kinova::Api::SessionManager>(router_real_time_.get());
-
-        // Create services
-        this->base_ = std::make_shared<Kinova::Api::Base::BaseClient>(router_.get());
-        this->base_cyclic_ = std::make_shared< Kinova::Api::BaseCyclic::BaseCyclicClient>(router_real_time_.get());
-        this->actuator_config_ = std::make_shared< Kinova::Api::ActuatorConfig::ActuatorConfigClient>(router_.get());
-
-        // Connect all ports for real control
         transport_->connect(IP_ADDRESS, PORT);
+
+        this->transport_real_time_ = std::make_shared<Kinova::Api::TransportClientUdp>();
+        this->router_real_time_ = std::make_shared< Kinova::Api::RouterClient>(transport_real_time_.get(), error_callback);
         transport_real_time_->connect(IP_ADDRESS, PORT_REAL_TIME);
 
         // Set session data connection information
@@ -472,8 +495,17 @@ void kinova_mediator::initialize(const int robot_model,
         create_session_info.set_connection_inactivity_timeout(100); // (milliseconds)
 
         // Session manager service wrapper
+        this->session_manager_ = std::make_shared<Kinova::Api::SessionManager>(router_.get());
         session_manager_->CreateSession(create_session_info);
+
+        this->session_manager_real_time_ = std::make_shared< Kinova::Api::SessionManager>(router_real_time_.get());
         session_manager_real_time_->CreateSession(create_session_info);
+
+        // Create services
+        this->base_ = std::make_shared<Kinova::Api::Base::BaseClient>(router_.get());
+        this->base_cyclic_ = std::make_shared< Kinova::Api::BaseCyclic::BaseCyclicClient>(router_real_time_.get());
+        this->actuator_config_ = std::make_shared< Kinova::Api::ActuatorConfig::ActuatorConfigClient>(router_.get());
+
         std::cout << "Kinova sessions created" << std::endl;
 
         // Clearing faults
@@ -495,7 +527,7 @@ void kinova_mediator::initialize(const int robot_model,
             base_->SetServoingMode(servoing_mode_);
 
             // Wait
-            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
             // Get the initial state
             base_feedback_ = base_cyclic_->RefreshFeedback();
@@ -505,7 +537,7 @@ void kinova_mediator::initialize(const int robot_model,
                 base_command_.add_actuators()->set_position(base_feedback_.actuators(i).position());
 
             // Send a first command (time frame) -> position command in this case
-            base_feedback_ = base_cyclic_->Refresh(base_command_);
+            base_feedback_ = base_cyclic_->Refresh(base_command_, 0);
         }
         catch (Kinova::Api::KDetailedException& ex)
         {
@@ -515,6 +547,11 @@ void kinova_mediator::initialize(const int robot_model,
         catch (std::runtime_error& ex2)
         {
             std::cout << "Run-time Error: " << ex2.what() << std::endl;
+            return;
+        }
+        catch(...)
+        {
+            std::cout << "Unknown error" << std::endl;
             return;
         }
 
@@ -533,12 +570,12 @@ void kinova_mediator::initialize(const int robot_model,
         connection_established_ = true;
     }
 
-    if (parser_result != 0)  printf("Cannot create Kinova model! \n");
+    if (parser_result != 0 || !connection_established_)  printf("Cannot create Kinova model! \n");
     else
     {
         // Set initialization flag for the user
         is_initialized_ = true;
-        printf("Kinova initialized successfully! \n");
+        printf("Kinova initialized successfully! \n\n");
     } 
 }
 
