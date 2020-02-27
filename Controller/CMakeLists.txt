@@ -36,7 +36,7 @@ if("${ROBOT}" STREQUAL "kinova")
 
   add_definitions(-D_OS_UNIX)
   ##### Link to lib
-  link_libraries(${KORTEX_DIR}lib/${CMAKE_BUILD_TYPE}/libKortexApi.a)
+  link_libraries(${KORTEX_DIR}lib/${CMAKE_BUILD_TYPE}/libKortexApiCpp.a)
 
   # link other libs
   link_libraries(pthread)
@@ -58,22 +58,21 @@ pkg_check_modules(orocos_kdl REQUIRED orocos_kdl)
 #find_package(orocos_kdl PATHS /home/djole/Master/Thesis/GIT/MT_testing/KDL/KDL_install_dir/)
 find_package(kdl_parser)
 find_package(Boost COMPONENTS system filesystem REQUIRED)
-#find_package(youbot_driver)
+link_libraries(/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/build/libYouBotDriver.a)
+link_libraries(/home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/build/src/soem/libsoem.a)
 
 include_directories(
   include
   ${orocos_kdl_INCLUDE_DIRS}
   ${kdl_parser_INCLUDE_DIRS}
-  #${youbot_driver_INCLUDE_DIRS}
-  /home/djole/youBot_driver_inst_dir/usr/local/include
-  /home/djole/youBot_driver_inst_dir/usr/local/include/youbot_driver/soem
-  /home/djole/youBot_driver_inst_dir/usr/local/include/youbot_driver/soem/osal
-  /home/djole/youBot_driver_inst_dir/usr/local/include/youbot_driver/soem/oshw/linux
+  /home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/include
+  /home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/include/youbot_driver/soem
+  /home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/include/youbot_driver/soem/osal
+  /home/djole/Master/Thesis/GIT/MT_testing/youbot_driver/include/youbot_driver/soem/oshw/linux
 )
 
 link_directories(
-  #${youbot_driver_INCLUDE_DIRS}
-  /home/djole/youBot_driver_inst_dir/usr/local/lib
+  ${youbot_driver_INCLUDE_DIRS}
   "/home/djole/Master/Thesis/GIT/MT_testing/KDL/KDL_install_dir/lib/"
 )
 
@@ -143,8 +142,6 @@ endif()
 target_link_libraries(main
     ${orocos_kdl_LIBRARIES}
     ${kdl_parser_LIBRARIES}
-    YouBotDriver
-    soem
     ${Boost_FILESYSTEM_LIBRARY}
     ${Boost_SYSTEM_LIBRARY}
 )
