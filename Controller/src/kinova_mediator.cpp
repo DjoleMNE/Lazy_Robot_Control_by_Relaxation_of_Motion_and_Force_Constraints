@@ -81,10 +81,10 @@ int kinova_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
         base_command_.mutable_actuators(i)->set_position(RAD_TO_DEG(joint_positions(i)));
     }
 
-    increment_command_id();
-    
     if (kinova_environment_ != kinova_environment::SIMULATION)
     {
+        increment_command_id();
+
         // Send the commands
         try
         {
@@ -137,10 +137,10 @@ int kinova_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities)
         base_command_.mutable_actuators(i)->set_velocity(RAD_TO_DEG(joint_velocities(i)));
     }
 
-    increment_command_id();
-
     if (kinova_environment_ != kinova_environment::SIMULATION)
     {
+        increment_command_id();
+    
         // Send the commands
         try
         {
@@ -193,10 +193,9 @@ int kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
         base_command_.mutable_actuators(i)->set_torque_joint(joint_torques(i));
     }
 
-    increment_command_id();
-    
     if (kinova_environment_ != kinova_environment::SIMULATION)
     {
+        increment_command_id();
         // Send the commands
         try
         {
@@ -325,10 +324,10 @@ int kinova_mediator::stop_robot_motion()
         base_command_.mutable_actuators(i)->set_velocity(0.0);
     }
 
-    increment_command_id();
-
     if (kinova_environment_ != kinova_environment::SIMULATION)
     {
+        increment_command_id();
+
         // Send commands to the actuators
         try
         {
