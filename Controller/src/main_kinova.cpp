@@ -34,7 +34,16 @@ SOFTWARE.
 #include <finite_state_machine.hpp>
 #include <motion_profile.hpp>
 
-float time_duration = 5.0f; // Duration of the example (seconds)
+const long SECOND                    = 1000000;
+const int MILLISECOND                = 1000;
+const int JOINTS                     = 7;
+const int NUMBER_OF_CONSTRAINTS      = 6;
+int environment                      = kinova_environment::SIMULATION;
+int robot_model_id                   = kinova_model::URDF;
+bool compensate_gravity              = false;
+double time_duration                 = 5.0f; // Duration of the example (seconds)
+
+
 
 /*****************************
  * Example related function *
@@ -47,49 +56,75 @@ int64_t GetTickUs()
     return (start.tv_sec * 1000000LLU) + (start.tv_nsec / 1000);
 }
 
+// Define the callback function used in Refresh_callback
+auto lambda_fct_callback = [](const Kinova::Api::Error &err, const Kinova::Api::BaseCyclic::Feedback data)
+{
+    // We are printing the data of the moving actuator just for the example purpose,
+    // avoid this in a real-time loop
+    std::string serialized_data;
+    google::protobuf::util::MessageToJsonString(data.actuators(6), &serialized_data);
+    std::cout << serialized_data << std::endl << std::endl;
+};
+
 void run(kinova_mediator &robot_driver)
 {
     int timer_count = 0;
     int64_t now = 0;
     int64_t last = 0;
 
-    KDL::JntArray jnt_array(7);
-    jnt_array(0) = 0.0;
-    jnt_array(1) = 0.0;
-    jnt_array(2) = 0.0;
-    jnt_array(3) = 0.0;
-    jnt_array(4) = 0.0;
-    jnt_array(5) = 0.0;
-    jnt_array(6) = 0.1;
+    KDL::JntArray jnt_array_command(7), jnt_array_feedback(7), zero_joint_array(7);
+    jnt_array_command(0) = 0.0;
+    jnt_array_command(1) = 0.0;
+    jnt_array_command(2) = 0.0;
+    jnt_array_command(3) = 0.0;
+    jnt_array_command(4) = 0.0;
+    jnt_array_command(5) = 0.0;
+    jnt_array_command(6) = 0.2;
+
+    if (robot_driver.set_control_mode(control_mode::VELOCITY) == -1)
+    {
+        printf("Incorrect control mode\n");
+        return;
+    }
+
+    // robot_driver.set_joint_positions(jnt_array_command);
 
     // Real-time loop
+    int return_flag = 0;
     while (timer_count < (time_duration * 1000))
     {
         now = GetTickUs();
 
         if (now - last > 1000)
         {
-            if (robot_driver.set_joint_velocities(jnt_array) == -1)
+            return_flag = robot_driver.set_joint_velocities(jnt_array_command);
+
+            if (return_flag == -1)
             {
                 robot_driver.stop_robot_motion();
+                printf("Robot stoped: error in control\n");
                 return;
             }
+
+            robot_driver.get_joint_velocities(jnt_array_feedback);
+
             timer_count++;
             last = GetTickUs();
         }
     }
+
     robot_driver.stop_robot_motion();
-    printf("task completed\n");
+    printf("Task completed\n");
 }
 
 int main(int argc, char **argv)
 {
     printf("kinova MAIN Started \n");
     kinova_mediator robot_driver;
-    int environment          = kinova_environment::SIMULATION;
-    int robot_model_id       = kinova_model::URDF;
-    bool compensate_gravity  = false;
-
+    environment        = kinova_environment::SIMULATION;
+    robot_model_id     = kinova_model::URDF;
+    compensate_gravity = false;
+    
     // Extract robot model and if not simulation, establish connection with motor drivers
     robot_driver.initialize(robot_model_id, environment, compensate_gravity);
     if (!robot_driver.is_initialized())
@@ -98,7 +133,8 @@ int main(int argc, char **argv)
         return 0;
     }
 
+    // if (robot_driver.stop_robot_motion() == -1) return 0;
+
     run(robot_driver);
-    // robot_driver.deinitialize();
     return 0;
 }
