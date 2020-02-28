@@ -84,15 +84,13 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     desired_state_base_(robot_state_), predicted_state_(robot_state_)
 {
     assert(("Robot is not initialized", robot_driver->is_initialized()));
-    // KDL Solver constraint  
+    // KDL Vereshchagin-Solver constraint  
     assert(NUM_OF_JOINTS_ == NUM_OF_SEGMENTS_);
 
     // Control loop frequency must be higher than or equal to 1 Hz
     assert(("Selected frequency is too low", 1 <= RATE_HZ_));
     // Control loop frequency must be lower than or equal to 1000 Hz
-    assert(("Selected frequency is too high", RATE_HZ_<= 10000));
-
-    printf("Initial End-Effector mass: %f\n", INITIAL_END_EFF_MASS_);
+    assert(("Selected frequency is too high", RATE_HZ_<= 1000));
 
     this->hd_solver_ = std::make_shared<KDL::Solver_Vereshchagin>(robot_chain_, JOINT_INERTIA_,
                                                                   JOINT_TORQUE_LIMITS_, !COMPENSATE_GRAVITY_,
@@ -312,13 +310,13 @@ int dynamics_controller::update_current_state()
 }
 
 // Update current dynamics intefaces using desired robot state specifications 
-void dynamics_controller::update_dynamics_interfaces()
-{ 
-    robot_state_.ee_unit_constraint_force = desired_state_.ee_unit_constraint_force;
-    robot_state_.ee_acceleration_energy   = desired_state_.ee_acceleration_energy;
-    robot_state_.feedforward_torque       = desired_state_.feedforward_torque;
-    robot_state_.external_force           = desired_state_.external_force;
-}
+// void dynamics_controller::update_dynamics_interfaces()
+// { 
+//     robot_state_.ee_unit_constraint_force = desired_state_.ee_unit_constraint_force;
+//     robot_state_.ee_acceleration_energy   = desired_state_.ee_acceleration_energy;
+//     robot_state_.feedforward_torque       = desired_state_.feedforward_torque;
+//     robot_state_.external_force           = desired_state_.external_force;
+// }
 
 // Write control data to a file
 void dynamics_controller::write_to_file()
@@ -724,6 +722,7 @@ void dynamics_controller::define_moveTo_weight_compensation_task(
     assert(tube_tolerances.size()      == NUM_OF_CONSTRAINTS_ + 2);
     assert(task_frame_pose.size()      == 12);
     assert(tube_start_position.size()  == 3);
+    printf("Initial End-Effector Mass: %f\n", INITIAL_END_EFF_MASS_);
 
     CTRL_DIM_ = constraint_direction;
     MOTION_CTRL_DIM_ = CTRL_DIM_;
@@ -1941,12 +1940,12 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
                                          const Eigen::VectorXd &compensation_parameters)
 {
     //First check input dimensions
-    assert(max_command.size()    == NUM_OF_CONSTRAINTS_); 
-    assert(error_alpha.size()    == NUM_OF_CONSTRAINTS_); 
-    assert(bias_threshold.size() == NUM_OF_CONSTRAINTS_); 
-    assert(bias_step.size()      == NUM_OF_CONSTRAINTS_); 
-    assert(gain_threshold.size() == NUM_OF_CONSTRAINTS_); 
-    assert(gain_step.size()      == NUM_OF_CONSTRAINTS_); 
+    assert(max_command.size()             == NUM_OF_CONSTRAINTS_); 
+    assert(error_alpha.size()             == NUM_OF_CONSTRAINTS_); 
+    assert(bias_threshold.size()          == NUM_OF_CONSTRAINTS_); 
+    assert(bias_step.size()               == NUM_OF_CONSTRAINTS_); 
+    assert(gain_threshold.size()          == NUM_OF_CONSTRAINTS_); 
+    assert(gain_step.size()               == NUM_OF_CONSTRAINTS_); 
     assert(null_space_parameters.size()   == NUM_OF_CONSTRAINTS_); 
     assert(compensation_parameters.size() == 2 * NUM_OF_CONSTRAINTS_); 
 

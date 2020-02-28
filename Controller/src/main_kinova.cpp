@@ -66,7 +66,7 @@ int desired_control_mode             = control_mode::TORQUE;
 int environment                      = kinova_environment::SIMULATION;
 int robot_model_id                   = kinova_model::URDF;
 
-const double time_horizon_sec        = 2.5;
+const double time_horizon_amplitude  = 2.5;
 double tube_speed                    = 0.01;
 double desired_null_space_angle      = 90.0; // Unit degrees
 double task_time_limit_sec           = 600.0;
@@ -245,8 +245,8 @@ int define_task(dynamics_controller *dyn_controller)
     switch (desired_pose_id)
     {
         case desired_pose::CANDLE:
-            tube_start_position = std::vector<double>{0.0, 0.0, 0.0};
-            desired_ee_pose     = { 0.0, 0.0, 0.0, // Linear: Vector
+            tube_start_position = std::vector<double>{0.0, -0.0248591, 1.02586};
+            desired_ee_pose     = { 0.0, -0.0248591, 1.12586, // Linear: Vector
                                     1.0, 0.0, 0.0, // Angular: Rotation matrix
                                     0.0, 1.0, 0.0,
                                     0.0, 0.0, 1.0};
@@ -482,7 +482,7 @@ int main(int argc, char **argv)
 
     if (desired_task_model == task_model::full_pose) 
     {
-        controller.set_parameters(time_horizon_sec, abag_error_type, 
+        controller.set_parameters(time_horizon_amplitude, abag_error_type, 
                                   max_command, error_alpha,
                                   bias_threshold, bias_step, gain_threshold,
                                   gain_step, min_bias_sat, min_command_sat,
@@ -490,7 +490,7 @@ int main(int argc, char **argv)
     }
     else if (desired_task_model == task_model::moveGuarded)
     {
-        controller.set_parameters(time_horizon_sec, abag_error_type, 
+        controller.set_parameters(time_horizon_amplitude, abag_error_type, 
                                   max_command, error_alpha_1,
                                   bias_threshold_1, bias_step_1, gain_threshold_1,
                                   gain_step_1, min_bias_sat, min_command_sat,
@@ -498,7 +498,7 @@ int main(int argc, char **argv)
     }
     else if (desired_task_model == task_model::moveTo_follow_path)
     {
-        controller.set_parameters(time_horizon_sec, abag_error_type, 
+        controller.set_parameters(time_horizon_amplitude, abag_error_type, 
                                   max_command, error_alpha_3,
                                   bias_threshold_3, bias_step_3, gain_threshold_3,
                                   gain_step_3, min_bias_sat, min_command_sat,
@@ -506,7 +506,7 @@ int main(int argc, char **argv)
     }
     else if (desired_task_model == task_model::moveTo_weight_compensation)
     {
-        controller.set_parameters(time_horizon_sec, abag_error_type, 
+        controller.set_parameters(time_horizon_amplitude, abag_error_type, 
                                   max_command, error_alpha_4,
                                   bias_threshold_4, bias_step_4, gain_threshold_4,
                                   gain_step_4, min_bias_sat, min_command_sat,
@@ -514,7 +514,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        controller.set_parameters(time_horizon_sec, abag_error_type, 
+        controller.set_parameters(time_horizon_amplitude, abag_error_type, 
                                   max_command, error_alpha_2,
                                   bias_threshold_2, bias_step_2, gain_threshold_2,
                                   gain_step_2, min_bias_sat, min_command_sat,
@@ -526,6 +526,7 @@ int main(int argc, char **argv)
                                            log_data,
                                            motion_profile_id);
     if (initial_result != 0) return -1;
+
     controller.control();
     return 0;
 }
