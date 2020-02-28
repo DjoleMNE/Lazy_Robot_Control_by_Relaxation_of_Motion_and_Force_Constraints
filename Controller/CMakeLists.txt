@@ -36,7 +36,7 @@ if("${ROBOT}" STREQUAL "kinova")
 
   add_definitions(-D_OS_UNIX)
   ##### Link to lib
-  link_libraries(${KORTEX_DIR}lib/${CMAKE_BUILD_TYPE}/libKortexApiCpp.a)
+  link_libraries(${KORTEX_DIR}lib/libKortexApiCpp.a)
 
   # link other libs
   link_libraries(pthread)
