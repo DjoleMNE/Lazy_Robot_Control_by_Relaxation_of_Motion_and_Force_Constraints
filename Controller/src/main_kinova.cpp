@@ -40,7 +40,9 @@ SOFTWARE.
 enum desired_pose
 {
     CANDLE       = 0,
-    HOME         = 1
+    HOME         = 1,
+    RETRACT      = 2,
+    PACKAGING    = 3
 };
 
 enum path_types
@@ -70,7 +72,6 @@ const double time_horizon_amplitude  = 2.5;
 double tube_speed                    = 0.01;
 double desired_null_space_angle      = 90.0; // Unit degrees
 double task_time_limit_sec           = 600.0;
-double time_duration                 = 3.0f; // Duration of the example (seconds)
 
 const bool log_data                  = true;
 bool control_null_space              = false;
@@ -363,6 +364,7 @@ int define_task(dynamics_controller *dyn_controller)
 
 void run_test(kinova_mediator &robot_driver)
 {
+    double time_duration   = 3.0f; // Duration of the example (seconds)
     int timer_count = 0;
     int64_t now = 0;
     int64_t last = 0;

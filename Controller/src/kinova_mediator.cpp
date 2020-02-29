@@ -196,6 +196,7 @@ int kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
     if (kinova_environment_ != kinova_environment::SIMULATION)
     {
         increment_command_id();
+
         // Send the commands
         try
         {
