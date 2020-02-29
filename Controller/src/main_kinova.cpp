@@ -421,6 +421,148 @@ void rotate_joint(kinova_mediator &robot_driver, const int joint, const double r
     if (environment != kinova_environment::SIMULATION) usleep(5000 * MILLISECOND);
 }
 
+int go_to(kinova_mediator &robot_driver, const int desired_pose_)
+{
+    std::vector<double> config_array(7, 0.0);
+    // Angle value are in units of degree
+    switch (desired_pose_)
+    {
+        case desired_pose::CANDLE:
+            config_array = std::vector<double> {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+            break;
+        case desired_pose::PACKAGING:
+            config_array = std::vector<double> {0.0, 330.0, 180.0, 214.0, 0.0, 115.0, 270.0};
+            break;
+        case desired_pose::RETRACT:
+            config_array = std::vector<double> {0.0, 340.0, 180.0, 214.0, 0.0, 310.0, 90.0};
+            break;       
+        default:
+            config_array = std::vector<double> {0.0, 15.0, 180.0, 230.0, 0.0, 55.0, 90.0};
+            break;
+    }
+
+    if (environment != kinova_environment::SIMULATION)
+    {
+        // Create API objects
+        auto error_callback = [](Kinova::Api::KError err){ cout << "_________ callback error _________" << err.toString(); };
+        
+        auto transport = new Kinova::Api::TransportClientTcp();
+        auto router = new Kinova::Api::RouterClient(transport, error_callback);
+        transport->connect(IP_ADDRESS, PORT);
+
+        // Set session data connection information
+        auto create_session_info = Kinova::Api::Session::CreateSessionInfo();
+        create_session_info.set_username("admin");
+        create_session_info.set_password("kinova1_area4251");
+        create_session_info.set_session_inactivity_timeout(6000);   // (milliseconds)
+        create_session_info.set_connection_inactivity_timeout(100); // (milliseconds)
+
+        // Session manager service wrapper
+        std::cout << "Creating sessions for communication" << std::endl;
+        auto session_manager = new Kinova::Api::SessionManager(router);
+        session_manager->CreateSession(create_session_info);
+        std::cout << "Sessions created" << std::endl;
+
+        // Create services
+        auto base = new Kinova::Api::Base::BaseClient(router);
+
+        // Make sure the arm is in Single Level Servoing before executing an Action
+        auto servoingMode = Kinova::Api::Base::ServoingModeInformation();
+        servoingMode.set_servoing_mode(Kinova::Api::Base::ServoingMode::SINGLE_LEVEL_SERVOING);
+        base->SetServoingMode(servoingMode);
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+        auto constrained_joint_angles = Kinova::Api::Base::ConstrainedJointAngles();
+        auto joint_angles = constrained_joint_angles.mutable_joint_angles();
+        auto actuator_count = base->GetActuatorCount();
+
+        // Arm straight up
+        for (size_t i = 0; i < actuator_count.count(); ++i) 
+        {
+            auto joint_angle = joint_angles->add_joint_angles();
+            joint_angle->set_joint_identifier(i);
+            joint_angle->set_value(config_array[i]);
+        }
+
+        // Connect to notification action topic (Promise alternative)
+        // See cartesian examples for Reference alternative
+        std::promise<Kinova::Api::Base::ActionEvent> finish_promise;
+        auto finish_future = finish_promise.get_future();
+        auto promise_notification_handle = base->OnNotificationActionTopic(
+            create_event_listener_by_promise(finish_promise),
+            Kinova::Api::Common::NotificationOptions()
+        );
+
+        std::cout << "Reaching joint angles..." << std::endl;
+        base->PlayJointTrajectory(constrained_joint_angles);
+
+        // Wait for future value from promise (Promise alternative)
+        // See cartesian examples for Reference alternative
+        const auto status = finish_future.wait_for(TIMEOUT_DURATION);
+        base->Unsubscribe(promise_notification_handle);
+
+        if (status != std::future_status::ready)
+        {
+            std::cout << "Timeout on action notification wait" << std::endl;
+            std::cout << "Can't reach safe position, exiting" << std::endl;
+
+            // Close API session
+            session_manager->CloseSession();
+
+            // Deactivate the router and cleanly disconnect from the transport object
+            router->SetActivationStatus(false);
+            transport->disconnect();
+
+            // Destroy the API
+            delete base;
+            delete session_manager;
+            delete router;
+            delete transport;
+            return -1;
+        }
+
+        // const auto promise_event = finish_future.get();
+
+        std::cout << "Joint angles reached" << std::endl;
+        // std::cout << "Promise value : " << Kinova::Api::Base::ActionEvent_Name(promise_event) << std::endl;
+
+        // Close API session
+        session_manager->CloseSession();
+
+        // Deactivate the router and cleanly disconnect from the transport object
+        router->SetActivationStatus(false);
+        transport->disconnect();
+
+        // Destroy the API
+        delete base;
+        delete session_manager;
+        delete router;
+        delete transport;
+    }
+
+    else
+    {
+        robot_driver.initialize(robot_model_id, environment, compensate_gravity);
+        if (!robot_driver.is_initialized())
+        {
+            printf("Robot is not initialized\n");
+            return -1;
+        }
+
+        if (robot_driver.set_control_mode(control_mode::POSITION) == -1)
+        {
+            printf("Incorrect control mode\n");
+            return -1;
+        }
+
+        KDL::JntArray config(JOINTS);
+        for (int i = 0; i < JOINTS; i++) 
+            config(i) = config_array[i];  
+        robot_driver.set_joint_positions(config);
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     printf("kinova MAIN Started \n");
@@ -445,8 +587,10 @@ int main(int argc, char **argv)
 
     kinova_mediator robot_driver;
     int return_flag = 0;
-    if      (desired_pose_id == desired_pose::HOME)   return_flag = go_to(robot_driver, desired_pose::HOME);
-    else if (desired_pose_id == desired_pose::CANDLE) return_flag = go_to(robot_driver, desired_pose::CANDLE);
+    if      (desired_pose_id == desired_pose::HOME)      return_flag = go_to(robot_driver, desired_pose::HOME);
+    else if (desired_pose_id == desired_pose::CANDLE)    return_flag = go_to(robot_driver, desired_pose::CANDLE);
+    else if (desired_pose_id == desired_pose::RETRACT)   return_flag = go_to(robot_driver, desired_pose::RETRACT);
+    else if (desired_pose_id == desired_pose::PACKAGING) return_flag = go_to(robot_driver, desired_pose::PACKAGING);
     else return 0;
 
     if (return_flag != 0) return 0;
