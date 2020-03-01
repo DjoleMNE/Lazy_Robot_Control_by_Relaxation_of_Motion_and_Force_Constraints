@@ -368,8 +368,9 @@ void run_test(kinova_mediator &robot_driver)
     int timer_count = 0;
     int64_t now = 0;
     int64_t last = 0;
-
-    KDL::JntArray jnt_array_command(7), jnt_array_feedback(7), zero_joint_array(7);
+    int id_solver_result = 0;
+    
+    KDL::JntArray jnt_array_command(7), jnt_array_feedback(7), jnt_array_feedback_2(7), zero_joint_array(7);
     jnt_array_command(0) = 0.0;
     jnt_array_command(1) = 0.0;
     jnt_array_command(2) = 0.0;
@@ -378,13 +379,17 @@ void run_test(kinova_mediator &robot_driver)
     jnt_array_command(5) = 0.0;
     jnt_array_command(6) = 0.5;
 
-    if (robot_driver.set_control_mode(control_mode::VELOCITY) == -1)
+    KDL::Chain robot_chain = robot_driver.get_robot_model();
+    KDL::Wrenches zero_wrenches(robot_chain.getNrOfSegments(), KDL::Wrench::Zero());
+
+    std::shared_ptr<KDL::Solver_RNE> id_solver = std::make_shared<KDL::Solver_RNE>(robot_chain, KDL::Vector(0.0, 0.0, -9.81289),
+                                                                                   robot_driver.get_joint_inertia(), 
+                                                                                   robot_driver.get_joint_torque_limits(), true);
+    if (robot_driver.set_control_mode(control_mode::TORQUE) == -1)
     {
         printf("Incorrect control mode\n");
         return;
     }
-
-    // robot_driver.set_joint_positions(jnt_array_command);
 
     // Real-time loop
     int return_flag = 0;
@@ -394,7 +399,18 @@ void run_test(kinova_mediator &robot_driver)
 
         if (now - last > 1000)
         {
-            return_flag = robot_driver.set_joint_velocities(jnt_array_command);
+            robot_driver.get_joint_positions(jnt_array_feedback);
+            robot_driver.get_joint_velocities(jnt_array_feedback_2);
+            // std::cout << "Pos: " << jnt_array_feedback << std::endl;
+            // std::cout << "Vel: " << jnt_array_feedback_2 << std::endl;
+            // std::cout << std::endl;
+
+            id_solver_result = id_solver->CartToJnt(jnt_array_feedback, jnt_array_feedback_2, zero_joint_array, 
+                                                    zero_wrenches, jnt_array_command);
+            if (id_solver_result != 0) return;
+
+            return_flag = robot_driver.set_joint_torques(jnt_array_command);
+            // std::cout << jnt_array_command << std::endl;
 
             if (return_flag == -1)
             {
@@ -403,8 +419,7 @@ void run_test(kinova_mediator &robot_driver)
                 return;
             }
 
-            robot_driver.get_joint_velocities(jnt_array_feedback);
-
+            // robot_driver.get_joint_velocities(jnt_array_feedback);
             timer_count++;
             last = GetTickUs();
         }
@@ -604,12 +619,11 @@ int main(int argc, char **argv)
         printf("Robot is not initialized\n");
         return 0;
     }
-
     int number_of_segments = robot_driver.get_robot_model().getNrOfSegments();
     int number_of_joints   = robot_driver.get_robot_model().getNrOfJoints();
     assert(JOINTS == number_of_segments);
     state_specification motion(number_of_joints, number_of_segments, number_of_segments + 1, NUMBER_OF_CONSTRAINTS);
-    if (robot_driver.stop_robot_motion() == -1) return 0;
+    // if (robot_driver.stop_robot_motion() == -1) return 0;
 
     // rotate_joint(robot_driver, 0, 0.1);
     // robot_driver.get_joint_positions(motion.q);
