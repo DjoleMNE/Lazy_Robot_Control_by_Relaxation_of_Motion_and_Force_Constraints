@@ -107,6 +107,12 @@ int kinova_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
             return -1;
         }
     }
+    else
+    {
+        for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
+            base_feedback_.mutable_actuators(i)->set_position(RAD_TO_DEG(joint_positions(i)));
+    }
+    
     return 0;
 }
 
@@ -163,6 +169,11 @@ int kinova_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities)
             return -1;
         }
     }
+    else
+    {
+        for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
+            base_feedback_.mutable_actuators(i)->set_velocity(RAD_TO_DEG(joint_velocities(i)));
+    }
     return 0;
 }
 
@@ -218,6 +229,11 @@ int kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
             std::cout << "Unknown error." << std::endl;
             return -1;
         }
+    }
+    else
+    {
+        for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
+            base_feedback_.mutable_actuators(i)->set_torque(joint_torques(i));
     }
     return 0;
 }
