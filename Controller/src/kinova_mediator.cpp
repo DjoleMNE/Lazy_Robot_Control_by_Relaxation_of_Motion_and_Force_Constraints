@@ -316,7 +316,7 @@ bool kinova_mediator::robot_stopped()
 // Set Zero Joint Velocities and wait until robot has stopped completely
 int kinova_mediator::stop_robot_motion()
 {
-    if (control_mode_ != control_mode::VELOCITY) set_control_mode (control_mode::VELOCITY);
+    if (control_mode_ != control_mode::VELOCITY) set_control_mode(control_mode::VELOCITY);
 
     // Send the zero velocity commands to motors
     for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)

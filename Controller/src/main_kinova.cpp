@@ -440,21 +440,21 @@ void rotate_joint(kinova_mediator &robot_driver, const int joint, const double r
 
 int go_to(kinova_mediator &robot_driver, const int desired_pose_)
 {
-    std::vector<double> config_array(7, 0.0);
+    std::vector<double> configuration_array(7, 0.0);
     // Angle value are in units of degree
     switch (desired_pose_)
     {
         case desired_pose::CANDLE:
-            config_array = std::vector<double> {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+            configuration_array = std::vector<double> {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
             break;
         case desired_pose::PACKAGING:
-            config_array = std::vector<double> {0.0, 330.0, 180.0, 214.0, 0.0, 115.0, 270.0};
+            configuration_array = std::vector<double> {0.0, 330.0, 180.0, 214.0, 0.0, 115.0, 270.0};
             break;
         case desired_pose::RETRACT:
-            config_array = std::vector<double> {0.0, 340.0, 180.0, 214.0, 0.0, 310.0, 90.0};
+            configuration_array = std::vector<double> {0.0, 340.0, 180.0, 214.0, 0.0, 310.0, 90.0};
             break;       
         default:
-            config_array = std::vector<double> {0.0, 15.0, 180.0, 230.0, 0.0, 55.0, 90.0};
+            configuration_array = std::vector<double> {0.0, 15.0, 180.0, 230.0, 0.0, 55.0, 90.0};
             break;
     }
 
@@ -498,7 +498,7 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
         {
             auto joint_angle = joint_angles->add_joint_angles();
             joint_angle->set_joint_identifier(i);
-            joint_angle->set_value(config_array[i]);
+            joint_angle->set_value(configuration_array[i]);
         }
 
         // Connect to notification action topic (Promise alternative)
@@ -574,7 +574,7 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
 
         KDL::JntArray config(JOINTS);
         for (int i = 0; i < JOINTS; i++) 
-            config(i) = config_array[i];  
+            config(i) = DEG_TO_RAD(configuration_array[i]);  
         robot_driver.set_joint_positions(config);
     }
     return 0;
@@ -619,6 +619,7 @@ int main(int argc, char **argv)
         printf("Robot is not initialized\n");
         return 0;
     }
+
     int number_of_segments = robot_driver.get_robot_model().getNrOfSegments();
     int number_of_joints   = robot_driver.get_robot_model().getNrOfJoints();
     assert(JOINTS == number_of_segments);
