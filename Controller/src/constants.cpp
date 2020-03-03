@@ -87,8 +87,8 @@ namespace kinova_constants
    const std::vector<double> root_acceleration {0.0, 0.0, 9.81289, 0.0, 0.0, 0.0};
 
    // Limits from Kinova manual-> Must be confirmed
-   const std::vector<double> joint_position_limits_max {DEG_TO_RAD(0.0), DEG_TO_RAD(128.9), DEG_TO_RAD(0.0), DEG_TO_RAD(147.8), DEG_TO_RAD(0.0), DEG_TO_RAD(120.3), DEG_TO_RAD(0.0)};
-   const std::vector<double> joint_position_limits_min {DEG_TO_RAD(0.0), DEG_TO_RAD(-128.9), DEG_TO_RAD(0.0), DEG_TO_RAD(-147.8), DEG_TO_RAD(0.0), DEG_TO_RAD(-120.3), DEG_TO_RAD(0.0)};
+   const std::vector<double> joint_position_limits_max {DEG_TO_RAD(9999.0), DEG_TO_RAD(127.0), DEG_TO_RAD(9999.0), DEG_TO_RAD(147.8), DEG_TO_RAD(9999.0), DEG_TO_RAD(120.3), DEG_TO_RAD(9999.0)};
+   const std::vector<double> joint_position_limits_min {DEG_TO_RAD(-9999.0), DEG_TO_RAD(-127.0), DEG_TO_RAD(-9999.0), DEG_TO_RAD(-147.8), DEG_TO_RAD(-9999.0), DEG_TO_RAD(-120.3), DEG_TO_RAD(-9999.0)};
 
    const std::vector<double> joint_velocity_limits {DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0)};
    const std::vector<double> joint_torque_limits {39.0, 39.0, 39.0, 39.0, 9.0, 9.0, 9.0};
