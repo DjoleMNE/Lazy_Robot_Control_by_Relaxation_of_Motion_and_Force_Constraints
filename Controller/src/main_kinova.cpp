@@ -253,13 +253,21 @@ int define_task(dynamics_controller *dyn_controller)
                                     0.0, 0.0, 1.0};
             break;
 
+        case desired_pose::RETRACT:
+            tube_start_position = std::vector<double>{0.117804, 0.00134572, 0.489747};
+            desired_ee_pose     = { 0.117804, 0.00134572, 0.389747, // Linear: Vector
+                                    0.0, -0.997564, -0.0697565, // Angular: Rotation matrix
+                                    1.0,  0.0,       0.0,
+                                    0.0, -0.0697565, 0.997564};
+            break;
+
         default:
             // HOME pose
-            tube_start_position = std::vector<double>{0.0, 0.0, 0.0};
-            desired_ee_pose     = { 0.0, 0.0, 0.0, // Linear: Vector
-                                    1.0, 0.0, 0.0, // Angular: Rotation matrix
-                                    0.0, 1.0, 0.0,
-                                    0.0, 0.0, 1.0};
+            tube_start_position = std::vector<double>{0.49514, 0.00134662, 0.433724};
+            desired_ee_pose     = { 0.39514, 0.00134662, 0.433724, // Linear: Vector
+                                    0.0, 0.0, -1.0, // Angular: Rotation matrix
+                                    1.0, 0.0, 0.0,
+                                    0.0, -1.0, 0.0};
             break;
     }
 
