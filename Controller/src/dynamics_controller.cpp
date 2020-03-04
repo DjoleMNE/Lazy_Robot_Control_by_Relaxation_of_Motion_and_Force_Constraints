@@ -2105,69 +2105,30 @@ int dynamics_controller::initialize(const int desired_control_mode,
 // Main control loop
 int dynamics_controller::control()
 {   
-    int ctrl_status  = 0;
-    printf("Control Loop Started\n");
+    int loop_iteration = 0;
+    double total_loop_time = 0.0;
+    KDL::JntArray state_q(NUM_OF_JOINTS_), state_qd(NUM_OF_JOINTS_), ctrl_torque(NUM_OF_JOINTS_);
+    KDL::Wrench ext_force;
 
+    printf("Control Loop Started\n");
     while (1)
     {
         // Save current time point
         loop_start_time_ = std::chrono::steady_clock::now();
-        loop_iteration_count_++;
-        total_time_sec_ = loop_iteration_count_ * DT_SEC_;
+        loop_iteration++;
+        total_loop_time = loop_iteration * DT_SEC_;
 
         //Get current robot state from the joint sensors: velocities and angles
-        ctrl_status = update_current_state();  
-        if (ctrl_status != 0)
-        {
-            deinitialize();
-            printf("Warning: FK solver returned an error! %d \n", ctrl_status);
-            return -1;
-        }
-        // Save the state expressed in base frame
-        robot_state_base_.frame_pose = robot_state_.frame_pose;
+        safety_control_.get_current_state(robot_state_);
+        state_q   = robot_state_.q;
+        state_qd  = robot_state_.qd;
+        ext_force = ext_wrench_;
 
-        compute_control_error();
+        // Make one control iteration (step)
+        if (step(state_q, state_qd, ext_force, ctrl_torque.data, total_loop_time, loop_iteration) != 0) return -1;
 
-        ctrl_status = check_fsm_status();
-        if (ctrl_status == -1) 
-        {
-            deinitialize();
-            printf("Total time: %f\n", total_time_sec_);
-            return -1;
-        }
-
-        compute_cart_control_commands();
-        if (compensate_unknown_weight_) ctrl_status = compute_weight_compensation_control_commands();
-        if (ctrl_status == -1) 
-        {
-            deinitialize();
-            printf("Total time: %f\n", total_time_sec_);
-            return -1;
-        }
-        
-        // Evaluate robot dynamics using the Vereshchagin HD solver
-        ctrl_status = evaluate_dynamics();
-        if (ctrl_status != 0)
-        {
-            deinitialize();
-            printf("WARNING: Hybrid Dynamics Solver returned error: %d. Stopping the robot!", ctrl_status);
-            return -1;
-        }
-
-        // Compute necessary torques for compensating gravity, using the RNE ID solver
-        if (COMPENSATE_GRAVITY_)
-        {
-            ctrl_status = compute_gravity_compensation_control_commands();
-            if (ctrl_status != 0)
-            {
-                deinitialize();
-                printf("WARNING: Inverse Dynamics Solver returned error: %d. Stopping the robot!", ctrl_status);
-                return -1;
-            }
-        }
-
+        // Log control data for visualization and debuging
         if (store_control_data_) write_to_file();
-        // return 0;
 
         // Apply joint commands using safe control interface.
         if (apply_joint_control_commands() != 0)
@@ -2260,6 +2221,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
         }
     }
 
+    // Save final commands
     tau_output = robot_state_.control_torque.data;
     return 0;
 }
