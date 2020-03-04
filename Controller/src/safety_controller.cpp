@@ -100,7 +100,6 @@ bool safety_controller::is_current_state_safe(const state_specification &current
             position_limit_reached(current_state, i) || \
             reaching_position_limits(current_state, i))
            {
-                // stop_robot_motion();
                 if (PRINT_LOGS_) printf("Current robot state is not safe \n\n");
                 return false;
            } 

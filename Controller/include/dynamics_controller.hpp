@@ -98,6 +98,7 @@ class dynamics_controller
                    const int motion_profile);
     void deinitialize();
     void stop_robot_motion();
+    void write_to_file();
 
     void reset_desired_state();
     void define_moveTo_task(const std::vector<bool> &constraint_direction,
@@ -241,7 +242,6 @@ class dynamics_controller
     int check_fsm_status();
     int update_current_state();
     void print_settings_info();
-    void write_to_file();
     void reset_state(state_specification &state);
     // void update_dynamics_interfaces();
     void compute_moveConstrained_follow_path_task_error();

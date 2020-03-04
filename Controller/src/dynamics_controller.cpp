@@ -1735,16 +1735,16 @@ void dynamics_controller::compute_cart_control_commands()
 
     switch (desired_dynamics_interface_)
     {
+        // Set virtual forces computed by the ABAG controller
         case dynamics_interface::CART_FORCE:
-            // Set virtual forces computed by the ABAG controller
             for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
                 cart_force_command_[END_EFF_](i) = CTRL_DIM_[i]? abag_command_(i) * max_command_(i) : 0.0;
 
             if (transform_drivers_) transform_force_driver();
             break;
 
+        // Set Cartesian Acceleration Constraints on the End-Effector
         case dynamics_interface::CART_ACCELERATION:
-            // Set Cartesian Acceleration Constraints on the End-Effector
             set_ee_acc_constraints(robot_state_,
                                    std::vector<bool>{MOTION_CTRL_DIM_[0], MOTION_CTRL_DIM_[1], MOTION_CTRL_DIM_[2], // Linear
                                                      MOTION_CTRL_DIM_[3], MOTION_CTRL_DIM_[4], MOTION_CTRL_DIM_[5]}, // Angular
@@ -1781,13 +1781,11 @@ void dynamics_controller::compute_cart_control_commands()
 int dynamics_controller::compute_weight_compensation_control_commands()
 {
     // Values expressed in the task frames
-    int compensation_status = fsm_.update_weight_compensation_task_status(loop_iteration_count_,
-                                                                          abag_.get_bias(),
-                                                                          abag_.get_gain(),
-                                                                          filtered_bias_);
+    int compensation_status = fsm_.update_weight_compensation_task_status(loop_iteration_count_, abag_.get_bias(), abag_.get_gain(), filtered_bias_);
     if (compensation_status > 0)
     {
         double updated_mass = 0.0;
+
         // Values expressed in the task frame: offset - current bias
         switch (compensation_status)
         {
@@ -1911,8 +1909,7 @@ int dynamics_controller::evaluate_dynamics()
 
 int dynamics_controller::compute_gravity_compensation_control_commands()
 {
-    int id_solver_result = this->id_solver_->CartToJnt(robot_state_.q, zero_joint_array_, zero_joint_array_, 
-                                                       zero_wrenches_, gravity_torque_);
+    int id_solver_result = this->id_solver_->CartToJnt(robot_state_.q, zero_joint_array_, zero_joint_array_, zero_wrenches_, gravity_torque_);
     if (id_solver_result != 0) return id_solver_result;
     
     robot_state_.control_torque.data = robot_state_.control_torque.data + gravity_torque_.data;
@@ -2108,15 +2105,14 @@ int dynamics_controller::initialize(const int desired_control_mode,
 // Main control loop
 int dynamics_controller::control()
 {   
-    // double loop_time = 0.0;
     int ctrl_status  = 0;
     printf("Control Loop Started\n");
 
     while (1)
     {
         // Save current time point
-        loop_iteration_count_++;
         loop_start_time_ = std::chrono::steady_clock::now();
+        loop_iteration_count_++;
         total_time_sec_ = loop_iteration_count_ * DT_SEC_;
 
         //Get current robot state from the joint sensors: velocities and angles
@@ -2133,20 +2129,11 @@ int dynamics_controller::control()
         compute_control_error();
 
         ctrl_status = check_fsm_status();
-        if (ctrl_status != 0) 
+        if (ctrl_status == -1) 
         {
-            if (ctrl_status == -1) 
-            {
-                deinitialize();
-                printf("Total time: %f\n", total_time_sec_);
-                return -1;
-            }
-            
-            // else
-            // {
-            //     printf("Control changed to Stop-Robot mode.\n");
-            //     return 1;
-            // }
+            deinitialize();
+            printf("Total time: %f\n", total_time_sec_);
+            return -1;
         }
 
         compute_cart_control_commands();
@@ -2198,12 +2185,6 @@ int dynamics_controller::control()
         #ifndef NDEBUG
             enforce_loop_frequency();
         #endif
-        // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_).count();
-        // if (loop_iteration_count_ == 50) 
-        // {
-        //     std::cout << loop_time / 50.0 <<std::endl;
-        //     return 0;
-        // }
     }
     return 0;
 }
@@ -2227,14 +2208,14 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
     loop_iteration_count_ = loop_iteration;
 
     // Get Cart poses and velocities
-    int fk_solver_result = fk_vereshchagin_.JntToCart(robot_state_.q, 
-                                                      robot_state_.qd, 
-                                                      robot_state_.frame_pose, 
-                                                      robot_state_.frame_velocity);
-    if (fk_solver_result != 0)
+    int status = fk_vereshchagin_.JntToCart(robot_state_.q,
+                                            robot_state_.qd,
+                                            robot_state_.frame_pose,
+                                            robot_state_.frame_velocity);
+    if (status != 0)
     {
         deinitialize();
-        printf("Warning: FK solver returned an error! %d \n", fk_solver_result);
+        printf("Warning: FK solver returned an error! %d \n", status);
         return -1;
     }
     // Save the state expressed in base frame
@@ -2242,31 +2223,42 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
 
     compute_control_error();
 
-    if (check_fsm_status() == -1) return -1;
-
-    compute_cart_control_commands();
-    if (compensate_unknown_weight_) compute_weight_compensation_control_commands();
-
-    // Evaluate robot dynamics using the Vereshchagin HD solver
-    if (evaluate_dynamics() != 0)
+    if (check_fsm_status() == -1)
     {
         deinitialize();
-        printf("WARNING: Hybrid Dynamics Solver returned error. Stopping the robot!\n");
+        printf("Total time: %f\n", total_time_sec_);
+        return -1;
+    }
+
+    compute_cart_control_commands();
+    if (compensate_unknown_weight_) status = compute_weight_compensation_control_commands();
+    if (status == -1) 
+    {
+        deinitialize();
+        printf("Total time: %f\n", total_time_sec_);
+        return -1;
+    }
+
+    // Evaluate robot dynamics using the Vereshchagin HD solver
+    status = evaluate_dynamics();
+    if (status != 0)
+    {
+        deinitialize();
+        printf("WARNING: Hybrid Dynamics Solver returned error: %d. Stopping the robot!", status);
         return -1;
     }
 
     // Compute necessary torques for compensating gravity, using the RNE ID solver
     if (COMPENSATE_GRAVITY_) 
     {
-        if (compute_gravity_compensation_control_commands() != 0)
+        status = compute_gravity_compensation_control_commands();
+        if (status != 0)
         {
             deinitialize();
-            printf("WARNING: Inverse Dynamics Solver returned error. Stopping the robot!\n");
+            printf("WARNING: Inverse Dynamics Solver returned error: %d. Stopping the robot!", status);
             return -1;
         }
     }
-
-    if (store_control_data_) write_to_file();
 
     tau_output = robot_state_.control_torque.data;
     return 0;
@@ -2285,7 +2277,5 @@ void dynamics_controller::deinitialize()
         log_file_null_space_.close();
     }
 
-    // #ifndef NDEBUG
-        // printf("Number of iterations: %d\n", loop_iteration_count_);
-    // #endif
+    printf("Number of iterations: %d\n", loop_iteration_count_);
 }
