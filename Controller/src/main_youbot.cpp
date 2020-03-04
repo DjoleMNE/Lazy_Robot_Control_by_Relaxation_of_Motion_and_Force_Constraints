@@ -623,7 +623,7 @@ int main(int argc, char **argv)
 
     //loop rate in Hz
     int rate_hz = 660;
-    dynamics_controller controller(&robot_driver, rate_hz, compensate_gravity);
+    dynamics_controller controller(&robot_driver, rate_hz, false, compensate_gravity);
 
     int initial_result = define_task(&controller);
     if (initial_result != 0) return -1;

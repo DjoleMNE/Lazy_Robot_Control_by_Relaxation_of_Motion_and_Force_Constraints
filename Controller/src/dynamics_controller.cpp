@@ -2102,58 +2102,9 @@ int dynamics_controller::initialize(const int desired_control_mode,
     return 0;
 }
 
-// Main control loop
-int dynamics_controller::control()
-{   
-    int loop_iteration = 0;
-    double total_loop_time = 0.0;
-    KDL::JntArray state_q(NUM_OF_JOINTS_), state_qd(NUM_OF_JOINTS_), ctrl_torque(NUM_OF_JOINTS_);
-    KDL::Wrench ext_force;
-
-    printf("Control Loop Started\n");
-    while (1)
-    {
-        // Save current time point
-        loop_start_time_ = std::chrono::steady_clock::now();
-        loop_iteration++;
-        total_loop_time = loop_iteration * DT_SEC_;
-
-        //Get current robot state from the joint sensors: velocities and angles
-        safety_control_.get_current_state(robot_state_);
-        state_q   = robot_state_.q;
-        state_qd  = robot_state_.qd;
-        ext_force = ext_wrench_;
-
-        // Make one control iteration (step)
-        if (step(state_q, state_qd, ext_force, ctrl_torque.data, total_loop_time, loop_iteration) != 0) return -1;
-
-        // Log control data for visualization and debuging
-        if (store_control_data_) write_to_file();
-
-        // Apply joint commands using safe control interface.
-        if (apply_joint_control_commands() != 0)
-        {
-            deinitialize();
-            printf("Total time: %f\n", total_time_sec_);
-            printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
-            return -1;
-        }
-
-        // Make sure that the loop is always running with the same frequency
-        #ifdef NDEBUG
-            if (enforce_loop_frequency() != 0) printf("WARNING: Control loop runs too slow \n");
-        #endif
-        #ifndef NDEBUG
-            enforce_loop_frequency();
-        #endif
-    }
-    return 0;
-}
-
-
 /**
  * Perform single step of the control loop, given current robot joint state
- * Required for RTT's updateHook method
+ * Required for either main internal control loop and the RTT's updateHook method
 */
 int dynamics_controller::step(const KDL::JntArray &q_input,
                               const KDL::JntArray &qd_input,
@@ -2223,6 +2174,54 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
 
     // Save final commands
     tau_output = robot_state_.control_torque.data;
+    return 0;
+}
+
+// Main control loop
+int dynamics_controller::control()
+{   
+    int loop_iteration = 0;
+    double total_loop_time = 0.0;
+    KDL::JntArray state_q(NUM_OF_JOINTS_), state_qd(NUM_OF_JOINTS_), ctrl_torque(NUM_OF_JOINTS_);
+    KDL::Wrench ext_force;
+
+    printf("Control Loop Started\n");
+    while (1)
+    {
+        // Save current time point
+        loop_start_time_ = std::chrono::steady_clock::now();
+        loop_iteration++;
+        total_loop_time = loop_iteration * DT_SEC_;
+
+        //Get current robot state from the joint sensors: velocities and angles
+        safety_control_.get_current_state(robot_state_);
+        state_q   = robot_state_.q;
+        state_qd  = robot_state_.qd;
+        ext_force = ext_wrench_;
+
+        // Make one control iteration (step)
+        if (step(state_q, state_qd, ext_force, ctrl_torque.data, total_loop_time, loop_iteration) != 0) return -1;
+
+        // Log control data for visualization and debuging
+        if (store_control_data_) write_to_file();
+
+        // Apply joint commands using safe control interface.
+        if (apply_joint_control_commands() != 0)
+        {
+            deinitialize();
+            printf("Total time: %f\n", total_time_sec_);
+            printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
+            return -1;
+        }
+
+        // Make sure that the loop is always running with the same frequency
+        #ifdef NDEBUG
+            if (enforce_loop_frequency() != 0) printf("WARNING: Control loop runs too slow \n");
+        #endif
+        #ifndef NDEBUG
+            enforce_loop_frequency();
+        #endif
+    }
     return 0;
 }
 
