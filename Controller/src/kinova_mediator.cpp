@@ -71,6 +71,13 @@ void kinova_mediator::get_joint_positions(KDL::JntArray &joint_positions)
         for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
             joint_positions(i) = DEG_TO_RAD(base_command_.actuators(i).position());
     }
+
+    // Kinova API provides only positive angle values
+    // This operation is required to align the logic with our safety controller
+    // We need to convert some angles to negative values
+    if (joint_positions(1) > DEG_TO_RAD(180.0)) joint_positions(1) = joint_positions(1) - DEG_TO_RAD(360.0);
+    if (joint_positions(3) > DEG_TO_RAD(180.0)) joint_positions(3) = joint_positions(3) - DEG_TO_RAD(360.0);
+    if (joint_positions(5) > DEG_TO_RAD(180.0)) joint_positions(5) = joint_positions(5) - DEG_TO_RAD(360.0);
 }
 
 //Set Joint Positions
