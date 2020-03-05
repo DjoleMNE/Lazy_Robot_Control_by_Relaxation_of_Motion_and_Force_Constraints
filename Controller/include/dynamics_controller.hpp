@@ -80,7 +80,12 @@ class dynamics_controller
              Eigen::VectorXd &tau_output,
              const double time_passed_sec,
              const int loop_iteration);
-    
+
+    /**
+     * Performs single update of control commands and dynamics computations
+    */
+    int update_commands();
+
     void set_parameters(const double damper_amplitude,
                         const int abag_error_type,
                         const Eigen::VectorXd &max_command,
