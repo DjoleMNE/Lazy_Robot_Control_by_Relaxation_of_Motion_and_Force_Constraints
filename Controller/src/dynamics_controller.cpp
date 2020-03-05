@@ -1016,7 +1016,7 @@ int dynamics_controller::enforce_loop_frequency(const int dt)
         }
 
         return 0;
-    } 
+    }
     else return -1; //Loop is too slow
 }
 
@@ -2199,6 +2199,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
 // Main control loop
 int dynamics_controller::control()
 {
+    // double loop_time = 0.0;
     int ctrl_status = 0;
     KDL::JntArray state_q(NUM_OF_JOINTS_), state_qd(NUM_OF_JOINTS_), ctrl_torque(NUM_OF_JOINTS_);
     KDL::Wrench ext_force;
@@ -2303,6 +2304,14 @@ int dynamics_controller::control()
                 enforce_loop_frequency(DT_1KHZ_MICRO_);
             #endif
         }
+
+        // Testing loop time
+        // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_).count();
+        // if (loop_iteration_count_ == 100) 
+        // {
+        //     printf("%f\n", loop_time / 100.0);
+        //     return 0;
+        // }
     }
     return 0;
 }
