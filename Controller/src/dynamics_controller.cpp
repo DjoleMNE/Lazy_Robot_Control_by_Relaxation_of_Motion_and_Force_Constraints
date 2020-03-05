@@ -29,12 +29,15 @@ const double MIN_NORM = 1e-3;
 
 dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
                                          const int rate_hz,
+                                         const bool maintain_primary_1khz_frequency,
                                          const bool compensate_gravity):
     RATE_HZ_(rate_hz), // Time period defined in microseconds: 1s = 1 000 000us
-    DT_MICRO_(SECOND / RATE_HZ_),  DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
+    DT_MICRO_(SECOND / RATE_HZ_), DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
+    DT_1KHZ_MICRO_(SECOND / 1000),
+    maintain_primary_1khz_frequency_(maintain_primary_1khz_frequency), // 1KHz Comunication required by certain robots
     store_control_data_(true), desired_dynamics_interface_(dynamics_interface::CART_ACCELERATION), 
     desired_task_model_(task_model::full_pose),
-    loop_start_time_(), loop_end_time_(), //Not sure if required to init
+    loop_start_time_(std::chrono::steady_clock::now()), loop_previous_time_(std::chrono::steady_clock::now()),
     total_time_sec_(0.0), loop_iteration_count_(0), feedforward_loop_count_(0),
     robot_chain_(robot_driver->get_robot_model()),
     NUM_OF_JOINTS_(robot_chain_.getNrOfJoints()),
@@ -1000,16 +1003,16 @@ void dynamics_controller::set_feedforward_torque(state_specification &state,
     for (int i = 0; i < NUM_OF_JOINTS_; i++) state.feedforward_torque(i) = ff_torque[i];
 }
 
-//Make sure that the control loop runs exactly with specified frequency
-int dynamics_controller::enforce_loop_frequency()
+//Make sure that the control loop runs exactly with the specified frequency
+int dynamics_controller::enforce_loop_frequency(const int dt)
 {
-    loop_interval_= std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_);
+    loop_interval_ = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_);
 
-    if (loop_interval_ < std::chrono::microseconds(DT_MICRO_)) // Loop is sufficiently fast
+    if (loop_interval_ < std::chrono::microseconds(dt)) // Loop is sufficiently fast
     {
-        while (loop_interval_.count() < (DT_MICRO_ - 1.0))
+        while (loop_interval_ < std::chrono::microseconds(dt - 1))
         {
-            loop_interval_= std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_);
+            loop_interval_ = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_);
         }
 
         return 0;
@@ -2186,6 +2189,7 @@ int dynamics_controller::control()
     KDL::Wrench ext_force;
 
     printf("Control Loop Started\n");
+    loop_previous_time_ = std::chrono::steady_clock::now();
     while (1)
     {
         // Save current time point
@@ -2199,8 +2203,22 @@ int dynamics_controller::control()
         state_qd  = robot_state_.qd;
         ext_force = ext_wrench_;
 
-        // Make one control iteration (step)
-        if (step(state_q, state_qd, ext_force, ctrl_torque.data, total_loop_time, loop_iteration) != 0) return -1;
+        // Make one control iteration (step) -> Update control commands
+        if (maintain_primary_1khz_frequency_)
+        {
+            loop_interval_ = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_previous_time_);
+
+            // If the user-defined time step has passed, update the control commands
+            if (loop_interval_ >= std::chrono::microseconds(DT_MICRO_))
+            {
+                if (step(state_q, state_qd, ext_force, ctrl_torque.data, total_loop_time, loop_iteration) != 0) return -1;
+                loop_previous_time_ = std::chrono::steady_clock::now();
+            }
+        }
+        else 
+        {
+            if (step(state_q, state_qd, ext_force, ctrl_torque.data, total_loop_time, loop_iteration) != 0) return -1;
+        }
 
         // Log control data for visualization and debuging
         if (store_control_data_) write_to_file();
@@ -2215,12 +2233,24 @@ int dynamics_controller::control()
         }
 
         // Make sure that the loop is always running with the same frequency
-        #ifdef NDEBUG
-            if (enforce_loop_frequency() != 0) printf("WARNING: Control loop runs too slow \n");
-        #endif
-        #ifndef NDEBUG
-            enforce_loop_frequency();
-        #endif
+        if (maintain_primary_1khz_frequency_)
+        {
+            #ifdef NDEBUG
+                if (enforce_loop_frequency(DT_1KHZ_MICRO_) != 0) printf("WARNING: Control loop runs too slow \n");
+            #endif
+            #ifndef NDEBUG
+                enforce_loop_frequency(DT_1KHZ_MICRO_);
+            #endif
+        }
+        else
+        {
+            #ifdef NDEBUG
+                if (enforce_loop_frequency(DT_MICRO_) != 0) printf("WARNING: Control loop runs too slow \n");
+            #endif
+            #ifndef NDEBUG
+                enforce_loop_frequency(DT_MICRO_);
+            #endif
+        }
     }
     return 0;
 }

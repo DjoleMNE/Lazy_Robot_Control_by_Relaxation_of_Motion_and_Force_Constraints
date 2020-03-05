@@ -62,7 +62,8 @@ class dynamics_controller
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     
     dynamics_controller(robot_mediator *robot_driver, 
-                        const int rate_hz, 
+                        const int rate_hz,
+                        const bool maintain_primary_1khz_frequency,
                         const bool compensate_gravity);
     ~dynamics_controller(){};
     
@@ -174,8 +175,9 @@ class dynamics_controller
 
   private:
     const int RATE_HZ_;
-    const long DT_MICRO_;
+    const long DT_MICRO_, DT_1KHZ_MICRO_;
     const double DT_SEC_;
+    const bool maintain_primary_1khz_frequency_;
 
     std::ofstream log_file_cart_, log_file_joint_, log_file_predictions_, log_file_null_space_, log_file_cart_base_;
     bool store_control_data_;
@@ -188,7 +190,7 @@ class dynamics_controller
     } desired_control_mode_;
 
     std::chrono::steady_clock::time_point loop_start_time_;
-    std::chrono::steady_clock::time_point loop_end_time_;
+    std::chrono::steady_clock::time_point loop_previous_time_;
     std::chrono::duration <double, std::micro> loop_interval_{};
     double total_time_sec_;
     int loop_iteration_count_, feedforward_loop_count_;
@@ -265,7 +267,7 @@ class dynamics_controller
     int apply_joint_control_commands();
     int evaluate_dynamics();
     int compute_gravity_compensation_control_commands();
-    int enforce_loop_frequency();
+    int enforce_loop_frequency(const int dt);
 
     void set_ee_acc_constraints(state_specification &state,
                                 const std::vector<bool> &constraint_direction,
