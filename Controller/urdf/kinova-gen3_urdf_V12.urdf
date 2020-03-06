@@ -188,6 +188,7 @@
       </geometry>
     </collision>
   </link>
+
   <joint name="Actuator6" type="revolute">
     <origin xyz="0 0.00017505 -0.10593" rpy="1.5708 9.2076E-28 -8.2157E-15" />
     <parent link="SphericalWrist1_Link" />
@@ -195,6 +196,7 @@
     <axis xyz="0 0 1" />
     <limit lower="-2.23" upper="2.23" effort="9" velocity="0.8727" />
   </joint>
+
   <link name="Bracelet_Link">
     <inertial>
       <origin xyz="-0.000281 -0.011402 -0.029798" rpy="0 0 0" />
@@ -217,6 +219,7 @@
       </geometry>
     </collision>
   </link>
+
   <joint name="Actuator7" type="continuous">
     <origin xyz="0 -0.10593 -0.00017505" rpy="-1.5708 -5.5511E-17 9.6396E-17" />
     <parent link="SphericalWrist2_Link" />
@@ -224,7 +227,10 @@
     <axis xyz="0 0 1" />
     <limit effort="9" velocity="0.8727" />
   </joint>
+
+  <!-- It is also gripper's parent link -->
   <link name="EndEffector_Link" />
+
   <joint name="EndEffector" type="fixed">
     <origin xyz="0 0 -0.0615250000000001" rpy="3.14159265358979 1.09937075168372E-32 0" />
     <parent link="Bracelet_Link" />

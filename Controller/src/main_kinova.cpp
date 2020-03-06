@@ -633,6 +633,7 @@ int main(int argc, char **argv)
     int number_of_joints   = robot_driver.get_robot_model().getNrOfJoints();
     assert(JOINTS == number_of_segments);
     state_specification motion(number_of_joints, number_of_segments, number_of_segments + 1, NUMBER_OF_CONSTRAINTS);
+
     // if (robot_driver.stop_robot_motion() == -1) return 0;
 
     // rotate_joint(robot_driver, 0, 0.1);
