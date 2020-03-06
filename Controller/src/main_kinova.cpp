@@ -641,7 +641,7 @@ int main(int argc, char **argv)
     // std::cout << motion.q << std::endl;
     // return 0;
 
-    // run_test(robot_driver);
+    // run_test(robot_driver); return 0;
 
     //loop rate in Hz
     int rate_hz = 600;

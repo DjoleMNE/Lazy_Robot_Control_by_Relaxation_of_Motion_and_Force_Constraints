@@ -85,7 +85,7 @@ class state_specification
 
 		state_specification& operator=(const state_specification &rhs)
 		{
-			if(this != &rhs){
+			if (this != &rhs){
 				this->q = rhs.q;
 				this->qd = rhs.qd;
 				this->qdd = rhs.qdd;
@@ -98,6 +98,7 @@ class state_specification
 				this->frame_velocity = rhs.frame_velocity;
 				this->frame_acceleration = rhs.frame_acceleration;
 			}
+			return *this;
 		}
 
 		void reset_values()
