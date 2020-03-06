@@ -99,12 +99,14 @@ namespace kinova_constants
    const std::vector<double> joint_offsets {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     // Rotor inertia - "d" in the algorithm:
    const std::vector<double> joint_inertia {0.5580, 0.5580, 0.5580, 0.5580, 0.1389, 0.1389, 0.1389};
+//    const std::vector<double> joint_inertia {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
    const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/kinova-gen3_urdf_V12.urdf";
 
-   // 7 joints, 7 links, 8 frames. frames from link 0 to link 7
-   const std::string root_name = "link_0";   
-   const std::string tooltip_name = "link_7";
+   // 7 joints, 7 links, 8 frames
+   const std::string root_name = "base_link";
+//    const std::string tooltip_name = "EndEffector_Link";
+   const std::string tooltip_name = "Bracelet_Link";
 }
 namespace lwr_constants
 {
