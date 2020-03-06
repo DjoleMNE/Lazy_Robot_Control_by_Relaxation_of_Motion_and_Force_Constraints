@@ -105,8 +105,20 @@ namespace kinova_constants
 
    // 7 joints, 7 links, 8 frames
    const std::string root_name = "base_link";
-//    const std::string tooltip_name = "EndEffector_Link";
+   /**
+    *  With Bracelet_Link parameter, last frame is at joint 7. 
+    * Mass (and COM) of the last link is included but not the real end-effector frame.
+    * Arm length: 1.12586m
+    */
    const std::string tooltip_name = "Bracelet_Link";
+
+   /**
+    * With EndEffector_Link parameter, last frame is at the real end-effector frame. 
+    * However, in the urdf model, joint between Bracelet_Link and EndEffector_Link is fixed (not counted in KDL). 
+    * Vereshchagin does not support un-equal number of joints and segments
+    * Arm length: 1.1873m
+    */ 
+//    const std::string tooltip_name = "EndEffector_Link";
 }
 namespace lwr_constants
 {
