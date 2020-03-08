@@ -1,4 +1,5 @@
 <robot name="GEN3_URDF_V12" version="1.0">
+
   <link name="base_link">
     <inertial>
       <origin xyz="-0.000648 -0.000166 0.084487" rpy="0 0 0" />
@@ -21,6 +22,7 @@
       </geometry>
     </collision>
   </link>
+
   <link name="Shoulder_Link">
     <inertial>
       <origin xyz="-2.3E-05 -0.010364 -0.07336" rpy="0 0 0" />
@@ -43,6 +45,7 @@
       </geometry>
     </collision>
   </link>
+
   <joint name="Actuator1" type="continuous">
     <origin xyz="0 0 0.15643" rpy="3.1416 2.7629E-18 -4.9305E-36" />
     <parent link="base_link" />
@@ -50,6 +53,7 @@
     <axis xyz="0 0 1" />
     <limit effort="39" velocity="0.8727" />
   </joint>
+
   <link name="HalfArm1_Link">
     <inertial>
       <origin xyz="-4.4E-05 -0.09958 -0.013278" rpy="0 0 0" />
@@ -72,6 +76,7 @@
       </geometry>
     </collision>
   </link>
+
   <joint name="Actuator2" type="revolute">
     <origin xyz="0 0.005375 -0.12838" rpy="1.5708 2.1343E-17 -1.1102E-16" />
     <parent link="Shoulder_Link" />
@@ -79,6 +84,7 @@
     <axis xyz="0 0 1" />
     <limit lower="-2.41" upper="2.41" effort="39" velocity="0.8727" />
   </joint>
+
   <link name="HalfArm2_Link">
     <inertial>
       <origin xyz="-4.4E-05 -0.006641 -0.117892" rpy="0 0 0" />
@@ -101,6 +107,7 @@
       </geometry>
     </collision>
   </link>
+
   <joint name="Actuator3" type="continuous">
     <origin xyz="0 -0.21038 -0.006375" rpy="-1.5708 1.2326E-32 -2.9122E-16" />
     <parent link="HalfArm1_Link" />
@@ -108,6 +115,7 @@
     <axis xyz="0 0 1" />
     <limit effort="39" velocity="0.8727" />
   </joint>
+
   <link name="ForeArm_Link">
     <inertial>
       <origin xyz="-1.8E-05 -0.075478 -0.015006" rpy="0 0 0" />
@@ -130,6 +138,7 @@
       </geometry>
     </collision>
   </link>
+
   <joint name="Actuator4" type="revolute">
     <origin xyz="0 0.006375 -0.21038" rpy="1.5708 -6.6954E-17 -1.6653E-16" />
     <parent link="HalfArm2_Link" />
@@ -137,6 +146,8 @@
     <axis xyz="0 0 1" />
     <limit lower="-2.66" upper="2.66" effort="39" velocity="0.8727" />
   </joint>
+
+  <!-- Link 5 in tech specs -->
   <link name="SphericalWrist1_Link">
     <inertial>
       <origin xyz="1E-06 -0.009432 -0.063883" rpy="0 0 0" />
@@ -159,6 +170,7 @@
       </geometry>
     </collision>
   </link>
+
   <joint name="Actuator5" type="continuous">
     <origin xyz="0 -0.20843 -0.006375" rpy="-1.5708 2.2204E-16 -6.373E-17" />
     <parent link="ForeArm_Link" />
@@ -166,6 +178,8 @@
     <axis xyz="0 0 1" />
     <limit effort="9" velocity="0.8727" />
   </joint>
+
+  <!-- Link 6 in tech specs -->
   <link name="SphericalWrist2_Link">
     <inertial>
       <origin xyz="1E-06 -0.045483 -0.00965" rpy="0 0 0" />
@@ -197,6 +211,7 @@
     <limit lower="-2.23" upper="2.23" effort="9" velocity="0.8727" />
   </joint>
 
+  <!-- Interface module with vision module in tech specs -->
   <link name="Bracelet_Link">
     <inertial>
       <origin xyz="-0.000281 -0.011402 -0.029798" rpy="0 0 0" />
@@ -229,8 +244,10 @@
   </joint>
 
   <!-- It is also gripper's parent link -->
+  <!-- Gripper's connector-->
   <link name="EndEffector_Link" />
 
+  <!-- Gripper's connector-->
   <joint name="EndEffector" type="fixed">
     <origin xyz="0 0 -0.0615250000000001" rpy="3.14159265358979 1.09937075168372E-32 0" />
     <parent link="Bracelet_Link" />
