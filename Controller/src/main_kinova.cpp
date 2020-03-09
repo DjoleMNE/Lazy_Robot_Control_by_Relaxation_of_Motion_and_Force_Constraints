@@ -230,13 +230,13 @@ auto lambda_fct_callback = [](const Kinova::Api::Error &err, const Kinova::Api::
 
 void run_test(kinova_mediator &robot_driver)
 {
-    double time_duration   = 3.0f; // Duration of the example (seconds)
+    double time_duration = 10.0f; // Duration of the example (seconds)
     int timer_count = 0;
     int64_t now = 0;
     int64_t last = 0;
     int id_solver_result = 0;
     
-    KDL::JntArray jnt_array_command(7), jnt_array_feedback(7), jnt_array_feedback_2(7), zero_joint_array(7);
+    KDL::JntArray jnt_array_command(7), jnt_array_feedback(7), jnt_array_feedback_2(7), jnt_array_feedback_3(7), zero_joint_array(7);
     jnt_array_command(0) = 0.0;
     jnt_array_command(1) = 0.0;
     jnt_array_command(2) = 0.0;
@@ -276,7 +276,7 @@ void run_test(kinova_mediator &robot_driver)
             if (id_solver_result != 0) return;
 
             return_flag = robot_driver.set_joint_torques(jnt_array_command);
-            // std::cout << jnt_array_command << std::endl;
+            // std::cout <<  "Torque command: "<< jnt_array_command << std::endl;
 
             if (return_flag == -1)
             {
@@ -285,13 +285,15 @@ void run_test(kinova_mediator &robot_driver)
                 return;
             }
 
-            // robot_driver.get_joint_velocities(jnt_array_feedback);
+            // robot_driver.get_joint_torques(jnt_array_feedback_3);
+            // std::cout << "Torque: " << jnt_array_feedback_3 << std::endl;
+
             timer_count++;
             last = GetTickUs();
         }
     }
 
-    robot_driver.stop_robot_motion();
+    // robot_driver.stop_robot_motion();
     printf("Task completed\n");
 }
 
@@ -348,7 +350,7 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
 
         // Create services
         auto base = new Kinova::Api::Base::BaseClient(router);
-        auto actuator_config = new Kinova::Api::ActuatorConfig::ActuatorConfigClient(router);
+        // auto actuator_config = new Kinova::Api::ActuatorConfig::ActuatorConfigClient(router);
 
         // Make sure the arm is in Single Level Servoing before executing an Action
         auto servoingMode = Kinova::Api::Base::ServoingModeInformation();
@@ -409,44 +411,44 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
         std::cout << "Joint angles reached" << std::endl;
         // std::cout << "Promise value : " << Kinova::Api::Base::ActionEvent_Name(promise_event) << std::endl;
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-        auto torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        torque_offset_message.set_torque_offset(0.0f);
-        actuator_config->SetTorqueOffset(torque_offset_message, 1);
-
-        torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        torque_offset_message.set_torque_offset(0.00253617f);
+        // std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+        // auto torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
         // torque_offset_message.set_torque_offset(0.0f);
-        actuator_config->SetTorqueOffset(torque_offset_message, 2);
+        // actuator_config->SetTorqueOffset(torque_offset_message, 1);
 
-        torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        torque_offset_message.set_torque_offset(0.0f);
-        actuator_config->SetTorqueOffset(torque_offset_message, 3);
+        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
+        // torque_offset_message.set_torque_offset(0.00253617f);
+        // // torque_offset_message.set_torque_offset(0.0f);
+        // actuator_config->SetTorqueOffset(torque_offset_message, 2);
 
-        torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        torque_offset_message.set_torque_offset(0.00153136f);
+        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
         // torque_offset_message.set_torque_offset(0.0f);
-        actuator_config->SetTorqueOffset(torque_offset_message, 4);
+        // actuator_config->SetTorqueOffset(torque_offset_message, 3);
 
-        torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        torque_offset_message.set_torque_offset(0.0f);
-        actuator_config->SetTorqueOffset(torque_offset_message, 5);
+        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
+        // torque_offset_message.set_torque_offset(0.00153136f);
+        // // torque_offset_message.set_torque_offset(0.0f);
+        // actuator_config->SetTorqueOffset(torque_offset_message, 4);
 
-        torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        torque_offset_message.set_torque_offset(0.00137371f);
+        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
         // torque_offset_message.set_torque_offset(0.0f);
-        actuator_config->SetTorqueOffset(torque_offset_message, 6);
+        // actuator_config->SetTorqueOffset(torque_offset_message, 5);
 
-        torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        torque_offset_message.set_torque_offset(0.0f);
-        actuator_config->SetTorqueOffset(torque_offset_message, 7);
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
+        // torque_offset_message.set_torque_offset(0.00137371f);
+        // // torque_offset_message.set_torque_offset(0.0f);
+        // actuator_config->SetTorqueOffset(torque_offset_message, 6);
 
-        auto control_mode = actuator_config->GetControlMode(7);
-        std::cout << "ControlMode: " << control_mode.control_mode() << std::endl;
+        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
+        // torque_offset_message.set_torque_offset(0.0f);
+        // actuator_config->SetTorqueOffset(torque_offset_message, 7);
+        // std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+        // auto control_mode = actuator_config->GetControlMode(7);
+        // std::cout << "ControlMode: " << control_mode.control_mode() << std::endl;
         
-        auto torque_offset = actuator_config->GetTorqueOffset(7);
-        std::cout << "TorqueOffset: " << torque_offset.torque_offset() << std::endl;
+        // auto torque_offset = actuator_config->GetTorqueOffset(7);
+        // std::cout << "TorqueOffset: " << torque_offset.torque_offset() << std::endl;
 
         // Close API session
         session_manager->CloseSession();
