@@ -12,6 +12,7 @@ Controller/src/main_kinova2.cpp
 Controller/src/main_kinova3.cpp
 Controller/src/main_kinova4.cpp
 Controller/src/main_kinova5.cpp
+Controller/src/main_kinova6.cpp
 Controller/src/main_kinova1.cpp
 
 kdl_parser/*
