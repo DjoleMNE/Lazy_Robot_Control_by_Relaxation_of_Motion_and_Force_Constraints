@@ -266,12 +266,12 @@ void run_test(kinova_mediator &robot_driver)
         if (now - last > 1000)
         {
             robot_driver.get_joint_positions(jnt_array_feedback);
-            robot_driver.get_joint_velocities(jnt_array_feedback_2);
+            // robot_driver.get_joint_velocities(jnt_array_feedback_2);
             // std::cout << "Pos: " << jnt_array_feedback << std::endl;
             // std::cout << "Vel: " << jnt_array_feedback_2 << std::endl;
             // std::cout << std::endl;
 
-            id_solver_result = id_solver->CartToJnt(jnt_array_feedback, jnt_array_feedback_2, zero_joint_array, 
+            id_solver_result = id_solver->CartToJnt(jnt_array_feedback, zero_joint_array, zero_joint_array, 
                                                     zero_wrenches, jnt_array_command);
             if (id_solver_result != 0) return;
 
@@ -336,7 +336,7 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
         // Set session data connection information
         auto create_session_info = Kinova::Api::Session::CreateSessionInfo();
         create_session_info.set_username("admin");
-        create_session_info.set_password("kinova1_area4251");
+        create_session_info.set_password("admin");
         create_session_info.set_session_inactivity_timeout(6000);   // (milliseconds)
         create_session_info.set_connection_inactivity_timeout(100); // (milliseconds)
 
