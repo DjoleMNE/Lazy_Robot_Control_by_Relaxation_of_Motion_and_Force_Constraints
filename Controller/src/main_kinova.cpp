@@ -265,10 +265,10 @@ void run_test(kinova_mediator &robot_driver)
 
         if (now - last > 1000)
         {
-            robot_driver.get_joint_positions(jnt_array_feedback);
-            // robot_driver.get_joint_velocities(jnt_array_feedback_2);
+            robot_driver.get_joint_state(jnt_array_feedback, jnt_array_feedback_2, jnt_array_feedback_3);
             // std::cout << "Pos: " << jnt_array_feedback << std::endl;
             // std::cout << "Vel: " << jnt_array_feedback_2 << std::endl;
+            // std::cout << "Torque: " << jnt_array_feedback_3 << std::endl;
             // std::cout << std::endl;
 
             id_solver_result = id_solver->CartToJnt(jnt_array_feedback, zero_joint_array, zero_joint_array, 
@@ -284,9 +284,6 @@ void run_test(kinova_mediator &robot_driver)
                 printf("Robot stoped: error in control\n");
                 return;
             }
-
-            // robot_driver.get_joint_torques(jnt_array_feedback_3);
-            // std::cout << "Torque: " << jnt_array_feedback_3 << std::endl;
 
             timer_count++;
             last = GetTickUs();

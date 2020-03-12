@@ -61,6 +61,11 @@ class youbot_mediator: public robot_mediator
 		
 		virtual bool is_initialized();
 
+		// Update joint space state: measured positions, velocities and torques
+		virtual void get_joint_state(KDL::JntArray &joint_positions,
+									 KDL::JntArray &joint_velocities,
+									 KDL::JntArray &joint_torques);
+
 		// Set desired joint commands to move robot and save them for sake of simulation
 		virtual int set_joint_command(const KDL::JntArray &joint_positions,
 							   const KDL::JntArray &joint_velocities,

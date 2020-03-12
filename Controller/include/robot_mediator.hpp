@@ -59,6 +59,11 @@ class robot_mediator
 								const int robot_environment,
 								const bool gravity_compensated) = 0;
 
+		// Update joint space state: measured positions, velocities and torques
+		virtual void get_joint_state(KDL::JntArray &joint_positions,
+							 		 KDL::JntArray &joint_velocities,
+							 		 KDL::JntArray &joint_torques) = 0;
+
 		// Set desired joint commands to move robot and save them for sake of simulation
 		virtual int set_joint_command(const KDL::JntArray &joint_positions,
 									  const KDL::JntArray &joint_velocities,

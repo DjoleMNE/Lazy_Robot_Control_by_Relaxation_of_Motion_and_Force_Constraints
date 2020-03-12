@@ -55,14 +55,24 @@ kinova_mediator::~kinova_mediator()
     deinitialize();
 }
 
+// Update joint space state: measured positions, velocities and torques
+void kinova_mediator::get_joint_state(KDL::JntArray &joint_positions,
+                                      KDL::JntArray &joint_velocities,
+                                      KDL::JntArray &joint_torques)
+{
+    if (kinova_environment_ != kinova_environment::SIMULATION) base_feedback_ = base_cyclic_->RefreshFeedback();
+
+    get_joint_positions(joint_positions);
+    get_joint_velocities(joint_velocities);
+    get_joint_torques(joint_torques);
+}
+
 // Get Joint Positions
 void kinova_mediator::get_joint_positions(KDL::JntArray &joint_positions) 
 {
     // Joint position given in deg
     if (kinova_environment_ != kinova_environment::SIMULATION)
     {
-        base_feedback_ = base_cyclic_->RefreshFeedback();
-
         for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
             joint_positions(i) = DEG_TO_RAD(base_feedback_.actuators(i).position());
     }
@@ -129,8 +139,6 @@ void kinova_mediator::get_joint_velocities(KDL::JntArray &joint_velocities)
     // Joint velocity given in deg/sec
     if (kinova_environment_ != kinova_environment::SIMULATION)
     {
-        base_feedback_ = base_cyclic_->RefreshFeedback();
-
         for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
             joint_velocities(i) = DEG_TO_RAD(base_feedback_.actuators(i).velocity());
     }
@@ -190,8 +198,6 @@ void kinova_mediator::get_joint_torques(KDL::JntArray &joint_torques)
     // Joint torque given in Newton * meters
     if (kinova_environment_ != kinova_environment::SIMULATION)
     {
-        base_feedback_ = base_cyclic_->RefreshFeedback();
-
         for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
             joint_torques(i) = base_feedback_.actuators(i).torque();
     }

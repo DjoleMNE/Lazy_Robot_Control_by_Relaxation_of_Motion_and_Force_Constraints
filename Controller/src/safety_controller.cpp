@@ -308,8 +308,7 @@ void safety_controller::stop_robot_motion()
 //Get current robot state from the joint sensors
 void safety_controller::get_current_state(state_specification &current_state)
 {
-    robot_driver_->get_joint_positions(current_state.q);
-    robot_driver_->get_joint_velocities(current_state.qd);
+    robot_driver_->get_joint_state(current_state.q, current_state.qd, current_state.measured_torque);
 }
 
 /*

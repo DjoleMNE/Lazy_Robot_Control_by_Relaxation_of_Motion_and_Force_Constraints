@@ -51,6 +51,16 @@ youbot_mediator::youbot_mediator():
     tau_setpoint_.resize(youbot_constants::NUMBER_OF_JOINTS); 
 }
 
+// Update joint space state: measured positions, velocities and torques
+void youbot_mediator::get_joint_state(KDL::JntArray &joint_positions,
+                                      KDL::JntArray &joint_velocities,
+                                      KDL::JntArray &joint_torques)
+{
+    get_joint_positions(joint_positions);
+    get_joint_velocities(joint_velocities);
+    get_joint_torques(joint_torques);
+}
+
 // Get Joint Positions
 void youbot_mediator::get_joint_positions(KDL::JntArray &joint_positions) 
 {
