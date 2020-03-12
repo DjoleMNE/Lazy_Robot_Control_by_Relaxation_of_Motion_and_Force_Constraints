@@ -230,7 +230,7 @@ auto lambda_fct_callback = [](const Kinova::Api::Error &err, const Kinova::Api::
 
 void run_test(kinova_mediator &robot_driver)
 {
-    double time_duration = 10.0f; // Duration of the example (seconds)
+    double time_duration = 20.0f; // Duration of the example (seconds)
     int timer_count = 0;
     int64_t now = 0;
     int64_t last = 0;

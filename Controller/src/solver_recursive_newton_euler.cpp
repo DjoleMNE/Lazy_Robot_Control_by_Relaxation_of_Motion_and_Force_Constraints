@@ -104,7 +104,7 @@ int Solver_RNE::CartToJnt(const JntArray &q, const JntArray &q_dot, const JntArr
     {
         if (chain.getSegment(i).getJoint().getType()!=Joint::None)
         {
-            torques(j)  = dot(S[i], f[i]);
+            torques(j) = dot(S[i], f[i]);
             torques(j) += joint_inertia_[j] * q_dotdot(j);  // add torque from joint inertia
 
             if (saturate_torques_)

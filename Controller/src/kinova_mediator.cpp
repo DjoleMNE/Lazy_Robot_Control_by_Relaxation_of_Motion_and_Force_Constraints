@@ -507,21 +507,21 @@ void kinova_mediator::initialize(const int robot_model,
         transport_->connect(IP_ADDRESS, PORT);
 
         this->transport_real_time_ = std::make_shared<Kinova::Api::TransportClientUdp>();
-        this->router_real_time_ = std::make_shared< Kinova::Api::RouterClient>(transport_real_time_.get(), error_callback);
+        this->router_real_time_ = std::make_shared<Kinova::Api::RouterClient>(transport_real_time_.get(), error_callback);
         transport_real_time_->connect(IP_ADDRESS, PORT_REAL_TIME);
 
         // Set session data connection information
         auto create_session_info = Kinova::Api::Session::CreateSessionInfo();
         create_session_info.set_username("admin");
         create_session_info.set_password("admin");
-        create_session_info.set_session_inactivity_timeout(1000);   // (milliseconds)
-        create_session_info.set_connection_inactivity_timeout(100); // (milliseconds)
+        create_session_info.set_session_inactivity_timeout(200);   // (milliseconds)
+        create_session_info.set_connection_inactivity_timeout(200); // (milliseconds)
 
         // Session manager service wrapper
         this->session_manager_ = std::make_shared<Kinova::Api::SessionManager>(router_.get());
         session_manager_->CreateSession(create_session_info);
 
-        this->session_manager_real_time_ = std::make_shared< Kinova::Api::SessionManager>(router_real_time_.get());
+        this->session_manager_real_time_ = std::make_shared<Kinova::Api::SessionManager>(router_real_time_.get());
         session_manager_real_time_->CreateSession(create_session_info);
 
         // Create services
