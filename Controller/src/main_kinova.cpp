@@ -258,6 +258,7 @@ void run_test(kinova_mediator &robot_driver)
     }
 
     // Real-time loop
+    printf("Test run started\n");
     int return_flag = 0;
     while (timer_count < (time_duration * 1000))
     {
@@ -459,6 +460,7 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
         delete session_manager;
         delete router;
         delete transport;
+        printf("High-Level Control Completed\n");
     }
 
     else

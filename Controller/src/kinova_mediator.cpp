@@ -52,6 +52,10 @@ kinova_mediator::kinova_mediator():
 
 kinova_mediator::~kinova_mediator()
 {
+    // Necessary to avoid hard restart of the arm for the next control trial
+    if (kinova_environment_ != kinova_environment::SIMULATION && control_mode_ != control_mode::POSITION) set_control_mode(control_mode::POSITION);
+
+    // Close API sessions and connections
     deinitialize();
 }
 
