@@ -53,7 +53,7 @@ kinova_mediator::kinova_mediator():
 kinova_mediator::~kinova_mediator()
 {
     // Necessary to avoid hard restart of the arm for the next control trial
-    if (kinova_environment_ != kinova_environment::SIMULATION && control_mode_ != control_mode::POSITION) set_control_mode(control_mode::POSITION);
+    if (kinova_environment_ != kinova_environment::SIMULATION) stop_robot_motion();
 
     // Close API sessions and connections
     deinitialize();
@@ -75,16 +75,8 @@ void kinova_mediator::get_joint_state(KDL::JntArray &joint_positions,
 void kinova_mediator::get_joint_positions(KDL::JntArray &joint_positions) 
 {
     // Joint position given in deg
-    if (kinova_environment_ != kinova_environment::SIMULATION)
-    {
-        for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
-            joint_positions(i) = DEG_TO_RAD(base_feedback_.actuators(i).position());
-    }
-    else // Assign to the current state the previously passed command 
-    {
-        for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
-            joint_positions(i) = DEG_TO_RAD(base_command_.actuators(i).position());
-    }
+    for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
+        joint_positions(i) = DEG_TO_RAD(base_feedback_.actuators(i).position());
 
     // Kinova API provides only positive angle values
     // This operation is required to align the logic with our safety controller
@@ -128,7 +120,7 @@ int kinova_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
             return -1;
         }
     }
-    else
+    else // Necessary to safe current commands as the next state for the simulation environment
     {
         for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
             base_feedback_.mutable_actuators(i)->set_position(RAD_TO_DEG(joint_positions(i)));
@@ -141,16 +133,8 @@ int kinova_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
 void kinova_mediator::get_joint_velocities(KDL::JntArray &joint_velocities)
 {
     // Joint velocity given in deg/sec
-    if (kinova_environment_ != kinova_environment::SIMULATION)
-    {
-        for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
-            joint_velocities(i) = DEG_TO_RAD(base_feedback_.actuators(i).velocity());
-    }
-    else // Assign to the current state the previously passed command 
-    {
-        for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
-            joint_velocities(i) = DEG_TO_RAD(base_command_.actuators(i).velocity());
-    }
+    for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
+        joint_velocities(i) = DEG_TO_RAD(base_feedback_.actuators(i).velocity());
 }
 
 // Set Joint Velocities
@@ -188,7 +172,7 @@ int kinova_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities)
             return -1;
         }
     }
-    else
+    else // Necessary to safe current commands as the next state for the simulation environment
     {
         for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
             base_feedback_.mutable_actuators(i)->set_velocity(RAD_TO_DEG(joint_velocities(i)));
@@ -200,16 +184,8 @@ int kinova_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities)
 void kinova_mediator::get_joint_torques(KDL::JntArray &joint_torques)
 {
     // Joint torque given in Newton * meters
-    if (kinova_environment_ != kinova_environment::SIMULATION)
-    {
-        for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
-            joint_torques(i) = base_feedback_.actuators(i).torque();
-    }
-    else // Assign to the current state the previously passed command 
-    {
-        for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
-            joint_torques(i) = base_command_.actuators(i).torque_joint();
-    }
+    for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
+        joint_torques(i) = base_feedback_.actuators(i).torque();
 }
 
 // Set Joint Torques
@@ -247,7 +223,7 @@ int kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
             return -1;
         }
     }
-    else
+    else // Necessary to safe current commands as the next state for the simulation environment
     {
         for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
             base_feedback_.mutable_actuators(i)->set_torque(joint_torques(i));
@@ -353,7 +329,7 @@ int kinova_mediator::set_joint_command(const KDL::JntArray &joint_positions,
 bool kinova_mediator::robot_stopped()
 {
     // Check if velocity control mode is active
-    if (control_mode_message_.control_mode() != Kinova::Api::ActuatorConfig::ControlMode::VELOCITY) return false;
+    // if (control_mode_message_.control_mode() != Kinova::Api::ActuatorConfig::ControlMode::VELOCITY) return false;
 
     base_feedback_ = base_cyclic_->RefreshFeedback();
     for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
@@ -368,30 +344,21 @@ bool kinova_mediator::robot_stopped()
 // Set Zero Joint Velocities and wait until robot has stopped completely
 int kinova_mediator::stop_robot_motion()
 {
-    if (control_mode_ != control_mode::VELOCITY) set_control_mode(control_mode::VELOCITY);
-
-    // Send the zero velocity commands to motors
-    for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
-    {
-        base_command_.mutable_actuators(i)->set_position(base_feedback_.actuators(i).position());
-        base_command_.mutable_actuators(i)->set_velocity(0.0);
-    }
-
     if (kinova_environment_ != kinova_environment::SIMULATION)
     {
+        base_feedback_ = base_cyclic_->RefreshFeedback();
+        
+        for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
+            base_command_.mutable_actuators(i)->set_position(base_feedback_.actuators(i).position());
+        
+        if (control_mode_ != control_mode::POSITION) set_control_mode(control_mode::POSITION);
+
         increment_command_id();
 
-        // Send commands to the actuators
+        // Send the commands
         try
         {
             base_feedback_ = base_cyclic_->Refresh(base_command_, 0);
-            
-            // Monitor robot state until the robot has stopped completely
-            bool wait_for_driver = true;
-            while (wait_for_driver)
-            {
-                if (robot_stopped()) wait_for_driver = false;
-            }
         }
         catch (Kinova::Api::KDetailedException& ex)
         {
@@ -408,6 +375,18 @@ int kinova_mediator::stop_robot_motion()
         {
             std::cout << "Unknown error." << std::endl;
             return -1;
+        }
+    }
+    else
+    {
+        // Simulated low-level velocity interface
+        if (control_mode_ != control_mode::VELOCITY) set_control_mode(control_mode::VELOCITY);
+
+        // Send the zero velocity commands to motors
+        for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
+        {
+            base_command_.mutable_actuators(i)->set_position(base_feedback_.actuators(i).position());
+            base_command_.mutable_actuators(i)->set_velocity(0.0);
         }
     }
     return 0;

@@ -298,7 +298,7 @@ void run_test(kinova_mediator &robot_driver)
         iteration_count++;
     }
 
-    // robot_driver.stop_robot_motion();
+    robot_driver.stop_robot_motion();
     printf("Task completed\n");
 }
 

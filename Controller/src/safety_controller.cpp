@@ -223,7 +223,6 @@ int safety_controller::check_torques()
             position_limit_reached(predicted_states_[0], i) || \
             position_limit_reached(predicted_states_[1], i))
         {
-            // stop_robot_motion();
             if (PRINT_LOGS_) printf("Torque commands not safe \n");
             return control_mode::STOP_MOTION;
         }
