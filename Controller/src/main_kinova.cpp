@@ -333,6 +333,16 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
 
     if (environment != kinova_environment::SIMULATION)
     {
+        // Extract user password from a file
+        fstream newfile;
+        string kinova_passwd;
+        newfile.open("/home/djole/Master/Thesis/GIT/MT_testing/kinova_passwd.txt", ios::in);
+        if (newfile.is_open())
+        {
+            while (getline(newfile, kinova_passwd)) {}
+            newfile.close();
+        }
+
         // Create API objects
         auto error_callback = [](Kinova::Api::KError err){ cout << "_________ callback error _________" << err.toString(); };
         
@@ -343,7 +353,7 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
         // Set session data connection information
         auto create_session_info = Kinova::Api::Session::CreateSessionInfo();
         create_session_info.set_username("admin");
-        create_session_info.set_password("admin");
+        create_session_info.set_password(kinova_passwd);
         create_session_info.set_session_inactivity_timeout(6000);   // (milliseconds)
         create_session_info.set_connection_inactivity_timeout(100); // (milliseconds)
 
