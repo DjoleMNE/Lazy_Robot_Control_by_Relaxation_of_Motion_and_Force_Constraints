@@ -260,32 +260,51 @@ int kinova_mediator::set_control_mode(const int desired_control_mode)
     control_mode_ = desired_control_mode;
     if (kinova_environment_ != kinova_environment::SIMULATION)
     {
-        switch (desired_control_mode)
-        {   
-            case control_mode::TORQUE:
-                // Set actuators in torque mode
-                control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::TORQUE);
-                for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
-                    actuator_config_->SetControlMode(control_mode_message_, actuator_id);
-                return 0;
+        try
+        {
+            switch (desired_control_mode)
+            {
+                case control_mode::TORQUE:
+                    // Set actuators in torque mode
+                    control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::TORQUE);
+                    for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
+                        actuator_config_->SetControlMode(control_mode_message_, actuator_id);
+                    return 0;
 
-            case control_mode::VELOCITY:
-                // Set actuators in velocity mode
-                control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::VELOCITY);
-                for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
-                    actuator_config_->SetControlMode(control_mode_message_, actuator_id);
-                return 0;
+                case control_mode::VELOCITY:
+                    // Set actuators in velocity mode
+                    control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::VELOCITY);
+                    for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
+                        actuator_config_->SetControlMode(control_mode_message_, actuator_id);
+                    return 0;
 
-            case control_mode::POSITION:
-                // Set actuators in position mode
-                control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::POSITION);
-                for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
-                    actuator_config_->SetControlMode(control_mode_message_, actuator_id);
-                return 0;
+                case control_mode::POSITION:
+                    // Set actuators in position mode
+                    control_mode_message_.set_control_mode(Kinova::Api::ActuatorConfig::ControlMode::POSITION);
+                    for (int actuator_id = 1; actuator_id < ACTUATOR_COUNT + 1; actuator_id++)
+                        actuator_config_->SetControlMode(control_mode_message_, actuator_id);
+                    return 0;
 
-            default: 
-                assert(("Unknown control mode!", false));
-                return -1;
+                default:
+                    assert(("Unknown control mode!", false));
+                    return -1;
+            }
+        }
+        catch (Kinova::Api::KDetailedException& ex)
+        {
+            std::cout << "Kortex exception: " << ex.what() << std::endl;
+            std::cout << "Error sub-code: " << Kinova::Api::SubErrorCodes_Name(Kinova::Api::SubErrorCodes((ex.getErrorInfo().getError().error_sub_code()))) << std::endl;
+            return -1;
+        }
+        catch (std::runtime_error& ex2)
+        {
+            std::cout << "runtime error: " << ex2.what() << std::endl;
+            return -1;
+        }
+        catch(...)
+        {
+            std::cout << "Unknown error." << std::endl;
+            return -1;
         }
     }
     return 0;
@@ -312,15 +331,15 @@ int kinova_mediator::set_joint_command(const KDL::JntArray &joint_positions,
         switch (desired_control_mode)
         {   
             case control_mode::TORQUE:
-                if (control_mode_ != control_mode::TORQUE) set_control_mode (desired_control_mode);
+                if (control_mode_ != control_mode::TORQUE) set_control_mode(desired_control_mode);
                 return set_joint_torques(joint_torques);
 
             case control_mode::VELOCITY:
-                if (control_mode_ != control_mode::VELOCITY) set_control_mode (desired_control_mode);
+                if (control_mode_ != control_mode::VELOCITY) set_control_mode(desired_control_mode);
                 return set_joint_velocities(joint_velocities);
 
             case control_mode::POSITION:
-                if (control_mode_ != control_mode::POSITION) set_control_mode (desired_control_mode);
+                if (control_mode_ != control_mode::POSITION) set_control_mode(desired_control_mode);
                 return set_joint_positions(joint_positions);
 
             default: 

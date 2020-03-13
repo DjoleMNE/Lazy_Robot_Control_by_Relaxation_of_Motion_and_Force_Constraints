@@ -251,6 +251,8 @@ void run_test(kinova_mediator &robot_driver)
     std::shared_ptr<KDL::Solver_RNE> id_solver = std::make_shared<KDL::Solver_RNE>(robot_chain, KDL::Vector(0.0, 0.0, -9.81289),
                                                                                    robot_driver.get_joint_inertia(), 
                                                                                    robot_driver.get_joint_torque_limits(), true);
+
+    printf("Test run started\n");
     if (robot_driver.set_control_mode(control_mode::TORQUE) == -1)
     {
         printf("Incorrect control mode\n");
@@ -258,7 +260,6 @@ void run_test(kinova_mediator &robot_driver)
     }
 
     // Real-time loop
-    printf("Test run started\n");
     int return_flag = 0;
     while (timer_count < (time_duration * 1000))
     {
