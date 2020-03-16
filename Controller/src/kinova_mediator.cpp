@@ -52,9 +52,6 @@ kinova_mediator::kinova_mediator():
 
 kinova_mediator::~kinova_mediator()
 {
-    // Necessary to avoid hard restart of the arm for the next control trial
-    if (kinova_environment_ != kinova_environment::SIMULATION) stop_robot_motion();
-
     // Close API sessions and connections
     deinitialize();
 }
@@ -624,6 +621,9 @@ void kinova_mediator::deinitialize()
 {
     if (kinova_environment_ != kinova_environment::SIMULATION)
     {
+        // Necessary to avoid hard restart of the arm for the next control trial
+        stop_robot_motion();
+
         // Close API session
         session_manager_->CloseSession();
         session_manager_real_time_->CloseSession();

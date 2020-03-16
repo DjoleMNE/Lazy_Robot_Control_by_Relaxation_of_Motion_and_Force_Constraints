@@ -539,8 +539,8 @@ int define_task(dynamics_controller *dyn_controller)
 
         default:
             // HOME pose
-            tube_start_position = std::vector<double>{0.29514, 0.00134662, 0.433724};
-            desired_ee_pose     = { 0.39514, 0.00134662, 0.433724, // Linear: Vector
+            tube_start_position = std::vector<double>{0.39514, 0.00134662, 0.433724};
+            desired_ee_pose     = { 0.55514, 0.01934662, 0.453724, // Linear: Vector
                                     0.0, 0.0, -1.0, // Angular: Rotation matrix
                                     1.0, 0.0, 0.0,
                                     0.0, -1.0, 0.0};
@@ -651,9 +651,9 @@ int main(int argc, char **argv)
     printf("kinova MAIN Started \n");
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                              false, false, false}; // Angular
-    tube_tolerances      = std::vector<double>{0.001, 0.01, 0.01, 
+    tube_tolerances      = std::vector<double>{0.001, 0.03, 0.03, 
                                                0.0, 0.0, 0.0, 
-                                               0.005, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
+                                               0.001, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
     environment          = kinova_environment::SIMULATION;
     robot_model_id       = kinova_model::URDF;
     desired_pose_id      = desired_pose::HOME;
@@ -662,8 +662,8 @@ int main(int argc, char **argv)
     // desired_task_model   = task_model::full_pose;
     path_type            = path_types::STEP_PATH;
     motion_profile_id    = m_profile::CONSTANT;
-    task_time_limit_sec  = 10.5;
-    tube_speed           = 0.01;
+    task_time_limit_sec  = 7.5;
+    tube_speed           = 0.03;
     compensate_gravity   = false;
     control_null_space   = false;
     use_mass_alternation = false;
@@ -756,5 +756,7 @@ int main(int argc, char **argv)
     if (initial_result != 0) return -1;
 
     controller.control();
+
+    return_flag = go_to(robot_driver, desired_pose::RETRACT);
     return 0;
 }

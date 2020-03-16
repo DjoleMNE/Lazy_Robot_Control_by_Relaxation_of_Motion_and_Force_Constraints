@@ -2120,7 +2120,7 @@ int dynamics_controller::update_commands()
         if (status == -1) 
         {
             deinitialize();
-            printf("Total time: %f\n", total_time_sec_);
+            printf("Total time: %f sec\n", total_time_sec_);
             return -1;
         }
     } 
@@ -2185,7 +2185,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
     if (check_fsm_status() == -1)
     {
         deinitialize();
-        printf("Total time: %f\n", total_time_sec_);
+        printf("Total time: %f sec\n", total_time_sec_);
         return -1;
     }
 
@@ -2233,7 +2233,7 @@ int dynamics_controller::control()
             if (apply_joint_control_commands() != 0)
             {
                 deinitialize();
-                printf("Total time: %f\n", total_time_sec_);
+                printf("Total time: %f sec\n", total_time_sec_);
                 printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
                 return -1;
             }
@@ -2291,14 +2291,15 @@ int dynamics_controller::control()
             if (apply_joint_control_commands() != 0)
             {
                 deinitialize();
-                printf("Total time: %f\n", total_time_sec_);
+                printf("Total time: %f sec\n", total_time_sec_);
                 printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
                 return -1;
             }
 
             // Make sure that the loop is always running with the same frequency
             #ifdef NDEBUG
-                if (enforce_loop_frequency(DT_1KHZ_MICRO_) != 0) printf("WARNING: Control loop runs too slow \n");
+                enforce_loop_frequency(DT_1KHZ_MICRO_);
+                // if (enforce_loop_frequency(DT_1KHZ_MICRO_) != 0) printf("WARNING: Control loop runs too slow \n");
             #endif
             #ifndef NDEBUG
                 enforce_loop_frequency(DT_1KHZ_MICRO_);
