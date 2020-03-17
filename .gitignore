@@ -8,6 +8,7 @@ Controller/release_build_youbot/*
 Controller/release_build_kinova/*
 kortex_api/*
 Controller/visualization/archive/*
+Controller/visualization/experiments/*
 Controller/src/main_kinova2.cpp
 Controller/src/main_kinova3.cpp
 Controller/src/main_kinova4.cpp
