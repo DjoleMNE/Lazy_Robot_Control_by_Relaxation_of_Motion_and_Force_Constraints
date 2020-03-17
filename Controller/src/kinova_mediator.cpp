@@ -53,7 +53,7 @@ kinova_mediator::kinova_mediator():
 kinova_mediator::~kinova_mediator()
 {
     // Close API sessions and connections
-    deinitialize();
+    if (is_initialized_) deinitialize();
 }
 
 // Update joint space state: measured positions, velocities and torques
@@ -635,5 +635,6 @@ void kinova_mediator::deinitialize()
         transport_real_time_->disconnect();
     }
 
-    printf("Robot deinitialized! \n");
+    is_initialized_ = false;
+    printf("Robot deinitialized! \n\n\n");
 }

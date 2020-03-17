@@ -82,7 +82,7 @@ std::vector<bool> control_dims       = {true, true, true, // Linear
                                         false, false, false}; // Angular
 
 // Last parameter: Numer of points
-const std::vector<double> path_parameters = {0.0, 0.0, 0.0, 0.0, 90.0};
+const std::vector<double> path_parameters = {0.5, 3.5, 0.05, 0.008, 12};
 std::vector<double> tube_start_position   = {0.0, 0.0, 0.0};
 std::vector<double> tube_tolerances       = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
@@ -354,8 +354,8 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
         auto create_session_info = Kinova::Api::Session::CreateSessionInfo();
         create_session_info.set_username("admin");
         create_session_info.set_password(kinova_passwd);
-        create_session_info.set_session_inactivity_timeout(6000);   // (milliseconds)
-        create_session_info.set_connection_inactivity_timeout(100); // (milliseconds)
+        create_session_info.set_session_inactivity_timeout(200);   // (milliseconds)
+        create_session_info.set_connection_inactivity_timeout(200); // (milliseconds)
 
         // Session manager service wrapper
         std::cout << "Creating sessions for communication" << std::endl;
@@ -473,6 +473,7 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
         transport->disconnect();
 
         // Destroy the API
+        // delete actuator_config;
         delete base;
         delete session_manager;
         delete router;
@@ -540,7 +541,7 @@ int define_task(dynamics_controller *dyn_controller)
         default:
             // HOME pose
             tube_start_position = std::vector<double>{0.39514, 0.00134662, 0.433724};
-            desired_ee_pose     = { 0.55514, 0.01934662, 0.453724, // Linear: Vector
+            desired_ee_pose     = { 0.55514, 0.01934662, 0.433724, // Linear: Vector
                                     0.0, 0.0, -1.0, // Angular: Rotation matrix
                                     1.0, 0.0, 0.0,
                                     0.0, -1.0, 0.0};
@@ -651,7 +652,7 @@ int main(int argc, char **argv)
     printf("kinova MAIN Started \n");
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                              false, false, false}; // Angular
-    tube_tolerances      = std::vector<double>{0.001, 0.03, 0.03, 
+    tube_tolerances      = std::vector<double>{0.01, 0.03, 0.03, 
                                                0.0, 0.0, 0.0, 
                                                0.001, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
     environment          = kinova_environment::SIMULATION;
@@ -660,7 +661,7 @@ int main(int argc, char **argv)
     desired_control_mode = control_mode::TORQUE;
     desired_task_model   = task_model::moveTo;
     // desired_task_model   = task_model::full_pose;
-    path_type            = path_types::STEP_PATH;
+    path_type            = path_types::SINE_PATH;
     motion_profile_id    = m_profile::CONSTANT;
     task_time_limit_sec  = 7.5;
     tube_speed           = 0.03;
@@ -756,6 +757,8 @@ int main(int argc, char **argv)
     if (initial_result != 0) return -1;
 
     controller.control();
+
+    robot_driver.deinitialize();
 
     return_flag = go_to(robot_driver, desired_pose::RETRACT);
     return 0;

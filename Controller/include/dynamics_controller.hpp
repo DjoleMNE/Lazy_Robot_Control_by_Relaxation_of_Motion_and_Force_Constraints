@@ -198,7 +198,7 @@ class dynamics_controller
     std::chrono::steady_clock::time_point loop_previous_time_;
     std::chrono::duration <double, std::micro> loop_interval_{};
     double total_time_sec_;
-    int loop_iteration_count_, feedforward_loop_count_;
+    int loop_iteration_count_, feedforward_loop_count_, control_loop_delay_count_;
 
     KDL::Chain robot_chain_;
     const int NUM_OF_JOINTS_;

@@ -90,6 +90,9 @@ class kinova_mediator: public robot_mediator
 
 		virtual bool is_initialized();
 
+		// De-initializes variables and closes the sessions 
+		void deinitialize();
+
 		// Update joint space state: measured positions, velocities and torques
 		virtual void get_joint_state(KDL::JntArray &joint_positions,
 									 KDL::JntArray &joint_velocities,
@@ -170,9 +173,6 @@ class kinova_mediator: public robot_mediator
 		// Variable for alternating servoing mode (High or Low level control)
 		Kinova::Api::Base::ServoingModeInformation servoing_mode_;
 		Kinova::Api::ActuatorConfig::ControlModeInformation control_mode_message_;
-
-		// De-initializes variables and closes the sessions 
-		void deinitialize();
 
 		// Increses index of the command's frame id (buffer)
 		void increment_command_id();
