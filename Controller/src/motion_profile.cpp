@@ -27,6 +27,26 @@ SOFTWARE.
 
 namespace motion_profile
 {
+
+    std::deque<double> ramp_array(const double start_state, const double end_state,
+                                  const double step, const double threshold)
+    {
+        std::deque<double> setpoint_array;
+        double setpoint = start_state + step;
+
+        while ((step > 0.0)? setpoint < end_state : setpoint > end_state)
+        {
+            if (std::fabs(setpoint) < std::fabs(threshold)) break;
+
+            setpoint_array.push_back(setpoint);
+            setpoint = setpoint_array.back() + step;
+        }
+
+        setpoint_array.push_back(end_state);
+        return setpoint_array;
+    }
+
+
     double tanh_function(const double state,
                          const double offset,
                          const double amplitude,

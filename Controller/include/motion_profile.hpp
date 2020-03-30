@@ -25,13 +25,15 @@ SOFTWARE.
 
 #ifndef MOTION_PROFILE_HPP
 #define MOTION_PROFILE_HPP
+#include <stdlib.h>     /* abs */
 #include <vector>
 #include <iostream>
 #include <sstream>
 #include <fstream>
 #include <unistd.h>
 #include <cmath>
-#include <stdlib.h>     /* abs */
+#include <assert.h>
+#include <deque>
 
 enum m_profile 
 {
@@ -43,24 +45,26 @@ enum m_profile
 
 namespace motion_profile
 {
+    std::deque<double> ramp_array(const double start, const double stop,
+                                  const double rate, const double threshold);
     double tanh_function(const double state,
-                            const double offset,
-                            const double amplitude,
-                            const double slope);
+                         const double offset,
+                         const double amplitude,
+                         const double slope);
     double tanh_inverse_function(const double state,
-                                    const double offset,
-                                    const double amplitude,
-                                    const double slope);
+                                 const double offset,
+                                 const double amplitude,
+                                 const double slope);
     double step_function(const double state,
-                            const double magnitude,
-                            const double delta_slope,
-                            const double upper_limit,
-                            const double lower_limit);
+                         const double magnitude,
+                         const double delta_slope,
+                         const double upper_limit,
+                         const double lower_limit);
     double negative_step_function(const double state,
-                                    const double magnitude,
-                                    const double delta_slope,
-                                    const double upper_limit,
-                                    const double lower_limit);
+                                  const double magnitude,
+                                  const double delta_slope,
+                                  const double upper_limit,
+                                  const double lower_limit);
     double s_curve_function(const double state,
                             const double offset,
                             const double amplitude,
