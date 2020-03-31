@@ -133,7 +133,7 @@ class ABAG
             MIN_GAIN_SAT_LIMIT(Eigen::VectorXd::Zero(num_of_dimensions)),
             MAX_GAIN_SAT_LIMIT(Eigen::VectorXd::Ones(num_of_dimensions)),
             MIN_COMMAND_SAT_LIMIT(-Eigen::VectorXd::Ones(num_of_dimensions)),
-            MAX_COMMAND_SAT_LIMIT(Eigen::VectorXd::Ones(num_of_dimensions))   {};
+            MAX_COMMAND_SAT_LIMIT(Eigen::VectorXd::Ones(num_of_dimensions)){};
 
         abag_parameter(const Eigen::VectorXd &error_alpha, 
                        const Eigen::VectorXd &bias_threshold, 

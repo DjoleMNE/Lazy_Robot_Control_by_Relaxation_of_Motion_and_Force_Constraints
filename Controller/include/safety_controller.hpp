@@ -46,7 +46,8 @@ class safety_controller
     int set_control_commands(const state_specification &current_state,
                              const double dt_sec,
                              const int desired_control_mode,
-                             const int prediction_method);
+                             const int prediction_method,
+                             const bool bypass_safeties);
 
     void get_control_commands(state_specification &commands);
     void get_current_state(state_specification &current_state);

@@ -26,7 +26,7 @@ SOFTWARE.
 #include <safety_controller.hpp>
 
 safety_controller::safety_controller(robot_mediator *robot_driver,
-                                     const bool print_logs): 
+                                     const bool print_logs):
     robot_driver_(robot_driver),
     robot_chain_(robot_driver_->get_robot_model()),
     predictor_(robot_chain_),
@@ -50,39 +50,81 @@ safety_controller::safety_controller(robot_mediator *robot_driver,
 int safety_controller::set_control_commands(const state_specification &current_state,
                                             const double dt_sec,
                                             const int desired_control_mode,
-                                            const int prediction_method)
+                                            const int prediction_method,
+                                            const bool bypass_safeties)
 {
     assert(NUM_OF_JOINTS_ == current_state.qd.rows());
-    /* 
-        First Safety Level: Is the Current State Safe?
-        I.e. Check for NaN and infinite values in the commands variables.
-        Stop the motion if some of the values are NaN or infinite.
-        And check if robot has already crossed the position and velocity limits.
-        Also check if robot is close to position limits, 
-        given the measured (not integrated) angles and velocities.
-        If everything ok, proceed to the second level.
-    */
-    if (!is_current_state_safe(current_state)) return control_mode::STOP_MOTION;
 
-    /*
-        Integrate joint accelerations to velocities and positions
-        I.e. generate initial commands and predict where the robot will end-up
-        in next two steps, if the computed commands have been applied.
-    */
-    make_predictions(current_state, dt_sec, prediction_method);
+    if (!bypass_safeties)
+    {
+        /*
+            First Safety Level: Is the Current State Safe?
+            I.e. Check for NaN and infinite values in the commands variables.
+            Stop the motion if some of the values are NaN or infinite.
+            And check if robot has already crossed the position and velocity limits.
+            Also check if robot is close to position limits,
+            given the measured (not integrated) angles and velocities.
+            If everything ok, proceed to the second level.
+        */
+        if (!is_current_state_safe(current_state)) return control_mode::STOP_MOTION;
 
-    // Write computed torques, predicted velocities & positions in command state
-    generate_commands(current_state);
+        /*
+            Integrate joint accelerations to velocities and positions
+            I.e. generate initial commands and predict where the robot will end-up
+            in next two steps, if the computed commands have been applied.
+        */
+        make_predictions(current_state, dt_sec, prediction_method);
 
-    /*
-        Second Safety Level: Is the Future State Safe?
-        I.e. Check if the commads from desired control interface will 
-        make robot go over the limits.
-        If yes: switch to another mode, and/or scale down the commands,
-        or stop the robot.
-        If not: continue with the original commands.
-    */
-    return check_future_state(desired_control_mode);
+        // Write computed torques, predicted velocities & positions in command state
+        generate_commands(current_state);
+
+        /*
+            Second Safety Level: Is the Future State Safe?
+            I.e. Check if the commads from desired control interface will
+            make robot go over the limits.
+            If yes: switch to another mode, and/or scale down the commands,
+            or stop the robot.
+            If not: continue with the original commands.
+        */
+        return check_future_state(desired_control_mode);
+    }
+    else
+    {
+        /*
+            Integrate joint accelerations to velocities and positions
+            I.e. generate initial commands and predict where the robot will end-up
+            in next two steps, if the computed commands have been applied.
+        */
+        make_predictions(current_state, dt_sec, prediction_method);
+
+        // Write computed torques, predicted velocities & positions in command state
+        generate_commands(current_state);
+
+        // Commands are valid. Send them to the robot driver
+        switch (desired_control_mode)
+        {   
+            case control_mode::TORQUE:
+                if (robot_driver_->set_joint_command(commands_.q, commands_.qd,
+                                                     commands_.control_torque,
+                                                     control_mode::TORQUE) == -1) return control_mode::STOP_MOTION;
+                return control_mode::TORQUE;
+            
+            case control_mode::VELOCITY:
+                if (robot_driver_->set_joint_command(commands_.q, commands_.qd,
+                                                     commands_.control_torque,
+                                                     control_mode::VELOCITY) == -1) return control_mode::STOP_MOTION;
+                return control_mode::VELOCITY;
+
+            case control_mode::POSITION:
+                if (robot_driver_->set_joint_command(commands_.q, commands_.qd,
+                                                     commands_.control_torque,
+                                                     control_mode::POSITION) == -1) return control_mode::STOP_MOTION;
+                return control_mode::POSITION;
+
+            default: return control_mode::STOP_MOTION;
+        }
+    }
+    
 }
 
 bool safety_controller::is_current_state_safe(const state_specification &current_state)

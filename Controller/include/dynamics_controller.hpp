@@ -103,7 +103,7 @@ class dynamics_controller
                    const bool store_control_data,
                    const int motion_profile);
     void deinitialize();
-    void stop_robot_motion();
+    void stop_robot_motion(const bool use_torque_control);
     void write_to_file();
 
     void reset_desired_state();
@@ -184,7 +184,7 @@ class dynamics_controller
     const double DT_SEC_;
     const bool maintain_primary_1khz_frequency_;
 
-    std::ofstream log_file_cart_, log_file_joint_, log_file_predictions_, log_file_null_space_, log_file_cart_base_;
+    std::ofstream log_file_cart_, log_file_joint_, log_file_predictions_, log_file_null_space_, log_file_cart_base_, log_file_stop_motion_;
     bool store_control_data_;
     int desired_dynamics_interface_, desired_task_model_;
 
@@ -215,7 +215,7 @@ class dynamics_controller
     int fsm_result_, fsm_force_task_result_, previous_control_status_, tube_section_count_;
     bool transform_drivers_, transform_force_drivers_, apply_feedforward_force_, 
          compute_null_space_command_, write_contact_time_to_file_,
-         compensate_unknown_weight_;
+         compensate_unknown_weight_, stopping_behaviour_on_;
     
     moveTo_task moveTo_task_;
     moveGuarded_task moveGuarded_task_;
@@ -225,7 +225,7 @@ class dynamics_controller
     moveConstrained_follow_path_task moveConstrained_follow_path_task_;
 
     KDL::Twist current_error_twist_;
-    Eigen::VectorXd abag_error_vector_, null_space_abag_error_, 
+    Eigen::VectorXd abag_error_vector_, null_space_abag_error_, stop_motion_abag_error_,
                     predicted_error_twist_, compensation_error_;
     double horizon_amplitude_, null_space_abag_command_, null_space_angle_, desired_null_space_angle_;
     Eigen::VectorXd abag_command_, max_command_, compensation_parameters_, null_space_parameters_,
@@ -238,13 +238,15 @@ class dynamics_controller
     std::shared_ptr<KDL::Solver_RNE> id_solver_;
     KDL::FK_Vereshchagin fk_vereshchagin_;
     safety_controller safety_control_;
-    ABAG abag_, abag_null_space_;
+    ABAG abag_, abag_null_space_, abag_stop_motion_;
     finite_state_machine fsm_;
     model_prediction predictor_;
 
     state_specification robot_state_, robot_state_base_;
     state_specification desired_state_, desired_state_base_;
     state_specification predicted_state_;
+
+    const Eigen::IOFormat WRITE_FORMAT_STOP_MOTION;
 
     int check_fsm_status();
     int update_current_state();
@@ -269,7 +271,7 @@ class dynamics_controller
     KDL::Twist finite_displacement_twist(const state_specification &state_a, 
                                          const state_specification &state_b);
     double kinetic_energy(const KDL::Twist &twist, const int segment_index);
-    int apply_joint_control_commands();
+    int apply_joint_control_commands(const bool bypass_safeties);
     int evaluate_dynamics();
     int compute_gravity_compensation_control_commands();
     int enforce_loop_frequency(const int dt);
