@@ -329,96 +329,122 @@ int dynamics_controller::update_current_state()
 
 // Write control data to a file
 void dynamics_controller::write_to_file()
-{   
-    // Write measured state
-    for (int i = 0; i < 3; i++) 
-        log_file_cart_ << robot_state_.frame_pose[END_EFF_].p(i) << " ";
-    for (int i = 3; i < 6; i++) 
-        log_file_cart_ << 0.0 << " ";
-    log_file_cart_ << robot_state_.frame_velocity[END_EFF_](0) << " "; 
-    log_file_cart_ << robot_state_.frame_velocity[END_EFF_](5) << " ";
-    for (int i = 2; i < 5; i++)
-        log_file_cart_ << ext_wrench_(i) << " ";
-    if (write_contact_time_to_file_) log_file_cart_ << loop_iteration_count_;
-    else log_file_cart_ << 0.0;
-    log_file_cart_ << std::endl;
-
-    // Write desired state
-    for (int i = 0; i < 3; i++) 
-        log_file_cart_ << desired_state_.frame_pose[END_EFF_].p(i) << " ";
-    for (int i = 3; i < 6; i++) 
-        log_file_cart_ << 0.0 << " ";
-    log_file_cart_ << desired_state_.frame_velocity[END_EFF_](0) << " ";
-    log_file_cart_ << desired_state_.frame_velocity[END_EFF_](5) << " ";
-    for (int i = 2; i < 5; i++)
-        log_file_cart_ << desired_state_.external_force[END_EFF_](i) << " ";
-    log_file_cart_ << std::endl;
-
-    // Write control error
-    log_file_cart_ << predicted_error_twist_(0) << " ";
-    for (int i = 1; i < 6; i++) 
-        log_file_cart_ << abag_error_vector_(i) << " ";
-    log_file_cart_ << abag_error_vector_(0) << std::endl;
-
-    // Write ABAG state
-    log_file_cart_ << abag_.get_error().transpose().format(dynamics_parameter::WRITE_FORMAT);
-    log_file_cart_ << abag_.get_bias().transpose().format(dynamics_parameter::WRITE_FORMAT);
-    log_file_cart_ << abag_.get_gain().transpose().format(dynamics_parameter::WRITE_FORMAT);
-    log_file_cart_ << abag_.get_command().transpose().format(dynamics_parameter::WRITE_FORMAT);
-
-    // Log data in the base frame
-    if (desired_task_model_ != task_model::full_pose)
+{
+    if (!stopping_behaviour_on_)
     {
-        // Write measured state in base frame
-        for (int i = 0; i < 3; i++) 
-            log_file_cart_base_ << robot_state_base_.frame_pose[END_EFF_].p(i) << " ";
+        // Write measured state
+        for (int i = 0; i < 3; i++)
+            log_file_cart_ << robot_state_.frame_pose[END_EFF_].p(i) << " ";
+        for (int i = 3; i < 6; i++)
+            log_file_cart_ << 0.0 << " ";
+        log_file_cart_ << robot_state_.frame_velocity[END_EFF_](0) << " ";
+        log_file_cart_ << robot_state_.frame_velocity[END_EFF_](5) << " ";
+        for (int i = 2; i < 5; i++)
+            log_file_cart_ << ext_wrench_(i) << " ";
+        if (write_contact_time_to_file_) log_file_cart_ << loop_iteration_count_;
+        else log_file_cart_ << 0.0;
+        log_file_cart_ << std::endl;
 
-        for (int i = 0; i < 6; i++)
-            log_file_cart_base_ << ext_wrench_base_(i) << " ";
+        // Write desired state
+        for (int i = 0; i < 3; i++)
+            log_file_cart_ << desired_state_.frame_pose[END_EFF_].p(i) << " ";
+        for (int i = 3; i < 6; i++)
+            log_file_cart_ << 0.0 << " ";
+        log_file_cart_ << desired_state_.frame_velocity[END_EFF_](0) << " ";
+        log_file_cart_ << desired_state_.frame_velocity[END_EFF_](5) << " ";
+        for (int i = 2; i < 5; i++)
+            log_file_cart_ << desired_state_.external_force[END_EFF_](i) << " ";
+        log_file_cart_ << std::endl;
 
-        if (write_contact_time_to_file_) log_file_cart_base_ << loop_iteration_count_ << " ";
-        else log_file_cart_base_ << 0.0 << " ";
+        // Write control error
+        log_file_cart_ << predicted_error_twist_(0) << " ";
+        for (int i = 1; i < 6; i++)
+            log_file_cart_ << abag_error_vector_(i) << " ";
+        log_file_cart_ << abag_error_vector_(0) << std::endl;
 
-        if (compensate_unknown_weight_)
+        // Write ABAG state
+        log_file_cart_ << abag_.get_error().transpose().format(dynamics_parameter::WRITE_FORMAT);
+        log_file_cart_ << abag_.get_bias().transpose().format(dynamics_parameter::WRITE_FORMAT);
+        log_file_cart_ << abag_.get_gain().transpose().format(dynamics_parameter::WRITE_FORMAT);
+        log_file_cart_ << abag_.get_command().transpose().format(dynamics_parameter::WRITE_FORMAT);
+
+        // Log data in the base frame
+        if (desired_task_model_ != task_model::full_pose)
         {
+            // Write measured state in base frame
             for (int i = 0; i < 3; i++)
-                log_file_cart_base_ << robot_state_.external_force[END_EFF_].force(i) << " ";
+                log_file_cart_base_ << robot_state_base_.frame_pose[END_EFF_].p(i) << " ";
+
+            for (int i = 0; i < 6; i++)
+                log_file_cart_base_ << ext_wrench_base_(i) << " ";
+
+            if (write_contact_time_to_file_) log_file_cart_base_ << loop_iteration_count_ << " ";
+            else log_file_cart_base_ << 0.0 << " ";
+
+            if (compensate_unknown_weight_)
+            {
+                for (int i = 0; i < 3; i++)
+                    log_file_cart_base_ << robot_state_.external_force[END_EFF_].force(i) << " ";
+            }
+            log_file_cart_base_ << std::endl;
+
+            // Write desired state in base frame
+            for (int i = 0; i < 3; i++)
+                log_file_cart_base_ << desired_state_base_.frame_pose[END_EFF_].p(i) << " ";
+
+            for (int i = 0; i < 6; i++)
+                log_file_cart_base_ << desired_state_base_.external_force[END_EFF_](i) << " ";
+
+            if (write_contact_time_to_file_) log_file_cart_base_ << loop_iteration_count_ << " ";
+            else log_file_cart_base_ << 0.0 << " ";
+
+            if (compensate_unknown_weight_)
+            {
+                for (int i = 0; i < 3; i++)
+                    log_file_cart_base_ << 0.0 << " ";
+            }
+            log_file_cart_base_ << std::endl;
         }
-        log_file_cart_base_ << std::endl;
 
-        // Write desired state in base frame
-        for (int i = 0; i < 3; i++) 
-            log_file_cart_base_ << desired_state_base_.frame_pose[END_EFF_].p(i) << " ";
+        // Write joint space state
+        log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
 
-        for (int i = 0; i < 6; i++)
-            log_file_cart_base_ << desired_state_base_.external_force[END_EFF_](i) << " ";
-
-        if (write_contact_time_to_file_) log_file_cart_base_ << loop_iteration_count_ << " ";
-        else log_file_cart_base_ << 0.0 << " ";
-
-        if (compensate_unknown_weight_)
+        // Write null-space control state
+        log_file_null_space_ << RAD_TO_DEG(null_space_angle_) << " " << desired_null_space_angle_ << " "; // Measured and desired state
+        log_file_null_space_ << RAD_TO_DEG(null_space_abag_error_(0)) << " " << abag_null_space_.get_error()(0) << " "; // Raw and filtered error
+        log_file_null_space_ << abag_null_space_.get_bias()(0)    << " " << abag_null_space_.get_gain()(0) << " ";
+        log_file_null_space_ << abag_null_space_.get_command()(0) << " ";
+        if (write_contact_time_to_file_)
         {
-            for (int i = 0; i < 3; i++)
-                log_file_cart_base_ << 0.0 << " ";
+            log_file_null_space_ << loop_iteration_count_;
+            write_contact_time_to_file_ = false;
         }
-        log_file_cart_base_ << std::endl;
+        else log_file_null_space_ << 0.0;
+        log_file_null_space_ << std::endl;
     }
-
-    // Write joint space state
-    log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
-
-    // Write null-space control state
-    log_file_null_space_ << RAD_TO_DEG(null_space_angle_) << " " << desired_null_space_angle_ << " ";  // Measured and desired state
-    log_file_null_space_ << RAD_TO_DEG(null_space_abag_error_(0)) << " " << abag_null_space_.get_error()(0) << " "; // Raw and filtered error
-    log_file_null_space_ << abag_null_space_.get_bias()(0)    << " " << abag_null_space_.get_gain()(0) << " ";
-    log_file_null_space_ << abag_null_space_.get_command()(0) << " ";
-    if (write_contact_time_to_file_) 
+    else
     {
-        log_file_null_space_ << loop_iteration_count_;
-        write_contact_time_to_file_ = false;
+        // Write measured state
+        for (int i = 0; i < NUM_OF_JOINTS_; i++)
+            log_file_stop_motion_ << robot_state_.qd(i) << " ";
+        log_file_stop_motion_ << std::endl;
+
+        // Write desired state
+        for (int i = 0; i < NUM_OF_JOINTS_; i++)
+            log_file_stop_motion_ << desired_state_.qd(i) << " ";
+        log_file_stop_motion_ << std::endl;
+
+        // Write control error
+        for (int i = 0; i < NUM_OF_JOINTS_; i++)
+            log_file_stop_motion_ << stop_motion_abag_error_(i) << " ";
+        log_file_stop_motion_ << std::endl;
+
+        // Write ABAG state
+        log_file_stop_motion_ << abag_stop_motion_.get_error().transpose().format(WRITE_FORMAT_STOP_MOTION);
+        log_file_stop_motion_ << abag_stop_motion_.get_bias().transpose().format(WRITE_FORMAT_STOP_MOTION);
+        log_file_stop_motion_ << abag_stop_motion_.get_gain().transpose().format(WRITE_FORMAT_STOP_MOTION);
+        log_file_stop_motion_ << abag_stop_motion_.get_command().transpose().format(WRITE_FORMAT_STOP_MOTION);
     }
-    else log_file_null_space_ << 0.0;
-    log_file_null_space_ << std::endl;
 }
 
 // Set all values of desired state to 0 - public method
