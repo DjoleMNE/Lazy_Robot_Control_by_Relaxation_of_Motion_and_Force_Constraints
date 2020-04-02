@@ -424,6 +424,9 @@ void dynamics_controller::write_to_file()
     }
     else
     {
+        // Write joint space state
+        log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
+
         // Write measured state
         for (int i = 0; i < NUM_OF_JOINTS_; i++)
             log_file_stop_motion_ << robot_state_.qd(i) << " ";
@@ -459,7 +462,7 @@ void dynamics_controller::reset_state(state_specification &state)
     desired_state_.reset_values();
 }
 
-//Send 0 joints velocities to the robot driver
+// Send 0 joints velocities to the robot driver
 void dynamics_controller::stop_robot_motion(const bool use_torque_control)
 {
     stopping_behaviour_on_ = true;
@@ -2227,6 +2230,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
 
         log_file_stop_motion_.open(dynamics_parameter::LOG_FILE_STOP_MOTION_PATH);
         assert(log_file_stop_motion_.is_open());
+        log_file_stop_motion_ << dynamics_parameter::STOPPING_MOTION_LOOP_FREQ  << std::endl;
 
         log_file_cart_base_.open(dynamics_parameter::LOG_FILE_CART_BASE_PATH);
         assert(log_file_cart_base_.is_open());

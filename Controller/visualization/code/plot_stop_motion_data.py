@@ -12,8 +12,6 @@ desired_dim = np.int(sys.argv[1])
 print("Selected dimension: ", desired_dim)
 variable_num = 7
 
-control_freq = 500
-
 filename = "../archive/stop_motion_error.txt"
 
 def restart_program(): #restart application
@@ -50,7 +48,12 @@ bias      = []
 gain      = []
 command   = []
 time_ticks = []
-for sample_ in range (0, rows, variable_num):
+control_freq = np.float32(input_data[0][0])
+
+total_time = num_samples / control_freq
+print("Total time: ", total_time)
+
+for sample_ in range (1, rows + 1, variable_num):
     measured.append(    np.float32( input_data[    sample_][desired_dim]) )
     desired.append(     np.float32( input_data[1 + sample_][desired_dim]) )
     raw_error.append(   np.float32( input_data[2 + sample_][desired_dim] ) )
