@@ -477,58 +477,47 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
          * - It stops the robot correctly. We can control deceleration explicitly.
          * - However, control loop (thus, torque control) is maintained on the external pc.
          */
-
-        // double loop_time = 0.0;
-        // loop_iteration_count_= 0;
         desired_control_mode_.interface = control_mode::TORQUE;
-        const int update_delay = 10; // Iterations
-        const int loop_freq = 600; // Hz
-        const double threshold = 0.06; // rad/sec
-        const std::deque<double> acceleration(NUM_OF_JOINTS_, 5.0); // rad/sec^2
-        const std::deque<double> step(NUM_OF_JOINTS_, acceleration[0] * (double)(1.0 / loop_freq) * update_delay); // rad/sec
-        int iteration_count = 0;
-        double dt_micro = static_cast<double>(SECOND / loop_freq);
 
+        double step = 0.0;
         std::vector< std::deque<double> > setpoint_array;
         for (int i = 0; i < NUM_OF_JOINTS_; i++)
         {
-            // robot_state_.qd(i) = robot_state_.qd(i) + 0.5;
-            setpoint_array.push_back(motion_profile::ramp_array(robot_state_.qd(i), 0.0,
-                                                                (robot_state_.qd(i) > 0.0)? -step[i] : step[i],
-                                                                threshold));
-            // std::cout << robot_state_.qd(i) <<  "     "  << setpoint_array.back().size()  << "    " << std::fabs(robot_state_.qd(i) / acceleration[i]) << std::endl;
+            step = JOINT_ACC_LIMITS_[i] * (dynamics_parameter::DECELERATION_UPDATE_DELAY / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ) * ((robot_state_.qd(i) > 0.0)? -1.0 : 1.0); // rad/sec
+            setpoint_array.push_back(motion_profile::ramp_array(robot_state_.qd(i), 0.0, step, dynamics_parameter::LOWER_DECELERATION_RAMP_THRESHOLD));
+
+            if (setpoint_array.back().size() > 0)
+            {
+                desired_state_.qd(i) = setpoint_array.back().front();
+                setpoint_array.back().pop_front();
+            }
+            else desired_state_.qd(i) = 0.0;
         }
 
-        // std::cout << std::endl;
         // for (int j = 0; j < NUM_OF_JOINTS_; j++)
         // {
-        //     for (int i = 0; (unsigned)i < setpoint_array[j].size(); i++)
-        //         std::cout << setpoint_array[j][i] << "   ";
-
-        //     std::cout << std::endl;
-        //     std::cout << std::endl;
-        //     std::cout << std::endl;
+        //     for (int i = 0; i < setpoint_array[j].size(); i++)
+        //     {
+        //         std::cout << setpoint_array[j][i] << "        ";
+        //     }
+        //     std::cout<< std::endl << std::endl;
         // }
-
-        KDL::JntArray jnt_array_command(7), zero_joint_array(7);
-        KDL::Wrenches zero_wrenches(robot_chain_.getNrOfSegments(), KDL::Wrench::Zero());
-        std::shared_ptr<KDL::Solver_RNE> id_solver = std::make_shared<KDL::Solver_RNE>(robot_chain_, KDL::Vector(0.0, 0.0, -9.81289),
-                                                                                       JOINT_INERTIA_, 
-                                                                                       JOINT_TORQUE_LIMITS_, true);
-
+        
         // Main control loop for stopping action
+        int stop_loop_iteration_count = 0;
+        int joint_stop_count = 0;
+        double dt_micro = SECOND / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
         while (1)
         {
             // Save current time point
             loop_start_time_ = std::chrono::steady_clock::now();
             loop_iteration_count_++;
-            iteration_count++;
-            total_time_sec_ = (double)loop_iteration_count_ / (double)loop_freq; // fix this line
+            stop_loop_iteration_count++;
 
-            //Get current robot state from the joint sensors: velocities and angles
+            // Get current robot state from the joint sensors: velocities and angles
             safety_control_.get_current_state(robot_state_);
 
-            if (iteration_count == update_delay)
+            if (stop_loop_iteration_count % dynamics_parameter::DECELERATION_UPDATE_DELAY == 0)
             {
                 for (int i = 0; i < NUM_OF_JOINTS_; i++)
                 {
@@ -537,27 +526,40 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
                         desired_state_.qd(i) = setpoint_array[i].front();
                         setpoint_array[i].pop_front();
                     }
+                    else desired_state_.qd(i) = 0.0;
                 }
-                iteration_count = 0;
             }
 
             // Compute control error
+            joint_stop_count = 0;
             for (int i = 0; i < NUM_OF_JOINTS_; i++)
             {
                 stop_motion_abag_error_(i) = desired_state_.qd(i) - robot_state_.qd(i);
-                if (std::fabs(stop_motion_abag_error_(i)) < 0.0005) stop_motion_abag_error_(i) = 0.0;
+
+                if (std::fabs(stop_motion_abag_error_(i)) < 0.0002)
+                {
+                    stop_motion_abag_error_(i) = 0.0;
+                    joint_stop_count++;
+                }
+            }
+
+            // If all of the joint have 0 velocity -> task completed
+            if (joint_stop_count == NUM_OF_JOINTS_)
+            {
+                // Switch to the default control for stopping the robot
+                safety_control_.stop_robot_motion();
+                stopping_behaviour_on_ = false;
+                total_time_sec_ += (double)stop_loop_iteration_count / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
+                return;
             }
 
             // Trigger ABAG to compute control commands
-            robot_state_.control_torque.data = abag_stop_motion_.update_state(stop_motion_abag_error_).transpose();
-
-            int id_solver_result = id_solver->CartToJnt(robot_state_.q, zero_joint_array, zero_joint_array, 
-                                                        zero_wrenches, jnt_array_command); if (id_solver_result != 0) return;
+            abag_stop_motion_command_ = abag_stop_motion_.update_state(stop_motion_abag_error_).transpose();
 
             // Scale control commands with their respective max values
             for (int i = 0; i < NUM_OF_JOINTS_; i++)
             {
-                robot_state_.control_torque(i) = JOINT_TORQUE_LIMITS_[i] * robot_state_.control_torque(i);
+                robot_state_.control_torque(i) = JOINT_STOPPING_TORQUE_LIMITS_[i] * abag_stop_motion_command_(i);
                 // robot_state_.control_torque(i) = 0.0 * robot_state_.control_torque(i);
             }
 
