@@ -556,12 +556,7 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
             {
                 robot_state_.control_torque(i) = JOINT_TORQUE_LIMITS_[i] * robot_state_.control_torque(i);
                 // robot_state_.control_torque(i) = 0.0 * robot_state_.control_torque(i);
-                // robot_state_.control_torque(i) = jnt_array_command(i);
             }
-
-            // robot_state_.control_torque(4) = JOINT_TORQUE_LIMITS_[4] * robot_state_.control_torque(4);
-            // robot_state_.control_torque(5) = JOINT_TORQUE_LIMITS_[5] * robot_state_.control_torque(5);
-            // robot_state_.control_torque(6) = JOINT_TORQUE_LIMITS_[6] * robot_state_.control_torque(6);
 
             // Log control data for visualization and debuging
             if (store_control_data_) write_to_file();
@@ -572,6 +567,7 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
                 // Switch to the default control for stopping the robot
                 safety_control_.stop_robot_motion();
                 stopping_behaviour_on_ = false;
+                total_time_sec_ += (double)stop_loop_iteration_count / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
                 printf("WARNING: Default-control used for stopping the robot!\n");
                 return;
             }
@@ -586,9 +582,10 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
     
             // Testing loop time
             // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_).count();
-            // if (loop_iteration_count_ == 100) 
+            // if (loop_iteration_count_ == 1000) 
             // {
-            //     printf("Average Loop Time: %f\n", loop_time / 100.0);
+            //     safety_control_.stop_robot_motion();
+            //     printf("Average Loop Time: %f\n", loop_time / 1000.0);
             //     return;
             // }
         } 
@@ -1363,10 +1360,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
     if (previous_control_status_ != control_status::STOP_ROBOT)
     {
         // This function expects external wrench values to be expressed w.r.t. sensor frame
-        fsm_force_task_result_ = fsm_.update_force_task_status(desired_state_.external_force[END_EFF_], 
-                                                               ext_wrench_,
-                                                               total_time_sec_,
-                                                               0.014);
+        fsm_force_task_result_ = fsm_.update_force_task_status(desired_state_.external_force[END_EFF_], ext_wrench_, total_time_sec_, 0.014);
     }
 
     switch (fsm_force_task_result_)
@@ -1455,8 +1449,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
                 current_error_twist_(i) = POS_TUBE_DIM_[i]? current_error_twist_(i) : 0.0;
 
             // fsm_result_ = control_status::CRUISE_THROUGH_TUBE;
-            fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, 
-                                                         ext_wrench_, total_time_sec_, tube_section_count_);
+            fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
 
             // for (int i = 0; i < 2; i++)
             // {
@@ -1596,7 +1589,7 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
     robot_state_.frame_velocity[END_EFF_]    = moveTo_follow_path_task_.tf_poses[tube_section_count_].M.Inverse() * robot_state_.frame_velocity[END_EFF_];
     desired_state_base_.frame_pose[END_EFF_] = moveTo_follow_path_task_.tf_poses[tube_section_count_]             * desired_state_.frame_pose[END_EFF_];
 
-    current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
+    current_error_twist_ = finite_displacement_twist(desired_state_, robot_state_);
 
     make_predictions(horizon_amplitude_, 1);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
@@ -1604,8 +1597,7 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
 
-    fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, 
-                                                 ext_wrench_, total_time_sec_, tube_section_count_);
+    fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
     
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
     
@@ -1636,7 +1628,7 @@ void dynamics_controller::compute_moveTo_task_error()
     robot_state_.frame_velocity[END_EFF_]    = moveTo_task_.tf_pose.M.Inverse() * robot_state_.frame_velocity[END_EFF_];
     desired_state_base_.frame_pose[END_EFF_] = moveTo_task_.tf_pose             * desired_state_.frame_pose[END_EFF_];
 
-    current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
+    current_error_twist_ = finite_displacement_twist(desired_state_, robot_state_);
 
     make_predictions(horizon_amplitude_, 1);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
@@ -1644,8 +1636,7 @@ void dynamics_controller::compute_moveTo_task_error()
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
 
-    fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, 
-                                                 ext_wrench_, total_time_sec_, tube_section_count_);
+    fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
 
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
@@ -1678,7 +1669,7 @@ void dynamics_controller::compute_moveTo_weight_compensation_task_error()
     robot_state_.frame_velocity[END_EFF_]    = moveTo_weight_compensation_task_.tf_pose.M.Inverse() * robot_state_.frame_velocity[END_EFF_];
     desired_state_base_.frame_pose[END_EFF_] = moveTo_weight_compensation_task_.tf_pose             * desired_state_.frame_pose[END_EFF_];
 
-    current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
+    current_error_twist_ = finite_displacement_twist(desired_state_, robot_state_);
 
     make_predictions(horizon_amplitude_, 1);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
@@ -1686,8 +1677,7 @@ void dynamics_controller::compute_moveTo_weight_compensation_task_error()
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
 
-    fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, 
-                                                 ext_wrench_, total_time_sec_, tube_section_count_);
+    fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
 
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
@@ -1718,7 +1708,7 @@ void dynamics_controller::compute_moveGuarded_task_error()
     robot_state_.frame_velocity[END_EFF_]    = moveGuarded_task_.tf_pose.M.Inverse() * robot_state_.frame_velocity[END_EFF_];
     desired_state_base_.frame_pose[END_EFF_] = moveGuarded_task_.tf_pose             * desired_state_.frame_pose[END_EFF_];
 
-    current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
+    current_error_twist_ = finite_displacement_twist(desired_state_, robot_state_);
 
     make_predictions(horizon_amplitude_, 1);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
@@ -1726,8 +1716,7 @@ void dynamics_controller::compute_moveGuarded_task_error()
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
 
-    fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, 
-                                                 ext_wrench_, total_time_sec_, tube_section_count_);
+    fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
 
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
@@ -1759,9 +1748,8 @@ void dynamics_controller::compute_full_pose_task_error()
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
 
-    fsm_result_            = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, 
-                                                            ext_wrench_, total_time_sec_, tube_section_count_);
-    abag_error_vector_     = predicted_error_twist_;
+    fsm_result_        = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
+    abag_error_vector_ = predicted_error_twist_;
 
     // Additional Cartesian force to keep residual part of the robot in a good configuration
     if (compute_null_space_command_) compute_moveToGuarded_null_space_task_error();
