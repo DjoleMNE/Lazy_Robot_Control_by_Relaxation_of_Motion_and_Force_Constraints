@@ -55,7 +55,9 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     apply_feedforward_force_(false), compute_null_space_command_(false),
     write_contact_time_to_file_(false), compensate_unknown_weight_(false),
     stopping_behaviour_on_(false),
+    JOINT_ACC_LIMITS_(robot_driver->get_joint_acceleration_limits()),
     JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
+    JOINT_STOPPING_TORQUE_LIMITS_(robot_driver->get_joint_stopping_torque_limits()),
     JOINT_INERTIA_(robot_driver->get_joint_inertia()),
     ROOT_ACC_(robot_driver->get_root_acceleration()),
     current_error_twist_(KDL::Twist::Zero()),
@@ -67,6 +69,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     horizon_amplitude_(1.0), null_space_abag_command_(0.0), 
     null_space_angle_(0.0), desired_null_space_angle_(0.0),
     abag_command_(Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_)),
+    abag_stop_motion_command_(Eigen::VectorXd::Zero(NUM_OF_JOINTS_)),
     max_command_(Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_)),
     compensation_parameters_(Eigen::VectorXd::Constant(12, 0.0)),
     null_space_parameters_(Eigen::VectorXd::Constant(6, 0.1)),
@@ -88,7 +91,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     robot_state_base_(robot_state_), desired_state_(robot_state_),
     desired_state_base_(robot_state_), predicted_state_(robot_state_),
-    WRITE_FORMAT_STOP_MOTION(Eigen::IOFormat(NUM_OF_JOINTS_, Eigen::DontAlignCols, " ", "", "", "\n"))
+    WRITE_FORMAT_STOP_MOTION(Eigen::IOFormat(6, Eigen::DontAlignCols, " ", "", "", "\n"))
 {
     assert(("Robot is not initialized", robot_driver->is_initialized()));
     // KDL Vereshchagin-Solver constraint  
@@ -579,15 +582,6 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
             #ifndef NDEBUG
                 enforce_loop_frequency(dt_micro);
             #endif
-    
-            // Testing loop time
-            // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_).count();
-            // if (loop_iteration_count_ == 1000) 
-            // {
-            //     safety_control_.stop_robot_motion();
-            //     printf("Average Loop Time: %f\n", loop_time / 1000.0);
-            //     return;
-            // }
         } 
     }
     else

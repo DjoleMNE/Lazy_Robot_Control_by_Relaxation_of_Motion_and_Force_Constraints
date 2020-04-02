@@ -271,9 +271,21 @@ std::vector<double> youbot_mediator::get_joint_velocity_limits()
     return youbot_constants::joint_velocity_limits;
 }
 
+std::vector<double> youbot_mediator::get_joint_acceleration_limits()
+{
+    assert(youbot_constants::NUMBER_OF_JOINTS == youbot_constants::joint_acceleration_limits.size());
+    return youbot_constants::joint_acceleration_limits;
+}
+
 std::vector<double> youbot_mediator::get_joint_torque_limits()
 {
     return youbot_constants::joint_torque_limits;
+}
+
+std::vector<double> youbot_mediator::get_joint_stopping_torque_limits()
+{
+    assert(youbot_constants::NUMBER_OF_JOINTS == youbot_constants::joint_stopping_torque_limits.size());
+    return youbot_constants::joint_stopping_torque_limits;
 }
 
 std::vector<double> youbot_mediator::get_joint_inertia()

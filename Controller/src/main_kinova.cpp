@@ -650,6 +650,7 @@ int define_task(dynamics_controller *dyn_controller)
 int main(int argc, char **argv)
 {
     printf("kinova MAIN Started \n");
+    const bool maintain_primary_1khz_frequency = false;
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                              false, false, false}; // Angular
     tube_tolerances      = std::vector<double>{0.01, 0.03, 0.03, 
@@ -704,7 +705,7 @@ int main(int argc, char **argv)
 
     //loop rate in Hz
     int rate_hz = 600;
-    dynamics_controller controller(&robot_driver, rate_hz, true, compensate_gravity);
+    dynamics_controller controller(&robot_driver, rate_hz, maintain_primary_1khz_frequency, compensate_gravity);
 
     int initial_result = define_task(&controller);
     if (initial_result != 0) return -1;

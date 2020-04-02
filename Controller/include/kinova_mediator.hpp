@@ -126,7 +126,9 @@ class kinova_mediator: public robot_mediator
 		virtual std::vector<double> get_minimum_joint_pos_limits();
 		virtual std::vector<double> get_joint_position_thresholds();
 		virtual std::vector<double> get_joint_velocity_limits();
+		virtual std::vector<double> get_joint_acceleration_limits();
 		virtual std::vector<double> get_joint_torque_limits();
+		virtual std::vector<double> get_joint_stopping_torque_limits();
 		virtual std::vector<double> get_joint_inertia();
 		virtual std::vector<double> get_joint_offsets();
 		virtual int get_robot_ID();

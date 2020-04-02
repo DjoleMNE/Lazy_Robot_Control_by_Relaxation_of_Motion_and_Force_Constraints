@@ -59,8 +59,9 @@ namespace youbot_constants
     extern const std::vector<double> joint_position_thresholds;
 
     extern const std::vector<double> joint_velocity_limits;
-
+    extern const std::vector<double> joint_acceleration_limits;
     extern const std::vector<double> joint_torque_limits;
+    extern const std::vector<double> joint_stopping_torque_limits;
 
     extern const std::vector<double> joint_offsets;
 
@@ -91,8 +92,9 @@ namespace kinova_constants
     extern const std::vector<double> joint_offsets;
 
     extern const std::vector<double> joint_velocity_limits;
-
+    extern const std::vector<double> joint_acceleration_limits;
     extern const std::vector<double> joint_torque_limits;
+    extern const std::vector<double> joint_stopping_torque_limits;
 
     extern const std::vector<double> joint_inertia;
 
@@ -119,7 +121,9 @@ namespace lwr_constants
    extern const std::vector<double> joint_position_limits_min;
 
    extern const std::vector<double> joint_velocity_limits;
+   extern const std::vector<double> joint_acceleration_limits;
    extern const std::vector<double> joint_torque_limits;
+   extern const std::vector<double> joint_stopping_torque_limits;
 
    extern const std::vector<double> joint_position_thresholds;
 
@@ -165,6 +169,9 @@ namespace dynamics_parameter
 {
     // Number of task constraints imposed on the robot, i.e. Cartesian DOFS
     extern const int NUMBER_OF_CONSTRAINTS;
+    extern const int DECELERATION_UPDATE_DELAY;
+    extern const double LOWER_DECELERATION_RAMP_THRESHOLD;
+    extern const double STOPPING_MOTION_LOOP_FREQ; // Hz
     extern const Eigen::VectorXd MAX_CART_FORCE;
     extern const Eigen::VectorXd MAX_CART_ACC;
     extern const Eigen::IOFormat WRITE_FORMAT;
@@ -174,7 +181,6 @@ namespace dynamics_parameter
     extern const std::string LOG_FILE_JOINT_PATH;
     extern const std::string LOG_FILE_PREDICTIONS_PATH;
     extern const std::string LOG_FILE_NULL_SPACE_PATH;
-
 }
 
 namespace prediction_parameter

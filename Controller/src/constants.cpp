@@ -37,6 +37,7 @@ namespace youbot_constants
 
     // YouBot Store velocity limits
     const std::vector<double> joint_velocity_limits {1.5707, 1.5707, 1.5707, 1.5707, 1.5707};
+    const std::vector<double> joint_acceleration_limits {5.0, 5.0, 5.0, 5.0, 5.0};// confirm these numbers
 
     // JP's max torques
    //  const std::vector<double> joint_torque_limits {12.9012, 12.9012, 8.2700, 4.1748, 1.7550};
@@ -46,6 +47,7 @@ namespace youbot_constants
 
     // custom max torques
     const std::vector<double> joint_torque_limits {14.9012, 14.9012, 8.0, 3.3, 1.2};
+    const std::vector<double> joint_stopping_torque_limits {14.9012, 14.9012, 8.0, 3.3, 1.2};
 
     // Benjamin Keiser' max torques (fast version)
     // const std::vector<double> joint_torque_limits {17.0, 17.0, 8.0, 2.7, 1.0}};
@@ -91,7 +93,9 @@ namespace kinova_constants
    const std::vector<double> joint_position_limits_min {DEG_TO_RAD(-9999.0), DEG_TO_RAD(-127.0), DEG_TO_RAD(-9999.0), DEG_TO_RAD(-147.8), DEG_TO_RAD(-9999.0), DEG_TO_RAD(-120.3), DEG_TO_RAD(-9999.0)};
 
    const std::vector<double> joint_velocity_limits {DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0)};
+   const std::vector<double> joint_acceleration_limits {5.19, 5.19, 5.19, 5.19, 9.99, 9.99, 9.99};
    const std::vector<double> joint_torque_limits {39.0, 39.0, 39.0, 39.0, 9.0, 9.0, 9.0};
+   const std::vector<double> joint_stopping_torque_limits {39.0, 39.0, 39.0, 39.0, 13.0, 13.0, 13.0};
 
    //  const std::vector<double> joint_position_thresholds {DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0)};
    const std::vector<double> joint_position_thresholds {DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10)};
@@ -99,7 +103,7 @@ namespace kinova_constants
    const std::vector<double> joint_offsets {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     // Rotor inertia - "d" in the algorithm:
    const std::vector<double> joint_inertia {0.5580, 0.5580, 0.5580, 0.5580, 0.1389, 0.1389, 0.1389};
-//    const std::vector<double> joint_inertia {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    // const std::vector<double> joint_inertia {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
    const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/kinova-gen3_urdf_V12.urdf";
 
@@ -139,7 +143,9 @@ namespace lwr_constants
    const std::vector<double> joint_position_limits_min {DEG_TO_RAD(-170), DEG_TO_RAD(-120), DEG_TO_RAD(-170), DEG_TO_RAD(-120), DEG_TO_RAD(-170), DEG_TO_RAD(-120), DEG_TO_RAD(-170)};
 
    const std::vector<double> joint_velocity_limits {DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5), DEG_TO_RAD(112.5)};
+   const std::vector<double> joint_acceleration_limits {5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0}; // confirm these numbers
    const std::vector<double> joint_torque_limits {176.0, 176.0, 100.0, 100.0, 100.0, 30.0, 30.0};
+   const std::vector<double> joint_stopping_torque_limits {176.0, 176.0, 100.0, 100.0, 100.0, 30.0, 30.0};
 
    //  const std::vector<double> joint_position_thresholds {DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0)};
    const std::vector<double> joint_position_thresholds {DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10)};
@@ -197,6 +203,9 @@ namespace dynamics_parameter
 {
     // Number of task constraints imposed on the robot, i.e. Cartesian DOFS
     const int NUMBER_OF_CONSTRAINTS(6);
+    const int DECELERATION_UPDATE_DELAY = 10; // Iterations
+    const double LOWER_DECELERATION_RAMP_THRESHOLD = 0.09; // rad/sec
+    const double STOPPING_MOTION_LOOP_FREQ = 600.0; // Hz  ... Higher than 600 Hz not yet feasible with the current Kinova API
     const Eigen::VectorXd MAX_CART_FORCE = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 50.0, 50.0, 200.0, 2.0, 2.0, 2.0).finished();
     const Eigen::VectorXd MAX_CART_ACC = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 100.0, 100.0, 200.0, 2.0, 2.0, 2.0).finished();
     const Eigen::IOFormat WRITE_FORMAT(6, Eigen::DontAlignCols, " ", "", "", "\n");

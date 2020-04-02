@@ -421,9 +421,21 @@ std::vector<double> kinova_mediator::get_joint_velocity_limits()
     return kinova_constants::joint_velocity_limits;
 }
 
+std::vector<double> kinova_mediator::get_joint_acceleration_limits()
+{
+    assert(ACTUATOR_COUNT == kinova_constants::joint_acceleration_limits.size());
+    return kinova_constants::joint_acceleration_limits;
+}
+
 std::vector<double> kinova_mediator::get_joint_torque_limits()
 {
     return kinova_constants::joint_torque_limits;
+}
+
+std::vector<double> kinova_mediator::get_joint_stopping_torque_limits()
+{
+    assert(ACTUATOR_COUNT == kinova_constants::joint_stopping_torque_limits.size());
+    return kinova_constants::joint_stopping_torque_limits;
 }
 
 std::vector<double> kinova_mediator::get_joint_inertia()

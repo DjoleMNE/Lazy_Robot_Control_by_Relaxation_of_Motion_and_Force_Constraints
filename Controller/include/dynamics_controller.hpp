@@ -209,7 +209,7 @@ class dynamics_controller
     const int ROBOT_ID_;
     const double INITIAL_END_EFF_MASS_;
     const bool COMPENSATE_GRAVITY_;
-    const std::vector<double> JOINT_TORQUE_LIMITS_, JOINT_INERTIA_;
+    const std::vector<double> JOINT_ACC_LIMITS_, JOINT_TORQUE_LIMITS_, JOINT_STOPPING_TORQUE_LIMITS_, JOINT_INERTIA_;
     const KDL::Twist ROOT_ACC_; 
     std::vector<bool> CTRL_DIM_, POS_TUBE_DIM_, MOTION_CTRL_DIM_, FORCE_CTRL_DIM_;
     int fsm_result_, fsm_force_task_result_, previous_control_status_, tube_section_count_;
@@ -228,7 +228,7 @@ class dynamics_controller
     Eigen::VectorXd abag_error_vector_, null_space_abag_error_, stop_motion_abag_error_,
                     predicted_error_twist_, compensation_error_;
     double horizon_amplitude_, null_space_abag_command_, null_space_angle_, desired_null_space_angle_;
-    Eigen::VectorXd abag_command_, max_command_, compensation_parameters_, null_space_parameters_,
+    Eigen::VectorXd abag_command_, abag_stop_motion_command_, max_command_, compensation_parameters_, null_space_parameters_,
                     force_task_parameters_, min_sat_limits_, filtered_bias_;
     KDL::Wrenches cart_force_command_, zero_wrenches_;
     KDL::Wrench ext_wrench_, ext_wrench_base_, compensated_weight_;

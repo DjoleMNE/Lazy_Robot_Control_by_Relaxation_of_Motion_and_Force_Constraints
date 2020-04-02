@@ -90,7 +90,9 @@ class robot_mediator
 		virtual std::vector<double> get_minimum_joint_pos_limits() = 0;
 		virtual std::vector<double> get_joint_position_thresholds() = 0;
 		virtual std::vector<double> get_joint_velocity_limits() = 0;
+		virtual std::vector<double> get_joint_acceleration_limits() = 0;
 		virtual std::vector<double> get_joint_torque_limits() = 0;
+		virtual std::vector<double> get_joint_stopping_torque_limits() = 0;
 		virtual std::vector<double> get_joint_inertia() = 0;
 		virtual std::vector<double> get_joint_offsets() = 0;
 		
