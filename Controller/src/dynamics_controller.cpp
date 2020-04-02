@@ -497,9 +497,7 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
         // for (int j = 0; j < NUM_OF_JOINTS_; j++)
         // {
         //     for (int i = 0; i < setpoint_array[j].size(); i++)
-        //     {
         //         std::cout << setpoint_array[j][i] << "        ";
-        //     }
         //     std::cout<< std::endl << std::endl;
         // }
         
@@ -536,7 +534,7 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
             {
                 stop_motion_abag_error_(i) = desired_state_.qd(i) - robot_state_.qd(i);
 
-                if (std::fabs(stop_motion_abag_error_(i)) < 0.0002)
+                if (std::fabs(stop_motion_abag_error_(i)) < 0.0005)
                 {
                     stop_motion_abag_error_(i) = 0.0;
                     joint_stop_count++;
@@ -2137,6 +2135,12 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
     abag_null_space_.set_bias_step(     null_space_parameters(2), 0);
     abag_null_space_.set_gain_threshold(null_space_parameters(3), 0);
     abag_null_space_.set_gain_step(     null_space_parameters(4), 0);
+
+    abag_stop_motion_.set_error_alpha(abag_parameter::STOP_MOTION_ERROR_ALPHA);    
+    abag_stop_motion_.set_bias_threshold(abag_parameter::STOP_MOTION_BIAS_THRESHOLD);
+    abag_stop_motion_.set_bias_step(abag_parameter::STOP_MOTION_BIAS_STEP);
+    abag_stop_motion_.set_gain_threshold(abag_parameter::STOP_MOTION_GAIN_THRESHOLD);
+    abag_stop_motion_.set_gain_step(abag_parameter::STOP_MOTION_GAIN_STEP);
 
     this->null_space_parameters_   = null_space_parameters;
     this->compensation_parameters_ = compensation_parameters;

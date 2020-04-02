@@ -704,7 +704,7 @@ int main(int argc, char **argv)
     // run_test(robot_driver); return 0;
 
     //loop rate in Hz
-    int rate_hz = 600;
+    int rate_hz = 500;
     dynamics_controller controller(&robot_driver, rate_hz, maintain_primary_1khz_frequency, compensate_gravity);
 
     int initial_result = define_task(&controller);
