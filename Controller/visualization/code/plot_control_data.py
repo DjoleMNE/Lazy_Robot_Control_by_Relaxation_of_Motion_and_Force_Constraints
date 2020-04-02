@@ -51,7 +51,7 @@ bias      = []
 gain      = []
 command   = []
 contact_time_tick = []
-
+time_ticks = []
 for sample_ in range (2, rows + 2, variable_num):
     tick = np.float32( input_data[sample_][11] )
     if (tick > 0): contact_time_tick.append(tick)
