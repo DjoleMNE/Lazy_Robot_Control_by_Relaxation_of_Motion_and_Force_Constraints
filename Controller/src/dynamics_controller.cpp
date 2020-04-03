@@ -534,7 +534,8 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
             {
                 stop_motion_abag_error_(i) = desired_state_.qd(i) - robot_state_.qd(i);
 
-                if (std::fabs(stop_motion_abag_error_(i)) < 0.0005)
+                // Filter out sensor-noise in the steady state
+                if (std::fabs(stop_motion_abag_error_(i)) < 0.001)
                 {
                     stop_motion_abag_error_(i) = 0.0;
                     joint_stop_count++;
@@ -1722,7 +1723,7 @@ void dynamics_controller::compute_moveGuarded_task_error()
     for (int i = 1; i < NUM_OF_CONSTRAINTS_; i++)
     {
         if ( std::fabs(predicted_error_twist_(i)) <= moveGuarded_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
-        else abag_error_vector_(i) = predicted_error_twist_(i);        
+        else abag_error_vector_(i) = predicted_error_twist_(i);
     }
 
     // Additional Cartesian force to keep residual part of the robot in a good configuration
