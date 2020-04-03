@@ -188,13 +188,6 @@ namespace abag_parameter
     const double NULL_SPACE_GAIN_THRESHOLD = 0.552492;
     const double NULL_SPACE_GAIN_STEP      = 0.003152;
 
-    // Stop Motion controller
-    const Eigen::VectorXd STOP_MOTION_ERROR_ALPHA    = (Eigen::VectorXd(DIMENSIONS + 1) << 0.800000, 0.800000, 0.800000, 0.800000, 0.800000, 0.800000, 0.800000).finished();
-    const Eigen::VectorXd STOP_MOTION_BIAS_THRESHOLD = (Eigen::VectorXd(DIMENSIONS + 1) << 0.000557, 0.000557, 0.000557, 0.000557, 0.000457, 0.000457, 0.000457).finished();
-    const Eigen::VectorXd STOP_MOTION_BIAS_STEP      = (Eigen::VectorXd(DIMENSIONS + 1) << 0.000900, 0.000900, 0.000900, 0.000900, 0.000500, 0.000500, 0.000500).finished();
-    const Eigen::VectorXd STOP_MOTION_GAIN_THRESHOLD = (Eigen::VectorXd(DIMENSIONS + 1) << 0.602492, 0.602492, 0.602492, 0.602492, 0.602492, 0.602492, 0.602492).finished();
-    const Eigen::VectorXd STOP_MOTION_GAIN_STEP      = (Eigen::VectorXd(DIMENSIONS + 1) << 0.005552, 0.005552, 0.005552, 0.005552, 0.003552, 0.003552, 0.003552).finished();
-
    //  Saturation limits   
     const Eigen::VectorXd MIN_BIAS_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) << -1.0, -1.0, -1.0, -1.0, -1.0, -1.0).finished();
    //  const Eigen::VectorXd MIN_BIAS_SAT_LIMIT = (Eigen::VectorXd(DIMENSIONS) << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0).finished();

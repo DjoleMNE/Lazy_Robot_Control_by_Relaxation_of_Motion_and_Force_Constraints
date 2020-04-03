@@ -2096,7 +2096,12 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
                                          const Eigen::VectorXd &min_bias_sat,
                                          const Eigen::VectorXd &min_command_sat,
                                          const Eigen::VectorXd &null_space_parameters,
-                                         const Eigen::VectorXd &compensation_parameters)
+                                         const Eigen::VectorXd &compensation_parameters,
+                                         const Eigen::VectorXd &stop_motion_error_alpha,
+                                         const Eigen::VectorXd &stop_motion_bias_threshold,
+                                         const Eigen::VectorXd &stop_motion_bias_step,
+                                         const Eigen::VectorXd &stop_motion_gain_threshold,
+                                         const Eigen::VectorXd &stop_motion_gain_step)
 {
     //First check input dimensions
     assert(max_command.size()             == NUM_OF_CONSTRAINTS_); 
@@ -2107,6 +2112,12 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
     assert(gain_step.size()               == NUM_OF_CONSTRAINTS_); 
     assert(null_space_parameters.size()   == NUM_OF_CONSTRAINTS_); 
     assert(compensation_parameters.size() == 2 * NUM_OF_CONSTRAINTS_); 
+    assert(stop_motion_error_alpha.size()    == NUM_OF_JOINTS_); 
+    assert(stop_motion_bias_threshold.size() == NUM_OF_JOINTS_); 
+    assert(stop_motion_bias_step.size()      == NUM_OF_JOINTS_); 
+    assert(stop_motion_gain_threshold.size() == NUM_OF_JOINTS_); 
+    assert(stop_motion_gain_step.size()      == NUM_OF_JOINTS_); 
+
 
     this->horizon_amplitude_        = horizon_amplitude;
     this->max_command_              = max_command;
@@ -2136,11 +2147,11 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
     abag_null_space_.set_gain_threshold(null_space_parameters(3), 0);
     abag_null_space_.set_gain_step(     null_space_parameters(4), 0);
 
-    abag_stop_motion_.set_error_alpha(abag_parameter::STOP_MOTION_ERROR_ALPHA);    
-    abag_stop_motion_.set_bias_threshold(abag_parameter::STOP_MOTION_BIAS_THRESHOLD);
-    abag_stop_motion_.set_bias_step(abag_parameter::STOP_MOTION_BIAS_STEP);
-    abag_stop_motion_.set_gain_threshold(abag_parameter::STOP_MOTION_GAIN_THRESHOLD);
-    abag_stop_motion_.set_gain_step(abag_parameter::STOP_MOTION_GAIN_STEP);
+    abag_stop_motion_.set_error_alpha(stop_motion_error_alpha);    
+    abag_stop_motion_.set_bias_threshold(stop_motion_bias_threshold);
+    abag_stop_motion_.set_bias_step(stop_motion_bias_step);
+    abag_stop_motion_.set_gain_threshold(stop_motion_gain_threshold);
+    abag_stop_motion_.set_gain_step(stop_motion_gain_step);
 
     this->null_space_parameters_   = null_space_parameters;
     this->compensation_parameters_ = compensation_parameters;

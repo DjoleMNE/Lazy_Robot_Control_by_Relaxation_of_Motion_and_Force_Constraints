@@ -176,6 +176,13 @@ const Eigen::VectorXd gain_step_4           = (Eigen::VectorXd(NUMBER_OF_CONSTRA
                                             << 0.002600, 0.002600, 0.002600, 
                                                0.015152, 0.015152, 0.015152).finished();
 
+// Stop Motion control parameters used by the ABAG -> parameters specific each robot type... test these values
+const Eigen::VectorXd STOP_MOTION_ERROR_ALPHA    = (Eigen::VectorXd(JOINTS) << 0.800000, 0.800000, 0.800000, 0.800000, 0.800000, 0.800000, 0.800000).finished();
+const Eigen::VectorXd STOP_MOTION_BIAS_THRESHOLD = (Eigen::VectorXd(JOINTS) << 0.000557, 0.000557, 0.000557, 0.000557, 0.000457, 0.000457, 0.000457).finished();
+const Eigen::VectorXd STOP_MOTION_BIAS_STEP      = (Eigen::VectorXd(JOINTS) << 0.000900, 0.000900, 0.000900, 0.000900, 0.000500, 0.000500, 0.000500).finished();
+const Eigen::VectorXd STOP_MOTION_GAIN_THRESHOLD = (Eigen::VectorXd(JOINTS) << 0.602492, 0.602492, 0.602492, 0.602492, 0.602492, 0.602492, 0.602492).finished();
+const Eigen::VectorXd STOP_MOTION_GAIN_STEP      = (Eigen::VectorXd(JOINTS) << 0.005552, 0.005552, 0.005552, 0.005552, 0.003552, 0.003552, 0.003552).finished();
+
 const Eigen::VectorXd min_bias_sat               = Eigen::VectorXd::Constant(6, -1.0);
 const Eigen::VectorXd min_command_sat            = Eigen::VectorXd::Constant(6, -1.0);
 const Eigen::VectorXd null_space_abag_parameters = (Eigen::VectorXd(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1).finished(); // Last param is max command
@@ -716,7 +723,10 @@ int main(int argc, char **argv)
                                   max_command, error_alpha,
                                   bias_threshold, bias_step, gain_threshold,
                                   gain_step, min_bias_sat, min_command_sat,
-                                  null_space_abag_parameters, compensation_parameters);
+                                  null_space_abag_parameters, compensation_parameters,
+                                  STOP_MOTION_ERROR_ALPHA,
+                                  STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
     }
     else if (desired_task_model == task_model::moveGuarded)
     {
@@ -724,7 +734,10 @@ int main(int argc, char **argv)
                                   max_command, error_alpha_1,
                                   bias_threshold_1, bias_step_1, gain_threshold_1,
                                   gain_step_1, min_bias_sat, min_command_sat,
-                                  null_space_abag_parameters, compensation_parameters);
+                                  null_space_abag_parameters, compensation_parameters,
+                                  STOP_MOTION_ERROR_ALPHA,
+                                  STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
     }
     else if (desired_task_model == task_model::moveTo_follow_path)
     {
@@ -732,7 +745,10 @@ int main(int argc, char **argv)
                                   max_command, error_alpha_3,
                                   bias_threshold_3, bias_step_3, gain_threshold_3,
                                   gain_step_3, min_bias_sat, min_command_sat,
-                                  null_space_abag_parameters, compensation_parameters);
+                                  null_space_abag_parameters, compensation_parameters,
+                                  STOP_MOTION_ERROR_ALPHA,
+                                  STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
     }
     else if (desired_task_model == task_model::moveTo_weight_compensation)
     {
@@ -740,7 +756,10 @@ int main(int argc, char **argv)
                                   max_command, error_alpha_4,
                                   bias_threshold_4, bias_step_4, gain_threshold_4,
                                   gain_step_4, min_bias_sat, min_command_sat,
-                                  null_space_abag_parameters, compensation_parameters);
+                                  null_space_abag_parameters, compensation_parameters,
+                                  STOP_MOTION_ERROR_ALPHA,
+                                  STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
     }
     else
     {
@@ -748,7 +767,10 @@ int main(int argc, char **argv)
                                   max_command, error_alpha_2,
                                   bias_threshold_2, bias_step_2, gain_threshold_2,
                                   gain_step_2, min_bias_sat, min_command_sat,
-                                  null_space_abag_parameters, compensation_parameters);
+                                  null_space_abag_parameters, compensation_parameters,
+                                  STOP_MOTION_ERROR_ALPHA,
+                                  STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
     }
 
     initial_result = controller.initialize(desired_control_mode, 

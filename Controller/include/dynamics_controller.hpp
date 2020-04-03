@@ -97,7 +97,12 @@ class dynamics_controller
                         const Eigen::VectorXd &min_bias_sat,
                         const Eigen::VectorXd &min_command_sat,
                         const Eigen::VectorXd &null_space_parameters,
-                        const Eigen::VectorXd &compensation_parameters);
+                        const Eigen::VectorXd &compensation_parameters,
+                        const Eigen::VectorXd &stop_motion_error_alpha,
+                        const Eigen::VectorXd &stop_motion_bias_threshold,
+                        const Eigen::VectorXd &stop_motion_bias_step,
+                        const Eigen::VectorXd &stop_motion_gain_threshold,
+                        const Eigen::VectorXd &stop_motion_gain_step);
     int initialize(const int desired_control_mode, 
                    const int desired_dynamics_interface,
                    const bool store_control_data,
