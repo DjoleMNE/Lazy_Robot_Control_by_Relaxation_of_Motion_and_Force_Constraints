@@ -178,10 +178,10 @@ const Eigen::VectorXd gain_step_4           = (Eigen::VectorXd(NUMBER_OF_CONSTRA
 
 // Stop Motion control parameters used by the ABAG -> parameters specific each robot type... test these values
 const Eigen::VectorXd STOP_MOTION_ERROR_ALPHA    = (Eigen::VectorXd(JOINTS) << 0.800000, 0.800000, 0.800000, 0.800000, 0.800000, 0.800000, 0.800000).finished();
-const Eigen::VectorXd STOP_MOTION_BIAS_THRESHOLD = (Eigen::VectorXd(JOINTS) << 0.000557, 0.006500, 0.000557, 0.000557, 0.000457, 0.000457, 0.000457).finished();
-const Eigen::VectorXd STOP_MOTION_BIAS_STEP      = (Eigen::VectorXd(JOINTS) << 0.000900, 0.002000, 0.000900, 0.000900, 0.000500, 0.000500, 0.000500).finished();
-const Eigen::VectorXd STOP_MOTION_GAIN_THRESHOLD = (Eigen::VectorXd(JOINTS) << 0.602492, 0.500000, 0.602492, 0.602492, 0.602492, 0.602492, 0.602492).finished();
-const Eigen::VectorXd STOP_MOTION_GAIN_STEP      = (Eigen::VectorXd(JOINTS) << 0.005552, 0.007552, 0.005552, 0.005552, 0.003552, 0.003552, 0.003552).finished();
+const Eigen::VectorXd STOP_MOTION_BIAS_THRESHOLD = (Eigen::VectorXd(JOINTS) << 0.000557, 0.006500, 0.000557, 0.006500, 0.000457, 0.000457, 0.000457).finished();
+const Eigen::VectorXd STOP_MOTION_BIAS_STEP      = (Eigen::VectorXd(JOINTS) << 0.000900, 0.002000, 0.000900, 0.002000, 0.000500, 0.000500, 0.000500).finished();
+const Eigen::VectorXd STOP_MOTION_GAIN_THRESHOLD = (Eigen::VectorXd(JOINTS) << 0.602492, 0.500000, 0.602492, 0.500000, 0.602492, 0.602492, 0.602492).finished();
+const Eigen::VectorXd STOP_MOTION_GAIN_STEP      = (Eigen::VectorXd(JOINTS) << 0.005552, 0.007552, 0.005552, 0.007552, 0.003552, 0.003552, 0.003552).finished();
 
 const Eigen::VectorXd min_bias_sat               = Eigen::VectorXd::Constant(6, -1.0);
 const Eigen::VectorXd min_command_sat            = Eigen::VectorXd::Constant(6, -1.0);
