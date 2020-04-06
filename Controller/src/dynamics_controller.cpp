@@ -494,13 +494,6 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
             else desired_state_.qd(i) = 0.0;
         }
 
-        // for (int j = 0; j < NUM_OF_JOINTS_; j++)
-        // {
-        //     for (int i = 0; i < setpoint_array[j].size(); i++)
-        //         std::cout << setpoint_array[j][i] << "        ";
-        //     std::cout<< std::endl << std::endl;
-        // }
-        
         // Main control loop for stopping action
         int stop_loop_iteration_count = 0;
         int joint_stop_count = 0;
@@ -557,10 +550,7 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
 
             // Scale control commands with their respective max values
             for (int i = 0; i < NUM_OF_JOINTS_; i++)
-            {
                 robot_state_.control_torque(i) = JOINT_STOPPING_TORQUE_LIMITS_[i] * abag_stop_motion_command_(i);
-                // robot_state_.control_torque(i) = 0.0 * robot_state_.control_torque(i);
-            }
 
             // Log control data for visualization and debuging
             if (store_control_data_) write_to_file();
@@ -583,7 +573,7 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
             #ifndef NDEBUG
                 enforce_loop_frequency(dt_micro);
             #endif
-        } 
+        }
     }
     else
     {
@@ -1743,7 +1733,7 @@ void dynamics_controller::compute_full_pose_task_error()
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
 
-    fsm_result_        = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
+    fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
     abag_error_vector_ = predicted_error_twist_;
 
     // Additional Cartesian force to keep residual part of the robot in a good configuration
@@ -2267,7 +2257,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
     KDL::SetToZero(robot_state_.feedforward_torque);
 
     // First make sure that the robot is not moving
-    stop_robot_motion();
+    stop_robot_motion(true);
 
     /* 
         Get sensor data from the robot driver or if simulation is on, 

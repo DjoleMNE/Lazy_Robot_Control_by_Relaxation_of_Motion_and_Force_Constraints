@@ -11,7 +11,7 @@ desired_dim = np.int(sys.argv[1])
 
 print("Selected dimension: ", desired_dim)
 variable_num = 7
-time_streach = 7
+time_stretch = 9
 
 filename = "../archive/stop_motion_error.txt"
 
@@ -53,7 +53,7 @@ control_freq = np.float32(input_data[0][0])
 
 total_time = num_samples / control_freq
 print("Total time: ", total_time)
-control_freq = np.float32(input_data[0][0])/time_streach
+control_freq = np.float32(input_data[0][0])/time_stretch
 
 for sample_ in range (1, rows + 1, variable_num):
     measured.append(    np.float32( input_data[    sample_][desired_dim]) )
@@ -100,7 +100,7 @@ plt.plot(measured, c = 'limegreen', label='measured velocity', linewidth = 2, zo
 plt.plot(desired, label='desired velocity', linewidth = 2, color = 'black', zorder = 3)
 plt.legend(fontsize = 14, loc=0)
 plt.yticks(fontsize=14)
-time_ticks = np.round(np.arange(0, num_samples / control_freq, 1/time_streach), 2)
+time_ticks = np.round(np.arange(0, num_samples / control_freq, 1/time_stretch), 2)
 plt.xlim(0, time_ticks[-1])
 plt.xticks(np.arange(0, num_samples, control_freq), " ")
 plt.grid(True)

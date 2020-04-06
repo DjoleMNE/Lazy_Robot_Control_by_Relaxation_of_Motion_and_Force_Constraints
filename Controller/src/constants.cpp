@@ -205,7 +205,7 @@ namespace dynamics_parameter
     const int NUMBER_OF_CONSTRAINTS(6);
     const int DECELERATION_UPDATE_DELAY = 5; // Iterations
     const double LOWER_DECELERATION_RAMP_THRESHOLD = 0.09; // rad/sec
-    const double STOPPING_MOTION_LOOP_FREQ = 600.0; // Hz  ... Higher than 600 Hz not yet feasible with the current Kinova API
+    const double STOPPING_MOTION_LOOP_FREQ = 750.0; // Hz  ... Higher than 750 Hz not yet feasible with the current Kinova API
     const Eigen::VectorXd MAX_CART_FORCE = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 50.0, 50.0, 200.0, 2.0, 2.0, 2.0).finished();
     const Eigen::VectorXd MAX_CART_ACC = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 100.0, 100.0, 200.0, 2.0, 2.0, 2.0).finished();
     const Eigen::IOFormat WRITE_FORMAT(6, Eigen::DontAlignCols, " ", "", "", "\n");
