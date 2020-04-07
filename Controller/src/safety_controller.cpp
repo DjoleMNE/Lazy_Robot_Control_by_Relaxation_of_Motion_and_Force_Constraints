@@ -338,7 +338,7 @@ void safety_controller::get_control_commands(state_specification &commands)
 
 //Set velocities of arm's joints to 0 and send commands to the robot driver
 void safety_controller::stop_robot_motion()
-{   
+{
     robot_driver_->stop_robot_motion();
 }
 

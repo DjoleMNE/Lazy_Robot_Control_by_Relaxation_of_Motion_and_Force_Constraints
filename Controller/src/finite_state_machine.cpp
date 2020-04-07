@@ -554,9 +554,7 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
     
     if (count == NUM_OF_CONSTRAINTS_) 
     {
-        // #ifndef NDEBUG       
-            printf("Goal area reached\n");
-        // #endif
+        printf("Goal area reached\n");
 
         goal_reached_ = true;
         return control_status::STOP_ROBOT;
