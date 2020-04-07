@@ -170,6 +170,7 @@ namespace dynamics_parameter
     // Number of task constraints imposed on the robot, i.e. Cartesian DOFS
     extern const int NUMBER_OF_CONSTRAINTS;
     extern const int DECELERATION_UPDATE_DELAY;
+    extern const int STEADY_STOP_ITERATION_THRESHOLD;
     extern const double LOWER_DECELERATION_RAMP_THRESHOLD;
     extern const double STOPPING_MOTION_LOOP_FREQ; // Hz
     extern const Eigen::VectorXd MAX_CART_FORCE;

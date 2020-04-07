@@ -34,11 +34,13 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     RATE_HZ_(rate_hz),
     DT_MICRO_(SECOND / RATE_HZ_), DT_1KHZ_MICRO_(SECOND / 1000), // Time period defined in microseconds: 1s = 1 000 000us
     DT_SEC_(maintain_primary_1khz_frequency? (1.0 / static_cast<double>(1000)) : (1.0 / static_cast<double>(RATE_HZ_))),
+    DT_STOPPING_MICRO_(static_cast<double>(SECOND) / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ),
     maintain_primary_1khz_frequency_(maintain_primary_1khz_frequency), // 1KHz Comunication required by certain robots
     store_control_data_(true), desired_dynamics_interface_(dynamics_interface::CART_ACCELERATION), 
     desired_task_model_(task_model::full_pose),
     loop_start_time_(std::chrono::steady_clock::now()), loop_previous_time_(std::chrono::steady_clock::now()),
-    total_time_sec_(0.0), loop_iteration_count_(0), feedforward_loop_count_(0), control_loop_delay_count_(0),
+    total_time_sec_(0.0), loop_iteration_count_(0), stop_loop_iteration_count(0),
+    steady_stop_iteration_count(0), feedforward_loop_count_(0), control_loop_delay_count_(0),
     robot_chain_(robot_driver->get_robot_model()),
     NUM_OF_JOINTS_(robot_chain_.getNrOfJoints()),
     NUM_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
@@ -495,9 +497,7 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
         }
 
         // Main control loop for stopping action
-        int stop_loop_iteration_count = 0;
         int joint_stop_count = 0;
-        double dt_micro = SECOND / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
         while (1)
         {
             // Save current time point
@@ -538,12 +538,18 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
             // If all of the joints have 0 velocity -> task completed
             if (joint_stop_count == NUM_OF_JOINTS_)
             {
-                // Switch to the default control for stopping the robot
-                safety_control_.stop_robot_motion();
-                stopping_behaviour_on_ = false;
-                total_time_sec_ += (double)stop_loop_iteration_count / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
-                return;
+                steady_stop_iteration_count++;
+                
+                if (steady_stop_iteration_count == dynamics_parameter::STEADY_STOP_ITERATION_THRESHOLD)
+                {
+                    // Switch to the default control for stopping the robot
+                    safety_control_.stop_robot_motion();
+                    stopping_behaviour_on_ = false;
+                    total_time_sec_ += (double)stop_loop_iteration_count / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
+                    return;
+                }
             }
+            else steady_stop_iteration_count = 0;
 
             // Trigger ABAG to compute control commands
             abag_stop_motion_command_ = abag_stop_motion_.update_state(stop_motion_abag_error_).transpose();
@@ -565,12 +571,7 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
                 return;
             }
 
-            #ifdef NDEBUG
-                if (enforce_loop_frequency(dt_micro) != 0) control_loop_delay_count_++;
-            #endif
-            #ifndef NDEBUG
-                enforce_loop_frequency(dt_micro);
-            #endif
+            if (enforce_loop_frequency(DT_STOPPING_MICRO_) != 0) control_loop_delay_count_++;
         }
     }
     else
