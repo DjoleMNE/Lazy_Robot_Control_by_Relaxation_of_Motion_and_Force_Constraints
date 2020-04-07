@@ -548,7 +548,7 @@ int define_task(dynamics_controller *dyn_controller)
         default:
             // HOME pose
             tube_start_position = std::vector<double>{0.39514, 0.00134662, 0.433724};
-            desired_ee_pose     = { 0.55514, 0.01934662, 0.433724, // Linear: Vector
+            desired_ee_pose     = { 0.60514, 0.01434662, 0.433724, // Linear: Vector
                                     0.0, 0.0, -1.0, // Angular: Rotation matrix
                                     1.0, 0.0, 0.0,
                                     0.0, -1.0, 0.0};

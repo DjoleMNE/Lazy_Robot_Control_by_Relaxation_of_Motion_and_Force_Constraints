@@ -140,11 +140,7 @@ bool safety_controller::is_current_state_safe(const state_specification &current
         if (!is_state_finite(current_state, i) || \
             velocity_limit_reached(current_state, i) || \
             position_limit_reached(current_state, i) || \
-            reaching_position_limits(current_state, i))
-           {
-                if (PRINT_LOGS_) printf("Current robot state is not safe \n\n");
-                return false;
-           } 
+            reaching_position_limits(current_state, i)) return false;
     }
     return true;
 }

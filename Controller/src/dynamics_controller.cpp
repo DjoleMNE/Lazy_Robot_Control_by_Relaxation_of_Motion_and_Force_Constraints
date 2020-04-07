@@ -535,7 +535,7 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
                 }
             }
 
-            // If all of the joint have 0 velocity -> task completed
+            // If all of the joints have 0 velocity -> task completed
             if (joint_stop_count == NUM_OF_JOINTS_)
             {
                 // Switch to the default control for stopping the robot
@@ -562,12 +562,10 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
                 safety_control_.stop_robot_motion();
                 stopping_behaviour_on_ = false;
                 total_time_sec_ += (double)stop_loop_iteration_count / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
-                printf("WARNING: Default-control used for stopping the robot!\n");
                 return;
             }
 
             #ifdef NDEBUG
-                // if (enforce_loop_frequency(dt_micro) != 0) printf("WARNING: Control loop runs too slow \n");
                 if (enforce_loop_frequency(dt_micro) != 0) control_loop_delay_count_++;
             #endif
             #ifndef NDEBUG
@@ -2291,16 +2289,15 @@ int dynamics_controller::update_commands()
     if (compensate_unknown_weight_)
     {
         status = compute_weight_compensation_control_commands();
-        if (status == -1) 
+        if (status == -1)
         {
             // First make sure that the robot is not moving
             stop_robot_motion(true);
 
             deinitialize();
-            printf("Total time: %f sec\n", total_time_sec_);
             return -1;
         }
-    } 
+    }
 
     // Evaluate robot dynamics using the Vereshchagin HD solver
     status = evaluate_dynamics();
@@ -2374,7 +2371,6 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
         stop_robot_motion(true);
 
         deinitialize();
-        printf("Total time: %f sec\n", total_time_sec_);
         return -1;
     }
 
@@ -2393,7 +2389,6 @@ int dynamics_controller::control()
     KDL::JntArray state_q(NUM_OF_JOINTS_), state_qd(NUM_OF_JOINTS_), ctrl_torque(NUM_OF_JOINTS_);
     KDL::Wrench ext_force;
 
-    printf("Control Loop Started\n");
     loop_previous_time_ = std::chrono::steady_clock::now();
     while (1)
     {
@@ -2425,7 +2420,6 @@ int dynamics_controller::control()
                 stop_robot_motion(true);
 
                 deinitialize();
-                printf("Total time: %f sec\n", total_time_sec_);
                 printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
                 return -1;
             }
@@ -2470,7 +2464,6 @@ int dynamics_controller::control()
                 stop_robot_motion(true);
 
                 deinitialize();
-                printf("Total time: %f sec\n", total_time_sec_);
                 return -1;
             }
 
@@ -2493,7 +2486,6 @@ int dynamics_controller::control()
                 stop_robot_motion(true);
 
                 deinitialize();
-                printf("Total time: %f sec\n", total_time_sec_);
                 printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
                 return -1;
             }
@@ -2531,6 +2523,7 @@ void dynamics_controller::deinitialize()
         log_file_null_space_.close();
     }
 
-    printf("Number of iterations: %d\n", loop_iteration_count_);
-    printf("Delay in control loop occurred %d times\n", control_loop_delay_count_);
+    // printf("Number of iterations: %d\n", loop_iteration_count_);
+    // printf("Total time: %f sec\n", total_time_sec_);
+    // printf("Delay in control loop occurred %d times\n", control_loop_delay_count_);
 }
