@@ -473,13 +473,13 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
 {
     stopping_behaviour_on_ = true;
 
+    /**
+     * Torque-control based stopping mechanism:
+     * - It stops the robot correctly. We can control deceleration explicitly.
+     * - However, control loop (thus, torque control) is maintained on the external pc.
+     */
     if (use_torque_control)
     {
-        /** 
-         * Torque-control based stopping mechanism:
-         * - It stops the robot correctly. We can control deceleration explicitly.
-         * - However, control loop (thus, torque control) is maintained on the external pc.
-         */
         desired_control_mode_.interface = control_mode::TORQUE;
 
         double step = 0.0;
@@ -487,13 +487,6 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
         {
             step = JOINT_ACC_LIMITS_[i] * (dynamics_parameter::DECELERATION_UPDATE_DELAY / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ) * ((robot_state_.qd(i) > 0.0)? -1.0 : 1.0); // rad/sec
             stop_motion_setpoint_array_.push_back(motion_profile::ramp_array(robot_state_.qd(i), 0.0, step, dynamics_parameter::LOWER_DECELERATION_RAMP_THRESHOLD));
-
-            if (stop_motion_setpoint_array_.back().size() > 0)
-            {
-                desired_state_.qd(i) = stop_motion_setpoint_array_.back().front();
-                stop_motion_setpoint_array_.back().pop_front();
-            }
-            else desired_state_.qd(i) = 0.0;
         }
 
         // Main control loop for stopping action
@@ -503,7 +496,6 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
             // Save current time point
             loop_start_time_ = std::chrono::steady_clock::now();
             loop_iteration_count_++;
-            stop_loop_iteration_count_++;
 
             // Get current robot state from the joint sensors: velocities and angles
             safety_control_.get_current_state(robot_state_);
@@ -571,19 +563,19 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
                 return;
             }
 
+            stop_loop_iteration_count_++;
             if (enforce_loop_frequency(DT_STOPPING_MICRO_) != 0) control_loop_delay_count_++;
         }
     }
-    else
-    {
-        /** 
-         * In the case of Kinova: Position-control based stopping mechanism.
-         * - It stops the robot correctly. However, the deceleration is too strong. 
-         * - More specificily, it is not good for the robot's gears and motors on long-run.
-         * - We need to control deceleration explicitly. 
-         */
-        safety_control_.stop_robot_motion();
-    }
+
+    /** 
+     * In the case of Kinova: Position-control based stopping mechanism.
+     * - It stops the robot correctly. However, the deceleration is too strong.
+     * - More specificily, it is not good for the robot's gears and motors on long-run.
+     * - We need to control deceleration explicitly.
+     */
+    else safety_control_.stop_robot_motion();
+
     stopping_behaviour_on_ = false;
 }
 
