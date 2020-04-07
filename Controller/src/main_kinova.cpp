@@ -178,10 +178,10 @@ const Eigen::VectorXd gain_step_4           = (Eigen::VectorXd(NUMBER_OF_CONSTRA
 
 // Stop Motion control parameters used by the ABAG -> parameters specific each robot type... test these values
 const Eigen::VectorXd STOP_MOTION_ERROR_ALPHA    = (Eigen::VectorXd(JOINTS) << 0.800000, 0.800000, 0.800000, 0.800000, 0.800000, 0.800000, 0.800000).finished();
-const Eigen::VectorXd STOP_MOTION_BIAS_THRESHOLD = (Eigen::VectorXd(JOINTS) << 0.000557, 0.006000, 0.000557, 0.006500, 0.000457, 0.000457, 0.000457).finished();
-const Eigen::VectorXd STOP_MOTION_BIAS_STEP      = (Eigen::VectorXd(JOINTS) << 0.000900, 0.002500, 0.000900, 0.002000, 0.000500, 0.000500, 0.000500).finished();
-const Eigen::VectorXd STOP_MOTION_GAIN_THRESHOLD = (Eigen::VectorXd(JOINTS) << 0.602492, 0.550000, 0.602492, 0.500000, 0.602492, 0.602492, 0.602492).finished();
-const Eigen::VectorXd STOP_MOTION_GAIN_STEP      = (Eigen::VectorXd(JOINTS) << 0.005552, 0.010552, 0.005552, 0.010552, 0.003552, 0.003552, 0.003552).finished();
+const Eigen::VectorXd STOP_MOTION_BIAS_THRESHOLD = (Eigen::VectorXd(JOINTS) << 0.000557, 0.006000, 0.000557, 0.006500, 0.000457, 0.006500, 0.000457).finished();
+const Eigen::VectorXd STOP_MOTION_BIAS_STEP      = (Eigen::VectorXd(JOINTS) << 0.000900, 0.002500, 0.000900, 0.002000, 0.000500, 0.002000, 0.000500).finished();
+const Eigen::VectorXd STOP_MOTION_GAIN_THRESHOLD = (Eigen::VectorXd(JOINTS) << 0.602492, 0.500000, 0.602492, 0.500000, 0.602492, 0.500000, 0.602492).finished();
+const Eigen::VectorXd STOP_MOTION_GAIN_STEP      = (Eigen::VectorXd(JOINTS) << 0.005552, 0.010552, 0.005552, 0.010552, 0.003552, 0.010552, 0.003552).finished();
 
 const Eigen::VectorXd min_bias_sat               = Eigen::VectorXd::Constant(6, -1.0);
 const Eigen::VectorXd min_command_sat            = Eigen::VectorXd::Constant(6, -1.0);
@@ -548,7 +548,7 @@ int define_task(dynamics_controller *dyn_controller)
         default:
             // HOME pose
             tube_start_position = std::vector<double>{0.39514, 0.00134662, 0.433724};
-            desired_ee_pose     = { 0.60514, 0.01434662, 0.433724, // Linear: Vector
+            desired_ee_pose     = { 0.65514, 0.01434662, 0.433724, // Linear: Vector
                                     0.0, 0.0, -1.0, // Angular: Rotation matrix
                                     1.0, 0.0, 0.0,
                                     0.0, -1.0, 0.0};
@@ -660,8 +660,8 @@ int main(int argc, char **argv)
     const bool maintain_primary_1khz_frequency = false;
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                              false, false, false}; // Angular
-    tube_tolerances      = std::vector<double>{0.01, 0.03, 0.03, 
-                                               0.0, 0.0, 0.0, 
+    tube_tolerances      = std::vector<double>{0.01, 0.02, 0.02,
+                                               0.0, 0.0, 0.0,
                                                0.001, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
     environment          = kinova_environment::SIMULATION;
     robot_model_id       = kinova_model::URDF;
