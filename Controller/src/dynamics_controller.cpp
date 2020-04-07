@@ -39,8 +39,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     store_control_data_(true), desired_dynamics_interface_(dynamics_interface::CART_ACCELERATION), 
     desired_task_model_(task_model::full_pose),
     loop_start_time_(std::chrono::steady_clock::now()), loop_previous_time_(std::chrono::steady_clock::now()),
-    total_time_sec_(0.0), loop_iteration_count_(0), stop_loop_iteration_count(0),
-    steady_stop_iteration_count(0), feedforward_loop_count_(0), control_loop_delay_count_(0),
+    total_time_sec_(0.0), loop_iteration_count_(0), stop_loop_iteration_count_(0),
+    steady_stop_iteration_count_(0), feedforward_loop_count_(0), control_loop_delay_count_(0),
     robot_chain_(robot_driver->get_robot_model()),
     NUM_OF_JOINTS_(robot_chain_.getNrOfJoints()),
     NUM_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
@@ -51,6 +51,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     COMPENSATE_GRAVITY_(compensate_gravity),
     CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), POS_TUBE_DIM_(NUM_OF_CONSTRAINTS_, false),
     MOTION_CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), FORCE_CTRL_DIM_(NUM_OF_CONSTRAINTS_, false),
+    stop_motion_setpoint_array_(0, std::deque<double>(0, 0.0)),
     fsm_result_(control_status::NOMINAL), fsm_force_task_result_(control_status::APPROACH),
     previous_control_status_(fsm_result_), tube_section_count_(0), 
     transform_drivers_(false), transform_force_drivers_(false),
@@ -482,16 +483,15 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
         desired_control_mode_.interface = control_mode::TORQUE;
 
         double step = 0.0;
-        std::vector< std::deque<double> > setpoint_array;
         for (int i = 0; i < NUM_OF_JOINTS_; i++)
         {
             step = JOINT_ACC_LIMITS_[i] * (dynamics_parameter::DECELERATION_UPDATE_DELAY / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ) * ((robot_state_.qd(i) > 0.0)? -1.0 : 1.0); // rad/sec
-            setpoint_array.push_back(motion_profile::ramp_array(robot_state_.qd(i), 0.0, step, dynamics_parameter::LOWER_DECELERATION_RAMP_THRESHOLD));
+            stop_motion_setpoint_array_.push_back(motion_profile::ramp_array(robot_state_.qd(i), 0.0, step, dynamics_parameter::LOWER_DECELERATION_RAMP_THRESHOLD));
 
-            if (setpoint_array.back().size() > 0)
+            if (stop_motion_setpoint_array_.back().size() > 0)
             {
-                desired_state_.qd(i) = setpoint_array.back().front();
-                setpoint_array.back().pop_front();
+                desired_state_.qd(i) = stop_motion_setpoint_array_.back().front();
+                stop_motion_setpoint_array_.back().pop_front();
             }
             else desired_state_.qd(i) = 0.0;
         }
@@ -503,19 +503,19 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
             // Save current time point
             loop_start_time_ = std::chrono::steady_clock::now();
             loop_iteration_count_++;
-            stop_loop_iteration_count++;
+            stop_loop_iteration_count_++;
 
             // Get current robot state from the joint sensors: velocities and angles
             safety_control_.get_current_state(robot_state_);
 
-            if (stop_loop_iteration_count % dynamics_parameter::DECELERATION_UPDATE_DELAY == 0)
+            if (stop_loop_iteration_count_ % dynamics_parameter::DECELERATION_UPDATE_DELAY == 0)
             {
                 for (int i = 0; i < NUM_OF_JOINTS_; i++)
                 {
-                    if (setpoint_array[i].size() > 0)
+                    if (stop_motion_setpoint_array_[i].size() > 0)
                     {
-                        desired_state_.qd(i) = setpoint_array[i].front();
-                        setpoint_array[i].pop_front();
+                        desired_state_.qd(i) = stop_motion_setpoint_array_[i].front();
+                        stop_motion_setpoint_array_[i].pop_front();
                     }
                     else desired_state_.qd(i) = 0.0;
                 }
@@ -538,18 +538,18 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
             // If all of the joints have 0 velocity -> task completed
             if (joint_stop_count == NUM_OF_JOINTS_)
             {
-                steady_stop_iteration_count++;
+                steady_stop_iteration_count_++;
                 
-                if (steady_stop_iteration_count == dynamics_parameter::STEADY_STOP_ITERATION_THRESHOLD)
+                if (steady_stop_iteration_count_ == dynamics_parameter::STEADY_STOP_ITERATION_THRESHOLD)
                 {
                     // Switch to the default control for stopping the robot
                     safety_control_.stop_robot_motion();
                     stopping_behaviour_on_ = false;
-                    total_time_sec_ += (double)stop_loop_iteration_count / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
+                    total_time_sec_ += (double)stop_loop_iteration_count_ / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
                     return;
                 }
             }
-            else steady_stop_iteration_count = 0;
+            else steady_stop_iteration_count_ = 0;
 
             // Trigger ABAG to compute control commands
             abag_stop_motion_command_ = abag_stop_motion_.update_state(stop_motion_abag_error_).transpose();
@@ -567,7 +567,7 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
                 // Switch to the default control for stopping the robot
                 safety_control_.stop_robot_motion();
                 stopping_behaviour_on_ = false;
-                total_time_sec_ += (double)stop_loop_iteration_count / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
+                total_time_sec_ += (double)stop_loop_iteration_count_ / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
                 return;
             }
 
