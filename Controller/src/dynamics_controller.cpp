@@ -469,7 +469,8 @@ void dynamics_controller::reset_state(state_specification &state)
 }
 
 // Send 0 joints velocities to the robot driver
-void dynamics_controller::stop_robot_motion(const bool use_torque_control)
+int dynamics_controller::stop_robot_motion(const bool use_torque_control,
+                                           const bool engage_lock)
 {
     stopping_behaviour_on_ = true;
 
@@ -535,10 +536,10 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
                 if (steady_stop_iteration_count_ == dynamics_parameter::STEADY_STOP_ITERATION_THRESHOLD)
                 {
                     // Switch to the default control for stopping the robot
-                    safety_control_.stop_robot_motion();
+                    if (engage_lock) safety_control_.stop_robot_motion();
                     stopping_behaviour_on_ = false;
                     total_time_sec_ += (double)stop_loop_iteration_count_ / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
-                    return;
+                    return 0;
                 }
             }
             else steady_stop_iteration_count_ = 0;
@@ -560,7 +561,7 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
                 safety_control_.stop_robot_motion();
                 stopping_behaviour_on_ = false;
                 total_time_sec_ += (double)stop_loop_iteration_count_ / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
-                return;
+                return -1;
             }
 
             stop_loop_iteration_count_++;
@@ -577,6 +578,7 @@ void dynamics_controller::stop_robot_motion(const bool use_torque_control)
     else safety_control_.stop_robot_motion();
 
     stopping_behaviour_on_ = false;
+    return 0;
 }
 
 void dynamics_controller::define_moveConstrained_follow_path_task(
@@ -2248,7 +2250,11 @@ int dynamics_controller::initialize(const int desired_control_mode,
     KDL::SetToZero(robot_state_.feedforward_torque);
 
     // First make sure that the robot is not moving
-    stop_robot_motion(true);
+    if (stop_robot_motion(true, false) == -1)
+    {
+        printf("Error in applying the joint control commands! \n");
+        return -1;
+    }
 
     /* 
         Get sensor data from the robot driver or if simulation is on, 
@@ -2258,7 +2264,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
     if (state_update_result != 0)
     {
         // First make sure that the robot is not moving
-        stop_robot_motion(false);
+        stop_robot_motion(false, true);
 
         deinitialize();
         printf("Warning: FK solver returned an error! %d \n", state_update_result);
@@ -2285,7 +2291,7 @@ int dynamics_controller::update_commands()
         if (status == -1)
         {
             // First make sure that the robot is not moving
-            stop_robot_motion(true);
+            stop_robot_motion(true, true);
 
             deinitialize();
             return -1;
@@ -2297,7 +2303,7 @@ int dynamics_controller::update_commands()
     if (status != 0)
     {
         // First make sure that the robot is not moving
-        stop_robot_motion(true);
+        stop_robot_motion(true, true);
 
         deinitialize();
         printf("WARNING: Hybrid Dynamics Solver returned error: %d. Stopping the robot!", status);
@@ -2311,7 +2317,7 @@ int dynamics_controller::update_commands()
         if (status != 0)
         {
             // First make sure that the robot is not moving
-            stop_robot_motion(true);
+            stop_robot_motion(true, true);
 
             deinitialize();
             printf("WARNING: Inverse Dynamics Solver returned error: %d. Stopping the robot!", status);
@@ -2347,7 +2353,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
     if (status != 0)
     {
         // First make sure that the robot is not moving
-        stop_robot_motion(true);
+        stop_robot_motion(true, true);
 
         deinitialize();
         printf("Warning: FK solver returned an error! %d \n", status);
@@ -2361,7 +2367,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
     if (check_fsm_status() == -1)
     {
         // First make sure that the robot is not moving
-        stop_robot_motion(true);
+        stop_robot_motion(true, true);
 
         deinitialize();
         return -1;
@@ -2410,7 +2416,7 @@ int dynamics_controller::control()
             if (apply_joint_control_commands(false) == -1)
             {
                 // First make sure that the robot is not moving
-                stop_robot_motion(true);
+                stop_robot_motion(true, true);
 
                 deinitialize();
                 printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
@@ -2440,7 +2446,7 @@ int dynamics_controller::control()
             if (ctrl_status != 0)
             {
                 // First make sure that the robot is not moving
-                stop_robot_motion(true);
+                stop_robot_motion(true, true);
 
                 deinitialize();
                 printf("Warning: FK solver returned an error! %d \n", ctrl_status);
@@ -2454,7 +2460,7 @@ int dynamics_controller::control()
             if (check_fsm_status() == -1)
             {
                 // First make sure that the robot is not moving
-                stop_robot_motion(true);
+                stop_robot_motion(true, true);
 
                 deinitialize();
                 return -1;
@@ -2476,7 +2482,7 @@ int dynamics_controller::control()
             if (apply_joint_control_commands(false) == -1)
             {
                 // First make sure that the robot is not moving
-                stop_robot_motion(true);
+                stop_robot_motion(true, true);
 
                 deinitialize();
                 printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
