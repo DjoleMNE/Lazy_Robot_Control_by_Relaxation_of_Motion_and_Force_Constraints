@@ -67,13 +67,14 @@ int desired_task_model               = task_model::full_pose;
 int desired_control_mode             = control_mode::TORQUE;
 int environment                      = kinova_environment::SIMULATION;
 int robot_model_id                   = kinova_model::URDF;
+int id                               = robot_id::KINOVA_GEN3_1;
 
 const double time_horizon_amplitude  = 2.5;
 double tube_speed                    = 0.01;
 double desired_null_space_angle      = 90.0; // Unit degrees
 double task_time_limit_sec           = 600.0;
 
-const bool log_data                  = true;
+bool log_data                        = false;
 bool control_null_space              = false;
 bool compensate_gravity              = false;
 bool use_mass_alternation            = false;
@@ -346,9 +347,11 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
         newfile.open("/home/djole/Master/Thesis/GIT/MT_testing/kinova_passwd.txt", ios::in);
         if (newfile.is_open())
         {
-            while (getline(newfile, kinova_passwd)) {}
+            if (id == KINOVA_GEN3_1) getline(newfile, kinova_passwd);
+            else while (getline(newfile, kinova_passwd)) {}
             newfile.close();
         }
+
 
         // Create API objects
         auto error_callback = [](Kinova::Api::KError err){ cout << "_________ callback error _________" << err.toString(); };
@@ -365,10 +368,10 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
         create_session_info.set_connection_inactivity_timeout(200); // (milliseconds)
 
         // Session manager service wrapper
-        std::cout << "Creating sessions for communication" << std::endl;
+        // std::cout << "Creating sessions for communication" << std::endl;
         auto session_manager = new Kinova::Api::SessionManager(router);
         session_manager->CreateSession(create_session_info);
-        std::cout << "Sessions created" << std::endl;
+        // std::cout << "Sessions created" << std::endl;
 
         // Create services
         auto base = new Kinova::Api::Base::BaseClient(router);
@@ -400,7 +403,7 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
             Kinova::Api::Common::NotificationOptions()
         );
 
-        std::cout << "Reaching joint angles..." << std::endl;
+        // std::cout << "Reaching joint angles..." << std::endl;
         base->PlayJointTrajectory(constrained_joint_angles);
 
         // Wait for future value from promise (Promise alternative)
@@ -430,7 +433,7 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
 
         // const auto promise_event = finish_future.get();
 
-        std::cout << "Joint angles reached" << std::endl;
+        // std::cout << "Joint angles reached" << std::endl;
         // std::cout << "Promise value : " << Kinova::Api::Base::ActionEvent_Name(promise_event) << std::endl;
 
         // std::this_thread::sleep_for(std::chrono::milliseconds(5000));
@@ -485,12 +488,12 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
         delete session_manager;
         delete router;
         delete transport;
-        printf("High-Level Control Completed\n");
+        // printf("High-Level Control Completed\n");
     }
 
     else
     {
-        robot_driver.initialize(robot_model_id, environment, compensate_gravity);
+        robot_driver.initialize(robot_model_id, environment, id);
         if (!robot_driver.is_initialized())
         {
             printf("Robot is not initialized\n");
@@ -656,7 +659,7 @@ int define_task(dynamics_controller *dyn_controller)
 
 int main(int argc, char **argv)
 {
-    printf("kinova MAIN Started \n");
+    // printf("kinova MAIN Started \n");
     const bool maintain_primary_1khz_frequency = false;
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                              false, false, false}; // Angular
@@ -665,6 +668,7 @@ int main(int argc, char **argv)
                                                0.001, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
     environment          = kinova_environment::SIMULATION;
     robot_model_id       = kinova_model::URDF;
+    id                   = robot_id::KINOVA_GEN3_1;
     desired_pose_id      = desired_pose::HOME;
     desired_control_mode = control_mode::TORQUE;
     desired_task_model   = task_model::moveTo;
@@ -676,6 +680,7 @@ int main(int argc, char **argv)
     compensate_gravity   = false;
     control_null_space   = false;
     use_mass_alternation = false;
+    log_data             = false;
 
     kinova_mediator robot_driver;
     int return_flag = 0;
@@ -688,7 +693,7 @@ int main(int argc, char **argv)
     if (return_flag != 0) return 0;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
-    if (!robot_driver.is_initialized()) robot_driver.initialize(robot_model_id, environment, compensate_gravity);
+    if (!robot_driver.is_initialized()) robot_driver.initialize(robot_model_id, environment, id);
     if (!robot_driver.is_initialized())
     {
         printf("Robot is not initialized\n");
@@ -711,7 +716,7 @@ int main(int argc, char **argv)
     // run_test(robot_driver); return 0;
 
     //loop rate in Hz
-    int rate_hz = 500;
+    int rate_hz = 700;
     dynamics_controller controller(&robot_driver, rate_hz, maintain_primary_1khz_frequency, compensate_gravity);
 
     int initial_result = define_task(&controller);

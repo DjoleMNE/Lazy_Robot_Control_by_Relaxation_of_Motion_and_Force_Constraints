@@ -86,7 +86,7 @@ class kinova_mediator: public robot_mediator
 		// Initializes variables and calibrates the manipulator
 		virtual void initialize(const int robot_model,
 								const int robot_environment,
-								const bool gravity_compensated);
+								const int id);
 
 		virtual bool is_initialized();
 
@@ -138,7 +138,7 @@ class kinova_mediator: public robot_mediator
 
 	private:
 		bool is_initialized_;
-		const int ROBOT_ID_;
+		int kinova_id;
 		int kinova_model_;
 		int kinova_environment_;
 		int control_mode_;

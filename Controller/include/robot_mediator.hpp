@@ -43,7 +43,8 @@ enum robot_id
 {
     YOUBOT = 0,
     LWR_4 = 1,
-    KINOVA_GEN3 = 2
+    KINOVA_GEN3_1 = 2,
+	KINOVA_GEN3_2 = 3
 };
 
 class robot_mediator
@@ -57,7 +58,7 @@ class robot_mediator
 		// Initializes variables and calibrates the manipulator
 		virtual void initialize(const int robot_model,
 								const int robot_environment,
-								const bool gravity_compensated) = 0;
+								const int id) = 0;
 
 		// Update joint space state: measured positions, velocities and torques
 		virtual void get_joint_state(KDL::JntArray &joint_positions,

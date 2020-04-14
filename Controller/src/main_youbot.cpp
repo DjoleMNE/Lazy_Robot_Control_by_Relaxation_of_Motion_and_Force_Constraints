@@ -588,7 +588,7 @@ int main(int argc, char **argv)
     else control_null_space = false;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
-    robot_driver.initialize(robot_model_id, environment, compensate_gravity);
+    robot_driver.initialize(robot_model_id, environment, robot_id::YOUBOT);
     if (!robot_driver.is_initialized())
     {
         printf("Robot is not initialized\n");

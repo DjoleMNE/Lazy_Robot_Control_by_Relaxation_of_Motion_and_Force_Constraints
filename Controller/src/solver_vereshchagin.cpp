@@ -134,17 +134,15 @@ int Solver_Vereshchagin::CartToJnt(const JntArray &q, const JntArray &q_dot,
 void Solver_Vereshchagin::initial_upwards_sweep(const JntArray &q, 
                                                 const JntArray &qdot, 
                                                 const JntArray &qdotdot, 
-                                                const Wrenches& force_ext_natural, 
-                                                const Wrenches& force_ext_virtual)
+                                                const Wrenches &force_ext_natural, 
+                                                const Wrenches &force_ext_virtual)
 {
-    //if (q.rows() != nj || qdot.rows() != nj || qdotdot.rows() != nj || f_ext.size() != ns)
-    //        return -1;
     unsigned int j = 0;
     F_total = Frame::Identity();
     for (unsigned int i = 0; i < ns; i++)
     {
-        //Express everything in the segments reference frame (body coordinates)
-        //which is at the segments tip, i.e. where the next joint is attached.
+        // Express everything in the segments reference frame (body coordinates)
+        // which is at the segments tip, i.e. where the next joint is attached.
 
         //Calculate segment properties: X,S,vj,cj
         const Segment& segment = chain.getSegment(i);

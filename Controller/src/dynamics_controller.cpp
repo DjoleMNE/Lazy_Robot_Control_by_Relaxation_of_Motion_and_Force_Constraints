@@ -36,7 +36,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     DT_SEC_(maintain_primary_1khz_frequency? (1.0 / static_cast<double>(1000)) : (1.0 / static_cast<double>(RATE_HZ_))),
     DT_STOPPING_MICRO_(static_cast<double>(SECOND) / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ),
     maintain_primary_1khz_frequency_(maintain_primary_1khz_frequency), // 1KHz Comunication required by certain robots
-    store_control_data_(true), desired_dynamics_interface_(dynamics_interface::CART_ACCELERATION), 
+    store_control_data_(false), desired_dynamics_interface_(dynamics_interface::CART_ACCELERATION), 
     desired_task_model_(task_model::full_pose),
     loop_start_time_(std::chrono::steady_clock::now()), loop_previous_time_(std::chrono::steady_clock::now()),
     total_time_sec_(0.0), loop_iteration_count_(0), stop_loop_iteration_count_(0),
@@ -496,7 +496,6 @@ int dynamics_controller::stop_robot_motion(const bool use_torque_control,
         {
             // Save current time point
             loop_start_time_ = std::chrono::steady_clock::now();
-            loop_iteration_count_++;
 
             // Get current robot state from the joint sensors: velocities and angles
             safety_control_.get_current_state(robot_state_);
@@ -2272,7 +2271,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
     }
 
     //Print information about controller settings
-    print_settings_info();    
+    // print_settings_info();
     return 0;
 }
 
@@ -2424,7 +2423,6 @@ int dynamics_controller::control()
             }
 
             #ifdef NDEBUG
-                // if (enforce_loop_frequency(DT_MICRO_) != 0) printf("WARNING: Control loop runs too slow \n");
                 if (enforce_loop_frequency(DT_MICRO_) != 0) control_loop_delay_count_++;
             #endif
             #ifndef NDEBUG
@@ -2491,7 +2489,6 @@ int dynamics_controller::control()
 
             // Make sure that the loop is always running with the same frequency
             #ifdef NDEBUG
-                // if (enforce_loop_frequency(DT_1KHZ_MICRO_) != 0) printf("WARNING: Control loop runs too slow \n");
                 if (enforce_loop_frequency(DT_1KHZ_MICRO_) != 0) control_loop_delay_count_++;
             #endif
             #ifndef NDEBUG

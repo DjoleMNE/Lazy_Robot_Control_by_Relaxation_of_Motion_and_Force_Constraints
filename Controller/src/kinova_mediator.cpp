@@ -24,13 +24,14 @@ SOFTWARE.
 */
 
 #include "kinova_mediator.hpp"
-#define IP_ADDRESS "192.168.1.10"
+#define IP_ADDRESS_1 "192.168.1.10"
+#define IP_ADDRESS_2 "192.168.1.10"
 #define PORT 10000
 #define PORT_REAL_TIME 10001
 #define ACTUATOR_COUNT 7
 
 kinova_mediator::kinova_mediator(): 
-    is_initialized_(false), ROBOT_ID_(robot_id::KINOVA_GEN3),
+    is_initialized_(false), kinova_id(robot_id::KINOVA_GEN3_1),
     kinova_model_(kinova_model::URDF),
     kinova_environment_(kinova_environment::SIMULATION),
     control_mode_(control_mode::STOP_MOTION),
@@ -483,7 +484,7 @@ int kinova_mediator::get_model_from_urdf()
 
 int kinova_mediator::get_robot_ID()
 {
-    return ROBOT_ID_;
+    return kinova_id;
 }
 
 bool kinova_mediator::is_initialized()
@@ -494,9 +495,10 @@ bool kinova_mediator::is_initialized()
 // Initialize variables and calibrate the manipulator: 
 void kinova_mediator::initialize(const int robot_model,
                                  const int robot_environment,
-                                 const bool gravity_compensated)
+                                 const int id)
 {
     kinova_model_       = robot_model;
+    kinova_id           = id;
     kinova_environment_ = robot_environment;
     kinova_chain_       = KDL::Chain();
 
@@ -504,14 +506,6 @@ void kinova_mediator::initialize(const int robot_model,
     is_initialized_   = false;
     add_offsets_      = false;
     int parser_result = 0;
-
-    //Extract Kinova model from the URDF file
-    if (kinova_model_ == kinova_model::URDF) parser_result = get_model_from_urdf();
-    else
-    {
-        printf("Unsupported model\n");
-        return;
-    }
 
     // If the real robot is controlled, settup the connection
     if (kinova_environment_ != kinova_environment::SIMULATION)
@@ -522,7 +516,8 @@ void kinova_mediator::initialize(const int robot_model,
         newfile.open("/home/djole/Master/Thesis/GIT/MT_testing/kinova_passwd.txt", ios::in);
         if (newfile.is_open())
         {
-            while (getline(newfile, kinova_passwd)) {}
+            if (kinova_id == KINOVA_GEN3_1) getline(newfile, kinova_passwd);
+            else while (getline(newfile, kinova_passwd)) {}
             newfile.close();
         }
 
@@ -531,11 +526,13 @@ void kinova_mediator::initialize(const int robot_model,
         auto error_callback = [](Kinova::Api::KError err){ cout << "_________ callback error _________" << err.toString(); };
         this->transport_ = std::make_shared<Kinova::Api::TransportClientTcp>();
         this->router_ = std::make_shared<Kinova::Api::RouterClient>(transport_.get(), error_callback);
-        transport_->connect(IP_ADDRESS, PORT);
+        if (kinova_id == KINOVA_GEN3_1) transport_->connect(IP_ADDRESS_1, PORT);
+        else transport_->connect(IP_ADDRESS_2, PORT);
 
         this->transport_real_time_ = std::make_shared<Kinova::Api::TransportClientUdp>();
         this->router_real_time_ = std::make_shared<Kinova::Api::RouterClient>(transport_real_time_.get(), error_callback);
-        transport_real_time_->connect(IP_ADDRESS, PORT_REAL_TIME);
+        if (kinova_id == KINOVA_GEN3_1) transport_real_time_->connect(IP_ADDRESS_1, PORT_REAL_TIME);
+        else transport_real_time_->connect(IP_ADDRESS_2, PORT_REAL_TIME);
 
         // Set session data connection information
         auto create_session_info = Kinova::Api::Session::CreateSessionInfo();
@@ -556,7 +553,7 @@ void kinova_mediator::initialize(const int robot_model,
         this->base_cyclic_ = std::make_shared< Kinova::Api::BaseCyclic::BaseCyclicClient>(router_real_time_.get());
         this->actuator_config_ = std::make_shared< Kinova::Api::ActuatorConfig::ActuatorConfigClient>(router_.get());
 
-        std::cout << "Kinova sessions created" << std::endl;
+        // std::cout << "Kinova sessions created" << std::endl;
 
         // Clearing faults
         try
@@ -620,12 +617,20 @@ void kinova_mediator::initialize(const int robot_model,
         connection_established_ = true;
     }
 
+    //Extract Kinova model from the URDF file
+    if (kinova_model_ == kinova_model::URDF) parser_result = get_model_from_urdf();
+    else
+    {
+        printf("Unsupported model\n");
+        return;
+    }
+
     if (parser_result != 0 || !connection_established_)  printf("Cannot create Kinova model! \n");
     else
     {
         // Set initialization flag for the user
         is_initialized_ = true;
-        printf("Kinova initialized successfully! \n\n");
+        // printf("Kinova initialized successfully! \n\n");
     } 
 }
 
