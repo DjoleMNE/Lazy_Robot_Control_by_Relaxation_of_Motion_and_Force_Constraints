@@ -25,7 +25,7 @@ SOFTWARE.
 
 #include "kinova_mediator.hpp"
 #define IP_ADDRESS_1 "192.168.1.10"
-#define IP_ADDRESS_2 "192.168.1.10"
+#define IP_ADDRESS_2 "192.168.1.12"
 #define PORT 10000
 #define PORT_REAL_TIME 10001
 #define ACTUATOR_COUNT 7
