@@ -34,7 +34,8 @@ SOFTWARE.
 #include <finite_state_machine.hpp>
 #include <motion_profile.hpp>
 
-#define IP_ADDRESS "192.168.1.10"
+#define IP_ADDRESS_1 "192.168.1.10"
+#define IP_ADDRESS_2 "192.168.1.12"
 #define PORT 10000
 
 enum desired_pose
@@ -358,7 +359,8 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
         
         auto transport = new Kinova::Api::TransportClientTcp();
         auto router = new Kinova::Api::RouterClient(transport, error_callback);
-        transport->connect(IP_ADDRESS, PORT);
+        if (id == KINOVA_GEN3_1) transport->connect(IP_ADDRESS_1, PORT);
+        else transport->connect(IP_ADDRESS_2, PORT);
 
         // Set session data connection information
         auto create_session_info = Kinova::Api::Session::CreateSessionInfo();

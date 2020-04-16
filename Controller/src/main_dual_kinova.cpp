@@ -237,33 +237,40 @@ auto lambda_fct_callback = [](const Kinova::Api::Error &err, const Kinova::Api::
     std::cout << serialized_data << std::endl << std::endl;
 };
 
-void run_test(kinova_mediator &robot_driver)
+void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
 {
-    double time_duration = 20.0f; // Duration of the example (seconds)
+    double time_duration = 10.0f; // Duration of the example (seconds)
     int timer_count = 0;
     int64_t now = 0;
     int64_t last = 0;
     int id_solver_result = 0;
     
-    KDL::JntArray jnt_array_command(7), jnt_array_feedback(7), jnt_array_feedback_2(7), jnt_array_feedback_3(7), zero_joint_array(7);
-    jnt_array_command(0) = 0.0;
-    jnt_array_command(1) = 0.0;
-    jnt_array_command(2) = 0.0;
-    jnt_array_command(3) = 0.0;
-    jnt_array_command(4) = 0.0;
-    jnt_array_command(5) = 0.0;
-    jnt_array_command(6) = 0.5;
+    KDL::JntArray zero_joint_array(7), jnt_array_command_1(7), jnt_array_feedback_1_1(7), jnt_array_feedback_1_2(7), jnt_array_feedback_1_3(7),
+                                       jnt_array_command_2(7), jnt_array_feedback_2_1(7), jnt_array_feedback_2_2(7), jnt_array_feedback_2_3(7);
 
-    KDL::Chain robot_chain = robot_driver.get_robot_model();
-    KDL::Wrenches zero_wrenches(robot_chain.getNrOfSegments(), KDL::Wrench::Zero());
+    KDL::Chain robot_chain_1 = robot_driver_1.get_robot_model();
+    KDL::Chain robot_chain_2 = robot_driver_2.get_robot_model();
+    KDL::Wrenches zero_wrenches_1(robot_chain_1.getNrOfSegments(), KDL::Wrench::Zero());
+    KDL::Wrenches zero_wrenches_2(robot_chain_2.getNrOfSegments(), KDL::Wrench::Zero());
 
-    std::shared_ptr<KDL::Solver_RNE> id_solver = std::make_shared<KDL::Solver_RNE>(robot_chain, KDL::Vector(0.0, 0.0, -9.81289),
-                                                                                   robot_driver.get_joint_inertia(), 
-                                                                                   robot_driver.get_joint_torque_limits(), true);
+    std::shared_ptr<KDL::Solver_RNE> id_solver_1 = std::make_shared<KDL::Solver_RNE>(robot_chain_1, KDL::Vector(0.0, 0.0, -9.81289), robot_driver_1.get_joint_inertia(), robot_driver_1.get_joint_torque_limits(), true);
+    std::shared_ptr<KDL::Solver_RNE> id_solver_2 = std::make_shared<KDL::Solver_RNE>(robot_chain_2, KDL::Vector(0.0, 0.0, -9.81289), robot_driver_2.get_joint_inertia(), robot_driver_2.get_joint_torque_limits(), true);
 
-    printf("Test run started\n");
+    // printf("Test run started\n");
     int return_flag = 0;
     int iteration_count = 0;
+
+    if (robot_driver_1.set_control_mode(control_mode::TORQUE) == -1)
+    {
+        printf("Incorrect control mode 1\n");
+        return;
+    }
+
+    if (robot_driver_2.set_control_mode(control_mode::TORQUE) == -1)
+    {
+        printf("Incorrect control mode 2\n");
+        return;
+    }
 
     // Real-time loop
     while (timer_count < (time_duration * 1000))
@@ -272,42 +279,56 @@ void run_test(kinova_mediator &robot_driver)
 
         if (now - last > 1000)
         {
-            if (iteration_count == 0)
-            {
-                if (robot_driver.set_control_mode(control_mode::TORQUE) == -1)
-                {
-                    printf("Incorrect control mode\n");
-                    return;
-                }
-            }
-
-            robot_driver.get_joint_state(jnt_array_feedback, jnt_array_feedback_2, jnt_array_feedback_3);
+            robot_driver_1.get_joint_state(jnt_array_feedback_1_1, jnt_array_feedback_1_2, jnt_array_feedback_1_3);
+            robot_driver_2.get_joint_state(jnt_array_feedback_2_1, jnt_array_feedback_2_2, jnt_array_feedback_2_3);
             // std::cout << "Pos: " << jnt_array_feedback << std::endl;
             // std::cout << "Vel: " << jnt_array_feedback_2 << std::endl;
             // std::cout << "Torque: " << jnt_array_feedback_3 << std::endl;
             // std::cout << std::endl;
 
-            id_solver_result = id_solver->CartToJnt(jnt_array_feedback, zero_joint_array, zero_joint_array, 
-                                                    zero_wrenches, jnt_array_command);
-            if (id_solver_result != 0) return;
+            // Compute dynamics
+            id_solver_result = id_solver_1->CartToJnt(jnt_array_feedback_1_1, zero_joint_array, zero_joint_array, zero_wrenches_1, jnt_array_command_1);
+            if (id_solver_result != 0)
+            {
+                robot_driver_1.stop_robot_motion();
+                printf("Robot stoped: error in dynamics 1\n");
+                return;
+            }
 
-            return_flag = robot_driver.set_joint_torques(jnt_array_command);
-            // std::cout <<  "Torque command: "<< jnt_array_command << std::endl;
+            id_solver_result = id_solver_2->CartToJnt(jnt_array_feedback_2_1, zero_joint_array, zero_joint_array, zero_wrenches_2, jnt_array_command_2);
+            if (id_solver_result != 0)
+            {
+                robot_driver_2.stop_robot_motion();
+                printf("Robot stoped: error in dynamics 2\n");
+                return;
+            }
 
+            // Set control commands
+            return_flag = robot_driver_1.set_joint_torques(jnt_array_command_1);
             if (return_flag == -1)
             {
-                robot_driver.stop_robot_motion();
-                printf("Robot stoped: error in control\n");
+                robot_driver_1.stop_robot_motion();
+                printf("Robot stoped: error in control 1\n");
+                return;
+            }
+
+            return_flag = robot_driver_2.set_joint_torques(jnt_array_command_2);
+            if (return_flag == -1)
+            {
+                robot_driver_2.stop_robot_motion();
+                printf("Robot stoped: error in control 2\n");
                 return;
             }
 
             timer_count++;
             last = GetTickUs();
         }
+
         iteration_count++;
     }
 
-    robot_driver.stop_robot_motion();
+    robot_driver_1.stop_robot_motion();
+    robot_driver_2.stop_robot_motion();
     printf("Task completed\n");
 }
 
@@ -320,7 +341,7 @@ void rotate_joint(kinova_mediator &robot_driver, const int joint, const double r
     if (environment != kinova_environment::SIMULATION) usleep(5000 * MILLISECOND);
 }
 
-int go_to(kinova_mediator &robot_driver, const int desired_pose_)
+int go_to(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2, const int desired_pose_)
 {
     std::vector<double> configuration_array(7, 0.0);
     // Angle value are in units of degree
@@ -343,51 +364,63 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
     if (environment != kinova_environment::SIMULATION)
     {
         // Extract user password from a file
-        fstream newfile;
-        string kinova_passwd;
-        newfile.open("/home/djole/Master/Thesis/GIT/MT_testing/kinova_passwd.txt", ios::in);
-        if (newfile.is_open())
+        fstream kinova_file;
+        string kinova_passwd_1, kinova_passwd_2;
+        kinova_file.open("/home/djole/Master/Thesis/GIT/MT_testing/kinova_passwd.txt", ios::in);
+        if (kinova_file.is_open())
         {
-            if (id == KINOVA_GEN3_1) getline(newfile, kinova_passwd);
-            else while (getline(newfile, kinova_passwd)) {}
-            newfile.close();
+            getline(kinova_file, kinova_passwd_1);
+            while (getline(kinova_file, kinova_passwd_2)) {}
+            kinova_file.close();
         }
 
 
-        // Create API objects
         auto error_callback = [](Kinova::Api::KError err){ cout << "_________ callback error _________" << err.toString(); };
         
-        auto transport = new Kinova::Api::TransportClientTcp();
-        auto router = new Kinova::Api::RouterClient(transport, error_callback);
-        if (id == KINOVA_GEN3_1) transport->connect(IP_ADDRESS_1, PORT);
-        else transport->connect(IP_ADDRESS_2, PORT);
+        // Kinova 1 Create API objects
+        auto transport_1 = new Kinova::Api::TransportClientTcp();
+        auto router_1 = new Kinova::Api::RouterClient(transport_1, error_callback);
+        transport_1->connect(IP_ADDRESS_1, PORT);
+        // Set session data connection information
+        auto create_session_info_1 = Kinova::Api::Session::CreateSessionInfo();
+        create_session_info_1.set_username("admin");
+        create_session_info_1.set_password(kinova_passwd_1);
+        create_session_info_1.set_session_inactivity_timeout(200);   // (milliseconds)
+        create_session_info_1.set_connection_inactivity_timeout(200); // (milliseconds)
+        // Session manager service wrapper
+        auto session_manager_1 = new Kinova::Api::SessionManager(router_1);
+        session_manager_1->CreateSession(create_session_info_1);
+        // Create services
+        auto base_1 = new Kinova::Api::Base::BaseClient(router_1);
+
+
+        // Kinova 2 Create API objects
+        auto transport_2 = new Kinova::Api::TransportClientTcp();
+        auto router_2 = new Kinova::Api::RouterClient(transport_2, error_callback);
+        transport_2->connect(IP_ADDRESS_2, PORT);
 
         // Set session data connection information
-        auto create_session_info = Kinova::Api::Session::CreateSessionInfo();
-        create_session_info.set_username("admin");
-        create_session_info.set_password(kinova_passwd);
-        create_session_info.set_session_inactivity_timeout(200);   // (milliseconds)
-        create_session_info.set_connection_inactivity_timeout(200); // (milliseconds)
-
+        auto create_session_info_2 = Kinova::Api::Session::CreateSessionInfo();
+        create_session_info_2.set_username("admin");
+        create_session_info_2.set_password(kinova_passwd_2);
+        create_session_info_2.set_session_inactivity_timeout(200);   // (milliseconds)
+        create_session_info_2.set_connection_inactivity_timeout(200); // (milliseconds)
         // Session manager service wrapper
-        // std::cout << "Creating sessions for communication" << std::endl;
-        auto session_manager = new Kinova::Api::SessionManager(router);
-        session_manager->CreateSession(create_session_info);
-        // std::cout << "Sessions created" << std::endl;
-
+        auto session_manager_2 = new Kinova::Api::SessionManager(router_2);
+        session_manager_2->CreateSession(create_session_info_2);
         // Create services
-        auto base = new Kinova::Api::Base::BaseClient(router);
-        // auto actuator_config = new Kinova::Api::ActuatorConfig::ActuatorConfigClient(router);
+        auto base_2 = new Kinova::Api::Base::BaseClient(router_2);
 
         // Make sure the arm is in Single Level Servoing before executing an Action
         auto servoingMode = Kinova::Api::Base::ServoingModeInformation();
         servoingMode.set_servoing_mode(Kinova::Api::Base::ServoingMode::SINGLE_LEVEL_SERVOING);
-        base->SetServoingMode(servoingMode);
+        base_1->SetServoingMode(servoingMode);
+        base_2->SetServoingMode(servoingMode);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         auto constrained_joint_angles = Kinova::Api::Base::ConstrainedJointAngles();
         auto joint_angles = constrained_joint_angles.mutable_joint_angles();
-        auto actuator_count = base->GetActuatorCount();
+        auto actuator_count = base_1->GetActuatorCount();
 
         for (size_t i = 0; i < actuator_count.count(); ++i) 
         {
@@ -398,120 +431,134 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
 
         // Connect to notification action topic (Promise alternative)
         // See cartesian examples for Reference alternative
-        std::promise<Kinova::Api::Base::ActionEvent> finish_promise;
-        auto finish_future = finish_promise.get_future();
-        auto promise_notification_handle = base->OnNotificationActionTopic(
-            create_event_listener_by_promise(finish_promise),
+        std::promise<Kinova::Api::Base::ActionEvent> finish_promise_1;
+        auto finish_future_1 = finish_promise_1.get_future();
+        auto promise_notification_handle_1 = base_1->OnNotificationActionTopic(
+            create_event_listener_by_promise(finish_promise_1),
+            Kinova::Api::Common::NotificationOptions()
+        );
+        std::promise<Kinova::Api::Base::ActionEvent> finish_promise_2;
+        auto finish_future_2 = finish_promise_2.get_future();
+        auto promise_notification_handle_2 = base_2->OnNotificationActionTopic(
+            create_event_listener_by_promise(finish_promise_2),
             Kinova::Api::Common::NotificationOptions()
         );
 
         // std::cout << "Reaching joint angles..." << std::endl;
-        base->PlayJointTrajectory(constrained_joint_angles);
+        base_1->PlayJointTrajectory(constrained_joint_angles);
+        base_2->PlayJointTrajectory(constrained_joint_angles);
 
         // Wait for future value from promise (Promise alternative)
         // See cartesian examples for Reference alternative
-        const auto status = finish_future.wait_for(TIMEOUT_DURATION);
-        base->Unsubscribe(promise_notification_handle);
+        const auto status_1 = finish_future_1.wait_for(TIMEOUT_DURATION);
+        const auto status_2 = finish_future_2.wait_for(TIMEOUT_DURATION);
+        base_1->Unsubscribe(promise_notification_handle_1);
+        base_2->Unsubscribe(promise_notification_handle_2);
 
-        if (status != std::future_status::ready)
+        if (status_1 != std::future_status::ready)
         {
             std::cout << "Timeout on action notification wait" << std::endl;
             std::cout << "Can't reach safe position, exiting" << std::endl;
 
             // Close API session
-            session_manager->CloseSession();
+            session_manager_1->CloseSession();
 
             // Deactivate the router and cleanly disconnect from the transport object
-            router->SetActivationStatus(false);
-            transport->disconnect();
+            router_1->SetActivationStatus(false);
+            transport_1->disconnect();
 
             // Destroy the API
-            delete base;
-            delete session_manager;
-            delete router;
-            delete transport;
+            delete base_1;
+            delete session_manager_1;
+            delete router_1;
+            delete transport_1;
             return -1;
         }
 
-        // const auto promise_event = finish_future.get();
+        if (status_2 != std::future_status::ready)
+        {
+            std::cout << "Timeout on action notification wait" << std::endl;
+            std::cout << "Can't reach safe position, exiting" << std::endl;
+
+            // Close API session
+            session_manager_2->CloseSession();
+
+            // Deactivate the router and cleanly disconnect from the transport object
+              router_2->SetActivationStatus(false);
+            transport_2->disconnect();
+
+            // Destroy the API
+            delete base_2;
+            delete session_manager_2;
+            delete router_2;
+            delete transport_2;
+            return -1;
+        }
+
+        const auto promise_event_1 = finish_future_1.get();
+        const auto promise_event_2 = finish_future_2.get();
 
         // std::cout << "Joint angles reached" << std::endl;
         // std::cout << "Promise value : " << Kinova::Api::Base::ActionEvent_Name(promise_event) << std::endl;
 
-        // std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-        // auto torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        // torque_offset_message.set_torque_offset(0.0f);
-        // actuator_config->SetTorqueOffset(torque_offset_message, 1);
-
-        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        // torque_offset_message.set_torque_offset(0.00253617f);
-        // // torque_offset_message.set_torque_offset(0.0f);
-        // actuator_config->SetTorqueOffset(torque_offset_message, 2);
-
-        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        // torque_offset_message.set_torque_offset(0.0f);
-        // actuator_config->SetTorqueOffset(torque_offset_message, 3);
-
-        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        // torque_offset_message.set_torque_offset(0.00153136f);
-        // // torque_offset_message.set_torque_offset(0.0f);
-        // actuator_config->SetTorqueOffset(torque_offset_message, 4);
-
-        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        // torque_offset_message.set_torque_offset(0.0f);
-        // actuator_config->SetTorqueOffset(torque_offset_message, 5);
-
-        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        // torque_offset_message.set_torque_offset(0.00137371f);
-        // // torque_offset_message.set_torque_offset(0.0f);
-        // actuator_config->SetTorqueOffset(torque_offset_message, 6);
-
-        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        // torque_offset_message.set_torque_offset(0.0f);
-        // actuator_config->SetTorqueOffset(torque_offset_message, 7);
-        // std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-        // auto control_mode = actuator_config->GetControlMode(7);
-        // std::cout << "ControlMode: " << control_mode.control_mode() << std::endl;
-        
-        // auto torque_offset = actuator_config->GetTorqueOffset(7);
-        // std::cout << "TorqueOffset: " << torque_offset.torque_offset() << std::endl;
 
         // Close API session
-        session_manager->CloseSession();
+        session_manager_1->CloseSession();
+        session_manager_2->CloseSession();
 
         // Deactivate the router and cleanly disconnect from the transport object
-        router->SetActivationStatus(false);
-        transport->disconnect();
+        router_1->SetActivationStatus(false);
+        router_2->SetActivationStatus(false);
+
+        transport_1->disconnect();
+        transport_2->disconnect();
 
         // Destroy the API
-        // delete actuator_config;
-        delete base;
-        delete session_manager;
-        delete router;
-        delete transport;
-        // printf("High-Level Control Completed\n");
+        delete base_1;
+        delete base_2;
+        delete session_manager_1;
+        delete session_manager_2;
+        delete router_1;
+        delete router_2;
+        delete transport_1;
+        delete transport_2;
+
+        printf("High-Level Control Completed\n");
     }
 
     else
     {
-        robot_driver.initialize(robot_model_id, environment, id);
-        if (!robot_driver.is_initialized())
+        robot_driver_1.initialize(robot_model_id, environment, robot_id::KINOVA_GEN3_1);
+        if (!robot_driver_1.is_initialized())
         {
-            printf("Robot is not initialized\n");
+            printf("Robot 1 is not initialized\n");
             return -1;
         }
 
-        if (robot_driver.set_control_mode(control_mode::POSITION) == -1)
+        robot_driver_2.initialize(robot_model_id, environment, robot_id::KINOVA_GEN3_2);
+        if (!robot_driver_2.is_initialized())
         {
-            printf("Incorrect control mode\n");
+            printf("Robot 2 is not initialized\n");
+            return -1;
+        }
+
+        if (robot_driver_1.set_control_mode(control_mode::POSITION) == -1)
+        {
+            printf("Incorrect control mode 1\n");
+            return -1;
+        }
+
+        if (robot_driver_2.set_control_mode(control_mode::POSITION) == -1)
+        {
+            printf("Incorrect control mode 2\n");
             return -1;
         }
 
         KDL::JntArray config(JOINTS);
         for (int i = 0; i < JOINTS; i++) 
             config(i) = DEG_TO_RAD(configuration_array[i]);  
-        robot_driver.set_joint_positions(config);
+        robot_driver_1.set_joint_positions(config);
+        robot_driver_2.set_joint_positions(config);
     }
     return 0;
 }
@@ -662,7 +709,7 @@ int define_task(dynamics_controller *dyn_controller)
 int main(int argc, char **argv)
 {
     // printf("kinova MAIN Started \n");
-    const bool maintain_primary_1khz_frequency = false;
+    // const bool maintain_primary_1khz_frequency = false;
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                              false, false, false}; // Angular
     tube_tolerances      = std::vector<double>{0.01, 0.02, 0.02,
@@ -670,126 +717,53 @@ int main(int argc, char **argv)
                                                0.001, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
     environment          = kinova_environment::SIMULATION;
     robot_model_id       = kinova_model::URDF;
-    id                   = robot_id::KINOVA_GEN3_1;
     desired_pose_id      = desired_pose::HOME;
     desired_control_mode = control_mode::TORQUE;
-    desired_task_model   = task_model::moveTo;
-    // desired_task_model   = task_model::full_pose;
+    // desired_task_model   = task_model::moveTo;
+    desired_task_model   = task_model::full_pose;
     path_type            = path_types::SINE_PATH;
     motion_profile_id    = m_profile::CONSTANT;
     task_time_limit_sec  = 7.5;
-    tube_speed           = 0.03;
-    compensate_gravity   = false;
+    tube_speed           = 0.0;
+    compensate_gravity   = true;
     control_null_space   = false;
     use_mass_alternation = false;
     log_data             = false;
 
-    kinova_mediator robot_driver;
+    kinova_mediator robot_driver_1;
+    kinova_mediator robot_driver_2;
     int return_flag = 0;
-    if      (desired_pose_id == desired_pose::HOME)      return_flag = go_to(robot_driver, desired_pose::HOME);
-    else if (desired_pose_id == desired_pose::CANDLE)    return_flag = go_to(robot_driver, desired_pose::CANDLE);
-    else if (desired_pose_id == desired_pose::RETRACT)   return_flag = go_to(robot_driver, desired_pose::RETRACT);
-    else if (desired_pose_id == desired_pose::PACKAGING) return_flag = go_to(robot_driver, desired_pose::PACKAGING);
+    if      (desired_pose_id == desired_pose::HOME)      return_flag = go_to(robot_driver_1, robot_driver_2, desired_pose::HOME);
+    else if (desired_pose_id == desired_pose::CANDLE)    return_flag = go_to(robot_driver_1, robot_driver_2, desired_pose::CANDLE);
+    else if (desired_pose_id == desired_pose::RETRACT)   return_flag = go_to(robot_driver_1, robot_driver_2, desired_pose::RETRACT);
+    else if (desired_pose_id == desired_pose::PACKAGING) return_flag = go_to(robot_driver_1, robot_driver_2, desired_pose::PACKAGING);
     else return 0;
 
     if (return_flag != 0) return 0;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
-    if (!robot_driver.is_initialized()) robot_driver.initialize(robot_model_id, environment, id);
-    if (!robot_driver.is_initialized())
+    if (!robot_driver_1.is_initialized()) robot_driver_1.initialize(robot_model_id, environment, robot_id::KINOVA_GEN3_1);
+    if (!robot_driver_1.is_initialized())
     {
-        printf("Robot is not initialized\n");
+        printf("Robot 1 is not initialized\n");
         return 0;
     }
 
-    int number_of_segments = robot_driver.get_robot_model().getNrOfSegments();
-    int number_of_joints   = robot_driver.get_robot_model().getNrOfJoints();
-    assert(JOINTS == number_of_segments);
-    state_specification motion(number_of_joints, number_of_segments, number_of_segments + 1, NUMBER_OF_CONSTRAINTS);
-
-    // if (robot_driver.stop_robot_motion() == -1) return 0;
-
-    // rotate_joint(robot_driver, 0, 0.1);
-    // robot_driver.get_joint_positions(motion.q);
-    // robot_driver.get_joint_velocities(motion.qd);
-    // std::cout << motion.q << std::endl;
-    // return 0;
-
-    // run_test(robot_driver); return 0;
-
-    //loop rate in Hz
-    int rate_hz = 700;
-    dynamics_controller controller(&robot_driver, rate_hz, maintain_primary_1khz_frequency, compensate_gravity);
-
-    int initial_result = define_task(&controller);
-    if (initial_result != 0) return -1;
-
-    if (desired_task_model == task_model::full_pose) 
+    if (!robot_driver_2.is_initialized()) robot_driver_2.initialize(robot_model_id, environment, robot_id::KINOVA_GEN3_2);
+    if (!robot_driver_2.is_initialized())
     {
-        controller.set_parameters(time_horizon_amplitude, abag_error_type, 
-                                  max_command, error_alpha,
-                                  bias_threshold, bias_step, gain_threshold,
-                                  gain_step, min_bias_sat, min_command_sat,
-                                  null_space_abag_parameters, compensation_parameters,
-                                  STOP_MOTION_ERROR_ALPHA,
-                                  STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
-    }
-    else if (desired_task_model == task_model::moveGuarded)
-    {
-        controller.set_parameters(time_horizon_amplitude, abag_error_type, 
-                                  max_command, error_alpha_1,
-                                  bias_threshold_1, bias_step_1, gain_threshold_1,
-                                  gain_step_1, min_bias_sat, min_command_sat,
-                                  null_space_abag_parameters, compensation_parameters,
-                                  STOP_MOTION_ERROR_ALPHA,
-                                  STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
-    }
-    else if (desired_task_model == task_model::moveTo_follow_path)
-    {
-        controller.set_parameters(time_horizon_amplitude, abag_error_type, 
-                                  max_command, error_alpha_3,
-                                  bias_threshold_3, bias_step_3, gain_threshold_3,
-                                  gain_step_3, min_bias_sat, min_command_sat,
-                                  null_space_abag_parameters, compensation_parameters,
-                                  STOP_MOTION_ERROR_ALPHA,
-                                  STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
-    }
-    else if (desired_task_model == task_model::moveTo_weight_compensation)
-    {
-        controller.set_parameters(time_horizon_amplitude, abag_error_type, 
-                                  max_command, error_alpha_4,
-                                  bias_threshold_4, bias_step_4, gain_threshold_4,
-                                  gain_step_4, min_bias_sat, min_command_sat,
-                                  null_space_abag_parameters, compensation_parameters,
-                                  STOP_MOTION_ERROR_ALPHA,
-                                  STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
-    }
-    else
-    {
-        controller.set_parameters(time_horizon_amplitude, abag_error_type, 
-                                  max_command, error_alpha_2,
-                                  bias_threshold_2, bias_step_2, gain_threshold_2,
-                                  gain_step_2, min_bias_sat, min_command_sat,
-                                  null_space_abag_parameters, compensation_parameters,
-                                  STOP_MOTION_ERROR_ALPHA,
-                                  STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+        printf("Robot 2 is not initialized\n");
+        return 0;
     }
 
-    initial_result = controller.initialize(desired_control_mode, 
-                                           desired_dynamics_interface,
-                                           log_data,
-                                           motion_profile_id);
-    if (initial_result != 0) return -1;
+    run_test(robot_driver_1, robot_driver_2); return 0;
 
-    controller.control();
+    robot_driver_1.deinitialize();
+    robot_driver_2.deinitialize();
 
-    robot_driver.deinitialize();
 
-    return_flag = go_to(robot_driver, desired_pose::RETRACT);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    return_flag = go_to(robot_driver_1, robot_driver_2, desired_pose::RETRACT);
     return 0;
 }
