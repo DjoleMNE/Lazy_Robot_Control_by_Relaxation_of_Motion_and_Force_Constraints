@@ -1047,7 +1047,7 @@ void dynamics_controller::define_desired_ee_pose(
     full_pose_task_.null_space_force_direction = KDL::Vector::Zero();
     full_pose_task_.null_space_tolerance       = null_space_tolerance;
 
-    desired_task_model_                       = task_model::full_pose;
+    desired_task_model_                        = task_model::full_pose;
     transform_drivers_          = false;
     transform_force_drivers_    = false;
     compute_null_space_command_ = control_null_space;
@@ -2027,28 +2027,6 @@ int dynamics_controller::evaluate_dynamics()
 
     this->hd_solver_->get_control_torque(robot_state_.control_torque);
 
-    // this->hd_solver_->get_transformed_link_acceleration(robot_state_.frame_acceleration);
-    
-    // Print computed state in Debug mode
-// #ifndef NDEBUG
-        // std::cout << "\nComputed Cartesian state:" << std::endl;
-
-        // std::cout << "Frame ACC" << '\n';
-        // for (size_t i = 0; i < NUM_OF_SEGMENTS_ + 1; i++)
-        //     std::cout << robot_state_.frame_acceleration[i] << '\n';
-
-        // std::cout << "End-effector Position:   " 
-        //       << robot_state_.frame_pose[END_EFF_].p  << std::endl;
-
-        // std::cout << "\nComputed Joint state:          " << std::endl;
-        // std::cout << "Joint torque:  " << robot_state_.control_torque << std::endl;
-        // std::cout << "Joint acc:     " << robot_state_.qdd << std::endl;
-// #endif 
-
-// #ifdef NDEBUG
-        // std::cout << "Joint torque:  " << robot_state_.control_torque << std::endl;
-// #endif
-
     return hd_solver_result;
 }
 
@@ -2247,6 +2225,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
     }
 
     KDL::SetToZero(robot_state_.feedforward_torque);
+    KDL::SetToZero(desired_state_.qd);
 
     // First make sure that the robot is not moving
     if (stop_robot_motion(true, false) == -1)
