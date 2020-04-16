@@ -194,6 +194,10 @@ void dynamics_controller::print_settings_info()
             printf("Control Full 6D Pose\n");
             break;
 
+        case task_model::gravity_compensation:
+            printf("Only compensate the gravity\n");
+            break;
+
         case task_model::moveGuarded:
             printf("moveGuarded\n");
             break;
@@ -1055,6 +1059,18 @@ void dynamics_controller::define_desired_ee_pose(
     compensate_unknown_weight_  = false;
 }
 
+void dynamics_controller::define_gravity_compensation_task(const double task_time_limit_sec)
+{
+    gravity_compensation_task_.time_limit = task_time_limit_sec;
+    desired_task_model_                   = task_model::gravity_compensation;
+    transform_drivers_                    = false;
+    transform_force_drivers_              = false;
+    compute_null_space_command_           = false;
+    compensate_unknown_weight_            = false;
+    abag_error_vector_.setZero();
+    KDL::SetToZero(cart_force_command_[END_EFF_]);
+}
+
 // Define Cartesian Acceleration task on the end-effector - Public Method
 void dynamics_controller::define_ee_acc_constraint(
                             const std::vector<bool> &constraint_direction,
@@ -1172,7 +1188,7 @@ int dynamics_controller::enforce_loop_frequency(const int dt)
     If the computed commands are not safe, exit the program.
 */
 int dynamics_controller::apply_joint_control_commands(const bool bypass_safeties)
-{ 
+{
     /*
         Safety controller checks if the commands are over the limits.
         If yes: stop the robot motion
@@ -1733,6 +1749,16 @@ void dynamics_controller::compute_full_pose_task_error()
 }
 
 /**
+ * For Gravity Compensation task, an error does not exist.
+ * This is a pure feedforward control task.
+ * Here, we only monitor task's time-threshold.
+*/
+void dynamics_controller::compute_gravity_compensation_task_error()
+{
+    fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
+}
+
+/**
  * Compute the general control error. 
  * Internally an error function will be called for each selected task
 */
@@ -1762,6 +1788,10 @@ void dynamics_controller::compute_control_error()
 
         case task_model::full_pose:
             compute_full_pose_task_error(); 
+            break;
+
+        case task_model::gravity_compensation:
+            compute_gravity_compensation_task_error(); 
             break;
 
         default:
@@ -2035,8 +2065,9 @@ int dynamics_controller::compute_gravity_compensation_control_commands()
     int id_solver_result = this->id_solver_->CartToJnt(robot_state_.q, zero_joint_array_, zero_joint_array_, zero_wrenches_, gravity_torque_);
     if (id_solver_result != 0) return id_solver_result;
     
-    robot_state_.control_torque.data = robot_state_.control_torque.data + gravity_torque_.data;
-    
+    if (desired_task_model_ != task_model::gravity_compensation) robot_state_.control_torque.data = robot_state_.control_torque.data + gravity_torque_.data;
+    else robot_state_.control_torque.data = gravity_torque_.data;
+
     for (int j = 0; j < NUM_OF_JOINTS_; j++)
     {
         if      (robot_state_.control_torque(j) >=  JOINT_TORQUE_LIMITS_[j]) robot_state_.control_torque(j) =  JOINT_TORQUE_LIMITS_[j] - 0.001;
@@ -2160,7 +2191,11 @@ int dynamics_controller::initialize(const int desired_control_mode,
         case task_model::full_pose:
             fsm_result_ = fsm_.initialize_with_full_pose(full_pose_task_, motion_profile);
             break;
-            
+
+        case task_model::gravity_compensation:
+            fsm_result_ = fsm_.initialize_with_gravity_compensation(gravity_compensation_task_);
+            break;
+ 
         default:
             printf("Unsupported task model\n");
             return -1;
@@ -2227,13 +2262,6 @@ int dynamics_controller::initialize(const int desired_control_mode,
     KDL::SetToZero(robot_state_.feedforward_torque);
     KDL::SetToZero(desired_state_.qd);
 
-    // First make sure that the robot is not moving
-    if (stop_robot_motion(true, false) == -1)
-    {
-        printf("Error in applying the joint control commands! \n");
-        return -1;
-    }
-
     /* 
         Get sensor data from the robot driver or if simulation is on, 
         replace current state with the integrated joint velocities and positions.
@@ -2241,11 +2269,18 @@ int dynamics_controller::initialize(const int desired_control_mode,
     int state_update_result = update_current_state();  
     if (state_update_result != 0)
     {
-        // First make sure that the robot is not moving
+        // Make sure that the robot is locked (freezed)
         stop_robot_motion(false, true);
 
         deinitialize();
         printf("Warning: FK solver returned an error! %d \n", state_update_result);
+        return -1;
+    }
+
+    // First make sure that the robot is not moving
+    if (stop_robot_motion(true, false) == -1)
+    {
+        printf("Error in applying the stop joint control commands! \n");
         return -1;
     }
 
@@ -2262,7 +2297,7 @@ int dynamics_controller::update_commands()
     int status = 0;
 
     // Cartesian Control Commands computed by the independent ABAG controllers
-    compute_cart_control_commands();
+    if (desired_task_model_ != task_model::gravity_compensation) compute_cart_control_commands();
     if (compensate_unknown_weight_)
     {
         status = compute_weight_compensation_control_commands();
@@ -2277,19 +2312,22 @@ int dynamics_controller::update_commands()
     }
 
     // Evaluate robot dynamics using the Vereshchagin HD solver
-    status = evaluate_dynamics();
-    if (status != 0)
+    if (desired_task_model_ != task_model::gravity_compensation)
     {
-        // First make sure that the robot is not moving
-        stop_robot_motion(true, true);
+        status = evaluate_dynamics();
+        if (status != 0)
+        {
+            // First make sure that the robot is not moving
+            stop_robot_motion(true, true);
 
-        deinitialize();
-        printf("WARNING: Hybrid Dynamics Solver returned error: %d. Stopping the robot!", status);
-        return -1;
+            deinitialize();
+            printf("WARNING: Hybrid Dynamics Solver returned error: %d. Stopping the robot!", status);
+            return -1;
+        }
     }
 
     // Compute necessary torques for compensating gravity, using the RNE ID solver
-    if (COMPENSATE_GRAVITY_) 
+    if (COMPENSATE_GRAVITY_ || desired_task_model_ == task_model::gravity_compensation) 
     {
         status = compute_gravity_compensation_control_commands();
         if (status != 0)

@@ -650,6 +650,10 @@ int define_task(dynamics_controller *dyn_controller)
                                                    tube_tolerances[7]); // Null space tolerance
             break;
 
+        case task_model::gravity_compensation:
+            dyn_controller->define_gravity_compensation_task(task_time_limit_sec);
+            break;
+
         default:
             assert(("Unsupported task model", false));
             return -1;
@@ -673,8 +677,8 @@ int main(int argc, char **argv)
     id                   = robot_id::KINOVA_GEN3_1;
     desired_pose_id      = desired_pose::HOME;
     desired_control_mode = control_mode::TORQUE;
-    desired_task_model   = task_model::moveTo;
-    // desired_task_model   = task_model::full_pose;
+    // desired_task_model   = task_model::moveTo;
+    desired_task_model   = task_model::gravity_compensation;
     path_type            = path_types::SINE_PATH;
     motion_profile_id    = m_profile::CONSTANT;
     task_time_limit_sec  = 7.5;
@@ -692,7 +696,7 @@ int main(int argc, char **argv)
     else if (desired_pose_id == desired_pose::PACKAGING) return_flag = go_to(robot_driver, desired_pose::PACKAGING);
     else return 0;
 
-    if (return_flag != 0) return 0;
+    // if (return_flag != 0) return 0;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
     if (!robot_driver.is_initialized()) robot_driver.initialize(robot_model_id, environment, id);
@@ -768,12 +772,24 @@ int main(int argc, char **argv)
                                   STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
                                   STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
     }
-    else
+    else if (desired_task_model == task_model::moveTo)
     {
         controller.set_parameters(time_horizon_amplitude, abag_error_type, 
                                   max_command, error_alpha_2,
                                   bias_threshold_2, bias_step_2, gain_threshold_2,
                                   gain_step_2, min_bias_sat, min_command_sat,
+                                  null_space_abag_parameters, compensation_parameters,
+                                  STOP_MOTION_ERROR_ALPHA,
+                                  STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+    }
+
+    else if (desired_task_model == task_model::gravity_compensation)
+    {
+        controller.set_parameters(time_horizon_amplitude, abag_error_type, 
+                                  max_command, error_alpha,
+                                  bias_threshold, bias_step, gain_threshold,
+                                  gain_step, min_bias_sat, min_command_sat,
                                   null_space_abag_parameters, compensation_parameters,
                                   STOP_MOTION_ERROR_ALPHA,
                                   STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,

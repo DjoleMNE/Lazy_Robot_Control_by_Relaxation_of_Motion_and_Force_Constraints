@@ -47,7 +47,8 @@ enum task_model
   moveTo_follow_path = 3,
   moveConstrained = 4,
   moveConstrained_follow_path = 5,
-  moveTo_weight_compensation = 6
+  moveTo_weight_compensation = 6,
+  gravity_compensation = 7
 };
 
 enum control_status
@@ -145,6 +146,11 @@ struct full_pose_task
     double time_limit = 0.0;
 };
 
+struct gravity_compensation_task
+{
+    double time_limit = 0.0;
+};
+
 class finite_state_machine
 {
     public:
@@ -160,6 +166,7 @@ class finite_state_machine
         int initialize_with_moveTo(const moveTo_task &task, const int motion_profile);
         int initialize_with_moveGuarded(const moveGuarded_task &task, const int motion_profile);
         int initialize_with_full_pose(const full_pose_task &task, const int motion_profile);
+        int initialize_with_gravity_compensation(const gravity_compensation_task &task);
         int update_weight_compensation_task_status(const int loop_iteration_count,
                                                    const Eigen::VectorXd &bias_signal,
                                                    const Eigen::VectorXd &gain_signal,
@@ -192,11 +199,13 @@ class finite_state_machine
         moveGuarded_task moveGuarded_task_;
         moveTo_weight_compensation_task moveTo_weight_compensation_task_;
         full_pose_task full_pose_task_;
+        gravity_compensation_task gravity_compensation_task_;
         moveTo_follow_path_task moveTo_follow_path_task_;
         moveConstrained_follow_path_task moveConstrained_follow_path_task_;
         std::ofstream log_file_ext_force_, log_file_compensation_;
 
         int update_full_pose_task(state_specification &desired_state);
+        int update_gravity_compensation_task();
         int update_moveTo_task(state_specification &desired_state);
         int update_moveGuarded_task(state_specification &desired_state);
         int update_moveTo_weight_compensation_task(state_specification &desired_state);

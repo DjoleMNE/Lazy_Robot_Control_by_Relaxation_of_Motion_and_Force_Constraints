@@ -115,6 +115,14 @@ int finite_state_machine::initialize_with_full_pose(const full_pose_task &task,
     return control_status::NOMINAL;
 }
 
+int finite_state_machine::initialize_with_gravity_compensation(const gravity_compensation_task &task)
+{
+    desired_task_model_        = task_model::gravity_compensation;
+    gravity_compensation_task_ = task;
+
+    return control_status::NOMINAL;
+}
+
 int finite_state_machine::update_moveConstrained_follow_path_task(state_specification &desired_state,
                                                                   const int tube_section_count)
 {
@@ -563,6 +571,22 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
     return control_status::NOMINAL;
 }
 
+int finite_state_machine::update_gravity_compensation_task()
+{
+    if (total_control_time_sec_ > gravity_compensation_task_.time_limit) 
+    {
+        if (!time_limit_reached_)
+        {
+            printf("Time limit reached\n");
+            time_limit_reached_ = true;
+        }
+
+        return control_status::STOP_CONTROL;
+    }
+
+    return control_status::NOMINAL;
+}
+
 int finite_state_machine::update_motion_task_status(const state_specification &robot_state,
                                                     state_specification &desired_state,
                                                     const KDL::Twist &current_error,
@@ -605,7 +629,12 @@ int finite_state_machine::update_motion_task_status(const state_specification &r
             ext_wrench_ = ext_force;
             return update_full_pose_task(desired_state);
             break;
-            
+
+         case task_model::gravity_compensation:
+            ext_wrench_ = ext_force;
+            return update_gravity_compensation_task();
+            break;
+
         default:
             printf("Unsupported task model\n");
             return control_status::STOP_CONTROL;

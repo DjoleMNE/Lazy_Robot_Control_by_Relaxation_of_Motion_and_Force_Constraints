@@ -178,6 +178,8 @@ class dynamics_controller
                                 const double desired_null_space_angle,
                                 const double null_space_tolerance);
 
+    void define_gravity_compensation_task(const double task_time_limit_sec);
+
     // Methods for defining robot task via 3 interfaces exposed by Vereshchagin
     void define_ee_acc_constraint(const std::vector<bool> &constraint_direction,
                                   const std::vector<double> &cartesian_acceleration);
@@ -229,6 +231,7 @@ class dynamics_controller
     moveGuarded_task moveGuarded_task_;
     moveTo_weight_compensation_task moveTo_weight_compensation_task_;
     full_pose_task full_pose_task_;
+    gravity_compensation_task gravity_compensation_task_;
     moveTo_follow_path_task moveTo_follow_path_task_;
     moveConstrained_follow_path_task moveConstrained_follow_path_task_;
 
@@ -269,6 +272,7 @@ class dynamics_controller
     void compute_moveGuarded_task_error();
     void compute_moveTo_weight_compensation_task_error();
     void compute_full_pose_task_error();
+    void compute_gravity_compensation_task_error();
     void compute_control_error();
     void transform_force_driver();
     void transform_motion_driver();

@@ -99,8 +99,8 @@ if("${ROBOT}" STREQUAL "lwr")
 
 elseif("${ROBOT}" STREQUAL "kinova")
   add_executable(main
-    #src/main_kinova.cpp
-    src/main_dual_kinova.cpp
+    src/main_kinova.cpp
+    #src/main_dual_kinova.cpp
     src/constants.cpp
     src/kdl_eigen_conversions.cpp
     src/moving_variance.cpp
