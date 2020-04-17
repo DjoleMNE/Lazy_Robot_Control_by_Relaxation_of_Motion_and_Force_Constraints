@@ -257,13 +257,17 @@ void run_test(kinova_mediator &robot_driver)
     KDL::Chain robot_chain = robot_driver.get_robot_model();
     KDL::Wrenches zero_wrenches(robot_chain.getNrOfSegments(), KDL::Wrench::Zero());
 
-    std::shared_ptr<KDL::Solver_RNE> id_solver = std::make_shared<KDL::Solver_RNE>(robot_chain, KDL::Vector(0.0, 0.0, -9.81289),
-                                                                                   robot_driver.get_joint_inertia(), 
-                                                                                   robot_driver.get_joint_torque_limits(), true);
+    std::shared_ptr<KDL::Solver_RNE> id_solver = std::make_shared<KDL::Solver_RNE>(robot_chain, KDL::Vector(0.0, 0.0, -9.81289), robot_driver.get_joint_inertia(), robot_driver.get_joint_torque_limits(), true);
 
-    printf("Test run started\n");
+    // printf("Test run started\n");
     int return_flag = 0;
     int iteration_count = 0;
+
+    if (robot_driver.set_control_mode(control_mode::TORQUE) == -1)
+    {
+        printf("Incorrect control mode\n");
+        return;
+    }
 
     // Real-time loop
     while (timer_count < (time_duration * 1000))
@@ -272,15 +276,6 @@ void run_test(kinova_mediator &robot_driver)
 
         if (now - last > 1000)
         {
-            if (iteration_count == 0)
-            {
-                if (robot_driver.set_control_mode(control_mode::TORQUE) == -1)
-                {
-                    printf("Incorrect control mode\n");
-                    return;
-                }
-            }
-
             robot_driver.get_joint_state(jnt_array_feedback, jnt_array_feedback_2, jnt_array_feedback_3);
             // std::cout << "Pos: " << jnt_array_feedback << std::endl;
             // std::cout << "Vel: " << jnt_array_feedback_2 << std::endl;
@@ -674,7 +669,7 @@ int main(int argc, char **argv)
                                                0.001, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
     environment          = kinova_environment::SIMULATION;
     robot_model_id       = kinova_model::URDF;
-    id                   = robot_id::KINOVA_GEN3_1;
+    id                   = robot_id::KINOVA_GEN3_2;
     desired_pose_id      = desired_pose::HOME;
     desired_control_mode = control_mode::TORQUE;
     // desired_task_model   = task_model::moveTo;
@@ -696,7 +691,7 @@ int main(int argc, char **argv)
     else if (desired_pose_id == desired_pose::PACKAGING) return_flag = go_to(robot_driver, desired_pose::PACKAGING);
     else return 0;
 
-    // if (return_flag != 0) return 0;
+    if (return_flag != 0) return 0;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
     if (!robot_driver.is_initialized()) robot_driver.initialize(robot_model_id, environment, id);
@@ -795,6 +790,7 @@ int main(int argc, char **argv)
                                   STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
                                   STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
     }
+    else return 0;
 
     initial_result = controller.initialize(desired_control_mode, 
                                            desired_dynamics_interface,
