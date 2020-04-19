@@ -55,6 +55,9 @@ enum path_types
 
 // Waiting time during actions
 constexpr auto TIMEOUT_DURATION      = std::chrono::seconds{20};
+std::chrono::steady_clock::time_point loop_start_time;
+std::chrono::duration <double, std::micro> loop_interval{};
+
 const int SECOND                     = 1000000;
 const int MILLISECOND                = 1000;
 const int JOINTS                     = 7;
@@ -237,13 +240,31 @@ auto lambda_fct_callback = [](const Kinova::Api::Error &err, const Kinova::Api::
     std::cout << serialized_data << std::endl << std::endl;
 };
 
+//Make sure that the control loop runs exactly with the specified frequency
+int enforce_loop_frequency(const int dt)
+{
+    loop_interval = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time);
+
+    if (loop_interval < std::chrono::microseconds(dt)) // Loop is sufficiently fast
+    {
+        while (loop_interval < std::chrono::microseconds(dt - 1))
+            loop_interval = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time);
+
+        return 0;
+    }
+    else return -1; //Loop is too slow
+}
+
 void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
 {
-    double time_duration = 10.0f; // Duration of the example (seconds)
-    int timer_count = 0;
-    int64_t now = 0;
-    int64_t last = 0;
+    double total_time_sec = 0.0;
+    const int RATE_HZ_ = 1000;
+    const int DT_MICRO_ = SECOND / RATE_HZ_;
+    const double DT_SEC_ = 1.0 / static_cast<double>(RATE_HZ_);
     int id_solver_result = 0;
+    int return_flag = 0;
+    int iteration_count = 0;
+    // double loop_time = 0.0;
     
     KDL::JntArray zero_joint_array(7), jnt_array_command_1(7), jnt_array_feedback_1_1(7), jnt_array_feedback_1_2(7), jnt_array_feedback_1_3(7),
                                        jnt_array_command_2(7), jnt_array_feedback_2_1(7), jnt_array_feedback_2_2(7), jnt_array_feedback_2_3(7);
@@ -256,9 +277,6 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
     std::shared_ptr<KDL::Solver_RNE> id_solver_1 = std::make_shared<KDL::Solver_RNE>(robot_chain_1, KDL::Vector(0.0, 0.0, -9.81289), robot_driver_1.get_joint_inertia(), robot_driver_1.get_joint_torque_limits(), true);
     std::shared_ptr<KDL::Solver_RNE> id_solver_2 = std::make_shared<KDL::Solver_RNE>(robot_chain_2, KDL::Vector(0.0, 0.0, -9.81289), robot_driver_2.get_joint_inertia(), robot_driver_2.get_joint_torque_limits(), true);
 
-    // printf("Test run started\n");
-    int return_flag = 0;
-    int iteration_count = 0;
 
     if (robot_driver_1.set_control_mode(control_mode::TORQUE) == -1)
     {
@@ -272,59 +290,63 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
         return;
     }
 
+    // printf("Test run started\n");
     // Real-time loop
-    while (timer_count < (time_duration * 1000))
+    while (total_time_sec < task_time_limit_sec)
     {
-        now = GetTickUs();
+        loop_start_time = std::chrono::steady_clock::now();
+        iteration_count++;
+        total_time_sec = iteration_count * DT_SEC_;
 
-        if (now - last > 1000)
+        robot_driver_1.get_joint_state(jnt_array_feedback_1_1, jnt_array_feedback_1_2, jnt_array_feedback_1_3);
+        robot_driver_2.get_joint_state(jnt_array_feedback_2_1, jnt_array_feedback_2_2, jnt_array_feedback_2_3);
+        // std::cout << "Pos: " << jnt_array_feedback << std::endl;
+        // std::cout << "Vel: " << jnt_array_feedback_2 << std::endl;
+        // std::cout << "Torque: " << jnt_array_feedback_3 << std::endl;
+        // std::cout << std::endl;
+
+        // Compute dynamics
+        id_solver_result = id_solver_1->CartToJnt(jnt_array_feedback_1_1, zero_joint_array, zero_joint_array, zero_wrenches_1, jnt_array_command_1);
+        if (id_solver_result != 0)
         {
-            robot_driver_1.get_joint_state(jnt_array_feedback_1_1, jnt_array_feedback_1_2, jnt_array_feedback_1_3);
-            robot_driver_2.get_joint_state(jnt_array_feedback_2_1, jnt_array_feedback_2_2, jnt_array_feedback_2_3);
-            // std::cout << "Pos: " << jnt_array_feedback << std::endl;
-            // std::cout << "Vel: " << jnt_array_feedback_2 << std::endl;
-            // std::cout << "Torque: " << jnt_array_feedback_3 << std::endl;
-            // std::cout << std::endl;
-
-            // Compute dynamics
-            id_solver_result = id_solver_1->CartToJnt(jnt_array_feedback_1_1, zero_joint_array, zero_joint_array, zero_wrenches_1, jnt_array_command_1);
-            if (id_solver_result != 0)
-            {
-                robot_driver_1.stop_robot_motion();
-                printf("Robot stoped: error in dynamics 1\n");
-                return;
-            }
-
-            id_solver_result = id_solver_2->CartToJnt(jnt_array_feedback_2_1, zero_joint_array, zero_joint_array, zero_wrenches_2, jnt_array_command_2);
-            if (id_solver_result != 0)
-            {
-                robot_driver_2.stop_robot_motion();
-                printf("Robot stoped: error in dynamics 2\n");
-                return;
-            }
-
-            // Set control commands
-            return_flag = robot_driver_1.set_joint_torques(jnt_array_command_1);
-            if (return_flag == -1)
-            {
-                robot_driver_1.stop_robot_motion();
-                printf("Robot stoped: error in control 1\n");
-                return;
-            }
-
-            return_flag = robot_driver_2.set_joint_torques(jnt_array_command_2);
-            if (return_flag == -1)
-            {
-                robot_driver_2.stop_robot_motion();
-                printf("Robot stoped: error in control 2\n");
-                return;
-            }
-
-            timer_count++;
-            last = GetTickUs();
+            robot_driver_1.stop_robot_motion();
+            printf("Robot stoped: error in dynamics 1\n");
+            return;
         }
 
-        iteration_count++;
+        id_solver_result = id_solver_2->CartToJnt(jnt_array_feedback_2_1, zero_joint_array, zero_joint_array, zero_wrenches_2, jnt_array_command_2);
+        if (id_solver_result != 0)
+        {
+            robot_driver_2.stop_robot_motion();
+            printf("Robot stoped: error in dynamics 2\n");
+            return;
+        }
+
+        // Set control commands
+        return_flag = robot_driver_1.set_joint_torques(jnt_array_command_1);
+        if (return_flag == -1)
+        {
+            robot_driver_1.stop_robot_motion();
+            printf("Robot stoped: error in control 1\n");
+            return;
+        }
+
+        return_flag = robot_driver_2.set_joint_torques(jnt_array_command_2);
+        if (return_flag == -1)
+        {
+            robot_driver_2.stop_robot_motion();
+            printf("Robot stoped: error in control 2\n");
+            return;
+        }
+
+        enforce_loop_frequency(DT_MICRO_);
+
+        // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time).count();
+        // if (iteration_count == 2000) 
+        // {
+        //     printf("%f\n", loop_time / 2000.0);
+        //     break;
+        // }
     }
 
     robot_driver_1.stop_robot_motion();
