@@ -256,12 +256,6 @@ void run_test(kinova_mediator &robot_driver)
     int return_flag = 0;
     int iteration_count = 0;
 
-    if (robot_driver.set_control_mode(control_mode::TORQUE) == -1)
-    {
-        printf("Incorrect control mode\n");
-        return;
-    }
-
     // Real-time loop
     while (timer_count < (time_duration * 1000))
     {
@@ -278,6 +272,15 @@ void run_test(kinova_mediator &robot_driver)
             id_solver_result = id_solver->CartToJnt(jnt_array_feedback, zero_joint_array, zero_joint_array, zero_wrenches, jnt_array_command);
             if (id_solver_result != 0) return;
 
+            if (iteration_count == 0)
+            {
+                if (robot_driver.set_control_mode(control_mode::TORQUE) == -1)
+                {
+                    printf("Incorrect control mode\n");
+                    return;
+                }
+            }
+
             return_flag = robot_driver.set_joint_torques(jnt_array_command);
             // std::cout <<  "Torque command: "<< jnt_array_command << std::endl;
 
@@ -290,8 +293,8 @@ void run_test(kinova_mediator &robot_driver)
 
             timer_count++;
             last = GetTickUs();
+            iteration_count++;
         }
-        iteration_count++;
     }
 
     robot_driver.stop_robot_motion();

@@ -80,11 +80,6 @@ class dynamics_controller
              const double time_passed_sec,
              const int loop_iteration);
 
-    /**
-     * Performs single update of control commands and dynamics computations
-    */
-    int update_commands();
-
     void set_parameters(const double damper_amplitude,
                         const int abag_error_type,
                         const Eigen::VectorXd &max_command,
@@ -107,8 +102,10 @@ class dynamics_controller
                    const bool store_control_data,
                    const int motion_profile);
     void deinitialize();
-    int stop_robot_motion(const bool use_torque_control,
-                          const bool engage_lock);
+
+    int stop_robot_motion(const bool use_torque_control, const bool engage_lock);
+    int apply_joint_control_commands(const bool bypass_safeties);
+
     void write_to_file();
 
     void reset_desired_state();
@@ -256,6 +253,8 @@ class dynamics_controller
 
     const Eigen::IOFormat WRITE_FORMAT_STOP_MOTION;
 
+    int update_commands(); //Performs single update of control commands and dynamics computations
+
     int check_fsm_status();
     int update_current_state();
     void print_settings_info();
@@ -280,7 +279,6 @@ class dynamics_controller
     KDL::Twist finite_displacement_twist(const state_specification &state_a, 
                                          const state_specification &state_b);
     double kinetic_energy(const KDL::Twist &twist, const int segment_index);
-    int apply_joint_control_commands(const bool bypass_safeties);
     int evaluate_dynamics();
     int compute_gravity_compensation_control_commands();
     int enforce_loop_frequency(const int dt);

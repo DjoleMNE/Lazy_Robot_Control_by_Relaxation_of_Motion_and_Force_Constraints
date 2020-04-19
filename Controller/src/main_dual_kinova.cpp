@@ -309,7 +309,7 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
             return;
         }
 
-        if (iteration_count == 0)
+        if (iteration_count == 1)
         {
             if (robot_driver_1.set_control_mode(control_mode::TORQUE) == -1)
             {
