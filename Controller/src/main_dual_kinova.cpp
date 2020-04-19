@@ -732,7 +732,6 @@ int define_task(dynamics_controller *dyn_controller)
 int main(int argc, char **argv)
 {
     // printf("kinova MAIN Started \n");
-    // const bool maintain_primary_1khz_frequency = false;
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                              false, false, false}; // Angular
     tube_tolerances      = std::vector<double>{0.01, 0.02, 0.02,

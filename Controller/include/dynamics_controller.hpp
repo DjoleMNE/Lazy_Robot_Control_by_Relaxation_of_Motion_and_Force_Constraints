@@ -63,7 +63,6 @@ class dynamics_controller
     
     dynamics_controller(robot_mediator *robot_driver, 
                         const int rate_hz,
-                        const bool maintain_primary_1khz_frequency,
                         const bool compensate_gravity);
     ~dynamics_controller(){};
     
@@ -190,7 +189,6 @@ class dynamics_controller
     const int RATE_HZ_;
     const long DT_MICRO_, DT_1KHZ_MICRO_;
     const double DT_SEC_, DT_STOPPING_MICRO_;
-    const bool maintain_primary_1khz_frequency_;
 
     std::ofstream log_file_cart_, log_file_joint_, log_file_predictions_, log_file_null_space_, log_file_cart_base_, log_file_stop_motion_;
     bool store_control_data_;
@@ -203,7 +201,6 @@ class dynamics_controller
     } desired_control_mode_;
 
     std::chrono::steady_clock::time_point loop_start_time_;
-    std::chrono::steady_clock::time_point loop_previous_time_;
     std::chrono::duration <double, std::micro> loop_interval_{};
     double total_time_sec_;
     int loop_iteration_count_, stop_loop_iteration_count_, steady_stop_iteration_count_,

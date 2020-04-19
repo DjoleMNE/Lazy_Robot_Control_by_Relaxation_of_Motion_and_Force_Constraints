@@ -29,16 +29,14 @@ const double MIN_NORM = 1e-3;
 
 dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
                                          const int rate_hz,
-                                         const bool maintain_primary_1khz_frequency,
                                          const bool compensate_gravity):
     RATE_HZ_(rate_hz),
     DT_MICRO_(SECOND / RATE_HZ_), DT_1KHZ_MICRO_(SECOND / 1000), // Time period defined in microseconds: 1s = 1 000 000us
-    DT_SEC_(maintain_primary_1khz_frequency? (1.0 / static_cast<double>(1000)) : (1.0 / static_cast<double>(RATE_HZ_))),
+    DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
     DT_STOPPING_MICRO_(static_cast<double>(SECOND) / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ),
-    maintain_primary_1khz_frequency_(maintain_primary_1khz_frequency), // 1KHz Comunication required by certain robots
     store_control_data_(false), desired_dynamics_interface_(dynamics_interface::CART_ACCELERATION), 
     desired_task_model_(task_model::full_pose),
-    loop_start_time_(std::chrono::steady_clock::now()), loop_previous_time_(std::chrono::steady_clock::now()),
+    loop_start_time_(std::chrono::steady_clock::now()),
     total_time_sec_(0.0), loop_iteration_count_(0), stop_loop_iteration_count_(0),
     steady_stop_iteration_count_(0), feedforward_loop_count_(0), control_loop_delay_count_(0),
     robot_chain_(robot_driver->get_robot_model()),
@@ -143,9 +141,7 @@ void dynamics_controller::print_settings_info()
     #endif
     
     printf("Selected controller settings:\n");
-    printf("Control Loop Frequency: %d Hz -> ", RATE_HZ_);
-    if (maintain_primary_1khz_frequency_) printf("Primary 1KHz Loop Frequency Enabled\n");
-    else printf("Primary 1KHz Loop Frequency Disabled\n");
+    printf("Control Loop Frequency: %d Hz", RATE_HZ_);
 
     printf("Joint Interface: ");
     switch(desired_control_mode_.interface) 
@@ -2393,6 +2389,9 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
 
     // Save final commands
     tau_output = robot_state_.control_torque.data;
+
+    // Log control data for visualization and debuging
+    if (store_control_data_) write_to_file();
     return 0;
 }
 
@@ -2400,11 +2399,10 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
 int dynamics_controller::control()
 {
     // double loop_time = 0.0;
-    int ctrl_status = 0;
     KDL::JntArray state_q(NUM_OF_JOINTS_), state_qd(NUM_OF_JOINTS_), ctrl_torque(NUM_OF_JOINTS_);
     KDL::Wrench ext_force;
 
-    loop_previous_time_ = std::chrono::steady_clock::now();
+    // One loop frequency for both communication and dynamics-command update
     while (1)
     {
         // Save current time point
@@ -2415,103 +2413,30 @@ int dynamics_controller::control()
         //Get current robot state from the joint sensors: velocities and angles
         safety_control_.get_current_state(robot_state_);
 
-        // One loop frequency for both communication and dynamics-command update
-        if (!maintain_primary_1khz_frequency_)
+        state_q   = robot_state_.q;
+        state_qd  = robot_state_.qd;
+        ext_force = ext_wrench_;
+
+        // Make one control iteration (step) -> Update control commands
+        if (step(state_q, state_qd, ext_force, ctrl_torque.data, total_time_sec_, loop_iteration_count_) != 0) return -1;
+
+        // Apply joint commands using safe control interface.
+        if (apply_joint_control_commands(false) == -1)
         {
-            state_q   = robot_state_.q;
-            state_qd  = robot_state_.qd;
-            ext_force = ext_wrench_;
+            // First make sure that the robot is not moving
+            stop_robot_motion(true, true);
 
-            // Make one control iteration (step) -> Update control commands
-            if (step(state_q, state_qd, ext_force, ctrl_torque.data, total_time_sec_, loop_iteration_count_) != 0) return -1;
-
-            // Log control data for visualization and debuging
-            if (store_control_data_) write_to_file();
-
-            // Apply joint commands using safe control interface.
-            if (apply_joint_control_commands(false) == -1)
-            {
-                // First make sure that the robot is not moving
-                stop_robot_motion(true, true);
-
-                deinitialize();
-                printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
-                return -1;
-            }
-
-            #ifdef NDEBUG
-                if (enforce_loop_frequency(DT_MICRO_) != 0) control_loop_delay_count_++;
-            #endif
-            #ifndef NDEBUG
-                enforce_loop_frequency(DT_MICRO_);
-            #endif
+            deinitialize();
+            printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
+            return -1;
         }
 
-        /**
-         * One primary 1KHz loop frequency for communication with the robot
-         * and secondary loop frequency for dynamics computations and control command update
-        */
-        else
-        {
-            // Get Cartesian poses and velocities
-            ctrl_status = fk_vereshchagin_.JntToCart(robot_state_.q,
-                                                     robot_state_.qd,
-                                                     robot_state_.frame_pose,
-                                                     robot_state_.frame_velocity);
-            if (ctrl_status != 0)
-            {
-                // First make sure that the robot is not moving
-                stop_robot_motion(true, true);
-
-                deinitialize();
-                printf("Warning: FK solver returned an error! %d \n", ctrl_status);
-                return -1;
-            }
-            // Save the state expressed in base frame
-            robot_state_base_.frame_pose = robot_state_.frame_pose;
-
-            compute_control_error();
-
-            if (check_fsm_status() == -1)
-            {
-                // First make sure that the robot is not moving
-                stop_robot_motion(true, true);
-
-                deinitialize();
-                return -1;
-            }
-
-            // If the user-defined (secondary) time-step has passed, update the control commands
-            loop_interval_ = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_previous_time_);
-            if (loop_interval_ >= std::chrono::microseconds(DT_MICRO_))
-            {
-                // Update control commands
-                if (update_commands() != 0) return -1;
-                loop_previous_time_ = std::chrono::steady_clock::now();
-            }
-
-            // Log control data for visualization and debuging
-            if (store_control_data_) write_to_file();
-
-            // Apply joint commands using safe control interface.
-            if (apply_joint_control_commands(false) == -1)
-            {
-                // First make sure that the robot is not moving
-                stop_robot_motion(true, true);
-
-                deinitialize();
-                printf("WARNING: Computed commands are not safe. Stopping the robot!\n");
-                return -1;
-            }
-
-            // Make sure that the loop is always running with the same frequency
-            #ifdef NDEBUG
-                if (enforce_loop_frequency(DT_1KHZ_MICRO_) != 0) control_loop_delay_count_++;
-            #endif
-            #ifndef NDEBUG
-                enforce_loop_frequency(DT_1KHZ_MICRO_);
-            #endif
-        }
+        #ifdef NDEBUG
+            if (enforce_loop_frequency(DT_MICRO_) != 0) control_loop_delay_count_++;
+        #endif
+        #ifndef NDEBUG
+            enforce_loop_frequency(DT_MICRO_);
+        #endif
 
         // Testing loop time
         // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_).count();
