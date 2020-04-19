@@ -246,13 +246,6 @@ void run_test(kinova_mediator &robot_driver)
     int id_solver_result = 0;
     
     KDL::JntArray jnt_array_command(7), jnt_array_feedback(7), jnt_array_feedback_2(7), jnt_array_feedback_3(7), zero_joint_array(7);
-    jnt_array_command(0) = 0.0;
-    jnt_array_command(1) = 0.0;
-    jnt_array_command(2) = 0.0;
-    jnt_array_command(3) = 0.0;
-    jnt_array_command(4) = 0.0;
-    jnt_array_command(5) = 0.0;
-    jnt_array_command(6) = 0.5;
 
     KDL::Chain robot_chain = robot_driver.get_robot_model();
     KDL::Wrenches zero_wrenches(robot_chain.getNrOfSegments(), KDL::Wrench::Zero());
@@ -282,8 +275,7 @@ void run_test(kinova_mediator &robot_driver)
             // std::cout << "Torque: " << jnt_array_feedback_3 << std::endl;
             // std::cout << std::endl;
 
-            id_solver_result = id_solver->CartToJnt(jnt_array_feedback, zero_joint_array, zero_joint_array, 
-                                                    zero_wrenches, jnt_array_command);
+            id_solver_result = id_solver->CartToJnt(jnt_array_feedback, zero_joint_array, zero_joint_array, zero_wrenches, jnt_array_command);
             if (id_solver_result != 0) return;
 
             return_flag = robot_driver.set_joint_torques(jnt_array_command);
@@ -717,7 +709,7 @@ int main(int argc, char **argv)
     // run_test(robot_driver); return 0;
 
     //loop rate in Hz
-    int rate_hz = 700;
+    int rate_hz = 500;
     dynamics_controller controller(&robot_driver, rate_hz, maintain_primary_1khz_frequency, compensate_gravity);
 
     int initial_result = define_task(&controller);
@@ -799,6 +791,7 @@ int main(int argc, char **argv)
     if (initial_result != 0) return -1;
 
     controller.control();
+    robot_driver.stop_robot_motion();
 
     robot_driver.deinitialize();
 

@@ -2515,9 +2515,9 @@ int dynamics_controller::control()
 
         // Testing loop time
         // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time_).count();
-        // if (loop_iteration_count_ == 100) 
+        // if (loop_iteration_count_ == 2000) 
         // {
-        //     printf("%f\n", loop_time / 100.0);
+        //     printf("%f\n", loop_time / 2000.0);
         //     return 0;
         // }
     }
