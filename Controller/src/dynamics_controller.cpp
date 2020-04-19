@@ -1012,7 +1012,7 @@ void dynamics_controller::define_moveGuarded_task(
 }
 
 
-void dynamics_controller::define_desired_ee_pose(
+void dynamics_controller::define_full_pose_task(
                             const std::vector<bool> &constraint_direction,
                             const std::vector<double> &cartesian_pose,
                             const double contact_threshold_linear,

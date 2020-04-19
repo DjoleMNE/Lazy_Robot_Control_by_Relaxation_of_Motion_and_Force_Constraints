@@ -165,14 +165,14 @@ class dynamics_controller
                                         const bool control_null_space,
                                         const double desired_null_space_angle,
                                         std::vector< std::vector<double> > &task_frame_poses);
-    void define_desired_ee_pose(const std::vector<bool> &constraint_direction,
-                                const std::vector<double> &cartesian_pose,
-                                const double contact_threshold_linear,
-                                const double contact_threshold_angular,
-                                const double task_time_limit_sec,
-                                const bool control_null_space,
-                                const double desired_null_space_angle,
-                                const double null_space_tolerance);
+    void define_full_pose_task(const std::vector<bool> &constraint_direction,
+                               const std::vector<double> &cartesian_pose,
+                               const double contact_threshold_linear,
+                               const double contact_threshold_angular,
+                               const double task_time_limit_sec,
+                               const bool control_null_space,
+                               const double desired_null_space_angle,
+                               const double null_space_tolerance);
 
     void define_gravity_compensation_task(const double task_time_limit_sec);
 

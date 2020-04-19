@@ -630,14 +630,14 @@ int define_task(dynamics_controller *dyn_controller)
             break;
 
         case task_model::full_pose:
-            dyn_controller->define_desired_ee_pose(std::vector<bool>{control_dims[0], control_dims[1], control_dims[2], // Linear
-                                                                     control_dims[3], control_dims[4], control_dims[5]}, // Angular
-                                                   desired_ee_pose,
-                                                   1.0, 0.2, //contact_threshold linear and angular
-                                                   task_time_limit_sec,
-                                                   control_null_space,
-                                                   desired_null_space_angle,
-                                                   tube_tolerances[7]); // Null space tolerance
+            dyn_controller->define_full_pose_task(std::vector<bool>{control_dims[0], control_dims[1], control_dims[2], // Linear
+                                                                    control_dims[3], control_dims[4], control_dims[5]}, // Angular
+                                                  desired_ee_pose,
+                                                  1.0, 0.2, //contact_threshold linear and angular
+                                                  task_time_limit_sec,
+                                                  control_null_space,
+                                                  desired_null_space_angle,
+                                                  tube_tolerances[7]); // Null space tolerance
             break;
 
         case task_model::gravity_compensation:
