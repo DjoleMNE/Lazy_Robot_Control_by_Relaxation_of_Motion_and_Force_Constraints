@@ -277,19 +277,6 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
     std::shared_ptr<KDL::Solver_RNE> id_solver_1 = std::make_shared<KDL::Solver_RNE>(robot_chain_1, KDL::Vector(0.0, 0.0, -9.81289), robot_driver_1.get_joint_inertia(), robot_driver_1.get_joint_torque_limits(), true);
     std::shared_ptr<KDL::Solver_RNE> id_solver_2 = std::make_shared<KDL::Solver_RNE>(robot_chain_2, KDL::Vector(0.0, 0.0, -9.81289), robot_driver_2.get_joint_inertia(), robot_driver_2.get_joint_torque_limits(), true);
 
-
-    if (robot_driver_1.set_control_mode(control_mode::TORQUE) == -1)
-    {
-        printf("Incorrect control mode 1\n");
-        return;
-    }
-
-    if (robot_driver_2.set_control_mode(control_mode::TORQUE) == -1)
-    {
-        printf("Incorrect control mode 2\n");
-        return;
-    }
-
     // printf("Test run started\n");
     // Real-time loop
     while (total_time_sec < task_time_limit_sec)
@@ -322,6 +309,20 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
             return;
         }
 
+        if (iteration_count == 0)
+        {
+            if (robot_driver_1.set_control_mode(control_mode::TORQUE) == -1)
+            {
+                printf("Incorrect control mode 1\n");
+                return;
+            }
+
+            if (robot_driver_2.set_control_mode(control_mode::TORQUE) == -1)
+            {
+                printf("Incorrect control mode 2\n");
+                return;
+            }
+        }
         // Set control commands
         return_flag = robot_driver_1.set_joint_torques(jnt_array_command_1);
         if (return_flag == -1)
