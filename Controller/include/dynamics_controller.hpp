@@ -254,7 +254,6 @@ class dynamics_controller
     const Eigen::IOFormat WRITE_FORMAT_STOP_MOTION;
 
     int update_commands(); //Performs single update of control commands and dynamics computations
-
     int check_fsm_status();
     int update_current_state();
     void print_settings_info();

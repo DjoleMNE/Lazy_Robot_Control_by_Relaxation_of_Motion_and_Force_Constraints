@@ -695,18 +695,8 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    int number_of_segments = robot_driver.get_robot_model().getNrOfSegments();
-    int number_of_joints   = robot_driver.get_robot_model().getNrOfJoints();
-    assert(JOINTS == number_of_segments);
-    state_specification motion(number_of_joints, number_of_segments, number_of_segments + 1, NUMBER_OF_CONSTRAINTS);
-
+    assert(JOINTS == robot_driver.get_robot_model().getNrOfSegments());
     // if (robot_driver.stop_robot_motion() == -1) return 0;
-
-    // rotate_joint(robot_driver, 0, 0.1);
-    // robot_driver.get_joint_positions(motion.q);
-    // robot_driver.get_joint_velocities(motion.qd);
-    // std::cout << motion.q << std::endl;
-    // return 0;
 
     // run_test(robot_driver); return 0;
 

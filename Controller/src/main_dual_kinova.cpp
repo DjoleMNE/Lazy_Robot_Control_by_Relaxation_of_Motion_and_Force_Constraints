@@ -782,9 +782,11 @@ int main(int argc, char **argv)
 
     run_test(robot_driver_1, robot_driver_2); return 0;
 
+    // Main control function not yet ready
+    // if (run_main_control() == -1) return 0;
+
     robot_driver_1.deinitialize();
     robot_driver_2.deinitialize();
-
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     return_flag = go_to(robot_driver_1, robot_driver_2, desired_pose::RETRACT);
