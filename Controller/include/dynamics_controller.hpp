@@ -103,7 +103,8 @@ class dynamics_controller
                    const int motion_profile);
     void deinitialize();
 
-    int stop_robot_motion(const bool use_torque_control, const bool engage_lock);
+    void engage_lock();
+    int stop_robot_motion();
     int apply_joint_control_commands(const bool bypass_safeties);
 
     void write_to_file();
