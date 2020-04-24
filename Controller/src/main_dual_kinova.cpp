@@ -64,6 +64,7 @@ const int JOINTS                     = 7;
 const int NUMBER_OF_CONSTRAINTS      = 6;
 const int desired_dynamics_interface = dynamics_interface::CART_ACCELERATION;
 const int abag_error_type            = error_type::SIGN;
+int RATE_HZ_                         = 1000;
 int motion_profile_id                = m_profile::CONSTANT;
 int path_type                        = path_types::STEP_PATH;
 int desired_pose_id                  = desired_pose::HOME;
@@ -257,22 +258,22 @@ int enforce_loop_frequency(const int dt)
 
 void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
 {
+    RATE_HZ_ = 1000;
     double total_time_sec = 0.0;
-    const int RATE_HZ_ = 1000;
-    const int DT_MICRO_ = SECOND / RATE_HZ_;
+    const int DT_MICRO = SECOND / RATE_HZ_;
     const double DT_SEC_ = 1.0 / static_cast<double>(RATE_HZ_);
     int id_solver_result = 0;
     int return_flag = 0;
     int iteration_count = 0;
     // double loop_time = 0.0;
     
-    KDL::JntArray zero_joint_array(7), jnt_array_command_1(7), jnt_array_feedback_1_1(7), jnt_array_feedback_1_2(7), jnt_array_feedback_1_3(7),
-                                       jnt_array_command_2(7), jnt_array_feedback_2_1(7), jnt_array_feedback_2_2(7), jnt_array_feedback_2_3(7);
+    KDL::JntArray zero_joint_array(7), torque_command_1(7), joint_pos_1(7), joint_vel_1(7), joint_torque_1(7),
+                                       torque_command_2(7), joint_pos_2(7), joint_vel_2(7), joint_torque_2(7);
 
     KDL::Chain robot_chain_1 = robot_driver_1.get_robot_model();
     KDL::Chain robot_chain_2 = robot_driver_2.get_robot_model();
-    KDL::Wrenches zero_wrenches_1(robot_chain_1.getNrOfSegments(), KDL::Wrench::Zero());
-    KDL::Wrenches zero_wrenches_2(robot_chain_2.getNrOfSegments(), KDL::Wrench::Zero());
+    KDL::Wrenches wrenches_1(robot_chain_1.getNrOfSegments(), KDL::Wrench::Zero());
+    KDL::Wrenches wrenches_2(robot_chain_2.getNrOfSegments(), KDL::Wrench::Zero());
 
     std::shared_ptr<KDL::Solver_RNE> id_solver_1 = std::make_shared<KDL::Solver_RNE>(robot_chain_1, KDL::Vector(0.0, 0.0, -9.81289), robot_driver_1.get_joint_inertia(), robot_driver_1.get_joint_torque_limits(), true);
     std::shared_ptr<KDL::Solver_RNE> id_solver_2 = std::make_shared<KDL::Solver_RNE>(robot_chain_2, KDL::Vector(0.0, 0.0, -9.81289), robot_driver_2.get_joint_inertia(), robot_driver_2.get_joint_torque_limits(), true);
@@ -285,15 +286,15 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
         iteration_count++;
         total_time_sec = iteration_count * DT_SEC_;
 
-        robot_driver_1.get_joint_state(jnt_array_feedback_1_1, jnt_array_feedback_1_2, jnt_array_feedback_1_3);
-        robot_driver_2.get_joint_state(jnt_array_feedback_2_1, jnt_array_feedback_2_2, jnt_array_feedback_2_3);
+        robot_driver_1.get_joint_state(joint_pos_1, joint_vel_1, joint_torque_1);
+        robot_driver_2.get_joint_state(joint_pos_2, joint_vel_2, joint_torque_2);
         // std::cout << "Pos: " << jnt_array_feedback << std::endl;
         // std::cout << "Vel: " << jnt_array_feedback_2 << std::endl;
         // std::cout << "Torque: " << jnt_array_feedback_3 << std::endl;
         // std::cout << std::endl;
 
         // Compute dynamics
-        id_solver_result = id_solver_1->CartToJnt(jnt_array_feedback_1_1, zero_joint_array, zero_joint_array, zero_wrenches_1, jnt_array_command_1);
+        id_solver_result = id_solver_1->CartToJnt(joint_pos_1, zero_joint_array, zero_joint_array, wrenches_1, torque_command_1);
         if (id_solver_result != 0)
         {
             robot_driver_1.stop_robot_motion();
@@ -301,7 +302,7 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
             return;
         }
 
-        id_solver_result = id_solver_2->CartToJnt(jnt_array_feedback_2_1, zero_joint_array, zero_joint_array, zero_wrenches_2, jnt_array_command_2);
+        id_solver_result = id_solver_2->CartToJnt(joint_pos_2, zero_joint_array, zero_joint_array, wrenches_2, torque_command_2);
         if (id_solver_result != 0)
         {
             robot_driver_2.stop_robot_motion();
@@ -324,7 +325,7 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
             }
         }
         // Set control commands
-        return_flag = robot_driver_1.set_joint_torques(jnt_array_command_1);
+        return_flag = robot_driver_1.set_joint_torques(torque_command_1);
         if (return_flag == -1)
         {
             robot_driver_1.stop_robot_motion();
@@ -332,7 +333,7 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
             return;
         }
 
-        return_flag = robot_driver_2.set_joint_torques(jnt_array_command_2);
+        return_flag = robot_driver_2.set_joint_torques(torque_command_2);
         if (return_flag == -1)
         {
             robot_driver_2.stop_robot_motion();
@@ -340,7 +341,7 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
             return;
         }
 
-        enforce_loop_frequency(DT_MICRO_);
+        enforce_loop_frequency(DT_MICRO);
 
         // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time).count();
         // if (iteration_count == 2000) 
@@ -732,6 +733,7 @@ int define_task(dynamics_controller *dyn_controller)
 int main(int argc, char **argv)
 {
     // printf("kinova MAIN Started \n");
+    RATE_HZ_             = 1000;
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                              false, false, false}; // Angular
     tube_tolerances      = std::vector<double>{0.01, 0.02, 0.02,
@@ -745,7 +747,7 @@ int main(int argc, char **argv)
     desired_task_model   = task_model::full_pose;
     path_type            = path_types::SINE_PATH;
     motion_profile_id    = m_profile::CONSTANT;
-    task_time_limit_sec  = 7.5;
+    task_time_limit_sec  = 3.5;
     tube_speed           = 0.0;
     compensate_gravity   = true;
     control_null_space   = false;
@@ -785,7 +787,6 @@ int main(int argc, char **argv)
 
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
     return_flag = go_to(robot_driver_1, robot_driver_2, desired_pose::RETRACT);
     return 0;
 }

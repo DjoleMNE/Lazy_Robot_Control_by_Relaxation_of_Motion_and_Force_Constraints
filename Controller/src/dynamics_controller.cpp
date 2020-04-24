@@ -1271,8 +1271,7 @@ KDL::Twist dynamics_controller::finite_displacement_twist(const state_specificat
     return twist;
 }
 
-double dynamics_controller::kinetic_energy(const KDL::Twist &twist,
-                                           const int segment_index)
+double dynamics_controller::kinetic_energy(const KDL::Twist &twist, const int segment_index)
 {
     return 0.5 * dot(twist, robot_chain_.getSegment(segment_index).getInertia() * twist);
 }
