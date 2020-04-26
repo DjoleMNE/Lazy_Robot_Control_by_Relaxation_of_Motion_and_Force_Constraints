@@ -56,6 +56,17 @@ enum dynamics_interface
   FF_JOINT_TORQUE = 2
 };
 
+enum class error_source
+{
+    empty = 0,
+    rne_solver = 1,
+    fk_solver = 2,
+    vereshchagin_solver = 3,
+    weight_compensator = 4,
+    safety_ctrl = 5,
+    fsm = 6
+};
+
 class dynamics_controller
 {
   public:
@@ -199,6 +210,12 @@ class dynamics_controller
       bool is_safe;
     } desired_control_mode_;
 
+    struct error_logger
+    {
+      error_source error_source_;
+      int error_status_;
+    } error_logger_;
+
     std::chrono::steady_clock::time_point loop_start_time_;
     std::chrono::duration <double, std::micro> loop_interval_{};
     double total_time_sec_;
@@ -215,7 +232,7 @@ class dynamics_controller
     const double INITIAL_END_EFF_MASS_;
     const bool COMPENSATE_GRAVITY_;
     const std::vector<double> JOINT_ACC_LIMITS_, JOINT_TORQUE_LIMITS_, JOINT_STOPPING_TORQUE_LIMITS_, JOINT_INERTIA_;
-    const KDL::Twist ROOT_ACC_; 
+    const KDL::Twist ROOT_ACC_;
     std::vector<bool> CTRL_DIM_, POS_TUBE_DIM_, MOTION_CTRL_DIM_, FORCE_CTRL_DIM_;
     std::vector< std::deque<double> > stop_motion_setpoint_array_;
     int fsm_result_, fsm_force_task_result_, previous_control_status_, tube_section_count_;

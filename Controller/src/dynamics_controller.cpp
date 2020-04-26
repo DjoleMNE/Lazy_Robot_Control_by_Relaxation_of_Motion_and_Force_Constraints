@@ -114,6 +114,9 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     desired_control_mode_.interface = control_mode::STOP_MOTION;
     desired_control_mode_.is_safe = false;
 
+    error_logger_.error_source_ = error_source::empty;
+    error_logger_.error_status_ = 0;
+
     // Setting parameters of the ABAG Controller
     abag_.set_error_alpha(abag_parameter::ERROR_ALPHA);    
     abag_.set_bias_threshold(abag_parameter::BIAS_THRESHOLD);
@@ -1129,6 +1132,8 @@ int dynamics_controller::apply_joint_control_commands(const bool bypass_safeties
                 if (!desired_control_mode_.is_safe)
                 {
                     desired_control_mode_.interface = control_mode::STOP_MOTION;
+                    error_logger_.error_source_ = error_source::safety_ctrl;
+                    error_logger_.error_status_ = control_mode::STOP_MOTION;
                     return -1;
                 }
                 return 0;
@@ -1143,10 +1148,20 @@ int dynamics_controller::apply_joint_control_commands(const bool bypass_safeties
 
             default:
                 desired_control_mode_.interface = control_mode::STOP_MOTION;
+                error_logger_.error_source_ = error_source::safety_ctrl;
+                error_logger_.error_status_ = control_mode::STOP_MOTION;
                 return -1;
         }
     }
-    else return safe_control_mode;
+    else 
+    {
+        if (safe_control_mode == control_mode::STOP_MOTION)
+        {
+            error_logger_.error_source_ = error_source::safety_ctrl;
+            error_logger_.error_status_ = control_mode::STOP_MOTION;
+        }
+        return safe_control_mode;
+    }
 }
 
 /*  
