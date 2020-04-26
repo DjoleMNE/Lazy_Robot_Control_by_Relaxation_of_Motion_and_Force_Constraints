@@ -441,69 +441,6 @@ void dynamics_controller::reset_state(state_specification &state)
     desired_state_.reset_values();
 }
 
-void dynamics_controller::engage_lock()
-{
-    /** 
-     * In the case of Kinova: Position-control based stopping mechanism.
-     * - It stops the robot correctly. However, the deceleration is too strong.
-     * - More specificily, it is not good for the robot's gears and motors on long-run.
-     * - It is best if the deceleration is controlled explicitly before-hand.
-     */
-    safety_control_.stop_robot_motion();
-}
-
-/**
- * Torque-control based stopping mechanism:
- * - It stops the robot correctly. We can control deceleration explicitly.
- * - However, control loop (thus, torque control) is maintained on the external pc.
- */
-int dynamics_controller::update_stop_motion_commands()
-{
-    if (stop_loop_iteration_count_ % dynamics_parameter::DECELERATION_UPDATE_DELAY == 0)
-    {
-        for (int i = 0; i < NUM_OF_JOINTS_; i++)
-        {
-            if (stop_motion_setpoint_array_[i].size() > 0)
-            {
-                desired_state_.qd(i) = stop_motion_setpoint_array_[i].front();
-                stop_motion_setpoint_array_[i].pop_front();
-            }
-            else desired_state_.qd(i) = 0.0;
-        }
-    }
-
-    // Compute control error
-    int joint_stop_count = 0;
-    for (int i = 0; i < NUM_OF_JOINTS_; i++)
-    {
-        stop_motion_abag_error_(i) = desired_state_.qd(i) - robot_state_.qd(i);
-
-        // Filter out sensor-noise in the steady state
-        if (std::fabs(stop_motion_abag_error_(i)) < 0.001)
-        {
-            stop_motion_abag_error_(i) = 0.0;
-            joint_stop_count++;
-        }
-    }
-
-    // If all of the joints have 0 velocity -> stopping motion task completed
-    if (joint_stop_count == NUM_OF_JOINTS_)
-    {
-        steady_stop_iteration_count_++;
-        if (steady_stop_iteration_count_ == dynamics_parameter::STEADY_STOP_ITERATION_THRESHOLD) return 1;
-    }
-    else steady_stop_iteration_count_ = 0;
-
-    // Trigger ABAG to compute control commands
-    abag_stop_motion_command_ = abag_stop_motion_.update_state(stop_motion_abag_error_).transpose();
-
-    // Scale control commands with their respective max values
-    for (int i = 0; i < NUM_OF_JOINTS_; i++)
-        robot_state_.control_torque(i) = JOINT_STOPPING_TORQUE_LIMITS_[i] * abag_stop_motion_command_(i);
-
-    return 0;
-}
-
 void dynamics_controller::define_moveConstrained_follow_path_task(
                                 const std::vector<bool> &constraint_direction,
                                 const std::vector< std::vector<double> > &tube_path_points,
@@ -2229,6 +2166,69 @@ int dynamics_controller::initialize(const int desired_control_mode,
 
     //Print information about controller settings
     // print_settings_info();
+    return 0;
+}
+
+void dynamics_controller::engage_lock()
+{
+    /** 
+     * In the case of Kinova: Position-control based stopping mechanism.
+     * - It stops the robot correctly. However, the deceleration is too strong.
+     * - More specificily, it is not good for the robot's gears and motors on long-run.
+     * - It is best if the deceleration is controlled explicitly before-hand.
+     */
+    safety_control_.stop_robot_motion();
+}
+
+/**
+ * Torque-control based stopping mechanism:
+ * - It stops the robot correctly. We can control deceleration explicitly.
+ * - However, control loop (thus, torque control) is maintained on the external pc.
+ */
+int dynamics_controller::update_stop_motion_commands()
+{
+    if (stop_loop_iteration_count_ % dynamics_parameter::DECELERATION_UPDATE_DELAY == 0)
+    {
+        for (int i = 0; i < NUM_OF_JOINTS_; i++)
+        {
+            if (stop_motion_setpoint_array_[i].size() > 0)
+            {
+                desired_state_.qd(i) = stop_motion_setpoint_array_[i].front();
+                stop_motion_setpoint_array_[i].pop_front();
+            }
+            else desired_state_.qd(i) = 0.0;
+        }
+    }
+
+    // Compute control error
+    int joint_stop_count = 0;
+    for (int i = 0; i < NUM_OF_JOINTS_; i++)
+    {
+        stop_motion_abag_error_(i) = desired_state_.qd(i) - robot_state_.qd(i);
+
+        // Filter out sensor-noise in the steady state
+        if (std::fabs(stop_motion_abag_error_(i)) < 0.001)
+        {
+            stop_motion_abag_error_(i) = 0.0;
+            joint_stop_count++;
+        }
+    }
+
+    // If all of the joints have 0 velocity -> stopping motion task completed
+    if (joint_stop_count == NUM_OF_JOINTS_)
+    {
+        steady_stop_iteration_count_++;
+        if (steady_stop_iteration_count_ == dynamics_parameter::STEADY_STOP_ITERATION_THRESHOLD) return 1;
+    }
+    else steady_stop_iteration_count_ = 0;
+
+    // Trigger ABAG to compute control commands
+    abag_stop_motion_command_ = abag_stop_motion_.update_state(stop_motion_abag_error_).transpose();
+
+    // Scale control commands with their respective max values
+    for (int i = 0; i < NUM_OF_JOINTS_; i++)
+        robot_state_.control_torque(i) = JOINT_STOPPING_TORQUE_LIMITS_[i] * abag_stop_motion_command_(i);
+
     return 0;
 }
 
