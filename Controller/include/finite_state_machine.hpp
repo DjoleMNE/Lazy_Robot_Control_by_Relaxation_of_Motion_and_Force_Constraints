@@ -51,7 +51,7 @@ enum task_model
   gravity_compensation = 7
 };
 
-enum control_status
+enum task_status
 {
     STOP_CONTROL        = -1,
     NOMINAL             =  0,

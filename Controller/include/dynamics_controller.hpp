@@ -235,7 +235,7 @@ class dynamics_controller
     const KDL::Twist ROOT_ACC_;
     std::vector<bool> CTRL_DIM_, POS_TUBE_DIM_, MOTION_CTRL_DIM_, FORCE_CTRL_DIM_;
     std::vector< std::deque<double> > stop_motion_setpoint_array_;
-    int fsm_result_, fsm_force_task_result_, previous_control_status_, tube_section_count_;
+    int fsm_result_, fsm_force_task_result_, previous_task_status_, tube_section_count_;
     bool transform_drivers_, transform_force_drivers_, apply_feedforward_force_, 
          compute_null_space_command_, write_contact_time_to_file_,
          compensate_unknown_weight_, trigger_stopping_behaviour_, stopping_behaviour_on_;

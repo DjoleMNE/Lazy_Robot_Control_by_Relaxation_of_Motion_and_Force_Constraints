@@ -55,7 +55,7 @@ int finite_state_machine::initialize_with_moveConstrained_follow_path(const move
     // log_file_ext_force_.open("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/ext_force_data.txt");
     // assert(log_file_ext_force_.is_open());
 
-    return control_status::NOMINAL;
+    return task_status::NOMINAL;
 }
 
 int finite_state_machine::initialize_with_moveTo_follow_path(const moveTo_follow_path_task &task,
@@ -65,7 +65,7 @@ int finite_state_machine::initialize_with_moveTo_follow_path(const moveTo_follow
     moveTo_follow_path_task_ = task;
     motion_profile_          = motion_profile;
 
-    return control_status::NOMINAL;
+    return task_status::NOMINAL;
 }
 
 int finite_state_machine::initialize_with_moveTo(const moveTo_task &task,
@@ -75,7 +75,7 @@ int finite_state_machine::initialize_with_moveTo(const moveTo_task &task,
     moveTo_task_        = task;
     motion_profile_     = motion_profile;
 
-    return control_status::NOMINAL;
+    return task_status::NOMINAL;
 }
 
 int finite_state_machine::initialize_with_moveGuarded(const moveGuarded_task &task,
@@ -85,7 +85,7 @@ int finite_state_machine::initialize_with_moveGuarded(const moveGuarded_task &ta
     moveGuarded_task_   = task;
     motion_profile_     = motion_profile;
 
-    return control_status::NOMINAL;
+    return task_status::NOMINAL;
 }
 
 int finite_state_machine::initialize_with_moveTo_weight_compensation(const moveTo_weight_compensation_task &task,
@@ -102,7 +102,7 @@ int finite_state_machine::initialize_with_moveTo_weight_compensation(const moveT
     log_file_compensation_ << compensation_parameters_(5) << " ";
     log_file_compensation_ << compensation_parameters_(6) << " ";
     log_file_compensation_ << compensation_parameters_(7) << std::endl;
-    return control_status::NOMINAL;
+    return task_status::NOMINAL;
 }
 
 int finite_state_machine::initialize_with_full_pose(const full_pose_task &task,
@@ -112,7 +112,7 @@ int finite_state_machine::initialize_with_full_pose(const full_pose_task &task,
     full_pose_task_     = task;
     motion_profile_     = motion_profile;
 
-    return control_status::NOMINAL;
+    return task_status::NOMINAL;
 }
 
 int finite_state_machine::initialize_with_gravity_compensation(const gravity_compensation_task &task)
@@ -120,7 +120,7 @@ int finite_state_machine::initialize_with_gravity_compensation(const gravity_com
     desired_task_model_        = task_model::gravity_compensation;
     gravity_compensation_task_ = task;
 
-    return control_status::NOMINAL;
+    return task_status::NOMINAL;
 }
 
 int finite_state_machine::update_moveConstrained_follow_path_task(state_specification &desired_state,
@@ -133,10 +133,10 @@ int finite_state_machine::update_moveConstrained_follow_path_task(state_specific
         #endif
 
         time_limit_reached_ = true;
-        return control_status::STOP_CONTROL;
+        return task_status::STOP_CONTROL;
     }
 
-    if (goal_reached_) return control_status::STOP_ROBOT;
+    if (goal_reached_) return task_status::STOP_ROBOT;
 
     bool final_section_reached = false;
     if ((unsigned)tube_section_count == moveConstrained_follow_path_task_.tf_poses.size() - 1) final_section_reached = true;
@@ -156,7 +156,7 @@ int finite_state_machine::update_moveConstrained_follow_path_task(state_specific
         #endif
 
         goal_reached_ = true;
-        return control_status::STOP_ROBOT;
+        return task_status::STOP_ROBOT;
     }
 
     /*
@@ -199,14 +199,14 @@ int finite_state_machine::update_moveConstrained_follow_path_task(state_specific
         // Robot has crossed some tube section? If yes, switch to next one.
         if ((current_error_(0) < moveConstrained_follow_path_task_.tube_tolerances[0]) && !final_section_reached)
         {
-            return control_status::CHANGE_TUBE_SECTION;
+            return task_status::CHANGE_TUBE_SECTION;
         }
-        return control_status::CRUISE_THROUGH_TUBE;        
+        return task_status::CRUISE_THROUGH_TUBE;        
     }
     else
     {
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-        return control_status::START_TO_CRUISE;
+        return task_status::START_TO_CRUISE;
     }
 }
 
@@ -221,10 +221,10 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
         // #endif
 
         time_limit_reached_ = true;
-        return control_status::STOP_CONTROL;
+        return task_status::STOP_CONTROL;
     }
 
-    if (goal_reached_ || contact_detected_) return control_status::STOP_ROBOT;
+    if (goal_reached_ || contact_detected_) return task_status::STOP_ROBOT;
 
     if (contact_detected(moveTo_follow_path_task_.contact_threshold_linear, 
                          moveTo_follow_path_task_.contact_threshold_angular))
@@ -235,7 +235,7 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
 
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         contact_detected_ = true;
-        return control_status::STOP_ROBOT;
+        return task_status::STOP_ROBOT;
     }
     contact_detected_ = false;
 
@@ -258,7 +258,7 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
 
         goal_reached_ = true;
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-        return control_status::STOP_ROBOT;
+        return task_status::STOP_ROBOT;
     }
     goal_reached_ = false;
 
@@ -297,15 +297,15 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
         // Robot has crossed some tube section? If yes, switch to next one.
         if ((current_error_(0) < moveTo_follow_path_task_.tube_tolerances[0]) && !final_section_reached)
         {
-            return control_status::CHANGE_TUBE_SECTION;
+            return task_status::CHANGE_TUBE_SECTION;
         }
-        return control_status::CRUISE_THROUGH_TUBE;        
+        return task_status::CRUISE_THROUGH_TUBE;        
     }
     
     else
     {
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-        return control_status::START_TO_CRUISE;
+        return task_status::START_TO_CRUISE;
     }
 }
 
@@ -320,10 +320,10 @@ int finite_state_machine::update_moveTo_weight_compensation_task(state_specifica
         // #endif
 
         time_limit_reached_ = true;
-        return control_status::STOP_CONTROL;
+        return task_status::STOP_CONTROL;
     }
 
-    if (goal_reached_ || contact_detected_) return control_status::STOP_ROBOT;
+    if (goal_reached_ || contact_detected_) return task_status::STOP_ROBOT;
     
     if (contact_detected(moveTo_weight_compensation_task_.contact_threshold_linear, 
                          moveTo_weight_compensation_task_.contact_threshold_angular))
@@ -334,7 +334,7 @@ int finite_state_machine::update_moveTo_weight_compensation_task(state_specifica
 
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         contact_detected_ = true;
-        return control_status::STOP_ROBOT;
+        return task_status::STOP_ROBOT;
     }
     contact_detected_ = false;
 
@@ -352,7 +352,7 @@ int finite_state_machine::update_moveTo_weight_compensation_task(state_specifica
 
         goal_reached_ = true;
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-        return control_status::STOP_ROBOT;
+        return task_status::STOP_ROBOT;
     }
     goal_reached_ = false;
 
@@ -367,7 +367,7 @@ int finite_state_machine::update_moveTo_weight_compensation_task(state_specifica
        )
     {
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-        return control_status::START_TO_CRUISE;
+        return task_status::START_TO_CRUISE;
     }
     else
     {
@@ -394,7 +394,7 @@ int finite_state_machine::update_moveTo_weight_compensation_task(state_specifica
         else desired_state.frame_velocity[END_EFF_].vel(0) = speed;              
     }
    
-    return control_status::CRUISE_THROUGH_TUBE;
+    return task_status::CRUISE_THROUGH_TUBE;
 }
 
 
@@ -409,10 +409,10 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         // #endif
 
         time_limit_reached_ = true;
-        return control_status::STOP_CONTROL;
+        return task_status::STOP_CONTROL;
     }
 
-    if (goal_reached_ || contact_detected_) return control_status::STOP_ROBOT;
+    if (goal_reached_ || contact_detected_) return task_status::STOP_ROBOT;
 
     if (contact_detected(moveTo_task_.contact_threshold_linear, 
                          moveTo_task_.contact_threshold_angular))
@@ -423,7 +423,7 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         contact_detected_ = true;
-        return control_status::STOP_ROBOT;
+        return task_status::STOP_ROBOT;
     }
     contact_detected_ = false;
 
@@ -441,7 +441,7 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 
         goal_reached_ = true;
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-        return control_status::STOP_ROBOT;
+        return task_status::STOP_ROBOT;
     }
     goal_reached_ = false;
 
@@ -456,7 +456,7 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
        )
     {
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-        return control_status::START_TO_CRUISE;
+        return task_status::START_TO_CRUISE;
     }
     else
     {
@@ -483,7 +483,7 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         else desired_state.frame_velocity[END_EFF_].vel(0) = speed;              
     }
    
-    return control_status::CRUISE_THROUGH_TUBE;
+    return task_status::CRUISE_THROUGH_TUBE;
 }
 
 
@@ -498,10 +498,10 @@ int finite_state_machine::update_moveGuarded_task(state_specification &desired_s
         // #endif
 
         time_limit_reached_ = true;
-        return control_status::STOP_CONTROL;
+        return task_status::STOP_CONTROL;
     }
 
-    if (contact_detected_) return control_status::STOP_ROBOT;
+    if (contact_detected_) return task_status::STOP_ROBOT;
     
     if (contact_detected(moveGuarded_task_.contact_threshold_linear, 
                          moveGuarded_task_.contact_threshold_angular))
@@ -512,7 +512,7 @@ int finite_state_machine::update_moveGuarded_task(state_specification &desired_s
 
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         contact_detected_ = true;
-        return control_status::STOP_ROBOT;
+        return task_status::STOP_ROBOT;
     }
 
     // Check if robot is inside the tube
@@ -521,13 +521,13 @@ int finite_state_machine::update_moveGuarded_task(state_specification &desired_s
         if (std::fabs(current_error_(i)) > moveGuarded_task_.tube_tolerances[i])
         {
             desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-            return control_status::START_TO_CRUISE;
+            return task_status::START_TO_CRUISE;
         }
     }
     
     // TODO: Add motion profile here
     desired_state.frame_velocity[END_EFF_].vel(0) = moveGuarded_task_.tube_speed;              
-    return control_status::CRUISE_THROUGH_TUBE;
+    return task_status::CRUISE_THROUGH_TUBE;
 }
 
 int finite_state_machine::update_full_pose_task(state_specification &desired_state)
@@ -539,10 +539,10 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
         // #endif
 
         time_limit_reached_ = true;
-        return control_status::STOP_CONTROL;
+        return task_status::STOP_CONTROL;
     }
 
-    if (goal_reached_ || contact_detected_) return control_status::STOP_ROBOT;
+    if (goal_reached_ || contact_detected_) return task_status::STOP_ROBOT;
 
     if (contact_detected(full_pose_task_.contact_threshold_linear, 
                          full_pose_task_.contact_threshold_angular))
@@ -551,7 +551,7 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
             printf("Contact occurred\n");
         // #endif
         contact_detected_ = true;
-        return control_status::STOP_ROBOT;
+        return task_status::STOP_ROBOT;
     }
 
     int count = 0;
@@ -565,10 +565,10 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
         printf("Goal area reached\n");
 
         goal_reached_ = true;
-        return control_status::STOP_ROBOT;
+        return task_status::STOP_ROBOT;
     }
 
-    return control_status::NOMINAL;
+    return task_status::NOMINAL;
 }
 
 int finite_state_machine::update_gravity_compensation_task()
@@ -581,10 +581,10 @@ int finite_state_machine::update_gravity_compensation_task()
             time_limit_reached_ = true;
         }
 
-        return control_status::STOP_CONTROL;
+        return task_status::STOP_CONTROL;
     }
 
-    return control_status::NOMINAL;
+    return task_status::NOMINAL;
 }
 
 int finite_state_machine::update_motion_task_status(const state_specification &robot_state,
@@ -637,7 +637,7 @@ int finite_state_machine::update_motion_task_status(const state_specification &r
 
         default:
             printf("Unsupported task model\n");
-            return control_status::STOP_CONTROL;
+            return task_status::STOP_CONTROL;
             break;
     }
 }
@@ -797,9 +797,9 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
             #ifndef NDEBUG       
                 printf("Contact Lost!\n");
             #endif
-            return control_status::STOP_ROBOT;
+            return task_status::STOP_ROBOT;
         } 
-        return control_status::CRUISE;
+        return task_status::CRUISE;
     }
 
     // Approach control mode
@@ -813,9 +813,9 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
         {
             total_contact_time_ = 0.0;
             contact_alignment_performed_ = true;
-            return control_status::CRUISE;
+            return task_status::CRUISE;
         }
-        return control_status::APPROACH;
+        return task_status::APPROACH;
     }
 }
 

@@ -50,8 +50,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), POS_TUBE_DIM_(NUM_OF_CONSTRAINTS_, false),
     MOTION_CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), FORCE_CTRL_DIM_(NUM_OF_CONSTRAINTS_, false),
     stop_motion_setpoint_array_(0, std::deque<double>(0, 0.0)),
-    fsm_result_(control_status::NOMINAL), fsm_force_task_result_(control_status::APPROACH),
-    previous_control_status_(fsm_result_), tube_section_count_(0), 
+    fsm_result_(task_status::NOMINAL), fsm_force_task_result_(task_status::APPROACH),
+    previous_task_status_(fsm_result_), tube_section_count_(0), 
     transform_drivers_(false), transform_force_drivers_(false),
     apply_feedforward_force_(false), compute_null_space_command_(false),
     write_contact_time_to_file_(false), compensate_unknown_weight_(false),
@@ -237,51 +237,51 @@ int dynamics_controller::check_fsm_status()
 {
     switch (fsm_result_)
     {
-        case control_status::NOMINAL:
-            if (previous_control_status_ != control_status::NOMINAL) printf("Control status changed to NOMINAL\n");
-            previous_control_status_ = fsm_result_;
+        case task_status::NOMINAL:
+            if (previous_task_status_ != task_status::NOMINAL) printf("Control status changed to NOMINAL\n");
+            previous_task_status_ = fsm_result_;
             return 0;
             break;
         
-        case control_status::START_TO_CRUISE:
-            if (previous_control_status_ != control_status::START_TO_CRUISE) printf("Control status changed to START_TO_CRUISE\n");
-            previous_control_status_ = fsm_result_;
+        case task_status::START_TO_CRUISE:
+            if (previous_task_status_ != task_status::START_TO_CRUISE) printf("Control status changed to START_TO_CRUISE\n");
+            previous_task_status_ = fsm_result_;
             return 0;
             break;
 
-        case control_status::CRUISE_TO_STOP:
-            if (previous_control_status_ != control_status::CRUISE_TO_STOP) printf("Control status changed to CRUISE_TO_STOP\n");
-            previous_control_status_ = fsm_result_;
+        case task_status::CRUISE_TO_STOP:
+            if (previous_task_status_ != task_status::CRUISE_TO_STOP) printf("Control status changed to CRUISE_TO_STOP\n");
+            previous_task_status_ = fsm_result_;
             return 0;
             break;
 
-        case control_status::CRUISE_THROUGH_TUBE:
-            if ((previous_control_status_ != control_status::CRUISE_THROUGH_TUBE) && (previous_control_status_ != control_status::CHANGE_TUBE_SECTION)) printf("Control status changed to CRUISE_THROUGH_TUBE\n");
-            previous_control_status_ = fsm_result_;
+        case task_status::CRUISE_THROUGH_TUBE:
+            if ((previous_task_status_ != task_status::CRUISE_THROUGH_TUBE) && (previous_task_status_ != task_status::CHANGE_TUBE_SECTION)) printf("Control status changed to CRUISE_THROUGH_TUBE\n");
+            previous_task_status_ = fsm_result_;
             return 0;
             break;
         
-        case control_status::CRUISE:
-            if (previous_control_status_ != control_status::CRUISE) printf("Control status changed to CRUISE\n");
-            previous_control_status_ = fsm_result_;
+        case task_status::CRUISE:
+            if (previous_task_status_ != task_status::CRUISE) printf("Control status changed to CRUISE\n");
+            previous_task_status_ = fsm_result_;
             return 0;
             break;
 
-        case control_status::CHANGE_TUBE_SECTION:
-            // if (previous_control_status_ != control_status::CHANGE_TUBE_SECTION) printf("Control status changed to CHANGE_TUBE_SECTION\n");
-            previous_control_status_ = fsm_result_;
+        case task_status::CHANGE_TUBE_SECTION:
+            // if (previous_task_status_ != task_status::CHANGE_TUBE_SECTION) printf("Control status changed to CHANGE_TUBE_SECTION\n");
+            previous_task_status_ = fsm_result_;
             return 0;
             break;
 
-        case control_status::APPROACH:
-            if (previous_control_status_ != control_status::APPROACH) printf("Control status changed to APPROACH\n");
-            previous_control_status_ = fsm_result_;
+        case task_status::APPROACH:
+            if (previous_task_status_ != task_status::APPROACH) printf("Control status changed to APPROACH\n");
+            previous_task_status_ = fsm_result_;
             return 0;
             break;
 
-        case control_status::STOP_ROBOT:
-            if (previous_control_status_ != control_status::STOP_ROBOT) printf("Control status changed to STOP_ROBOT\n");
-            previous_control_status_ = fsm_result_;
+        case task_status::STOP_ROBOT:
+            if (previous_task_status_ != task_status::STOP_ROBOT) printf("Control status changed to STOP_ROBOT\n");
+            previous_task_status_ = fsm_result_;
             return 1;
             break;
         
@@ -1281,7 +1281,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
     desired_state_base_.external_force[END_EFF_] = moveConstrained_follow_path_task_.tf_force * desired_state_.external_force[END_EFF_];
 
     // Force-task FSM has priority over motion-task FSM
-    if (previous_control_status_ != control_status::STOP_ROBOT)
+    if (previous_task_status_ != task_status::STOP_ROBOT)
     {
         // This function expects external wrench values to be expressed w.r.t. sensor frame
         fsm_force_task_result_ = fsm_.update_force_task_status(desired_state_.external_force[END_EFF_], ext_wrench_, total_time_sec_, 0.014);
@@ -1289,9 +1289,9 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 
     switch (fsm_force_task_result_)
     {
-        case control_status::APPROACH:
+        case task_status::APPROACH:
             // Set ABAG parameters for linear Z axis velocity control
-            if (previous_control_status_ == control_status::NOMINAL)
+            if (previous_task_status_ == task_status::NOMINAL)
             {
                 // Parameters for Velocity controlled DOF
                 abag_.set_error_alpha(   abag_parameter::ERROR_ALPHA(2),    2);
@@ -1327,12 +1327,12 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             
             // Motion error is computed in the base-frame
             transform_drivers_ = false;
-            fsm_result_ = control_status::APPROACH;
+            fsm_result_ = task_status::APPROACH;
             break;
 
-        case control_status::CRUISE:
+        case task_status::CRUISE:
             // Set ABAG parameters for linear Z axis force control
-            if (previous_control_status_ == control_status::APPROACH)
+            if (previous_task_status_ == task_status::APPROACH)
             {
                 abag_.reset_state(0);
                 abag_.reset_state(1);
@@ -1354,7 +1354,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             }
 
             // Update tube section count 
-            if (previous_control_status_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
+            if (previous_task_status_ == task_status::CHANGE_TUBE_SECTION) tube_section_count_++;
             if ((unsigned)tube_section_count_ > moveConstrained_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveConstrained_follow_path_task_.tf_poses.size() - 1;
 
             // Make prediction while the state is expressed in the base frame
@@ -1372,7 +1372,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             for (int i = 0; i < 2; i++)
                 current_error_twist_(i) = POS_TUBE_DIM_[i]? current_error_twist_(i) : 0.0;
 
-            // fsm_result_ = control_status::CRUISE_THROUGH_TUBE;
+            // fsm_result_ = task_status::CRUISE_THROUGH_TUBE;
             fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
 
             // for (int i = 0; i < 2; i++)
@@ -1437,12 +1437,12 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
                 else abag_error_vector_(2) = 1.0; // ABAG does not care about raw error magnitude
             }
 
-            if (fsm_result_ == control_status::STOP_ROBOT) fsm_force_task_result_ = control_status::STOP_ROBOT;
+            if (fsm_result_ == task_status::STOP_ROBOT) fsm_force_task_result_ = task_status::STOP_ROBOT;
             else break;
 
         default:
-            if (previous_control_status_ != control_status::STOP_ROBOT) write_contact_time_to_file_ = true;
-            fsm_result_ = control_status::STOP_ROBOT;
+            if (previous_task_status_ != task_status::STOP_ROBOT) write_contact_time_to_file_ = true;
+            fsm_result_ = task_status::STOP_ROBOT;
             
             // Reset the flags
             for (int i = 0; i < 6; i++)
@@ -1505,7 +1505,7 @@ void dynamics_controller::compute_moveToGuarded_null_space_task_error()
 */
 void dynamics_controller::compute_moveTo_follow_path_task_error()
 {
-    if (previous_control_status_ == control_status::CHANGE_TUBE_SECTION) tube_section_count_++;
+    if (previous_task_status_ == task_status::CHANGE_TUBE_SECTION) tube_section_count_++;
     if ((unsigned)tube_section_count_ > moveTo_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveTo_follow_path_task_.tf_poses.size() - 1;
 
     //Change the reference frame of the robot state, from base frame to task frame
@@ -1606,7 +1606,7 @@ void dynamics_controller::compute_moveTo_weight_compensation_task_error()
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
     // Check for tube on velocity
-    if ((fsm_result_ == control_status::CRUISE_THROUGH_TUBE) && \
+    if ((fsm_result_ == task_status::CRUISE_THROUGH_TUBE) && \
         (std::fabs(abag_error_vector_(0)) <= moveTo_weight_compensation_task_.tube_tolerances[6]))  abag_error_vector_(0) = 0.0;
 
     // Other parts of the ABAG error are position errors
@@ -1645,7 +1645,7 @@ void dynamics_controller::compute_moveGuarded_task_error()
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
     // Check for tube on velocity
-    if ((fsm_result_ == control_status::CRUISE_THROUGH_TUBE) && \
+    if ((fsm_result_ == task_status::CRUISE_THROUGH_TUBE) && \
         (std::fabs(abag_error_vector_(0)) <= moveGuarded_task_.tube_tolerances[6])) abag_error_vector_(0) = 0.0;
 
     // Other parts of the ABAG error are position errors
