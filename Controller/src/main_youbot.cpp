@@ -692,5 +692,6 @@ int main(int argc, char **argv)
                                            motion_profile_id);
     if (initial_result != 0) return -1;
     controller.control();
+    controller.deinitialize();
     return 0;
 }

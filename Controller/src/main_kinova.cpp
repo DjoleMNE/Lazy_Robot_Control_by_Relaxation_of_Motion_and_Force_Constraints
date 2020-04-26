@@ -666,7 +666,6 @@ int main(int argc, char **argv)
     id                   = robot_id::KINOVA_GEN3_2;
     desired_pose_id      = desired_pose::HOME;
     desired_control_mode = control_mode::TORQUE;
-    // desired_task_model   = task_model::moveTo;
     desired_task_model   = task_model::gravity_compensation;
     path_type            = path_types::SINE_PATH;
     motion_profile_id    = m_profile::CONSTANT;
@@ -776,15 +775,13 @@ int main(int argc, char **argv)
     }
     else return 0;
 
-    initial_result = controller.initialize(desired_control_mode, 
-                                           desired_dynamics_interface,
-                                           log_data,
-                                           motion_profile_id);
+    initial_result = controller.initialize(desired_control_mode, desired_dynamics_interface, log_data, motion_profile_id);
     if (initial_result != 0) return -1;
 
     controller.control();
     robot_driver.stop_robot_motion();
 
+    controller.deinitialize();
     robot_driver.deinitialize();
 
     return_flag = go_to(robot_driver, desired_pose::RETRACT);

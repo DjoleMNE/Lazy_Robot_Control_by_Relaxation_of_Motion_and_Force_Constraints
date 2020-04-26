@@ -78,7 +78,9 @@ class dynamics_controller
              const KDL::Wrench &ext_force, 
              Eigen::VectorXd &tau_output,
              const double time_passed_sec,
-             const int loop_iteration);
+             const int main_loop_iteration,
+             const int stop_loop_iteration,
+             const bool stopping_behaviour_on);
 
     void set_parameters(const double damper_amplitude,
                         const int abag_error_type,
@@ -104,7 +106,6 @@ class dynamics_controller
     void deinitialize();
 
     void engage_lock();
-    int stop_robot_motion();
     int apply_joint_control_commands(const bool bypass_safeties);
 
     void write_to_file();
@@ -220,7 +221,7 @@ class dynamics_controller
     int fsm_result_, fsm_force_task_result_, previous_control_status_, tube_section_count_;
     bool transform_drivers_, transform_force_drivers_, apply_feedforward_force_, 
          compute_null_space_command_, write_contact_time_to_file_,
-         compensate_unknown_weight_, stopping_behaviour_on_;
+         compensate_unknown_weight_, trigger_stopping_behaviour_, stopping_behaviour_on_;
     
     moveTo_task moveTo_task_;
     moveGuarded_task moveGuarded_task_;
@@ -255,9 +256,11 @@ class dynamics_controller
     const Eigen::IOFormat WRITE_FORMAT_STOP_MOTION;
 
     int update_commands(); //Performs single update of control commands and dynamics computations
+    int update_stop_motion_commands();
     int check_fsm_status();
     int update_current_state();
     void print_settings_info();
+    void close_files();
     void reset_state(state_specification &state);
     // void update_dynamics_interfaces();
     void compute_moveConstrained_follow_path_task_error();
