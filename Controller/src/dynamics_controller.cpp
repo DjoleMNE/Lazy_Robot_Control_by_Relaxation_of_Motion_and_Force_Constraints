@@ -55,7 +55,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     transform_drivers_(false), transform_force_drivers_(false),
     apply_feedforward_force_(false), compute_null_space_command_(false),
     write_contact_time_to_file_(false), compensate_unknown_weight_(false),
-    trigger_stopping_behaviour_(false), stopping_behaviour_on_(false),
+    trigger_stopping_sequence_(false), stopping_sequence_on_(false),
     JOINT_ACC_LIMITS_(robot_driver->get_joint_acceleration_limits()),
     JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
     JOINT_STOPPING_TORQUE_LIMITS_(robot_driver->get_joint_stopping_torque_limits()),
@@ -309,7 +309,7 @@ int dynamics_controller::update_current_state()
 // Write control data to a file
 void dynamics_controller::write_to_file()
 {
-    if (!stopping_behaviour_on_)
+    if (!stopping_sequence_on_)
     {
         // Write measured state
         for (int i = 0; i < 3; i++)
@@ -2210,15 +2210,15 @@ int dynamics_controller::initialize(const int desired_control_mode,
     }
 
     // First make sure that the robot is not moving
-    stopping_behaviour_on_ = true;
+    stopping_sequence_on_ = true;
     if (control() == -1)
     {
-        stopping_behaviour_on_ = false;
+        stopping_sequence_on_ = false;
         deinitialize();
         return -1;
     }
-    stopping_behaviour_on_ = false;
-    trigger_stopping_behaviour_ = false;
+    stopping_sequence_on_ = false;
+    trigger_stopping_sequence_ = false;
     loop_iteration_count_ = 0;
     stop_loop_iteration_count_ = 0;
     error_logger_.error_source_ = error_source::empty;
@@ -2366,7 +2366,7 @@ int dynamics_controller::control()
     {
         // Save current time point
         loop_start_time_ = std::chrono::steady_clock::now();
-        if (!stopping_behaviour_on_) total_time_sec_ = loop_iteration_count_ * DT_SEC_;
+        if (!stopping_sequence_on_) total_time_sec_ = loop_iteration_count_ * DT_SEC_;
 
         //Get current robot state from the joint sensors: velocities and angles
         safety_control_.get_current_state(robot_state_);
@@ -2376,17 +2376,17 @@ int dynamics_controller::control()
         ext_force = ext_wrench_;
 
         // Make one control iteration (step) -> Update control commands
-        return_flag = step(state_q, state_qd, ext_force, ctrl_torque.data, total_time_sec_, loop_iteration_count_, stop_loop_iteration_count_, stopping_behaviour_on_);
-        if (return_flag == -1) trigger_stopping_behaviour_ = true;
+        return_flag = step(state_q, state_qd, ext_force, ctrl_torque.data, total_time_sec_, loop_iteration_count_, stop_loop_iteration_count_, stopping_sequence_on_);
+        if (return_flag == -1) trigger_stopping_sequence_ = true;
 
-        if (stopping_behaviour_on_) // Robot will be controlled to stop its motion and eventually lock
+        if (stopping_sequence_on_) // Robot will be controlled to stop its motion and eventually lock
         {
             if (return_flag == 1) // Stop motion task completed
             {
                 // Make sure that the robot is locked (freezed)
                 engage_lock();
 
-                stopping_behaviour_on_ = false;
+                stopping_sequence_on_ = false;
                 total_time_sec_ += (double)stop_loop_iteration_count_ / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
                 printf("Robot stopped!\n");
                 return 0;
@@ -2398,7 +2398,7 @@ int dynamics_controller::control()
                 // Make sure that the robot is locked (freezed)
                 engage_lock();
 
-                stopping_behaviour_on_ = false;
+                stopping_sequence_on_ = false;
                 total_time_sec_ += (double)stop_loop_iteration_count_ / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
                 printf("Robot stopped!\n");
                 return -1;
@@ -2416,16 +2416,16 @@ int dynamics_controller::control()
         }
         else // Nominal task execution mode
         {
-            if (!trigger_stopping_behaviour_)
+            if (!trigger_stopping_sequence_)
             {
                 // Apply joint commands using safe control interface
-                if (apply_joint_control_commands(false) == -1) trigger_stopping_behaviour_ = true;
+                if (apply_joint_control_commands(false) == -1) trigger_stopping_sequence_ = true;
             }
 
-            if (trigger_stopping_behaviour_)
+            if (trigger_stopping_sequence_)
             {
-                trigger_stopping_behaviour_ = false;
-                stopping_behaviour_on_ = true;
+                trigger_stopping_sequence_ = false;
+                stopping_sequence_on_ = true;
                 stop_loop_iteration_count_ = 0;
 
                 printf("Stopping behaviour triggered!\n");
