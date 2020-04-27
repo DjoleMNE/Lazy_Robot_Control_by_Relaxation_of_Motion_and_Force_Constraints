@@ -55,12 +55,16 @@ enum path_types
 
 // Waiting time during actions
 constexpr auto TIMEOUT_DURATION      = std::chrono::seconds{20};
+std::chrono::steady_clock::time_point loop_start_time;
+std::chrono::duration <double, std::micro> loop_interval{};
+
 const int SECOND                     = 1000000;
 const int MILLISECOND                = 1000;
 const int JOINTS                     = 7;
 const int NUMBER_OF_CONSTRAINTS      = 6;
 const int desired_dynamics_interface = dynamics_interface::CART_ACCELERATION;
 const int abag_error_type            = error_type::SIGN;
+int RATE_HZ                          = 1000; // Hz
 int motion_profile_id                = m_profile::CONSTANT;
 int path_type                        = path_types::STEP_PATH;
 int desired_pose_id                  = desired_pose::HOME;
@@ -69,7 +73,7 @@ int desired_control_mode             = control_mode::TORQUE;
 int environment                      = kinova_environment::SIMULATION;
 int robot_model_id                   = kinova_model::URDF;
 int id                               = robot_id::KINOVA_GEN3_1;
-
+int control_loop_delay_count         = 0;
 const double time_horizon_amplitude  = 2.5;
 double tube_speed                    = 0.01;
 double desired_null_space_angle      = 90.0; // Unit degrees
@@ -227,6 +231,21 @@ int64_t GetTickUs()
     return (start.tv_sec * 1000000LLU) + (start.tv_nsec / 1000);
 }
 
+//Make sure that the control loop runs exactly with the specified frequency
+int enforce_loop_frequency(const int dt)
+{
+    loop_interval = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time);
+
+    if (loop_interval < std::chrono::microseconds(dt)) // Loop is sufficiently fast
+    {
+        while (loop_interval < std::chrono::microseconds(dt - 1))
+            loop_interval = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time);
+
+        return 0;
+    }
+    else return -1; //Loop is too slow
+}
+
 // Define the callback function used in Refresh_callback
 auto lambda_fct_callback = [](const Kinova::Api::Error &err, const Kinova::Api::BaseCyclic::Feedback data)
 {
@@ -237,69 +256,6 @@ auto lambda_fct_callback = [](const Kinova::Api::Error &err, const Kinova::Api::
     std::cout << serialized_data << std::endl << std::endl;
 };
 
-void run_test(kinova_mediator &robot_driver)
-{
-    double time_duration = 20.0f; // Duration of the example (seconds)
-    int timer_count = 0;
-    int64_t now = 0;
-    int64_t last = 0;
-    int id_solver_result = 0;
-    
-    KDL::JntArray jnt_array_command(7), jnt_array_feedback(7), jnt_array_feedback_2(7), jnt_array_feedback_3(7), zero_joint_array(7);
-
-    KDL::Chain robot_chain = robot_driver.get_robot_model();
-    KDL::Wrenches zero_wrenches(robot_chain.getNrOfSegments(), KDL::Wrench::Zero());
-
-    std::shared_ptr<KDL::Solver_RNE> id_solver = std::make_shared<KDL::Solver_RNE>(robot_chain, KDL::Vector(0.0, 0.0, -9.81289), robot_driver.get_joint_inertia(), robot_driver.get_joint_torque_limits(), true);
-
-    // printf("Test run started\n");
-    int return_flag = 0;
-    int iteration_count = 0;
-
-    // Real-time loop
-    while (timer_count < (time_duration * 1000))
-    {
-        now = GetTickUs();
-
-        if (now - last > 1000)
-        {
-            robot_driver.get_joint_state(jnt_array_feedback, jnt_array_feedback_2, jnt_array_feedback_3);
-            // std::cout << "Pos: " << jnt_array_feedback << std::endl;
-            // std::cout << "Vel: " << jnt_array_feedback_2 << std::endl;
-            // std::cout << "Torque: " << jnt_array_feedback_3 << std::endl;
-            // std::cout << std::endl;
-
-            id_solver_result = id_solver->CartToJnt(jnt_array_feedback, zero_joint_array, zero_joint_array, zero_wrenches, jnt_array_command);
-            if (id_solver_result != 0) return;
-
-            if (iteration_count == 0)
-            {
-                if (robot_driver.set_control_mode(control_mode::TORQUE) == -1)
-                {
-                    printf("Incorrect control mode\n");
-                    return;
-                }
-            }
-
-            return_flag = robot_driver.set_joint_torques(jnt_array_command);
-            // std::cout <<  "Torque command: "<< jnt_array_command << std::endl;
-
-            if (return_flag == -1)
-            {
-                robot_driver.stop_robot_motion();
-                printf("Robot stoped: error in control\n");
-                return;
-            }
-
-            timer_count++;
-            last = GetTickUs();
-            iteration_count++;
-        }
-    }
-
-    robot_driver.stop_robot_motion();
-    printf("Task completed\n");
-}
 
 void rotate_joint(kinova_mediator &robot_driver, const int joint, const double rate)
 {
@@ -653,9 +609,75 @@ int define_task(dynamics_controller *dyn_controller)
     return 0;
 }
 
+void run_test(kinova_mediator &robot_driver)
+{
+    double time_duration = 20.0f; // Duration of the example (seconds)
+    int timer_count = 0;
+    int64_t now = 0;
+    int64_t last = 0;
+    int id_solver_result = 0;
+    
+    KDL::JntArray jnt_array_command(7), jnt_array_feedback(7), jnt_array_feedback_2(7), jnt_array_feedback_3(7);
+    const KDL::JntArray ZERO_JOINT_ARRAY(7);
+
+    KDL::Chain robot_chain = robot_driver.get_robot_model();
+    KDL::Wrenches zero_wrenches(robot_chain.getNrOfSegments(), KDL::Wrench::Zero());
+
+    std::shared_ptr<KDL::Solver_RNE> id_solver = std::make_shared<KDL::Solver_RNE>(robot_chain, KDL::Vector(0.0, 0.0, -9.81289), robot_driver.get_joint_inertia(), robot_driver.get_joint_torque_limits(), true);
+
+    // printf("Test run started\n");
+    int return_flag = 0;
+    int iteration_count = 0;
+
+    // Real-time loop
+    while (timer_count < (time_duration * 1000))
+    {
+        now = GetTickUs();
+
+        if (now - last > 1000)
+        {
+            robot_driver.get_joint_state(jnt_array_feedback, jnt_array_feedback_2, jnt_array_feedback_3);
+            // std::cout << "Pos: " << jnt_array_feedback << std::endl;
+            // std::cout << "Vel: " << jnt_array_feedback_2 << std::endl;
+            // std::cout << "Torque: " << jnt_array_feedback_3 << std::endl;
+            // std::cout << std::endl;
+
+            id_solver_result = id_solver->CartToJnt(jnt_array_feedback, ZERO_JOINT_ARRAY, ZERO_JOINT_ARRAY, zero_wrenches, jnt_array_command);
+            if (id_solver_result != 0) return;
+
+            if (iteration_count == 0)
+            {
+                if (robot_driver.set_control_mode(control_mode::TORQUE) == -1)
+                {
+                    printf("Incorrect control mode\n");
+                    return;
+                }
+            }
+
+            return_flag = robot_driver.set_joint_torques(jnt_array_command);
+            // std::cout <<  "Torque command: "<< jnt_array_command << std::endl;
+
+            if (return_flag == -1)
+            {
+                robot_driver.stop_robot_motion();
+                printf("Robot stoped: error in control\n");
+                return;
+            }
+
+            timer_count++;
+            last = GetTickUs();
+            iteration_count++;
+        }
+    }
+
+    robot_driver.stop_robot_motion();
+    printf("Task completed\n");
+}
+
 int main(int argc, char **argv)
 {
     // printf("kinova MAIN Started \n");
+    RATE_HZ              = 500; // Loop frequency in Hz
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                              false, false, false}; // Angular
     tube_tolerances      = std::vector<double>{0.01, 0.02, 0.02,

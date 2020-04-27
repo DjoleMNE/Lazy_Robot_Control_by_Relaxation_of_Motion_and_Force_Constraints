@@ -197,8 +197,8 @@ class dynamics_controller
 
   private:
     const int RATE_HZ_;
-    const long DT_MICRO_, DT_1KHZ_MICRO_;
-    const double DT_SEC_, DT_STOPPING_MICRO_;
+    const long DT_MICRO_, DT_1KHZ_MICRO_, DT_STOPPING_MICRO_;
+    const double DT_SEC_;
 
     std::ofstream log_file_cart_, log_file_joint_, log_file_predictions_, log_file_null_space_, log_file_cart_base_, log_file_stop_motion_;
     bool store_control_data_;

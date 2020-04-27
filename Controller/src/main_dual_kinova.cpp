@@ -64,7 +64,7 @@ const int JOINTS                     = 7;
 const int NUMBER_OF_CONSTRAINTS      = 6;
 const int desired_dynamics_interface = dynamics_interface::CART_ACCELERATION;
 const int abag_error_type            = error_type::SIGN;
-int RATE_HZ_                         = 1000;
+int RATE_HZ                          = 1000; // Hz
 int motion_profile_id                = m_profile::CONSTANT;
 int path_type                        = path_types::STEP_PATH;
 int desired_pose_id                  = desired_pose::HOME;
@@ -258,10 +258,10 @@ int enforce_loop_frequency(const int dt)
 
 void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
 {
-    RATE_HZ_ = 1000;
+    RATE_HZ = 1000;
     double total_time_sec = 0.0;
-    const int DT_MICRO = SECOND / RATE_HZ_;
-    const double DT_SEC_ = 1.0 / static_cast<double>(RATE_HZ_);
+    const int DT_MICRO = SECOND / RATE_HZ;
+    const double DT_SEC = 1.0 / static_cast<double>(RATE_HZ);
     int id_solver_result = 0;
     int return_flag = 0;
     int iteration_count = 0;
@@ -284,7 +284,7 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
     {
         loop_start_time = std::chrono::steady_clock::now();
         iteration_count++;
-        total_time_sec = iteration_count * DT_SEC_;
+        total_time_sec = iteration_count * DT_SEC;
 
         robot_driver_1.get_joint_state(joint_pos_1, joint_vel_1, joint_torque_1);
         robot_driver_2.get_joint_state(joint_pos_2, joint_vel_2, joint_torque_2);
@@ -733,7 +733,7 @@ int define_task(dynamics_controller *dyn_controller)
 int main(int argc, char **argv)
 {
     // printf("kinova MAIN Started \n");
-    RATE_HZ_             = 1000;
+    RATE_HZ              = 1000; // Hz
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                              false, false, false}; // Angular
     tube_tolerances      = std::vector<double>{0.01, 0.02, 0.02,

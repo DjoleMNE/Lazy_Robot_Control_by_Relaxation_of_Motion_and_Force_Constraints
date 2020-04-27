@@ -33,7 +33,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     RATE_HZ_(rate_hz),
     DT_MICRO_(SECOND / RATE_HZ_), DT_1KHZ_MICRO_(SECOND / 1000), // Time period defined in microseconds: 1s = 1 000 000us
     DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
-    DT_STOPPING_MICRO_(static_cast<double>(SECOND) / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ),
+    DT_STOPPING_MICRO_(SECOND / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ),
     store_control_data_(false), desired_dynamics_interface_(dynamics_interface::CART_ACCELERATION), 
     desired_task_model_(task_model::full_pose),
     loop_start_time_(std::chrono::steady_clock::now()),
