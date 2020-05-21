@@ -298,6 +298,7 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
         if (id_solver_result != 0)
         {
             robot_driver_1.stop_robot_motion();
+            robot_driver_2.stop_robot_motion();
             printf("Robot stoped: error in dynamics 1\n");
             return;
         }
@@ -305,6 +306,7 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
         id_solver_result = id_solver_2->CartToJnt(joint_pos_2, zero_joint_array, zero_joint_array, wrenches_2, torque_command_2);
         if (id_solver_result != 0)
         {
+            robot_driver_1.stop_robot_motion();
             robot_driver_2.stop_robot_motion();
             printf("Robot stoped: error in dynamics 2\n");
             return;
@@ -329,6 +331,7 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
         if (return_flag == -1)
         {
             robot_driver_1.stop_robot_motion();
+            robot_driver_2.stop_robot_motion();
             printf("Robot stoped: error in control 1\n");
             return;
         }
@@ -336,6 +339,7 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
         return_flag = robot_driver_2.set_joint_torques(torque_command_2);
         if (return_flag == -1)
         {
+            robot_driver_1.stop_robot_motion();
             robot_driver_2.stop_robot_motion();
             printf("Robot stoped: error in control 2\n");
             return;
