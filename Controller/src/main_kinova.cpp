@@ -664,63 +664,65 @@ int define_task(dynamics_controller *dyn_controller)
 
 void run_test(kinova_mediator &robot_driver)
 {
-    double time_duration = 20.0f; // Duration of the example (seconds)
-    int timer_count = 0;
-    int64_t now = 0;
-    int64_t last = 0;
-    int id_solver_result = 0;
-    
-    KDL::JntArray jnt_array_command(7), jnt_array_feedback(7), jnt_array_feedback_2(7), jnt_array_feedback_3(7);
+    RATE_HZ = 1000;
+    const int DT_MICRO = SECOND / RATE_HZ;
+    const double DT_SEC = 1.0 / static_cast<double>(RATE_HZ);
+    const double time_duration = 20.0f; // Duration of the example (seconds)
+    double total_time_sec = 0.0;
+    int iteration_count = 0;
+    int return_flag = 0;
+    // double loop_time = 0.0;
+
+    KDL::JntArray jnt_command_torque(7), jnt_position(7), jnt_velocity(7), jnt_torque(7);
     const KDL::JntArray ZERO_JOINT_ARRAY(7);
 
     KDL::Chain robot_chain = robot_driver.get_robot_model();
-    KDL::Wrenches zero_wrenches(robot_chain.getNrOfSegments(), KDL::Wrench::Zero());
+    const KDL::Wrenches zero_wrenches(robot_chain.getNrOfSegments(), KDL::Wrench::Zero());
 
     std::shared_ptr<KDL::Solver_RNE> id_solver = std::make_shared<KDL::Solver_RNE>(robot_chain, KDL::Vector(0.0, 0.0, -9.81289), robot_driver.get_joint_inertia(), robot_driver.get_joint_torque_limits(), true);
 
-    // printf("Test run started\n");
-    int return_flag = 0;
-    int iteration_count = 0;
-
     // Real-time loop
-    while (timer_count < (time_duration * 1000))
+    while (total_time_sec < time_duration)
     {
-        now = GetTickUs();
+        loop_start_time = std::chrono::steady_clock::now();
+        iteration_count++;
+        total_time_sec = iteration_count * DT_SEC;
 
-        if (now - last > 1000)
+        robot_driver.get_joint_state(jnt_position, jnt_velocity, jnt_torque);
+
+        return_flag = id_solver->CartToJnt(jnt_position, ZERO_JOINT_ARRAY, ZERO_JOINT_ARRAY, zero_wrenches, jnt_command_torque);
+        if (return_flag != 0)
         {
-            robot_driver.get_joint_state(jnt_array_feedback, jnt_array_feedback_2, jnt_array_feedback_3);
-            // std::cout << "Pos: " << jnt_array_feedback << std::endl;
-            // std::cout << "Vel: " << jnt_array_feedback_2 << std::endl;
-            // std::cout << "Torque: " << jnt_array_feedback_3 << std::endl;
-            // std::cout << std::endl;
+            robot_driver.stop_robot_motion();
+            printf("Robot stoped: error in dynamics %d\n", return_flag);
+            return;
+        }
 
-            id_solver_result = id_solver->CartToJnt(jnt_array_feedback, ZERO_JOINT_ARRAY, ZERO_JOINT_ARRAY, zero_wrenches, jnt_array_command);
-            if (id_solver_result != 0) return;
-
-            if (iteration_count == 0)
+        if (iteration_count == 1)
+        {
+            if (robot_driver.set_control_mode(control_mode::TORQUE) == -1)
             {
-                if (robot_driver.set_control_mode(control_mode::TORQUE) == -1)
-                {
-                    printf("Incorrect control mode\n");
-                    return;
-                }
-            }
-
-            return_flag = robot_driver.set_joint_torques(jnt_array_command);
-            // std::cout <<  "Torque command: "<< jnt_array_command << std::endl;
-
-            if (return_flag == -1)
-            {
-                robot_driver.stop_robot_motion();
-                printf("Robot stoped: error in control\n");
+                printf("Incorrect control mode\n");
                 return;
             }
-
-            timer_count++;
-            last = GetTickUs();
-            iteration_count++;
         }
+
+        return_flag = robot_driver.set_joint_torques(jnt_command_torque);
+        if (return_flag == -1)
+        {
+            robot_driver.stop_robot_motion();
+            printf("Robot stoped: error in control\n");
+            return;
+        }
+
+        enforce_loop_frequency(DT_MICRO);
+
+        // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time).count();
+        // if (iteration_count == 2000) 
+        // {
+        //     printf("%f\n", loop_time / 2000.0);
+        //     break;
+        // }
     }
 
     robot_driver.stop_robot_motion();
