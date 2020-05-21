@@ -83,6 +83,7 @@ bool log_data                        = false;
 bool control_null_space              = false;
 bool compensate_gravity              = false;
 bool use_mass_alternation            = false;
+auto error_callback = [](Kinova::Api::KError err){ cout << "_________ callback error _________" << err.toString(); };
 
 std::vector<bool> control_dims       = {true, true, true, // Linear
                                         false, false, false}; // Angular
@@ -266,6 +267,101 @@ void rotate_joint(kinova_mediator &robot_driver, const int joint, const double r
     if (environment != kinova_environment::SIMULATION) usleep(5000 * MILLISECOND);
 }
 
+/**
+ * Code for calibrating torque offets. 
+ * Should be used only one-time. The robot must be in the zero-configuration.
+ */
+void calibrate_torque_offsets()
+{
+    // Extract user password from a file
+    fstream newfile;
+    string kinova_passwd;
+    newfile.open("/home/djole/Master/Thesis/GIT/MT_testing/kinova_passwd.txt", ios::in);
+    if (newfile.is_open())
+    {
+        if (id == KINOVA_GEN3_1) getline(newfile, kinova_passwd);
+        else while (getline(newfile, kinova_passwd)) {}
+        newfile.close();
+    }
+
+    // Create API objects
+    auto transport = new Kinova::Api::TransportClientTcp();
+    auto router = new Kinova::Api::RouterClient(transport, error_callback);
+    if (id == KINOVA_GEN3_1) transport->connect(IP_ADDRESS_1, PORT);
+    else transport->connect(IP_ADDRESS_2, PORT);
+
+    // Set session data connection information
+    auto create_session_info = Kinova::Api::Session::CreateSessionInfo();
+    create_session_info.set_username("admin");
+    create_session_info.set_password(kinova_passwd);
+    create_session_info.set_session_inactivity_timeout(200);   // (milliseconds)
+    create_session_info.set_connection_inactivity_timeout(200); // (milliseconds)
+
+    // Session manager service wrapper
+    auto session_manager = new Kinova::Api::SessionManager(router);
+    session_manager->CreateSession(create_session_info);
+
+    // Create services
+    auto base = new Kinova::Api::Base::BaseClient(router);
+    auto actuator_config = new Kinova::Api::ActuatorConfig::ActuatorConfigClient(router);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    auto torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
+    torque_offset_message.set_torque_offset(0.0f);
+    actuator_config->SetTorqueOffset(torque_offset_message, 1);
+
+    torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
+    torque_offset_message.set_torque_offset(0.00253617f);
+    // torque_offset_message.set_torque_offset(0.0f);
+    actuator_config->SetTorqueOffset(torque_offset_message, 2);
+
+    torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
+    torque_offset_message.set_torque_offset(0.0f);
+    actuator_config->SetTorqueOffset(torque_offset_message, 3);
+
+    torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
+    torque_offset_message.set_torque_offset(0.00153136f);
+    // torque_offset_message.set_torque_offset(0.0f);
+    actuator_config->SetTorqueOffset(torque_offset_message, 4);
+
+    torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
+    torque_offset_message.set_torque_offset(0.0f);
+    actuator_config->SetTorqueOffset(torque_offset_message, 5);
+
+    torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
+    torque_offset_message.set_torque_offset(0.00137371f);
+    // torque_offset_message.set_torque_offset(0.0f);
+    actuator_config->SetTorqueOffset(torque_offset_message, 6);
+
+    torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
+    torque_offset_message.set_torque_offset(0.0f);
+    actuator_config->SetTorqueOffset(torque_offset_message, 7);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    // API functions for testing calibration resuts... not yet completely working
+    // auto control_mode = actuator_config->GetControlMode(7);
+    // std::cout << "ControlMode: " << control_mode.control_mode() << std::endl; 
+    // auto torque_offset = actuator_config->GetTorqueOffset(7);
+    // std::cout << "TorqueOffset: " << torque_offset.torque_offset() << std::endl;
+    
+    // Close API session
+    session_manager->CloseSession();
+
+    // Deactivate the router and cleanly disconnect from the transport object
+    router->SetActivationStatus(false);
+    transport->disconnect();
+
+    // Destroy the API
+    delete actuator_config;
+    delete base;
+    delete session_manager;
+    delete router;
+    delete transport;
+
+    // printf("Torque offset calibration completed.\n");
+}
+
 int go_to(kinova_mediator &robot_driver, const int desired_pose_)
 {
     std::vector<double> configuration_array(7, 0.0);
@@ -301,8 +397,6 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
 
 
         // Create API objects
-        auto error_callback = [](Kinova::Api::KError err){ cout << "_________ callback error _________" << err.toString(); };
-        
         auto transport = new Kinova::Api::TransportClientTcp();
         auto router = new Kinova::Api::RouterClient(transport, error_callback);
         if (id == KINOVA_GEN3_1) transport->connect(IP_ADDRESS_1, PORT);
@@ -323,7 +417,6 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
 
         // Create services
         auto base = new Kinova::Api::Base::BaseClient(router);
-        // auto actuator_config = new Kinova::Api::ActuatorConfig::ActuatorConfigClient(router);
 
         // Make sure the arm is in Single Level Servoing before executing an Action
         auto servoingMode = Kinova::Api::Base::ServoingModeInformation();
@@ -384,52 +477,6 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
         // std::cout << "Joint angles reached" << std::endl;
         // std::cout << "Promise value : " << Kinova::Api::Base::ActionEvent_Name(promise_event) << std::endl;
 
-        /**
-         * Code for calibrating torque offets. 
-         * Should be used only once and the robot must be in the zero-configuration.
-         */
-        // std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-        // auto torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        // torque_offset_message.set_torque_offset(0.0f);
-        // actuator_config->SetTorqueOffset(torque_offset_message, 1);
-
-        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        // torque_offset_message.set_torque_offset(0.00253617f);
-        // // torque_offset_message.set_torque_offset(0.0f);
-        // actuator_config->SetTorqueOffset(torque_offset_message, 2);
-
-        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        // torque_offset_message.set_torque_offset(0.0f);
-        // actuator_config->SetTorqueOffset(torque_offset_message, 3);
-
-        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        // torque_offset_message.set_torque_offset(0.00153136f);
-        // // torque_offset_message.set_torque_offset(0.0f);
-        // actuator_config->SetTorqueOffset(torque_offset_message, 4);
-
-        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        // torque_offset_message.set_torque_offset(0.0f);
-        // actuator_config->SetTorqueOffset(torque_offset_message, 5);
-
-        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        // torque_offset_message.set_torque_offset(0.00137371f);
-        // // torque_offset_message.set_torque_offset(0.0f);
-        // actuator_config->SetTorqueOffset(torque_offset_message, 6);
-
-        // torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-        // torque_offset_message.set_torque_offset(0.0f);
-        // actuator_config->SetTorqueOffset(torque_offset_message, 7);
-        // std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        /**
-         *  End of the calibration code
-         */
-
-        // auto control_mode = actuator_config->GetControlMode(7);
-        // std::cout << "ControlMode: " << control_mode.control_mode() << std::endl;
-        
-        // auto torque_offset = actuator_config->GetTorqueOffset(7);
-        // std::cout << "TorqueOffset: " << torque_offset.torque_offset() << std::endl;
-
         // Close API session
         session_manager->CloseSession();
 
@@ -438,7 +485,6 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
         transport->disconnect();
 
         // Destroy the API
-        // delete actuator_config;
         delete base;
         delete session_manager;
         delete router;
@@ -926,6 +972,9 @@ int main(int argc, char **argv)
     else return 0;
 
     if (return_flag != 0) return 0;
+
+    // Calibration function should be used only one-time. The robot must be in the zero-configuration
+    // calibrate_torque_offsets(); return 0;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
     if (!robot_driver.is_initialized()) robot_driver.initialize(robot_model_id, environment, id);
