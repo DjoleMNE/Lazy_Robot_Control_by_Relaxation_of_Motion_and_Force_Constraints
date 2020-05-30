@@ -737,10 +737,320 @@ int define_task(dynamics_controller *dyn_controller)
     return 0;
 }
 
+int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
+{
+    const double DT_SEC = 1.0 / static_cast<double>(RATE_HZ);
+    const int DT_MICRO = SECOND / RATE_HZ;
+    const int DT_STOPPING_MICRO = SECOND / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
+
+    // Constraint comming from the Vereshchagin HD solver
+    assert(JOINTS == robot_driver_1.get_robot_model().getNrOfSegments());
+    assert(JOINTS == robot_driver_2.get_robot_model().getNrOfSegments());
+
+    KDL::Chain robot_chain_1 = robot_driver_1.get_robot_model();
+    KDL::Chain robot_chain_2 = robot_driver_2.get_robot_model();
+
+    dynamics_controller controller_1(&robot_driver_1, RATE_HZ, compensate_gravity);
+    dynamics_controller controller_2(&robot_driver_2, RATE_HZ, compensate_gravity);
+
+    int return_flag = define_task(&controller_1); 
+    if (return_flag != 0)
+    {
+        printf("Error in defining task for robot 1\n");
+        return -1;
+    }
+
+    return_flag = define_task(&controller_2); 
+    if (return_flag != 0)
+    {
+        printf("Error in defining task for robot 2\n");
+        return -1;
+    }
+
+    if (desired_task_model == task_model::full_pose) 
+    {
+        controller_1.set_parameters(time_horizon_amplitude, abag_error_type, 
+                                    max_command, error_alpha,
+                                    bias_threshold, bias_step, gain_threshold,
+                                    gain_step, min_bias_sat, min_command_sat,
+                                    null_space_abag_parameters, compensation_parameters,
+                                    STOP_MOTION_ERROR_ALPHA,
+                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+
+        controller_2.set_parameters(time_horizon_amplitude, abag_error_type, 
+                                    max_command, error_alpha,
+                                    bias_threshold, bias_step, gain_threshold,
+                                    gain_step, min_bias_sat, min_command_sat,
+                                    null_space_abag_parameters, compensation_parameters,
+                                    STOP_MOTION_ERROR_ALPHA,
+                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+    }
+    else if (desired_task_model == task_model::moveGuarded)
+    {
+        controller_1.set_parameters(time_horizon_amplitude, abag_error_type, 
+                                    max_command, error_alpha_1,
+                                    bias_threshold_1, bias_step_1, gain_threshold_1,
+                                    gain_step_1, min_bias_sat, min_command_sat,
+                                    null_space_abag_parameters, compensation_parameters,
+                                    STOP_MOTION_ERROR_ALPHA,
+                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+
+        controller_2.set_parameters(time_horizon_amplitude, abag_error_type, 
+                                    max_command, error_alpha_1,
+                                    bias_threshold_1, bias_step_1, gain_threshold_1,
+                                    gain_step_1, min_bias_sat, min_command_sat,
+                                    null_space_abag_parameters, compensation_parameters,
+                                    STOP_MOTION_ERROR_ALPHA,
+                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+    }
+    else if (desired_task_model == task_model::moveTo_follow_path)
+    {
+        controller_1.set_parameters(time_horizon_amplitude, abag_error_type, 
+                                    max_command, error_alpha_3,
+                                    bias_threshold_3, bias_step_3, gain_threshold_3,
+                                    gain_step_3, min_bias_sat, min_command_sat,
+                                    null_space_abag_parameters, compensation_parameters,
+                                    STOP_MOTION_ERROR_ALPHA,
+                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+
+        controller_2.set_parameters(time_horizon_amplitude, abag_error_type, 
+                                    max_command, error_alpha_3,
+                                    bias_threshold_3, bias_step_3, gain_threshold_3,
+                                    gain_step_3, min_bias_sat, min_command_sat,
+                                    null_space_abag_parameters, compensation_parameters,
+                                    STOP_MOTION_ERROR_ALPHA,
+                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+
+    }
+    else if (desired_task_model == task_model::moveTo_weight_compensation)
+    {
+        controller_1.set_parameters(time_horizon_amplitude, abag_error_type, 
+                                    max_command, error_alpha_4,
+                                    bias_threshold_4, bias_step_4, gain_threshold_4,
+                                    gain_step_4, min_bias_sat, min_command_sat,
+                                    null_space_abag_parameters, compensation_parameters,
+                                    STOP_MOTION_ERROR_ALPHA,
+                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+
+        controller_2.set_parameters(time_horizon_amplitude, abag_error_type, 
+                                    max_command, error_alpha_4,
+                                    bias_threshold_4, bias_step_4, gain_threshold_4,
+                                    gain_step_4, min_bias_sat, min_command_sat,
+                                    null_space_abag_parameters, compensation_parameters,
+                                    STOP_MOTION_ERROR_ALPHA,
+                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+    }
+    else if (desired_task_model == task_model::moveTo)
+    {
+        controller_1.set_parameters(time_horizon_amplitude, abag_error_type, 
+                                    max_command, error_alpha_2,
+                                    bias_threshold_2, bias_step_2, gain_threshold_2,
+                                    gain_step_2, min_bias_sat, min_command_sat,
+                                    null_space_abag_parameters, compensation_parameters,
+                                    STOP_MOTION_ERROR_ALPHA,
+                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+
+        controller_2.set_parameters(time_horizon_amplitude, abag_error_type, 
+                                    max_command, error_alpha_2,
+                                    bias_threshold_2, bias_step_2, gain_threshold_2,
+                                    gain_step_2, min_bias_sat, min_command_sat,
+                                    null_space_abag_parameters, compensation_parameters,
+                                    STOP_MOTION_ERROR_ALPHA,
+                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+    }
+    else if (desired_task_model == task_model::gravity_compensation)
+    {
+        controller_1.set_parameters(time_horizon_amplitude, abag_error_type, 
+                                    max_command, error_alpha,
+                                    bias_threshold, bias_step, gain_threshold,
+                                    gain_step, min_bias_sat, min_command_sat,
+                                    null_space_abag_parameters, compensation_parameters,
+                                    STOP_MOTION_ERROR_ALPHA,
+                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+
+        controller_2.set_parameters(time_horizon_amplitude, abag_error_type, 
+                                    max_command, error_alpha,
+                                    bias_threshold, bias_step, gain_threshold,
+                                    gain_step, min_bias_sat, min_command_sat,
+                                    null_space_abag_parameters, compensation_parameters,
+                                    STOP_MOTION_ERROR_ALPHA,
+                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+    }
+    else
+    {
+        printf("Error in setting the parameters\n");
+        return -1;
+    }
+
+    return_flag = controller_1.initialize(desired_control_mode, desired_dynamics_interface, log_data, motion_profile_id);
+    if (return_flag != 0)
+    {
+        printf("Error in intializing arm 1\n");
+        return -1;
+    }
+
+    return_flag = controller_2.initialize(desired_control_mode, desired_dynamics_interface, log_data, motion_profile_id);
+    if (return_flag != 0)
+    {
+        printf("Error in intializing arm 2\n");
+        return -1;
+    }
+
+    KDL::JntArray torque_command_1(7), joint_pos_1(7), joint_vel_1(7), joint_torque_1(7),
+                  torque_command_2(7), joint_pos_2(7), joint_vel_2(7), joint_torque_2(7);
+
+    KDL::Wrenches wrenches_1(robot_chain_1.getNrOfSegments(), KDL::Wrench::Zero());
+    KDL::Wrenches wrenches_2(robot_chain_2.getNrOfSegments(), KDL::Wrench::Zero());
+
+    double loop_time = 0.0;
+    double total_time_sec = 0.0;
+    int loop_iteration_count = 0;
+    int stop_loop_iteration_count = 0;
+    int control_loop_delay_count = 0;
+    bool stopping_sequence_on = false;
+    bool trigger_stopping_sequence = false;
+    bool robot_1_locked = false;
+    bool robot_2_locked = false;
+    int return_flag_1 = 0;
+    int return_flag_2 = 0;
+
+    // Real-time loop
+    while (1)
+    {
+        // Save current time point
+        loop_start_time = std::chrono::steady_clock::now();
+        if (!stopping_sequence_on) total_time_sec = loop_iteration_count * DT_SEC;
+
+        //Get current robot state from the joint sensors: angles and velocities 
+        robot_driver_1.get_joint_state(joint_pos_1, joint_vel_1, joint_torque_1);
+        robot_driver_2.get_joint_state(joint_pos_2, joint_vel_2, joint_torque_2);
+
+        // Make one control iteration (step) for both robots -> Update control commands
+        if (!robot_1_locked) return_flag_1 = controller_1.step(joint_pos_1, joint_vel_1, wrenches_1[robot_chain_1.getNrOfSegments()- 1], torque_command_1.data, total_time_sec, loop_iteration_count, stop_loop_iteration_count, stopping_sequence_on);
+        if (return_flag_1 == -1) trigger_stopping_sequence = true;
+
+        if (!trigger_stopping_sequence && !robot_2_locked) return_flag_2 = controller_2.step(joint_pos_2, joint_vel_2, wrenches_2[robot_chain_2.getNrOfSegments()- 1], torque_command_2.data, total_time_sec, loop_iteration_count, stop_loop_iteration_count, stopping_sequence_on);
+        if (return_flag_2 == -1) trigger_stopping_sequence = true;
+
+        if (stopping_sequence_on) // Robots will be controlled to stop their motion and eventually lock
+        {
+            if (return_flag_1 == 1 && !robot_1_locked) // Stop motion task completed for robot 1
+            {
+                // Make sure that the robot is locked (freezed)
+                controller_1.engage_lock();
+                robot_1_locked = true;
+            }
+
+            if (return_flag_2 == 1 && !robot_2_locked) // Stop motion task completed for robot 2
+            {
+                // Make sure that the robot is locked (freezed)
+                controller_2.engage_lock();
+                robot_2_locked = true;
+            }
+
+            if (robot_1_locked && robot_2_locked)
+            {
+                stopping_sequence_on = false;
+                total_time_sec += (double)stop_loop_iteration_count / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
+                printf("Robots locked!\n");
+                controller_1.deinitialize();
+                controller_2.deinitialize();
+                return 0;                
+            }
+
+            if (!robot_1_locked)
+            {
+                // Apply robot 1 joint commands using torque control interface (bypass all safety checks)
+                if (controller_1.apply_joint_control_commands(true) == -1)
+                {
+                    // Make sure that the robot is locked (freezed)
+                    controller_1.engage_lock();
+                    robot_1_locked = true;
+                }
+            }
+
+            if (!robot_2_locked)
+            {
+                // Apply robot 2 joint commands using torque control interface (bypass all safety checks)
+                if (controller_2.apply_joint_control_commands(true) == -1)
+                {
+                    // Make sure that the robot is locked (freezed)
+                    controller_2.engage_lock();
+                    robot_2_locked = true;
+                }
+            }
+
+            stop_loop_iteration_count++;
+            if (enforce_loop_frequency(DT_STOPPING_MICRO) != 0) control_loop_delay_count++;
+
+            // Testing loop time
+            // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time).count();
+            // if (stop_loop_iteration_count == 500) 
+            // {
+            //     printf("Stop loop time: %f\n", loop_time / 500.0);
+            //     robot_driver_1.stop_robot_motion();
+            //     robot_driver_2.stop_robot_motion();
+            //     controller_1.deinitialize();
+            //     controller_2.deinitialize();
+            //     return 0;
+            // }
+        }
+        else // Nominal task execution mode
+        {
+            if (!trigger_stopping_sequence)
+            {
+                // Apply joint commands using safe control interface
+                if (controller_1.apply_joint_control_commands(false) == -1) trigger_stopping_sequence = true;
+                if (controller_2.apply_joint_control_commands(false) == -1) trigger_stopping_sequence = true;
+            }
+
+            if (trigger_stopping_sequence)
+            {
+                trigger_stopping_sequence = false;
+                stopping_sequence_on = true;
+                stop_loop_iteration_count = 0;
+
+                // printf("Stopping behaviour triggered!\n");
+                continue;
+            }
+
+            loop_iteration_count++;
+            if (enforce_loop_frequency(DT_MICRO) != 0) control_loop_delay_count++;
+
+            // Testing loop time
+            loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time).count();
+            if (loop_iteration_count == 2000) 
+            {
+                printf("Main loop time: %f\n", loop_time / 2000.0);
+                trigger_stopping_sequence = true;
+            }
+        }
+    }
+
+    robot_driver_1.stop_robot_motion();
+    robot_driver_2.stop_robot_motion();
+    controller_1.deinitialize();
+    controller_2.deinitialize();
+    printf("Task completed\n");
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     // printf("kinova MAIN Started \n");
-    RATE_HZ              = 1000; // Hz
+    RATE_HZ              = 500; // Hz
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                              false, false, false}; // Angular
     tube_tolerances      = std::vector<double>{0.01, 0.02, 0.02,
