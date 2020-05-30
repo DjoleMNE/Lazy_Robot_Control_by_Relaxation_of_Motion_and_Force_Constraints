@@ -2,7 +2,7 @@
 Author(s): Djordje Vukcevic, Sven Schneider
 Institute: Hochschule Bonn-Rhein-Sieg
 
-Copyright (c) [2019]
+Copyright (c) [2020]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -116,21 +116,6 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
 
     error_logger_.error_source_ = error_source::empty;
     error_logger_.error_status_ = 0;
-
-    // Setting parameters of the ABAG Controller
-    abag_.set_error_alpha(abag_parameter::ERROR_ALPHA);    
-    abag_.set_bias_threshold(abag_parameter::BIAS_THRESHOLD);
-    abag_.set_bias_step(abag_parameter::BIAS_STEP);
-    abag_.set_gain_threshold(abag_parameter::GAIN_THRESHOLD);
-    abag_.set_gain_step(abag_parameter::GAIN_STEP);
-
-    abag_null_space_.set_error_alpha(abag_parameter::NULL_SPACE_ERROR_ALPHA, 0);    
-    abag_null_space_.set_bias_threshold(abag_parameter::NULL_SPACE_BIAS_THRESHOLD, 0);
-    abag_null_space_.set_bias_step(abag_parameter::NULL_SPACE_BIAS_STEP, 0);
-    abag_null_space_.set_gain_threshold(abag_parameter::NULL_SPACE_GAIN_THRESHOLD, 0);
-    abag_null_space_.set_gain_step(abag_parameter::NULL_SPACE_GAIN_STEP, 0);
-    abag_null_space_.set_min_bias_sat_limit((Eigen::VectorXd(1) << -1.0).finished());
-    abag_null_space_.set_min_command_sat_limit((Eigen::VectorXd(1) << -1.0).finished());
 }
 
 //Print information about controller settings
@@ -2006,6 +1991,8 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
     abag_null_space_.set_bias_step(     null_space_parameters(2), 0);
     abag_null_space_.set_gain_threshold(null_space_parameters(3), 0);
     abag_null_space_.set_gain_step(     null_space_parameters(4), 0);
+    abag_null_space_.set_min_bias_sat_limit((Eigen::VectorXd(1) << -1.0).finished());
+    abag_null_space_.set_min_command_sat_limit((Eigen::VectorXd(1) << -1.0).finished());
 
     abag_stop_motion_.set_error_alpha(stop_motion_error_alpha);    
     abag_stop_motion_.set_bias_threshold(stop_motion_bias_threshold);
@@ -2299,7 +2286,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
     loop_iteration_count_ = main_loop_iteration;
     stop_loop_iteration_count_ = stop_loop_iteration;
 
-    if (!stopping_behaviour_on)
+    if (!stopping_behaviour_on) // Control main task in Cartesian State
     {
         // Get Cartesian poses and velocities
         int status = fk_vereshchagin_.JntToCart(robot_state_.q,
@@ -2326,7 +2313,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
 
         if (update_commands() == -1) return -1;
     }
-    else
+    else // Control in joint space to stop the robot
     {
         if (stop_loop_iteration_count_ == 0)
         {
@@ -2428,7 +2415,7 @@ int dynamics_controller::control()
                 stopping_sequence_on_ = true;
                 stop_loop_iteration_count_ = 0;
 
-                printf("Stopping behaviour triggered!\n");
+                // printf("Stopping behaviour triggered!\n");
                 continue;
             }
 
