@@ -73,7 +73,6 @@ int desired_control_mode             = control_mode::TORQUE;
 int environment                      = kinova_environment::SIMULATION;
 int robot_model_id                   = kinova_model::URDF;
 int id                               = robot_id::KINOVA_GEN3_1;
-int control_loop_delay_count         = 0;
 const double time_horizon_amplitude  = 2.5;
 double tube_speed                    = 0.01;
 double desired_null_space_angle      = 90.0; // Unit degrees
@@ -337,13 +336,12 @@ void calibrate_torque_offsets()
     torque_offset_message.set_torque_offset(0.0f);
     actuator_config->SetTorqueOffset(torque_offset_message, 7);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
 
-    // API functions for testing calibration resuts... not yet completely working
-    // auto control_mode = actuator_config->GetControlMode(7);
-    // std::cout << "ControlMode: " << control_mode.control_mode() << std::endl; 
-    // auto torque_offset = actuator_config->GetTorqueOffset(7);
-    // std::cout << "TorqueOffset: " << torque_offset.torque_offset() << std::endl;
+    auto control_mode = actuator_config->GetControlMode(6);
+    std::cout << "ControlMode: " << control_mode.control_mode() << std::endl; 
+    auto torque_offset = actuator_config->GetTorqueOffset(6);
+    std::cout << "TorqueOffset: " << torque_offset.torque_offset() << std::endl;
     
     // Close API session
     session_manager->CloseSession();
@@ -664,10 +662,8 @@ int define_task(dynamics_controller *dyn_controller)
 
 void run_test(kinova_mediator &robot_driver)
 {
-    RATE_HZ = 1000;
     const int DT_MICRO = SECOND / RATE_HZ;
     const double DT_SEC = 1.0 / static_cast<double>(RATE_HZ);
-    const double time_duration = 20.0f; // Duration of the example (seconds)
     double total_time_sec = 0.0;
     int iteration_count = 0;
     int return_flag = 0;
@@ -682,7 +678,7 @@ void run_test(kinova_mediator &robot_driver)
     std::shared_ptr<KDL::Solver_RNE> id_solver = std::make_shared<KDL::Solver_RNE>(robot_chain, KDL::Vector(0.0, 0.0, -9.81289), robot_driver.get_joint_inertia(), robot_driver.get_joint_torque_limits(), true);
 
     // Real-time loop
-    while (total_time_sec < time_duration)
+    while (total_time_sec < task_time_limit_sec)
     {
         loop_start_time = std::chrono::steady_clock::now();
         iteration_count++;
@@ -720,6 +716,7 @@ void run_test(kinova_mediator &robot_driver)
         // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time).count();
         // if (iteration_count == 2000) 
         // {
+        //     robot_driver.stop_robot_motion();
         //     printf("%f\n", loop_time / 2000.0);
         //     break;
         // }
@@ -735,16 +732,16 @@ int run_main_control(kinova_mediator &robot_driver)
     const int DT_MICRO = SECOND / RATE_HZ;
     const int DT_STOPPING_MICRO = SECOND / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
 
-    KDL::Chain robot_chain = robot_driver.get_robot_model();
-
     // Constraint comming from the Vereshchagin HD solver
     assert(JOINTS == robot_driver.get_robot_model().getNrOfSegments());
 
-    if (robot_driver.stop_robot_motion() == -1)
-    {
-        printf("Error in stopping the robot\n");
-        return -1;
-    }
+    // if (robot_driver.stop_robot_motion() == -1)
+    // {
+    //     printf("Error in stopping the robot\n");
+    //     return -1;
+    // }
+
+    KDL::Chain robot_chain = robot_driver.get_robot_model();
 
     dynamics_controller controller(&robot_driver, RATE_HZ, compensate_gravity);
 
@@ -845,7 +842,7 @@ int run_main_control(kinova_mediator &robot_driver)
     int stop_loop_iteration_count = 0;
     bool stopping_sequence_on = false;
     bool trigger_stopping_sequence = false;
-    control_loop_delay_count = 0;
+    int control_loop_delay_count = 0;
     return_flag = 0;
 
     // Real-time loop
@@ -855,7 +852,7 @@ int run_main_control(kinova_mediator &robot_driver)
         loop_start_time = std::chrono::steady_clock::now();
         if (!stopping_sequence_on) total_time_sec = loop_iteration_count * DT_SEC;
 
-        //Get current robot state from the joint sensors: velocities and angles
+        //Get current robot state from the joint sensors: angles and velocities 
         robot_driver.get_joint_state(joint_pos, joint_vel, joint_torque);
 
         // Make one control iteration (step) -> Update control commands
@@ -929,8 +926,6 @@ int run_main_control(kinova_mediator &robot_driver)
             // {
             //     printf("Main loop time: %f\n", loop_time / 2000.0);
             //     trigger_stopping_sequence = true;
-            //     controller.deinitialize();
-            //     return 0;
             // }
         }
     }
@@ -989,10 +984,12 @@ int main(int argc, char **argv)
     assert(JOINTS == robot_driver.get_robot_model().getNrOfSegments());
     // if (robot_driver.stop_robot_motion() == -1) return 0;
 
-    // run_test(robot_driver); return 0;
+    run_test(robot_driver); return 0;
 
-    if (run_main_control(robot_driver) == -1) return 0;
-    return 0;
+    // if (run_main_control(robot_driver) == -1) return 0;
+    // robot_driver.deinitialize();
+    // return_flag = go_to(robot_driver, desired_pose::RETRACT);
+    // return 0;
 
     dynamics_controller controller(&robot_driver, RATE_HZ, compensate_gravity);
 
