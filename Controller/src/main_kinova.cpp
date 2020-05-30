@@ -840,9 +840,9 @@ int run_main_control(kinova_mediator &robot_driver)
     double total_time_sec = 0.0;
     int loop_iteration_count = 0;
     int stop_loop_iteration_count = 0;
+    int control_loop_delay_count = 0;
     bool stopping_sequence_on = false;
     bool trigger_stopping_sequence = false;
-    int control_loop_delay_count = 0;
     return_flag = 0;
 
     // Real-time loop

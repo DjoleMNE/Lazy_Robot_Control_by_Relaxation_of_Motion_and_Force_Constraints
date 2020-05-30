@@ -724,6 +724,10 @@ int define_task(dynamics_controller *dyn_controller)
                                                   tube_tolerances[7]); // Null space tolerance
             break;
 
+        case task_model::gravity_compensation:
+            dyn_controller->define_gravity_compensation_task(task_time_limit_sec);
+            break;
+
         default:
             assert(("Unsupported task model", false));
             return -1;
@@ -782,15 +786,15 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    run_test(robot_driver_1, robot_driver_2); return 0;
+    // run_test(robot_driver_1, robot_driver_2); return 0;
 
     // Main control function not yet ready
-    // if (run_main_control(robot_driver_1, robot_driver_2) == -1) return 0;
+    if (run_main_control(robot_driver_1, robot_driver_2) == -1) return 0;
 
     robot_driver_1.deinitialize();
     robot_driver_2.deinitialize();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     return_flag = go_to(robot_driver_1, robot_driver_2, desired_pose::RETRACT);
     return 0;
 }
