@@ -258,13 +258,12 @@ int enforce_loop_frequency(const int dt)
 
 void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
 {
-    RATE_HZ = 1000;
-    double total_time_sec = 0.0;
     const int DT_MICRO = SECOND / RATE_HZ;
     const double DT_SEC = 1.0 / static_cast<double>(RATE_HZ);
     int id_solver_result = 0;
     int return_flag = 0;
     int iteration_count = 0;
+    double total_time_sec = 0.0;
     // double loop_time = 0.0;
     
     KDL::JntArray zero_joint_array(7), torque_command_1(7), joint_pos_1(7), joint_vel_1(7), joint_torque_1(7),
@@ -326,6 +325,7 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
                 return;
             }
         }
+
         // Set control commands
         return_flag = robot_driver_1.set_joint_torques(torque_command_1);
         if (return_flag == -1)
@@ -401,7 +401,6 @@ int go_to(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2, cons
             while (getline(kinova_file, kinova_passwd_2)) {}
             kinova_file.close();
         }
-
 
         auto error_callback = [](Kinova::Api::KError err){ cout << "_________ callback error _________" << err.toString(); };
         
@@ -743,15 +742,14 @@ int main(int argc, char **argv)
     tube_tolerances      = std::vector<double>{0.01, 0.02, 0.02,
                                                0.0, 0.0, 0.0,
                                                0.001, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
-    environment          = kinova_environment::SIMULATION;
+    environment          = kinova_environment::REAL;
     robot_model_id       = kinova_model::URDF;
     desired_pose_id      = desired_pose::HOME;
     desired_control_mode = control_mode::TORQUE;
-    // desired_task_model   = task_model::moveTo;
-    desired_task_model   = task_model::full_pose;
+    desired_task_model   = task_model::gravity_compensation;
     path_type            = path_types::SINE_PATH;
     motion_profile_id    = m_profile::CONSTANT;
-    task_time_limit_sec  = 3.5;
+    task_time_limit_sec  = 10.5;
     tube_speed           = 0.0;
     compensate_gravity   = true;
     control_null_space   = false;
@@ -787,7 +785,7 @@ int main(int argc, char **argv)
     run_test(robot_driver_1, robot_driver_2); return 0;
 
     // Main control function not yet ready
-    // if (run_main_control() == -1) return 0;
+    // if (run_main_control(robot_driver_1, robot_driver_2) == -1) return 0;
 
     robot_driver_1.deinitialize();
     robot_driver_2.deinitialize();
