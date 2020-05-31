@@ -256,110 +256,6 @@ int enforce_loop_frequency(const int dt)
     else return -1; //Loop is too slow
 }
 
-void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
-{
-    const int DT_MICRO = SECOND / RATE_HZ;
-    const double DT_SEC = 1.0 / static_cast<double>(RATE_HZ);
-    int id_solver_result = 0;
-    int return_flag = 0;
-    int iteration_count = 0;
-    double total_time_sec = 0.0;
-    // double loop_time = 0.0;
-    
-    KDL::JntArray zero_joint_array(7), torque_command_1(7), joint_pos_1(7), joint_vel_1(7), joint_torque_1(7),
-                                       torque_command_2(7), joint_pos_2(7), joint_vel_2(7), joint_torque_2(7);
-
-    KDL::Chain robot_chain_1 = robot_driver_1.get_robot_model();
-    KDL::Chain robot_chain_2 = robot_driver_2.get_robot_model();
-    KDL::Wrenches wrenches_1(robot_chain_1.getNrOfSegments(), KDL::Wrench::Zero());
-    KDL::Wrenches wrenches_2(robot_chain_2.getNrOfSegments(), KDL::Wrench::Zero());
-
-    std::shared_ptr<KDL::Solver_RNE> id_solver_1 = std::make_shared<KDL::Solver_RNE>(robot_chain_1, KDL::Vector(0.0, 0.0, -9.81289), robot_driver_1.get_joint_inertia(), robot_driver_1.get_joint_torque_limits(), true);
-    std::shared_ptr<KDL::Solver_RNE> id_solver_2 = std::make_shared<KDL::Solver_RNE>(robot_chain_2, KDL::Vector(0.0, 0.0, -9.81289), robot_driver_2.get_joint_inertia(), robot_driver_2.get_joint_torque_limits(), true);
-
-    // printf("Test run started\n");
-    // Real-time loop
-    while (total_time_sec < task_time_limit_sec)
-    {
-        loop_start_time = std::chrono::steady_clock::now();
-        iteration_count++;
-        total_time_sec = iteration_count * DT_SEC;
-
-        robot_driver_1.get_joint_state(joint_pos_1, joint_vel_1, joint_torque_1);
-        robot_driver_2.get_joint_state(joint_pos_2, joint_vel_2, joint_torque_2);
-        // std::cout << "Pos: " << jnt_array_feedback << std::endl;
-        // std::cout << "Vel: " << jnt_array_feedback_2 << std::endl;
-        // std::cout << "Torque: " << jnt_array_feedback_3 << std::endl;
-        // std::cout << std::endl;
-
-        // Compute dynamics
-        id_solver_result = id_solver_1->CartToJnt(joint_pos_1, zero_joint_array, zero_joint_array, wrenches_1, torque_command_1);
-        if (id_solver_result != 0)
-        {
-            robot_driver_1.stop_robot_motion();
-            robot_driver_2.stop_robot_motion();
-            printf("Robot stoped: error in dynamics 1\n");
-            return;
-        }
-
-        id_solver_result = id_solver_2->CartToJnt(joint_pos_2, zero_joint_array, zero_joint_array, wrenches_2, torque_command_2);
-        if (id_solver_result != 0)
-        {
-            robot_driver_2.stop_robot_motion();
-            robot_driver_1.stop_robot_motion();
-            printf("Robot stoped: error in dynamics 2\n");
-            return;
-        }
-
-        if (iteration_count == 1)
-        {
-            if (robot_driver_1.set_control_mode(control_mode::TORQUE) == -1)
-            {
-                printf("Incorrect control mode 1\n");
-                return;
-            }
-
-            if (robot_driver_2.set_control_mode(control_mode::TORQUE) == -1)
-            {
-                printf("Incorrect control mode 2\n");
-                return;
-            }
-        }
-
-        // Set control commands
-        return_flag = robot_driver_1.set_joint_torques(torque_command_1);
-        if (return_flag == -1)
-        {
-            robot_driver_1.stop_robot_motion();
-            robot_driver_2.stop_robot_motion();
-            printf("Robot stoped: error in control 1\n");
-            return;
-        }
-
-        return_flag = robot_driver_2.set_joint_torques(torque_command_2);
-        if (return_flag == -1)
-        {
-            robot_driver_2.stop_robot_motion();
-            robot_driver_1.stop_robot_motion();
-            printf("Robot stoped: error in control 2\n");
-            return;
-        }
-
-        enforce_loop_frequency(DT_MICRO);
-
-        // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time).count();
-        // if (iteration_count == 2000) 
-        // {
-        //     printf("%f\n", loop_time / 2000.0);
-        //     break;
-        // }
-    }
-
-    robot_driver_1.stop_robot_motion();
-    robot_driver_2.stop_robot_motion();
-    printf("Task completed\n");
-}
-
 void rotate_joint(kinova_mediator &robot_driver, const int joint, const double rate)
 {
     robot_driver.set_control_mode(control_mode::VELOCITY);
@@ -735,6 +631,110 @@ int define_task(dynamics_controller *dyn_controller)
     }
 
     return 0;
+}
+
+void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
+{
+    const int DT_MICRO = SECOND / RATE_HZ;
+    const double DT_SEC = 1.0 / static_cast<double>(RATE_HZ);
+    int id_solver_result = 0;
+    int return_flag = 0;
+    int iteration_count = 0;
+    double total_time_sec = 0.0;
+    // double loop_time = 0.0;
+    
+    KDL::JntArray zero_joint_array(7), torque_command_1(7), joint_pos_1(7), joint_vel_1(7), joint_torque_1(7),
+                                       torque_command_2(7), joint_pos_2(7), joint_vel_2(7), joint_torque_2(7);
+
+    KDL::Chain robot_chain_1 = robot_driver_1.get_robot_model();
+    KDL::Chain robot_chain_2 = robot_driver_2.get_robot_model();
+    KDL::Wrenches wrenches_1(robot_chain_1.getNrOfSegments(), KDL::Wrench::Zero());
+    KDL::Wrenches wrenches_2(robot_chain_2.getNrOfSegments(), KDL::Wrench::Zero());
+
+    std::shared_ptr<KDL::Solver_RNE> id_solver_1 = std::make_shared<KDL::Solver_RNE>(robot_chain_1, KDL::Vector(0.0, 0.0, -9.81289), robot_driver_1.get_joint_inertia(), robot_driver_1.get_joint_torque_limits(), true);
+    std::shared_ptr<KDL::Solver_RNE> id_solver_2 = std::make_shared<KDL::Solver_RNE>(robot_chain_2, KDL::Vector(0.0, 0.0, -9.81289), robot_driver_2.get_joint_inertia(), robot_driver_2.get_joint_torque_limits(), true);
+
+    // printf("Test run started\n");
+    // Real-time loop
+    while (total_time_sec < task_time_limit_sec)
+    {
+        loop_start_time = std::chrono::steady_clock::now();
+        iteration_count++;
+        total_time_sec = iteration_count * DT_SEC;
+
+        robot_driver_1.get_joint_state(joint_pos_1, joint_vel_1, joint_torque_1);
+        robot_driver_2.get_joint_state(joint_pos_2, joint_vel_2, joint_torque_2);
+        // std::cout << "Pos: " << jnt_array_feedback << std::endl;
+        // std::cout << "Vel: " << jnt_array_feedback_2 << std::endl;
+        // std::cout << "Torque: " << jnt_array_feedback_3 << std::endl;
+        // std::cout << std::endl;
+
+        // Compute dynamics
+        id_solver_result = id_solver_1->CartToJnt(joint_pos_1, zero_joint_array, zero_joint_array, wrenches_1, torque_command_1);
+        if (id_solver_result != 0)
+        {
+            robot_driver_1.stop_robot_motion();
+            robot_driver_2.stop_robot_motion();
+            printf("Robot stoped: error in dynamics 1\n");
+            return;
+        }
+
+        id_solver_result = id_solver_2->CartToJnt(joint_pos_2, zero_joint_array, zero_joint_array, wrenches_2, torque_command_2);
+        if (id_solver_result != 0)
+        {
+            robot_driver_2.stop_robot_motion();
+            robot_driver_1.stop_robot_motion();
+            printf("Robot stoped: error in dynamics 2\n");
+            return;
+        }
+
+        if (iteration_count == 1)
+        {
+            if (robot_driver_1.set_control_mode(control_mode::TORQUE) == -1)
+            {
+                printf("Incorrect control mode 1\n");
+                return;
+            }
+
+            if (robot_driver_2.set_control_mode(control_mode::TORQUE) == -1)
+            {
+                printf("Incorrect control mode 2\n");
+                return;
+            }
+        }
+
+        // Set control commands
+        return_flag = robot_driver_1.set_joint_torques(torque_command_1);
+        if (return_flag == -1)
+        {
+            robot_driver_1.stop_robot_motion();
+            robot_driver_2.stop_robot_motion();
+            printf("Robot stoped: error in control 1\n");
+            return;
+        }
+
+        return_flag = robot_driver_2.set_joint_torques(torque_command_2);
+        if (return_flag == -1)
+        {
+            robot_driver_2.stop_robot_motion();
+            robot_driver_1.stop_robot_motion();
+            printf("Robot stoped: error in control 2\n");
+            return;
+        }
+
+        enforce_loop_frequency(DT_MICRO);
+
+        // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time).count();
+        // if (iteration_count == 2000) 
+        // {
+        //     printf("%f\n", loop_time / 2000.0);
+        //     break;
+        // }
+    }
+
+    robot_driver_1.stop_robot_motion();
+    robot_driver_2.stop_robot_motion();
+    printf("Task completed\n");
 }
 
 int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
