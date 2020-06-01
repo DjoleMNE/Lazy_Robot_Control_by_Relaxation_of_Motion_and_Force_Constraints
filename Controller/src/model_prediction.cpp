@@ -157,17 +157,17 @@ void model_prediction::integrate_cartesian_space(
     KDL::Twist body_fixed_twist; 
 
 // Save constant data to a file for visualization purposes.
-#ifndef NDEBUG
-        twist_data_file_.open(prediction_parameter::TWIST_DATA_PATH);
-        save_twist_to_file(twist_data_file_, pose_twist);
-        twist_data_file_.close();
+// #ifndef NDEBUG
+//         twist_data_file_.open(prediction_parameter::TWIST_DATA_PATH);
+//         save_twist_to_file(twist_data_file_, pose_twist);
+//         twist_data_file_.close();
 
-        current_pose_data_file_.open(prediction_parameter::CURRENT_POSE_DATA_PATH);
-        save_pose_to_file(current_pose_data_file_, current_state.frame_pose[END_EFF_]);
-        current_pose_data_file_.close();
+//         current_pose_data_file_.open(prediction_parameter::CURRENT_POSE_DATA_PATH);
+//         save_pose_to_file(current_pose_data_file_, current_state.frame_pose[END_EFF_]);
+//         current_pose_data_file_.close();
         
-        predicted_pose_data_file_.open(prediction_parameter::PREDICTED_POSE_DATA_PATH);
-#endif
+//         predicted_pose_data_file_.open(prediction_parameter::PREDICTED_POSE_DATA_PATH);
+// #endif
 
     geometry::orthonormalize_rot_matrix(temp_pose_.M);
     assert(("Current rotation matrix", geometry::is_rotation_matrix(temp_pose_.M)));
@@ -187,9 +187,9 @@ void model_prediction::integrate_cartesian_space(
         if(!geometry::is_rotation_matrix(temp_pose_.M)) printf("Integrated Matrix is not rotation!");
 #endif
 
-#ifndef NDEBUG
-        save_pose_to_file(predicted_pose_data_file_, temp_pose_);
-#endif
+// #ifndef NDEBUG
+//         save_pose_to_file(predicted_pose_data_file_, temp_pose_);
+// #endif
     }
     
 #ifndef NDEBUG
