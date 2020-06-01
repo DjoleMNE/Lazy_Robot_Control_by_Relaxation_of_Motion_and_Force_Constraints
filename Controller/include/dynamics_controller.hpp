@@ -292,7 +292,7 @@ class dynamics_controller
     void compute_control_error();
     void transform_force_driver();
     void transform_motion_driver();
-    void make_predictions(const double dt_sec, const int num_steps);
+    void make_Cartesian_predictions(const double dt_sec, const int num_steps);
     void compute_cart_control_commands();
     void compute_null_space_control_commands();
     int compute_weight_compensation_control_commands();

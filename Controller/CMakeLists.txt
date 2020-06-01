@@ -17,13 +17,15 @@ set(ROBOT youBot CACHE STRING "Robot ID")
 message("---- Selected Robot: ${ROBOT}")
 
 if("${ROBOT}" STREQUAL "kinova")
+  ##################################################
+  #use -DKORTEX_SUB_DIR=api_2-2-0 for 2.2.0 version
+  ##################################################
   if(NOT KORTEX_SUB_DIR)
     set(KORTEX_SUB_DIR "cpp/")
   else()
     set(KORTEX_SUB_DIR "${KORTEX_SUB_DIR}/")
   endif()
 
-  #use -DKORTEX_SUB_DIR=cpp
   set(KORTEX_DIR "${PROJECT_SOURCE_DIR}/../kortex_api/${KORTEX_SUB_DIR}")
   message("---- KORTEX_DIR: " ${KORTEX_DIR})
 

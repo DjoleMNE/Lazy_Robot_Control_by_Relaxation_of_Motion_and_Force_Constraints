@@ -914,7 +914,7 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
     KDL::Wrenches wrenches_1(robot_chain_1.getNrOfSegments(), KDL::Wrench::Zero());
     KDL::Wrenches wrenches_2(robot_chain_2.getNrOfSegments(), KDL::Wrench::Zero());
 
-    double loop_time = 0.0;
+    // double loop_time = 0.0;
     double total_time_sec = 0.0;
     int loop_iteration_count = 0;
     int stop_loop_iteration_count = 0;
@@ -1030,12 +1030,12 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
             if (enforce_loop_frequency(DT_MICRO) != 0) control_loop_delay_count++;
 
             // Testing loop time
-            loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time).count();
-            if (loop_iteration_count == 2000) 
-            {
-                printf("Main loop time: %f\n", loop_time / 2000.0);
-                trigger_stopping_sequence = true;
-            }
+            // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time).count();
+            // if (loop_iteration_count == 2000) 
+            // {
+            //     printf("Main loop time: %f\n", loop_time / 2000.0);
+            //     trigger_stopping_sequence = true;
+            // }
         }
     }
 

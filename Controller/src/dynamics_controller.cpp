@@ -1090,7 +1090,7 @@ int dynamics_controller::apply_joint_control_commands(const bool bypass_safeties
     Predict future robot Cartesian states given the current Cartesian state.
     I.e. Integrate Cartesian variables.
 */
-void dynamics_controller::make_predictions(const double dt_sec, const int num_steps)
+void dynamics_controller::make_Cartesian_predictions(const double dt_sec, const int num_steps)
 {
     predictor_.integrate_cartesian_space(robot_state_, predicted_state_, dt_sec, num_steps);
 }
@@ -1280,7 +1280,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             if ((unsigned)tube_section_count_ > moveConstrained_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveConstrained_follow_path_task_.tf_poses.size() - 1;
 
             // Make prediction while the state is expressed in the base frame
-            make_predictions(horizon_amplitude_, 1);
+            make_Cartesian_predictions(horizon_amplitude_, 1);
 
             //Change the reference frame of the robot motion state, from base frame to task frame
             robot_state_.frame_pose[END_EFF_]        = moveConstrained_follow_path_task_.tf_poses[tube_section_count_].Inverse()   * robot_state_.frame_pose[END_EFF_];
@@ -1382,8 +1382,7 @@ void dynamics_controller::compute_moveToGuarded_null_space_task_error()
     KDL::JntArray temp_joint_pos = robot_state_.q;
     for (int i = 0; i < 2; i++)
     {
-        predictor_.integrate_to_position(zero_joint_array_, robot_state_.qd, temp_joint_pos, 
-                                         predicted_state_.q, integration_method::SYMPLECTIC_EULER, DT_SEC_);
+        predictor_.integrate_to_position(zero_joint_array_, robot_state_.qd, temp_joint_pos, predicted_state_.q, integration_method::SYMPLECTIC_EULER, DT_SEC_);
         temp_joint_pos = predicted_state_.q;
     }
 
@@ -1437,7 +1436,7 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
 
     current_error_twist_ = finite_displacement_twist(desired_state_, robot_state_);
 
-    make_predictions(horizon_amplitude_, 1);
+    make_Cartesian_predictions(horizon_amplitude_, 1);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
 
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
@@ -1476,7 +1475,7 @@ void dynamics_controller::compute_moveTo_task_error()
 
     current_error_twist_ = finite_displacement_twist(desired_state_, robot_state_);
 
-    make_predictions(horizon_amplitude_, 1);
+    make_Cartesian_predictions(horizon_amplitude_, 1);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
 
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
@@ -1517,7 +1516,7 @@ void dynamics_controller::compute_moveTo_weight_compensation_task_error()
 
     current_error_twist_ = finite_displacement_twist(desired_state_, robot_state_);
 
-    make_predictions(horizon_amplitude_, 1);
+    make_Cartesian_predictions(horizon_amplitude_, 1);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
 
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
@@ -1556,7 +1555,7 @@ void dynamics_controller::compute_moveGuarded_task_error()
 
     current_error_twist_ = finite_displacement_twist(desired_state_, robot_state_);
 
-    make_predictions(horizon_amplitude_, 1);
+    make_Cartesian_predictions(horizon_amplitude_, 1);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
 
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
@@ -1587,7 +1586,7 @@ void dynamics_controller::compute_moveGuarded_task_error()
 */
 void dynamics_controller::compute_full_pose_task_error()
 {
-    make_predictions(horizon_amplitude_, 1);
+    make_Cartesian_predictions(horizon_amplitude_, 1);
     current_error_twist_   = finite_displacement_twist(desired_state_, robot_state_);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
     
@@ -2009,12 +2008,11 @@ int dynamics_controller::initialize(const int desired_control_mode,
                                     const bool store_control_data,
                                     const int motion_profile)
 {
+    //Exit the program if the "Stop Motion" mode is selected
+    if (desired_control_mode == control_mode::STOP_MOTION) return -1;
+
     // Save current selection of desire control mode
     desired_control_mode_.interface = desired_control_mode;
-
-    //Exit the program if the "Stop Motion" mode is selected
-    assert(desired_control_mode_.interface != control_mode::STOP_MOTION); 
-
     desired_dynamics_interface_ = desired_dynamics_interface;
 
     switch (desired_task_model_)
@@ -2141,6 +2139,8 @@ int dynamics_controller::initialize(const int desired_control_mode,
         deinitialize();
         return -1;
     }
+
+    // Reset the flags and counts
     stopping_sequence_on_ = false;
     trigger_stopping_sequence_ = false;
     loop_iteration_count_ = 0;
