@@ -23,8 +23,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef SAFETY_CONTROLLER_HPP_
-#define SAFETY_CONTROLLER_HPP_
+#ifndef SAFETY_MONITOR_HPP_
+#define SAFETY_MONITOR_HPP_
 #include <solver_vereshchagin.hpp>
 #include <state_specification.hpp>
 #include <robot_mediator.hpp>
@@ -37,27 +37,18 @@ SOFTWARE.
 #include <math.h>       /* fabs */
 #include <stdlib.h>     /* abs */
 
-class safety_controller
+class safety_monitor
 {
   public:
-    safety_controller(robot_mediator *robot_driver, const bool print_logs);
-    ~safety_controller(){}
+    safety_monitor(robot_mediator *robot_driver, const bool print_logs);
+    ~safety_monitor(){}
 
-    int set_control_commands(const state_specification &current_state,
-                             const double dt_sec,
-                             const int desired_control_mode,
-                             const int prediction_method,
-                             const bool bypass_safeties);
-
-    void get_control_commands(state_specification &commands);
-    void get_current_state(state_specification &current_state);
-    void stop_robot_motion();
+    int monitor_joint_state(const state_specification &current_state,
+                            const double dt_sec,
+                            const int desired_control_mode,
+                            const std::vector<state_specification> &predicted_states);
 
   private:
-    robot_mediator *robot_driver_;
-    const KDL::Chain robot_chain_;
-	  model_prediction predictor_;
-
     const std::vector<double> joint_position_limits_max_;
     const std::vector<double> joint_position_limits_min_;
     const std::vector<double> joint_position_thresholds_;
@@ -69,35 +60,17 @@ class safety_controller
     const int NUM_OF_FRAMES_;
     const int NUM_OF_CONSTRAINTS_;
     const bool PRINT_LOGS_;
-    
-    const KDL::JntArray zero_joint_velocities_;
 
-    state_specification commands_;
+    state_specification current_state_;
     std::vector<state_specification> predicted_states_; 
 
-    bool is_current_state_safe(const state_specification &current_state);
-    bool is_state_finite(const state_specification &state, 
-                         const int joint);
-    bool torque_limit_reached(const state_specification &state,
-                              const int joint);
-    bool velocity_limit_reached(const state_specification &state,
-                                const int joint);
-    bool position_limit_reached(const state_specification &state,
-                                const int joint);
-    bool reaching_position_limits(const state_specification &state,
-                                  const int joint);
+    bool is_current_state_safe();
+    bool is_state_finite(const state_specification &state, const int joint);
+    bool torque_limit_reached(const state_specification &state, const int joint);
+    bool velocity_limit_reached(const state_specification &state, const int joint);
+    bool position_limit_reached(const state_specification &state, const int joint);
+    bool reaching_position_limits(const state_specification &state, const int joint);
     
-    void generate_commands(const state_specification &current_state);
-
-    int check_future_state(const int desired_control_mode);    
-    int check_torques();
-    int check_velocities();
-    int check_positions();
-
-    void make_predictions(const state_specification &current_state,
-                          const double dt_sec, const int prediction_method);
-
-    //Not implemented currently
-    bool reduce_velocities();
+    int monitor_future_state(const int desired_control_mode);
 };
-#endif /* SAFETY_CONTROLLER_HPP_*/
+#endif /* SAFETY_MONITOR_HPP_*/

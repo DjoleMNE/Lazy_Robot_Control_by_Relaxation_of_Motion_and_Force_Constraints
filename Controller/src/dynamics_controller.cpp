@@ -39,12 +39,12 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     loop_start_time_(std::chrono::steady_clock::now()),
     total_time_sec_(0.0), loop_iteration_count_(0), stop_loop_iteration_count_(0),
     steady_stop_iteration_count_(0), feedforward_loop_count_(0), control_loop_delay_count_(0),
-    robot_chain_(robot_driver->get_robot_model()),
+    robot_driver_(robot_driver), robot_chain_(robot_driver_->get_robot_model()),
     NUM_OF_JOINTS_(robot_chain_.getNrOfJoints()),
     NUM_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
     NUM_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
     NUM_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
-    END_EFF_(NUM_OF_SEGMENTS_ - 1), ROBOT_ID_(robot_driver->get_robot_ID()),
+    END_EFF_(NUM_OF_SEGMENTS_ - 1), ROBOT_ID_(robot_driver_->get_robot_ID()),
     INITIAL_END_EFF_MASS_(robot_chain_.getSegment(END_EFF_).getInertia().getMass()),
     COMPENSATE_GRAVITY_(compensate_gravity),
     CTRL_DIM_(NUM_OF_CONSTRAINTS_, false), POS_TUBE_DIM_(NUM_OF_CONSTRAINTS_, false),
@@ -56,11 +56,11 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     apply_feedforward_force_(false), compute_null_space_command_(false),
     write_contact_time_to_file_(false), compensate_unknown_weight_(false),
     trigger_stopping_sequence_(false), stopping_sequence_on_(false),
-    JOINT_ACC_LIMITS_(robot_driver->get_joint_acceleration_limits()),
-    JOINT_TORQUE_LIMITS_(robot_driver->get_joint_torque_limits()),
-    JOINT_STOPPING_TORQUE_LIMITS_(robot_driver->get_joint_stopping_torque_limits()),
-    JOINT_INERTIA_(robot_driver->get_joint_inertia()),
-    ROOT_ACC_(robot_driver->get_root_acceleration()),
+    JOINT_ACC_LIMITS_(robot_driver_->get_joint_acceleration_limits()),
+    JOINT_TORQUE_LIMITS_(robot_driver_->get_joint_torque_limits()),
+    JOINT_STOPPING_TORQUE_LIMITS_(robot_driver_->get_joint_stopping_torque_limits()),
+    JOINT_INERTIA_(robot_driver_->get_joint_inertia()),
+    ROOT_ACC_(robot_driver_->get_root_acceleration()),
     current_error_twist_(KDL::Twist::Zero()),
     abag_error_vector_(Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_)),
     null_space_abag_error_(Eigen::VectorXd::Zero(1)),
@@ -82,8 +82,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     ext_wrench_(KDL::Wrench::Zero()), ext_wrench_base_(KDL::Wrench::Zero()),
     compensated_weight_(KDL::Wrench::Zero()),
     zero_joint_array_(NUM_OF_JOINTS_), gravity_torque_(NUM_OF_JOINTS_),
-    fk_vereshchagin_(robot_chain_),
-    safety_control_(robot_driver, true), 
+    fk_vereshchagin_(robot_chain_), safety_monitor_(robot_driver_, true), 
     fsm_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     abag_(NUM_OF_CONSTRAINTS_, abag_parameter::USE_ERROR_SIGN),
     abag_null_space_(1, abag_parameter::USE_ERROR_SIGN),
@@ -91,10 +90,10 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     predictor_(robot_chain_),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     robot_state_base_(robot_state_), desired_state_(robot_state_),
-    desired_state_base_(robot_state_), predicted_state_(robot_state_),
+    desired_state_base_(robot_state_), predicted_state_(robot_state_), predicted_states_(2, robot_state_),
     WRITE_FORMAT_STOP_MOTION(Eigen::IOFormat(6, Eigen::DontAlignCols, " ", "", "", "\n"))
 {
-    assert(("Robot is not initialized", robot_driver->is_initialized()));
+    assert(("Robot is not initialized", robot_driver_->is_initialized()));
     // KDL Vereshchagin-Solver constraint  
     assert(NUM_OF_JOINTS_ == NUM_OF_SEGMENTS_);
 
@@ -114,6 +113,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     desired_control_mode_.interface = control_mode::STOP_MOTION;
     desired_control_mode_.is_safe = false;
 
+    error_logger_.robot_id_ = ROBOT_ID_;
     error_logger_.error_source_ = error_source::empty;
     error_logger_.error_status_ = 0;
 }
@@ -284,8 +284,8 @@ int dynamics_controller::check_fsm_status()
 */
 int dynamics_controller::update_current_state()
 {
-    // Get joint angles and velocities
-    safety_control_.get_current_state(robot_state_);
+    // Get current robot state from joint sensors
+    robot_driver_->get_joint_state(robot_state_.q, robot_state_.qd, robot_state_.measured_torque);
 
     // Get Cart poses and velocities
     return fk_vereshchagin_.JntToCart(robot_state_.q, robot_state_.qd, robot_state_.frame_pose, robot_state_.frame_velocity);;
@@ -1026,64 +1026,58 @@ int dynamics_controller::enforce_loop_frequency(const int dt)
 }
 
 /*
-    Apply joint commands using safe control interface.
-    If the computed commands are not safe, exit the program.
+    Safety monitor checks if the commands are over the limits.
+    If yes: stop the robot motion
+    Else: use desired control mode
+*/
+int dynamics_controller::monitor_joint_safety()
+{
+    // Integrate joint accelerations to velocities and positions with _two_ time steps
+    predictor_.integrate_joint_space(robot_state_, predicted_states_, DT_SEC_, 2, integration_method::SYMPLECTIC_EULER, false, false);
+
+    return safety_monitor_.monitor_joint_state(robot_state_, DT_SEC_, desired_control_mode_.interface, predicted_states_);
+}
+
+/*
+    Apply joint commands using the desired and/or safe control interface.
+    If the computed commands are not safe, stop the robot.
 */
 int dynamics_controller::apply_joint_control_commands(const bool bypass_safeties)
 {
-    /*
-        Safety controller checks if the commands are over the limits.
-        If yes: stop the robot motion
-        Else: use desired control mode
-    */
-    int safe_control_mode = safety_control_.set_control_commands(robot_state_,
-                                                                 DT_SEC_,
-                                                                 desired_control_mode_.interface,
-                                                                 integration_method::SYMPLECTIC_EULER,
-                                                                 bypass_safeties);
-    if (!bypass_safeties)
+    if (bypass_safeties)
     {
-        // Check if the safety controller has changed the control mode.
-        // Save the current decision: if desired control mode is safe or not.
-        desired_control_mode_.is_safe = (desired_control_mode_.interface == safe_control_mode)? true : false;
-
-        // Notify if the safety controller has changed the control mode
-        switch (safe_control_mode)
-        {
-            case control_mode::TORQUE:
-                if (!desired_control_mode_.is_safe)
-                {
-                    desired_control_mode_.interface = control_mode::STOP_MOTION;
-                    error_logger_.error_source_ = error_source::safety_ctrl;
-                    error_logger_.error_status_ = control_mode::STOP_MOTION;
-                    return -1;
-                }
-                return 0;
-
-            case control_mode::VELOCITY:
-                if (!desired_control_mode_.is_safe) printf("WARNING: Control switched to velocity mode \n");
-                return 0;
-
-            case control_mode::POSITION:
-                if (!desired_control_mode_.is_safe) printf("WARNING: Control switched to position mode \n");
-                return 0;
-
-            default:
-                desired_control_mode_.interface = control_mode::STOP_MOTION;
-                error_logger_.error_source_ = error_source::safety_ctrl;
-                error_logger_.error_status_ = control_mode::STOP_MOTION;
-                return -1;
-        }
+        /*
+            Just integrate joint accelerations to velocities and positions with _one_ time step
+            No need to call safety monitor functions
+        */
+        predictor_.integrate_joint_space(robot_state_, predicted_states_, DT_SEC_, 1, integration_method::SYMPLECTIC_EULER, false, false);
     }
-    else 
+    else
     {
-        if (safe_control_mode == control_mode::STOP_MOTION)
+        // Is desired control mode safe or not.
+        if (monitor_joint_safety() == control_mode::STOP_MOTION)
         {
-            error_logger_.error_source_ = error_source::safety_ctrl;
+            desired_control_mode_.is_safe = false;
+            desired_control_mode_.interface = control_mode::STOP_MOTION;
+            error_logger_.error_source_ = error_source::joint_safety_monitor;
             error_logger_.error_status_ = control_mode::STOP_MOTION;
+            return control_mode::STOP_MOTION;
         }
-        return safe_control_mode;
     }
+
+    // Commands are valid. Send them to the robot driver
+    predicted_state_.qd = predicted_states_[0].qd;
+    predicted_state_.q  = predicted_states_[0].q;
+    if (robot_driver_->set_joint_command(predicted_state_.q, predicted_state_.qd, robot_state_.control_torque, desired_control_mode_.interface) == -1)
+    {
+        desired_control_mode_.is_safe = false;
+        desired_control_mode_.interface = control_mode::STOP_MOTION;
+        error_logger_.error_source_ = error_source::joint_safety_monitor;
+        error_logger_.error_status_ = control_mode::STOP_MOTION;
+        return control_mode::STOP_MOTION;
+    }
+
+    return 0;
 }
 
 /*  
@@ -2163,8 +2157,10 @@ void dynamics_controller::engage_lock()
      * - It stops the robot correctly. However, the deceleration is too strong.
      * - More specificily, it is not good for the robot's gears and motors on long-run.
      * - It is best if the deceleration is controlled explicitly before-hand.
+     * 
+     * In the case of youBot: Sets velocities of arm's joints to 0
      */
-    safety_control_.stop_robot_motion();
+    robot_driver_->stop_robot_motion();
 }
 
 /**
@@ -2355,8 +2351,8 @@ int dynamics_controller::control()
         loop_start_time_ = std::chrono::steady_clock::now();
         if (!stopping_sequence_on_) total_time_sec_ = loop_iteration_count_ * DT_SEC_;
 
-        //Get current robot state from the joint sensors: velocities and angles
-        safety_control_.get_current_state(robot_state_);
+        //Get current robot state from joint sensors
+        robot_driver_->get_joint_state(robot_state_.q, robot_state_.qd, robot_state_.measured_torque);
 
         state_q   = robot_state_.q;
         state_qd  = robot_state_.qd;
@@ -2439,6 +2435,7 @@ void dynamics_controller::deinitialize()
 
     if (error_logger_.error_source_ != error_source::empty)
     {
+        printf("Robot ID: %d\n", error_logger_.robot_id_);
         printf("Error Source: %d\n", static_cast<std::underlying_type<error_source>::type>(error_logger_.error_source_));
         printf("Error Status: %d\n\n", error_logger_.error_status_);
     }

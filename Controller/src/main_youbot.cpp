@@ -28,7 +28,7 @@ SOFTWARE.
 #include <fk_vereshchagin.hpp>
 #include <geometry_utils.hpp>
 #include <model_prediction.hpp>
-#include <safety_controller.hpp>
+#include <safety_monitor.hpp>
 #include <finite_state_machine.hpp>
 #include <motion_profile.hpp>
 #include <iostream>

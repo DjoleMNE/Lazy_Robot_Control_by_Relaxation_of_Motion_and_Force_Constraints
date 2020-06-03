@@ -47,7 +47,6 @@ SOFTWARE.
 #include <unistd.h>
 #include <Eigen/Dense>// Eigen
 
-
 #include <KDetailedException.h>
 
 #include <BaseClientRpc.h>

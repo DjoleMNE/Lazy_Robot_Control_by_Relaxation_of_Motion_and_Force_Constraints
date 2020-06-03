@@ -32,7 +32,7 @@ SOFTWARE.
 #include <robot_mediator.hpp>
 #include <geometry_utils.hpp>
 #include <model_prediction.hpp>
-#include <safety_controller.hpp>
+#include <safety_monitor.hpp>
 #include <finite_state_machine.hpp>
 #include <motion_profile.hpp>
 #include <utility> 
@@ -63,8 +63,9 @@ enum class error_source
     fk_solver = 2,
     vereshchagin_solver = 3,
     weight_compensator = 4,
-    safety_ctrl = 5,
-    fsm = 6
+    joint_safety_monitor = 5,
+    cartesian_safety_monitor = 6,
+    fsm = 7
 };
 
 class dynamics_controller
@@ -118,6 +119,7 @@ class dynamics_controller
 
     void engage_lock();
     int apply_joint_control_commands(const bool bypass_safeties);
+    int monitor_joint_safety();
 
     void write_to_file();
 
@@ -214,6 +216,7 @@ class dynamics_controller
     {
       error_source error_source_;
       int error_status_;
+      int robot_id_;
     } error_logger_;
 
     std::chrono::steady_clock::time_point loop_start_time_;
@@ -222,6 +225,7 @@ class dynamics_controller
     int loop_iteration_count_, stop_loop_iteration_count_, steady_stop_iteration_count_,
         feedforward_loop_count_, control_loop_delay_count_;
 
+    robot_mediator *robot_driver_;
     KDL::Chain robot_chain_;
     const int NUM_OF_JOINTS_;
     const int NUM_OF_SEGMENTS_;
@@ -261,7 +265,7 @@ class dynamics_controller
     std::shared_ptr<KDL::Solver_Vereshchagin> hd_solver_;
     std::shared_ptr<KDL::Solver_RNE> id_solver_;
     KDL::FK_Vereshchagin fk_vereshchagin_;
-    safety_controller safety_control_;
+    safety_monitor safety_monitor_;
     ABAG abag_, abag_null_space_, abag_stop_motion_;
     finite_state_machine fsm_;
     model_prediction predictor_;
@@ -269,6 +273,7 @@ class dynamics_controller
     state_specification robot_state_, robot_state_base_;
     state_specification desired_state_, desired_state_base_;
     state_specification predicted_state_;
+    std::vector<state_specification> predicted_states_; 
 
     const Eigen::IOFormat WRITE_FORMAT_STOP_MOTION;
 

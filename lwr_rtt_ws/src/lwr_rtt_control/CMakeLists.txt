@@ -54,7 +54,7 @@ add_library(controller
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/fk_vereshchagin.cpp
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/lwr_mediator.cpp
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/lwr_kdl_model.cpp
-    /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/safety_controller.cpp
+    /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/safety_monitor.cpp
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/abag.cpp
     /home/djole/Master/Thesis/GIT/MT_testing/Controller/src/dynamics_controller.cpp
 )

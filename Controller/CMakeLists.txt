@@ -94,7 +94,7 @@ if("${ROBOT}" STREQUAL "lwr")
     src/fk_vereshchagin.cpp
     src/lwr_mediator.cpp
     src/lwr_kdl_model.cpp
-    src/safety_controller.cpp
+    src/safety_monitor.cpp
     src/abag.cpp
     src/dynamics_controller.cpp
   )
@@ -115,7 +115,7 @@ elseif("${ROBOT}" STREQUAL "kinova")
     src/solver_recursive_newton_euler.cpp
     src/fk_vereshchagin.cpp
     src/kinova_mediator.cpp
-    src/safety_controller.cpp
+    src/safety_monitor.cpp
     src/abag.cpp
     src/dynamics_controller.cpp
   )
@@ -136,7 +136,7 @@ else()
     src/fk_vereshchagin.cpp
     src/youbot_mediator.cpp
     src/youbot_custom_model.cpp
-    src/safety_controller.cpp
+    src/safety_monitor.cpp
     src/abag.cpp
     src/dynamics_controller.cpp
   )
