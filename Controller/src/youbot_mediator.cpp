@@ -51,6 +51,18 @@ youbot_mediator::youbot_mediator():
     tau_setpoint_.resize(youbot_constants::NUMBER_OF_JOINTS); 
 }
 
+// Update robot state: measured positions, velocities, torques and measured / estimated external forces on end-effector
+void youbot_mediator::get_robot_state(KDL::JntArray &joint_positions,
+                                      KDL::JntArray &joint_velocities,
+                                      KDL::JntArray &joint_torques,
+                                      KDL::Wrench &end_effector_wrench)
+{
+    get_joint_positions(joint_positions);
+    get_joint_velocities(joint_velocities);
+    get_joint_torques(joint_torques);
+    get_end_effector_wrench(end_effector_wrench);
+}
+
 // Update joint space state: measured positions, velocities and torques
 void youbot_mediator::get_joint_state(KDL::JntArray &joint_positions,
                                       KDL::JntArray &joint_velocities,
@@ -159,6 +171,13 @@ int youbot_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
     if (add_offsets_) tau_setpoint_[4].torque = -1 * joint_torques(4) * newton_meter;
     if (youbot_environment_ != youbot_environment::SIMULATION) youbot_arm_->setJointData(tau_setpoint_);
     return 0;
+}
+
+// Get measured / estimated external forces acting on the end-effector
+void youbot_mediator::get_end_effector_wrench(KDL::Wrench &end_effector_wrench)
+{
+    // Linear forces given in Newton, angular in Newton * meters
+    KDL::SetToZero(end_effector_wrench);   
 }
 
 int youbot_mediator::set_joint_command(const KDL::JntArray &joint_positions,

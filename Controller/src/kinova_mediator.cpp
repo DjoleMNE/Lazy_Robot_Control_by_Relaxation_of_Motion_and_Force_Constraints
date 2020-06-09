@@ -57,6 +57,21 @@ kinova_mediator::~kinova_mediator()
     if (is_initialized_) deinitialize();
 }
 
+// Update robot state: measured positions, velocities, torques and measured / estimated external forces on end-effector
+void kinova_mediator::get_robot_state(KDL::JntArray &joint_positions,
+                                      KDL::JntArray &joint_velocities,
+                                      KDL::JntArray &joint_torques,
+                                      KDL::Wrench &end_effector_wrench)
+{
+    if (kinova_environment_ != kinova_environment::SIMULATION) base_feedback_ = base_cyclic_->RefreshFeedback();
+
+    get_joint_positions(joint_positions);
+    get_joint_velocities(joint_velocities);
+    get_joint_torques(joint_torques);
+    get_end_effector_wrench(end_effector_wrench);
+    // std::cout << base_feedback_.actuators(0).jitter_comm() << std::endl;
+}
+
 // Update joint space state: measured positions, velocities and torques
 void kinova_mediator::get_joint_state(KDL::JntArray &joint_positions,
                                       KDL::JntArray &joint_velocities,
@@ -227,6 +242,18 @@ int kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
             base_feedback_.mutable_actuators(i)->set_torque(joint_torques(i));
     }
     return 0;
+}
+
+// Get measured / estimated external forces acting on the end-effector
+void kinova_mediator::get_end_effector_wrench(KDL::Wrench &end_effector_wrench)
+{
+    // Linear forces given in Newton, angular in Newton * meters
+    end_effector_wrench.force(0)  = base_feedback_.base().tool_external_wrench_force_x();
+    end_effector_wrench.force(1)  = base_feedback_.base().tool_external_wrench_force_y();
+    end_effector_wrench.force(2)  = base_feedback_.base().tool_external_wrench_force_z();
+    end_effector_wrench.torque(0) = base_feedback_.base().tool_external_wrench_torque_x();
+    end_effector_wrench.torque(1) = base_feedback_.base().tool_external_wrench_torque_y();
+    end_effector_wrench.torque(2) = base_feedback_.base().tool_external_wrench_torque_z();
 }
 
 int kinova_mediator::set_control_mode(const int desired_control_mode)

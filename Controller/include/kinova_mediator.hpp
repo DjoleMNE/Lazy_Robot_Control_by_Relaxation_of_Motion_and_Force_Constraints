@@ -97,6 +97,12 @@ class kinova_mediator: public robot_mediator
 									 KDL::JntArray &joint_velocities,
 									 KDL::JntArray &joint_torques);
 
+		// Update robot state: measured positions, velocities, torques and measured / estimated external forces on end-effector
+		virtual void get_robot_state(KDL::JntArray &joint_positions,
+                                     KDL::JntArray &joint_velocities,
+                                     KDL::JntArray &joint_torques,
+                                     KDL::Wrench &end_effector_wrench);
+
 		// Set desired joint commands to move robot and save them for sake of simulation
 		virtual int set_joint_command(const KDL::JntArray &joint_positions,
 						              const KDL::JntArray &joint_velocities,
@@ -109,6 +115,8 @@ class kinova_mediator: public robot_mediator
 		virtual void get_joint_velocities(KDL::JntArray &joint_velocities);
 		// Get current joint torques
 		virtual void get_joint_torques(KDL::JntArray &joint_torques);
+		// Get measured / estimated external forces acting on the end-effector
+		virtual void get_end_effector_wrench(KDL::Wrench &end_effector_wrench);
 
 		// Set joint position command
 		virtual int set_joint_positions(const KDL::JntArray &joint_positions);
