@@ -88,7 +88,7 @@ class dynamics_controller
     int step(const KDL::JntArray &q_input,
              const KDL::JntArray &qd_input,
              const KDL::Wrench &ext_force, 
-             Eigen::VectorXd &tau_output,
+             KDL::JntArray &tau_output,
              const double time_passed_sec,
              const int main_loop_iteration,
              const int stop_loop_iteration,

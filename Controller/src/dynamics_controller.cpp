@@ -2269,7 +2269,7 @@ int dynamics_controller::update_commands()
 int dynamics_controller::step(const KDL::JntArray &q_input,
                               const KDL::JntArray &qd_input,
                               const KDL::Wrench &ext_force,
-                              Eigen::VectorXd &tau_output,
+                              KDL::JntArray &tau_output,
                               const double time_passed_sec,
                               const int main_loop_iteration,
                               const int stop_loop_iteration,
@@ -2328,7 +2328,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
     }
 
     // Save final commands
-    tau_output = robot_state_.control_torque.data;
+    tau_output = robot_state_.control_torque;
 
     // Log control data for visualization and debuging
     if (store_control_data_) write_to_file();
@@ -2359,7 +2359,7 @@ int dynamics_controller::control()
         ext_force = ext_wrench_;
 
         // Make one control iteration (step) -> Update control commands
-        return_flag = step(state_q, state_qd, ext_force, ctrl_torque.data, total_time_sec_, loop_iteration_count_, stop_loop_iteration_count_, stopping_sequence_on_);
+        return_flag = step(state_q, state_qd, ext_force, ctrl_torque, total_time_sec_, loop_iteration_count_, stop_loop_iteration_count_, stopping_sequence_on_);
         if (return_flag == -1) trigger_stopping_sequence_ = true;
 
         if (stopping_sequence_on_) // Robot will be controlled to stop its motion and eventually lock
