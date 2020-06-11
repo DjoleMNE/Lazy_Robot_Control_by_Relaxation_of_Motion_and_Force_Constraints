@@ -666,10 +666,11 @@ void run_test(kinova_mediator &robot_driver)
     const double DT_SEC = 1.0 / static_cast<double>(RATE_HZ);
     double total_time_sec = 0.0;
     int iteration_count = 0;
+    int control_loop_delay_count = 0;
     int return_flag = 0;
-    // double loop_time = 0.0;
 
     KDL::JntArray jnt_command_torque(7), jnt_position(7), jnt_velocity(7), jnt_torque(7);
+    KDL::Wrench end_effector_wrench;
     const KDL::JntArray ZERO_JOINT_ARRAY(7);
 
     KDL::Chain robot_chain = robot_driver.get_robot_model();
@@ -684,6 +685,7 @@ void run_test(kinova_mediator &robot_driver)
         iteration_count++;
         total_time_sec = iteration_count * DT_SEC;
 
+        // robot_driver.get_robot_state(jnt_position, jnt_velocity, jnt_torque, end_effector_wrench);
         robot_driver.get_joint_state(jnt_position, jnt_velocity, jnt_torque);
 
         return_flag = id_solver->CartToJnt(jnt_position, ZERO_JOINT_ARRAY, ZERO_JOINT_ARRAY, zero_wrenches, jnt_command_torque);
@@ -711,19 +713,21 @@ void run_test(kinova_mediator &robot_driver)
             return;
         }
 
-        enforce_loop_frequency(DT_MICRO);
+        if (enforce_loop_frequency(DT_MICRO) != 0) control_loop_delay_count++;
 
+        // static double loop_time = 0.0;
         // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time).count();
-        // if (iteration_count == 2000) 
+        // if (iteration_count == 10000) 
         // {
         //     robot_driver.stop_robot_motion();
-        //     printf("%f\n", loop_time / 2000.0);
+        //     printf("Average loop time: %f\n", loop_time / 10000.0);
         //     break;
         // }
     }
 
     robot_driver.stop_robot_motion();
     printf("Task completed\n");
+    printf("Control loop delay count: %d\n", control_loop_delay_count);
 }
 
 int run_main_control(kinova_mediator &robot_driver)
@@ -836,7 +840,6 @@ int run_main_control(kinova_mediator &robot_driver)
     KDL::JntArray torque_command(7), joint_pos(7), joint_vel(7), joint_torque(7);
     KDL::Wrenches wrenches(robot_chain.getNrOfSegments(), KDL::Wrench::Zero());
 
-    // double loop_time = 0.0;
     double total_time_sec = 0.0;
     int loop_iteration_count = 0;
     int stop_loop_iteration_count = 0;
@@ -853,6 +856,7 @@ int run_main_control(kinova_mediator &robot_driver)
         if (!stopping_sequence_on) total_time_sec = loop_iteration_count * DT_SEC;
 
         //Get current robot state from the joint sensors: angles and velocities 
+        // robot_driver.get_robot_state(joint_pos, joint_vel, joint_torque, wrenches[robot_chain.getNrOfSegments()- 1]);
         robot_driver.get_joint_state(joint_pos, joint_vel, joint_torque);
 
         // Make one control iteration (step) -> Update control commands
@@ -869,6 +873,7 @@ int run_main_control(kinova_mediator &robot_driver)
                 stopping_sequence_on = false;
                 total_time_sec += (double)stop_loop_iteration_count / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
                 printf("Robot stopped!\n");
+                printf("Control loop delay count: %d\n", control_loop_delay_count);
                 controller.deinitialize();
                 return 0;
             }
@@ -890,11 +895,12 @@ int run_main_control(kinova_mediator &robot_driver)
             if (enforce_loop_frequency(DT_STOPPING_MICRO) != 0) control_loop_delay_count++;
 
             // Testing loop time
+            // static double loop_time = 0.0;
             // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time).count();
-            // if (stop_loop_iteration_count == 500) 
+            // if (stop_loop_iteration_count == 10000) 
             // {
-            //     printf("Stop loop time: %f\n", loop_time / 500.0);
             //     robot_driver.stop_robot_motion();
+            //     printf("Stop loop time: %f\n", loop_time / 10000.0);
             //     controller.deinitialize();
             //     return 0;
             // }
@@ -921,10 +927,12 @@ int run_main_control(kinova_mediator &robot_driver)
             if (enforce_loop_frequency(DT_MICRO) != 0) control_loop_delay_count++;
 
             // Testing loop time
+            // static double loop_time = 0.0;
             // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time).count();
-            // if (loop_iteration_count == 2000) 
+            // if (loop_iteration_count == 10000) 
             // {
-            //     printf("Main loop time: %f\n", loop_time / 2000.0);
+            //     printf("Average loop time: %f\n", loop_time / 10000.0);
+            //     printf("Control loop delay count: %d\n", control_loop_delay_count);
             //     trigger_stopping_sequence = true;
             // }
         }
@@ -939,7 +947,7 @@ int run_main_control(kinova_mediator &robot_driver)
 int main(int argc, char **argv)
 {
     // printf("kinova MAIN Started \n");
-    RATE_HZ              = 500; // Loop frequency in Hz
+    RATE_HZ              = 1000; // Loop frequency in Hz
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                              false, false, false}; // Angular
     tube_tolerances      = std::vector<double>{0.01, 0.02, 0.02,

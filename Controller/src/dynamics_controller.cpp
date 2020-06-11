@@ -106,8 +106,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
                                                                   JOINT_TORQUE_LIMITS_, !COMPENSATE_GRAVITY_,
                                                                   COMPENSATE_GRAVITY_? KDL::Twist::Zero() : ROOT_ACC_, 
                                                                   NUM_OF_CONSTRAINTS_);
-    this->id_solver_ = std::make_shared<KDL::Solver_RNE>(robot_chain_, KDL::Vector(0.0, 0.0, -9.81289),
-                                                         JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, false);
+
+    this->id_solver_ = std::make_shared<KDL::Solver_RNE>(robot_chain_, KDL::Vector(0.0, 0.0, -9.81289), JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, false);
 
     // Set default command interface to stop motion mode and initialize it as not safe
     desired_control_mode_.interface = control_mode::STOP_MOTION;

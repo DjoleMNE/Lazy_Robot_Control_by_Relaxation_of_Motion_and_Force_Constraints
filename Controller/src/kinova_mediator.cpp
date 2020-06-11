@@ -92,7 +92,7 @@ void kinova_mediator::get_joint_positions(KDL::JntArray &joint_positions)
         joint_positions(i) = DEG_TO_RAD(base_feedback_.actuators(i).position());
 
     // Kinova API provides only positive angle values
-    // This operation is required to align the logic with our safety controller
+    // This operation is required to align the logic with our safety monitor
     // We need to convert some angles to negative values
     if (joint_positions(1) > DEG_TO_RAD(180.0)) joint_positions(1) = joint_positions(1) - DEG_TO_RAD(360.0);
     if (joint_positions(3) > DEG_TO_RAD(180.0)) joint_positions(3) = joint_positions(3) - DEG_TO_RAD(360.0);
@@ -612,6 +612,8 @@ void kinova_mediator::initialize(const int robot_model,
 
             // Send a first command (time frame) -> position command in this case
             base_feedback_ = base_cyclic_->Refresh(base_command_, 0);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
         catch (Kinova::Api::KDetailedException& ex)
         {
