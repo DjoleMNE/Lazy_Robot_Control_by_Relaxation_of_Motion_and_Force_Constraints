@@ -139,8 +139,7 @@ bool LwrRttControl::configureHook()
     robot_driver_.initialize(robot_model_, environment_, krc_compensate_gravity_);
     assert(NUM_OF_JOINTS_ == robot_driver_.get_robot_model().getNrOfSegments());
 
-    this->gravity_solver_ = std::make_shared<KDL::ChainDynParam>(gazebo_arm_.Chain(), 
-                                                                 KDL::Vector(0.0, 0.0, -9.81289));
+    this->gravity_solver_ = std::make_shared<KDL::ChainDynParam>(gazebo_arm_.Chain(), KDL::Vector(0.0, 0.0, -9.81289));
     this->fk_solver_      = std::make_shared<KDL::ChainFkSolverPos_recursive>(gazebo_arm_.Chain());
     gazebo_arm_eef_       = gazebo_arm_.Chain().getNrOfSegments() - 1;
     this->controller_     = std::make_shared<dynamics_controller>(&robot_driver_, RATE_HZ_, false, false);
@@ -415,7 +414,7 @@ void LwrRttControl::updateHook()
     function_result = controller_->step(robot_state_.q, 
                                         robot_state_.qd, 
                                         ext_wrench_kdl_, 
-                                        robot_state_.control_torque.data,
+                                        robot_state_.control_torque,
                                         total_time_ / SECOND,
                                         iteration_count_);
 

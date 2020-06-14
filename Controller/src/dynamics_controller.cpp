@@ -523,9 +523,9 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     desired_task_model_                        = task_model::moveConstrained_follow_path;
     desired_state_.frame_velocity[END_EFF_](0) = tube_speed;
     desired_state_.frame_velocity[END_EFF_](5) = 0.0;
-    desired_state_.external_force[END_EFF_](2) = tube_force;
-    desired_state_.external_force[END_EFF_](3) = 0.0;
-    desired_state_.external_force[END_EFF_](4) = 0.0;
+    desired_state_.external_force[END_EFF_](2) = tube_force; // Sensor/tool frame
+    desired_state_.external_force[END_EFF_](3) = 0.0;// Sensor/tool frame
+    desired_state_.external_force[END_EFF_](4) = 0.0;// Sensor/tool frame
     compute_null_space_command_ = control_null_space;
     desired_null_space_angle_   = desired_null_space_angle;
     transform_force_drivers_    = true;
@@ -1197,11 +1197,8 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
     desired_state_base_.external_force[END_EFF_] = moveConstrained_follow_path_task_.tf_force * desired_state_.external_force[END_EFF_];
 
     // Force-task FSM has priority over motion-task FSM
-    if (previous_task_status_ != task_status::STOP_ROBOT)
-    {
-        // This function expects external wrench values to be expressed w.r.t. sensor frame
-        fsm_force_task_result_ = fsm_.update_force_task_status(desired_state_.external_force[END_EFF_], ext_wrench_, total_time_sec_, 0.014);
-    }
+    // This function expects external wrench values to be expressed w.r.t. sensor frame
+    if (previous_task_status_ != task_status::STOP_ROBOT) fsm_force_task_result_ = fsm_.update_force_task_status(desired_state_.external_force[END_EFF_], ext_wrench_, total_time_sec_, 0.014);
 
     switch (fsm_force_task_result_)
     {
@@ -1956,7 +1953,6 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
     assert(stop_motion_gain_threshold.size() == NUM_OF_JOINTS_); 
     assert(stop_motion_gain_step.size()      == NUM_OF_JOINTS_); 
 
-
     this->horizon_amplitude_        = horizon_amplitude;
     this->max_command_              = max_command;
 
@@ -2012,13 +2008,11 @@ int dynamics_controller::initialize(const int desired_control_mode,
     switch (desired_task_model_)
     {
         case task_model::moveConstrained_follow_path:
-            fsm_result_ = fsm_.initialize_with_moveConstrained_follow_path(moveConstrained_follow_path_task_, 
-                                                                           motion_profile);
+            fsm_result_ = fsm_.initialize_with_moveConstrained_follow_path(moveConstrained_follow_path_task_, motion_profile);
             break;
 
         case task_model::moveTo_follow_path:
-            fsm_result_ = fsm_.initialize_with_moveTo_follow_path(moveTo_follow_path_task_, 
-                                                                  motion_profile);
+            fsm_result_ = fsm_.initialize_with_moveTo_follow_path(moveTo_follow_path_task_, motion_profile);
             break;
 
         case task_model::moveTo:
@@ -2030,9 +2024,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
             break;
 
         case task_model::moveTo_weight_compensation:
-            fsm_result_ = fsm_.initialize_with_moveTo_weight_compensation(moveTo_weight_compensation_task_, 
-                                                                          motion_profile,
-                                                                          compensation_parameters_);
+            fsm_result_ = fsm_.initialize_with_moveTo_weight_compensation(moveTo_weight_compensation_task_, motion_profile, compensation_parameters_);
             break;
 
         case task_model::full_pose:

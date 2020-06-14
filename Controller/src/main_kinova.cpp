@@ -581,7 +581,6 @@ int define_task(dynamics_controller *dyn_controller)
                 default:
                     printf("Unsupported path type");
                     return -1;
-                    break;
             }
 
             dyn_controller->define_moveTo_follow_path_task(std::vector<bool>{control_dims[0], control_dims[1], control_dims[2], // Linear
