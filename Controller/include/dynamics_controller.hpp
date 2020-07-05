@@ -243,7 +243,7 @@ class dynamics_controller
     bool transform_drivers_, transform_force_drivers_, apply_feedforward_force_, 
          compute_null_space_command_, write_contact_time_to_file_,
          compensate_unknown_weight_, trigger_stopping_sequence_, stopping_sequence_on_;
-    
+
     moveTo_task moveTo_task_;
     moveGuarded_task moveGuarded_task_;
     moveTo_weight_compensation_task moveTo_weight_compensation_task_;

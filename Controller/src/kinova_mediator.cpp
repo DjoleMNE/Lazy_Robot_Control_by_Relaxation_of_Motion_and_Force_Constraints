@@ -77,8 +77,18 @@ void kinova_mediator::get_joint_state(KDL::JntArray &joint_positions,
                                       KDL::JntArray &joint_velocities,
                                       KDL::JntArray &joint_torques)
 {
-    if (kinova_environment_ != kinova_environment::SIMULATION) base_feedback_ = base_cyclic_->RefreshFeedback();
-
+    if (kinova_environment_ != kinova_environment::SIMULATION) 
+    {
+        try
+        {
+            base_feedback_ = base_cyclic_->RefreshFeedback();
+        }
+        catch (Kinova::Api::KDetailedException& ex)
+        {
+            std::cout << "Kortex exception: " << ex.what() << std::endl;
+            std::cout << "Error sub-code: " << Kinova::Api::SubErrorCodes_Name(Kinova::Api::SubErrorCodes((ex.getErrorInfo().getError().error_sub_code()))) << std::endl;
+        }
+    }
     get_joint_positions(joint_positions);
     get_joint_velocities(joint_velocities);
     get_joint_torques(joint_torques);
@@ -618,6 +628,16 @@ void kinova_mediator::initialize(const int robot_model,
         catch (Kinova::Api::KDetailedException& ex)
         {
             std::cout << "API error: " << ex.what() << std::endl;
+
+            std::cout << "KError error_code: " << ex.getErrorInfo().getError().error_code() << std::endl;
+            std::cout << "KError sub_code: " << ex.getErrorInfo().getError().error_sub_code() << std::endl;
+            std::cout << "KError sub_string: " << ex.getErrorInfo().getError().error_sub_string() << std::endl;
+
+            // Error codes by themselves are not very verbose if you don't see their corresponding enum value
+            // You can use google::protobuf helpers to get the string enum element for every error code and sub-code 
+            std::cout << "Error code string equivalent: " << Kinova::Api::ErrorCodes_Name(Kinova::Api::ErrorCodes(ex.getErrorInfo().getError().error_code())) << std::endl;
+            std::cout << "Error sub-code string equivalent: " << Kinova::Api::SubErrorCodes_Name(Kinova::Api::SubErrorCodes(ex.getErrorInfo().getError().error_sub_code())) << std::endl;
+
             return;
         }
         catch (std::runtime_error& ex2)

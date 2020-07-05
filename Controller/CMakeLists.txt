@@ -30,8 +30,8 @@ if("${ROBOT}" STREQUAL "kinova")
   message("---- KORTEX_DIR: " ${KORTEX_DIR})
 
   # Activate C++ 11
-  set (CMAKE_CXX_STANDARD 11)
-  include_directories(${PROJECT_SOURCE_DIR}/thirdParty/cxxopts/)
+  #set (CMAKE_CXX_STANDARD 11)
+  include_directories(${PROJECT_SOURCE_DIR}/../kortex_api/thirdParty/cxxopts/)
 
   add_compile_options(-Wall)
   add_compile_options(-Wno-reorder)

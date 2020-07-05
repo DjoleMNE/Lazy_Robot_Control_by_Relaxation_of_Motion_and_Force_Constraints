@@ -120,8 +120,7 @@ namespace geometry
     {
         Eigen::Matrix3d eigen_matrix = conversions::rotation_to_eigen(rot_matrix);
 
-        Eigen::JacobiSVD<Eigen::Matrix3d> svd(eigen_matrix,
-                                              Eigen::ComputeFullU | Eigen::ComputeFullV);
+        Eigen::JacobiSVD<Eigen::Matrix3d> svd(eigen_matrix, Eigen::ComputeFullU | Eigen::ComputeFullV);
         eigen_matrix = svd.matrixU() * svd.matrixV().transpose();
 
         if(eigen_matrix.determinant() <= 0.0)
