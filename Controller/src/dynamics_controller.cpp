@@ -30,13 +30,12 @@ const double MIN_NORM = 1e-3;
 dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
                                          const int rate_hz,
                                          const bool compensate_gravity):
-    RATE_HZ_(rate_hz),
-    DT_MICRO_(SECOND / RATE_HZ_), DT_1KHZ_MICRO_(SECOND / 1000), // Time period defined in microseconds: 1s = 1 000 000us
+    RATE_HZ_(rate_hz), DT_MICRO_(SECOND / RATE_HZ_), DT_1KHZ_MICRO_(SECOND / 1000), // Time period defined in microseconds: 1s = 1 000 000us
     DT_SEC_(1.0 / static_cast<double>(RATE_HZ_)),
     DT_STOPPING_MICRO_(SECOND / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ),
-    store_control_data_(false), desired_dynamics_interface_(dynamics_interface::CART_ACCELERATION), 
-    desired_task_model_(task_model::full_pose),
-    loop_start_time_(std::chrono::steady_clock::now()),
+    store_control_data_(false), use_estimated_external_wrench_(false),
+    desired_dynamics_interface_(dynamics_interface::CART_ACCELERATION), 
+    desired_task_model_(task_model::full_pose), loop_start_time_(std::chrono::steady_clock::now()),
     total_time_sec_(0.0), loop_iteration_count_(0), stop_loop_iteration_count_(0),
     steady_stop_iteration_count_(0), feedforward_loop_count_(0), control_loop_delay_count_(0),
     robot_driver_(robot_driver), robot_chain_(robot_driver_->get_robot_model()),
@@ -68,7 +67,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     predicted_error_twist_(Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_)),
     compensation_error_(Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_)),
     horizon_amplitude_(1.0), null_space_abag_command_(0.0), 
-    null_space_angle_(0.0), desired_null_space_angle_(0.0),
+    null_space_angle_(0.0), desired_null_space_angle_(0.0), updated_mass_estimation_(0.0),
     abag_command_(Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_)),
     abag_stop_motion_command_(Eigen::VectorXd::Zero(NUM_OF_JOINTS_)),
     max_command_(Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_)),
@@ -1598,7 +1597,8 @@ void dynamics_controller::compute_full_pose_task_error()
 */
 void dynamics_controller::compute_gravity_compensation_task_error()
 {
-    fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
+    KDL::Wrench zero_ext_wrench;
+    fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, zero_ext_wrench, total_time_sec_, tube_section_count_);
 }
 
 /**
@@ -1802,7 +1802,7 @@ int dynamics_controller::compute_weight_compensation_control_commands()
     int compensation_status = fsm_.update_weight_compensation_task_status(loop_iteration_count_, abag_.get_bias(), abag_.get_gain(), filtered_bias_);
     if (compensation_status > 0)
     {
-        double updated_mass = 0.0;
+        updated_mass_estimation_ = 0.0;
 
         // Values expressed in the task frame: offset - current bias
         switch (compensation_status)
@@ -1813,7 +1813,7 @@ int dynamics_controller::compute_weight_compensation_control_commands()
 
                 if (moveTo_weight_compensation_task_.use_mass_alternation)
                 {
-                    updated_mass = robot_chain_.getSegment(END_EFF_).getInertia().getMass() - compensation_error_(0) * max_command_(0) * compensation_parameters_(3) * 0.13;
+                    updated_mass_estimation_ = robot_chain_.getSegment(END_EFF_).getInertia().getMass() - compensation_error_(0) * max_command_(0) * compensation_parameters_(3) * 0.13;
                 }
                 else
                 {
@@ -1829,7 +1829,7 @@ int dynamics_controller::compute_weight_compensation_control_commands()
 
                 if (moveTo_weight_compensation_task_.use_mass_alternation)
                 {
-                    updated_mass = robot_chain_.getSegment(END_EFF_).getInertia().getMass() - compensation_error_(1) * max_command_(1) * compensation_parameters_(3) * 0.13;
+                    updated_mass_estimation_ = robot_chain_.getSegment(END_EFF_).getInertia().getMass() - compensation_error_(1) * max_command_(1) * compensation_parameters_(3) * 0.13;
                 }
                 else
                 {
@@ -1845,7 +1845,7 @@ int dynamics_controller::compute_weight_compensation_control_commands()
 
                 if (moveTo_weight_compensation_task_.use_mass_alternation)
                 {
-                    updated_mass = robot_chain_.getSegment(END_EFF_).getInertia().getMass() - compensation_error_(2) * max_command_(2) * compensation_parameters_(3) * 0.13;
+                    updated_mass_estimation_ = robot_chain_.getSegment(END_EFF_).getInertia().getMass() - compensation_error_(2) * max_command_(2) * compensation_parameters_(3) * 0.13;
                 }
                 else
                 {
@@ -1863,7 +1863,7 @@ int dynamics_controller::compute_weight_compensation_control_commands()
         // Apply model changes
         if (moveTo_weight_compensation_task_.use_mass_alternation)
         {
-            // robot_chain_.getSegment(END_EFF_).setMass(updated_mass);
+            // robot_chain_.getSegment(END_EFF_).setMass(updated_mass_estimation_);
             printf("Updated mass: %f \n", robot_chain_.getSegment(END_EFF_).getInertia().getMass());
 
             // Reset solvers with updated model
@@ -1907,7 +1907,7 @@ int dynamics_controller::compute_gravity_compensation_control_commands()
 {
     int id_solver_result = this->id_solver_->CartToJnt(robot_state_.q, zero_joint_array_, zero_joint_array_, zero_wrenches_, gravity_torque_);
     if (id_solver_result != 0) return id_solver_result;
-    
+
     if (desired_task_model_ != task_model::gravity_compensation) robot_state_.control_torque.data = robot_state_.control_torque.data + gravity_torque_.data;
     else robot_state_.control_torque.data = gravity_torque_.data;
 
@@ -2004,6 +2004,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
     // Save current selection of desire control mode
     desired_control_mode_.interface = desired_control_mode;
     desired_dynamics_interface_ = desired_dynamics_interface;
+    store_control_data_ = store_control_data;
 
     switch (desired_task_model_)
     {
@@ -2040,8 +2041,6 @@ int dynamics_controller::initialize(const int desired_control_mode,
             return -1;
             break;
     }
-
-    store_control_data_ = store_control_data;
 
     if (store_control_data_) 
     {

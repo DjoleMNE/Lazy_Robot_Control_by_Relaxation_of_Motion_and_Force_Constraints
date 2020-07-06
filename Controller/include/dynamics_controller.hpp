@@ -203,7 +203,7 @@ class dynamics_controller
     const double DT_SEC_;
 
     std::ofstream log_file_cart_, log_file_joint_, log_file_predictions_, log_file_null_space_, log_file_cart_base_, log_file_stop_motion_;
-    bool store_control_data_;
+    bool store_control_data_, use_estimated_external_wrench_;
     int desired_dynamics_interface_, desired_task_model_;
 
     struct desired_control_mode
