@@ -101,10 +101,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     // Control loop frequency must be lower than or equal to 1000 Hz
     assert(("Selected frequency is too high", RATE_HZ_<= 1000));
 
-    this->hd_solver_ = std::make_shared<KDL::Solver_Vereshchagin>(robot_chain_, JOINT_INERTIA_,
-                                                                  JOINT_TORQUE_LIMITS_, !COMPENSATE_GRAVITY_,
-                                                                  COMPENSATE_GRAVITY_? KDL::Twist::Zero() : ROOT_ACC_, 
-                                                                  NUM_OF_CONSTRAINTS_);
+    this->hd_solver_ = std::make_shared<KDL::Solver_Vereshchagin>(robot_chain_, JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, !COMPENSATE_GRAVITY_,
+                                                                  COMPENSATE_GRAVITY_? KDL::Twist::Zero() : ROOT_ACC_, NUM_OF_CONSTRAINTS_);
 
     this->id_solver_ = std::make_shared<KDL::Solver_RNE>(robot_chain_, KDL::Vector(0.0, 0.0, -9.81289), JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, false);
 
@@ -369,9 +367,6 @@ void dynamics_controller::write_to_file()
             log_file_cart_base_ << std::endl;
         }
 
-        // Write joint space state
-        log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
-
         // Write null-space control state
         log_file_null_space_ << RAD_TO_DEG(null_space_angle_) << " " << desired_null_space_angle_ << " "; // Measured and desired state
         log_file_null_space_ << RAD_TO_DEG(null_space_abag_error_(0)) << " " << abag_null_space_.get_error()(0) << " "; // Raw and filtered error
@@ -384,12 +379,13 @@ void dynamics_controller::write_to_file()
         }
         else log_file_null_space_ << 0.0;
         log_file_null_space_ << std::endl;
+
+        for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+            log_file_ext_wrench_ << ext_wrench_(i) << " ";
+        log_file_ext_wrench_ << std::endl;
     }
     else
     {
-        // Write joint space state
-        log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
-
         // Write measured state
         for (int i = 0; i < NUM_OF_JOINTS_; i++)
             log_file_stop_motion_ << robot_state_.qd(i) << " ";
@@ -411,6 +407,9 @@ void dynamics_controller::write_to_file()
         log_file_stop_motion_ << abag_stop_motion_.get_gain().transpose().format(WRITE_FORMAT_STOP_MOTION);
         log_file_stop_motion_ << abag_stop_motion_.get_command().transpose().format(WRITE_FORMAT_STOP_MOTION);
     }
+
+    // Write joint space state
+    log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
 }
 
 // Set all values of desired state to 0 - public method
@@ -2095,6 +2094,9 @@ int dynamics_controller::initialize(const int desired_control_mode,
         for(int i = 0; i < NUM_OF_JOINTS_; i++) 
             log_file_joint_ << JOINT_TORQUE_LIMITS_[i] << " ";
         log_file_joint_ << std::endl;
+
+        log_file_ext_wrench_.open(dynamics_parameter::LOG_FILE_EXT_WRENCH_PATH);
+        assert(log_file_ext_wrench_.is_open());
     }
 
     KDL::SetToZero(robot_state_.feedforward_torque);
@@ -2259,7 +2261,7 @@ int dynamics_controller::update_commands()
 */
 int dynamics_controller::step(const KDL::JntArray &q_input,
                               const KDL::JntArray &qd_input,
-                              const KDL::Wrench &ext_force,
+                              const KDL::Wrench &ext_force_torque,
                               KDL::JntArray &tau_output,
                               const double time_passed_sec,
                               const int main_loop_iteration,
@@ -2268,7 +2270,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
 {
     robot_state_.q  = q_input;
     robot_state_.qd = qd_input;
-    ext_wrench_     = ext_force;
+    ext_wrench_     = ext_force_torque;
     total_time_sec_ = time_passed_sec;
     loop_iteration_count_ = main_loop_iteration;
     stop_loop_iteration_count_ = stop_loop_iteration;
@@ -2331,7 +2333,7 @@ int dynamics_controller::control()
 {
     // double loop_time = 0.0;
     KDL::JntArray state_q(NUM_OF_JOINTS_), state_qd(NUM_OF_JOINTS_), ctrl_torque(NUM_OF_JOINTS_);
-    KDL::Wrench ext_force;
+    KDL::Wrench ext_force_torque;
     total_time_sec_ = 0.0;
     int return_flag = 0;
 
@@ -2347,10 +2349,10 @@ int dynamics_controller::control()
 
         state_q   = robot_state_.q;
         state_qd  = robot_state_.qd;
-        ext_force = ext_wrench_;
+        ext_force_torque = ext_wrench_;
 
         // Make one control iteration (step) -> Update control commands
-        return_flag = step(state_q, state_qd, ext_force, ctrl_torque, total_time_sec_, loop_iteration_count_, stop_loop_iteration_count_, stopping_sequence_on_);
+        return_flag = step(state_q, state_qd, ext_force_torque, ctrl_torque, total_time_sec_, loop_iteration_count_, stop_loop_iteration_count_, stopping_sequence_on_);
         if (return_flag == -1) trigger_stopping_sequence_ = true;
 
         if (stopping_sequence_on_) // Robot will be controlled to stop its motion and eventually lock
@@ -2445,4 +2447,5 @@ void dynamics_controller::close_files()
     log_file_joint_.close();
     log_file_predictions_.close();
     log_file_null_space_.close();
+    log_file_ext_wrench_.close();
 }

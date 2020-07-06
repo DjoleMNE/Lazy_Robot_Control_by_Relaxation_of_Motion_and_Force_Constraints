@@ -87,7 +87,7 @@ class dynamics_controller
     */
     int step(const KDL::JntArray &q_input,
              const KDL::JntArray &qd_input,
-             const KDL::Wrench &ext_force, 
+             const KDL::Wrench &ext_force_torque, 
              KDL::JntArray &tau_output,
              const double time_passed_sec,
              const int main_loop_iteration,
@@ -202,7 +202,7 @@ class dynamics_controller
     const long DT_MICRO_, DT_1KHZ_MICRO_, DT_STOPPING_MICRO_;
     const double DT_SEC_;
 
-    std::ofstream log_file_cart_, log_file_joint_, log_file_predictions_, log_file_null_space_, log_file_cart_base_, log_file_stop_motion_;
+    std::ofstream log_file_cart_, log_file_joint_, log_file_predictions_, log_file_null_space_, log_file_cart_base_, log_file_stop_motion_, log_file_ext_wrench_;
     bool store_control_data_, use_estimated_external_wrench_;
     int desired_dynamics_interface_, desired_task_model_;
 
