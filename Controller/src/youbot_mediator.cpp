@@ -327,6 +327,13 @@ KDL::Chain youbot_mediator::get_robot_model()
     return yb_chain_; 
 }
 
+// Above main chain is prepared for vereshchagin (nj == ns) but this full contains additional segments
+KDL::Chain youbot_mediator::get_full_robot_model() 
+{
+    //To be implemented
+    return yb_chain_; 
+}
+
 //Extract youBot model from URDF file
 int youbot_mediator::get_model_from_urdf()
 {

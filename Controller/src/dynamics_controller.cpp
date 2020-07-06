@@ -39,6 +39,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     total_time_sec_(0.0), loop_iteration_count_(0), stop_loop_iteration_count_(0),
     steady_stop_iteration_count_(0), feedforward_loop_count_(0), control_loop_delay_count_(0),
     robot_driver_(robot_driver), robot_chain_(robot_driver_->get_robot_model()),
+    robot_chain_full_(robot_driver->get_full_robot_model()),
     NUM_OF_JOINTS_(robot_chain_.getNrOfJoints()),
     NUM_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
     NUM_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
@@ -77,7 +78,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     min_sat_limits_(Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_)),
     filtered_bias_(Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_)),
     cart_force_command_(NUM_OF_SEGMENTS_, KDL::Wrench::Zero()), 
-    zero_wrenches_(NUM_OF_SEGMENTS_, KDL::Wrench::Zero()),
+    zero_wrenches_full_model_(robot_chain_full_.getNrOfSegments(), KDL::Wrench::Zero()),
     ext_wrench_(KDL::Wrench::Zero()), ext_wrench_base_(KDL::Wrench::Zero()),
     compensated_weight_(KDL::Wrench::Zero()),
     zero_joint_array_(NUM_OF_JOINTS_), gravity_torque_(NUM_OF_JOINTS_),
@@ -104,7 +105,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     this->hd_solver_ = std::make_shared<KDL::Solver_Vereshchagin>(robot_chain_, JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, !COMPENSATE_GRAVITY_,
                                                                   COMPENSATE_GRAVITY_? KDL::Twist::Zero() : ROOT_ACC_, NUM_OF_CONSTRAINTS_);
 
-    this->id_solver_ = std::make_shared<KDL::Solver_RNE>(robot_chain_, KDL::Vector(0.0, 0.0, -9.81289), JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, false);
+    this->id_solver_ = std::make_shared<KDL::Solver_RNE>(robot_chain_full_, KDL::Vector(0.0, 0.0, -9.81289), JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, false);
 
     // Set default command interface to stop motion mode and initialize it as not safe
     desired_control_mode_.interface = control_mode::STOP_MOTION;
@@ -1871,7 +1872,7 @@ int dynamics_controller::compute_weight_compensation_control_commands()
                                                                 COMPENSATE_GRAVITY_? KDL::Twist::Zero() : ROOT_ACC_, 
                                                                 NUM_OF_CONSTRAINTS_));
 
-            this->id_solver_.reset(new KDL::Solver_RNE(robot_chain_, KDL::Vector(0.0, 0.0, -9.81289),
+            this->id_solver_.reset(new KDL::Solver_RNE(robot_chain_full_, KDL::Vector(0.0, 0.0, -9.81289),
                                                        JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, false));
         }
         else
@@ -1904,7 +1905,7 @@ int dynamics_controller::evaluate_dynamics()
 
 int dynamics_controller::compute_gravity_compensation_control_commands()
 {
-    int id_solver_result = this->id_solver_->CartToJnt(robot_state_.q, zero_joint_array_, zero_joint_array_, zero_wrenches_, gravity_torque_);
+    int id_solver_result = this->id_solver_->CartToJnt(robot_state_.q, zero_joint_array_, zero_joint_array_, zero_wrenches_full_model_, gravity_torque_);
     if (id_solver_result != 0) return id_solver_result;
 
     if (desired_task_model_ != task_model::gravity_compensation) robot_state_.control_torque.data = robot_state_.control_torque.data + gravity_torque_.data;

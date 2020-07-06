@@ -107,5 +107,6 @@ class robot_mediator
 		
 		virtual KDL::Twist get_root_acceleration() = 0;
 		virtual KDL::Chain get_robot_model() = 0;
+		virtual KDL::Chain get_full_robot_model() = 0;
 };
 #endif /* ROBOT_MEDIATOR_HPP */

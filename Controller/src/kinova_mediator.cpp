@@ -496,6 +496,33 @@ KDL::Chain kinova_mediator::get_robot_model()
     return kinova_chain_; 
 }
 
+// Above main chain is prepared for vereshchagin (nj == ns) but this full contains additional segments
+KDL::Chain kinova_mediator::get_full_robot_model() 
+{
+    urdf::Model urdf_model;
+    KDL::Tree tree;
+    KDL::Chain full_chain;
+
+    if (!urdf_model.initFile(kinova_constants::urdf_path))
+    {
+        printf("ERROR: Failed to parse urdf robot model \n");
+        assert(0);
+    }
+
+    //Extract KDL tree from the URDF file
+    if (!kdl_parser::treeFromUrdfModel(urdf_model, tree))
+    {
+        printf("ERROR: Failed to construct kdl tree \n");
+        assert(0);
+    }
+
+    //Extract KDL chain from KDL tree
+    tree.getChain(kinova_constants::root_name, 
+                  "EndEffector_Link", 
+                  full_chain);
+    return full_chain; 
+}
+
 //Extract youBot model from URDF file
 int kinova_mediator::get_model_from_urdf()
 {

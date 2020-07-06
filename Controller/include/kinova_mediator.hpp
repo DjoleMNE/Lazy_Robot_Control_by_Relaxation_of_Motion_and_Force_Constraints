@@ -142,6 +142,7 @@ class kinova_mediator: public robot_mediator
 
 		virtual KDL::Twist get_root_acceleration();
 		virtual KDL::Chain get_robot_model();
+		virtual KDL::Chain get_full_robot_model();
 
 	private:
 		bool is_initialized_;

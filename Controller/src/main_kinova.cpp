@@ -745,6 +745,8 @@ int run_main_control(kinova_mediator &robot_driver)
     // }
 
     KDL::Chain robot_chain = robot_driver.get_robot_model();
+    // Above main chain is prepared for vereshchagin (nj == ns) but full contains additional segments
+    KDL::Chain robot_chain_full = robot_driver.get_full_robot_model();
 
     dynamics_controller controller(&robot_driver, RATE_HZ, compensate_gravity);
 
@@ -837,7 +839,7 @@ int run_main_control(kinova_mediator &robot_driver)
     }
 
     KDL::JntArray torque_command(7), joint_pos(7), joint_vel(7), joint_torque(7);
-    KDL::Wrenches wrenches(robot_chain.getNrOfSegments(), KDL::Wrench::Zero());
+    KDL::Wrenches wrenches_full_model(robot_chain_full.getNrOfSegments(), KDL::Wrench::Zero());
 
     double total_time_sec = 0.0;
     int loop_iteration_count = 0;
@@ -859,7 +861,7 @@ int run_main_control(kinova_mediator &robot_driver)
         robot_driver.get_joint_state(joint_pos, joint_vel, joint_torque);
 
         // Make one control iteration (step) -> Update control commands
-        return_flag = controller.step(joint_pos, joint_vel, wrenches[robot_chain.getNrOfSegments()- 1], torque_command, total_time_sec, loop_iteration_count, stop_loop_iteration_count, stopping_sequence_on);
+        return_flag = controller.step(joint_pos, joint_vel, wrenches_full_model[robot_chain_full.getNrOfSegments()- 1], torque_command, total_time_sec, loop_iteration_count, stop_loop_iteration_count, stopping_sequence_on);
         if (return_flag == -1) trigger_stopping_sequence = true;
 
         if (stopping_sequence_on) // Robot will be controlled to stop its motion and eventually lock

@@ -226,7 +226,8 @@ class dynamics_controller
         feedforward_loop_count_, control_loop_delay_count_;
 
     robot_mediator *robot_driver_;
-    KDL::Chain robot_chain_;
+    // Main chain is prepared for vereshchagin (nj == ns) but full contains additional segments
+    KDL::Chain robot_chain_, robot_chain_full_;
     const int NUM_OF_JOINTS_;
     const int NUM_OF_SEGMENTS_;
     const int NUM_OF_FRAMES_;
@@ -253,12 +254,10 @@ class dynamics_controller
     moveConstrained_follow_path_task moveConstrained_follow_path_task_;
 
     KDL::Twist current_error_twist_;
-    Eigen::VectorXd abag_error_vector_, null_space_abag_error_, stop_motion_abag_error_,
-                    predicted_error_twist_, compensation_error_;
-    double horizon_amplitude_, null_space_abag_command_, null_space_angle_, desired_null_space_angle_;
-    Eigen::VectorXd abag_command_, abag_stop_motion_command_, max_command_, compensation_parameters_, null_space_parameters_,
-                    force_task_parameters_, min_sat_limits_, filtered_bias_;
-    KDL::Wrenches cart_force_command_, zero_wrenches_;
+    Eigen::VectorXd abag_error_vector_, null_space_abag_error_, stop_motion_abag_error_, predicted_error_twist_, compensation_error_;
+    double horizon_amplitude_, null_space_abag_command_, null_space_angle_, desired_null_space_angle_, updated_mass_estimation_;
+    Eigen::VectorXd abag_command_, abag_stop_motion_command_, max_command_, compensation_parameters_, null_space_parameters_, force_task_parameters_, min_sat_limits_, filtered_bias_;
+    KDL::Wrenches cart_force_command_, zero_wrenches_full_model_;
     KDL::Wrench ext_wrench_, ext_wrench_base_, compensated_weight_;
     KDL::JntArray zero_joint_array_, gravity_torque_;
 
