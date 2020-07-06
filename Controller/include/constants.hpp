@@ -180,6 +180,7 @@ namespace dynamics_parameter
     extern const std::string LOG_FILE_STOP_MOTION_PATH;
     extern const std::string LOG_FILE_CART_BASE_PATH;
     extern const std::string LOG_FILE_JOINT_PATH;
+    extern const std::string LOG_FILE_EXT_WRENCH_PATH;
     extern const std::string LOG_FILE_PREDICTIONS_PATH;
     extern const std::string LOG_FILE_NULL_SPACE_PATH;
 }

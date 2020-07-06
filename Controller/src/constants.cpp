@@ -214,6 +214,7 @@ namespace dynamics_parameter
     const std::string LOG_FILE_STOP_MOTION_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/stop_motion_error.txt");
     const std::string LOG_FILE_CART_BASE_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/control_base_error.txt");
     const std::string LOG_FILE_JOINT_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/joint_torques.txt");
+    const std::string LOG_FILE_EXT_WRENCH_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/ext_wrench_data.txt");
     const std::string LOG_FILE_PREDICTIONS_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/prediction_effects.txt");
     const std::string LOG_FILE_NULL_SPACE_PATH("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/null_space_error.txt");
 }
