@@ -80,6 +80,7 @@ double desired_null_space_angle      = 90.0; // Unit degrees
 double task_time_limit_sec           = 600.0;
 
 bool log_data                        = false;
+bool use_estimated_external_wrench   = false;
 bool control_null_space              = false;
 bool compensate_gravity              = false;
 bool use_mass_alternation            = false;
@@ -894,14 +895,14 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
         return -1;
     }
 
-    return_flag = controller_1.initialize(desired_control_mode, desired_dynamics_interface, log_data, motion_profile_id);
+    return_flag = controller_1.initialize(desired_control_mode, desired_dynamics_interface, motion_profile_id, log_data, use_estimated_external_wrench);
     if (return_flag != 0)
     {
         printf("Error in intializing arm 1\n");
         return -1;
     }
 
-    return_flag = controller_2.initialize(desired_control_mode, desired_dynamics_interface, log_data, motion_profile_id);
+    return_flag = controller_2.initialize(desired_control_mode, desired_dynamics_interface, motion_profile_id, log_data, use_estimated_external_wrench);
     if (return_flag != 0)
     {
         printf("Error in intializing arm 2\n");
@@ -1069,6 +1070,7 @@ int main(int argc, char **argv)
     control_null_space   = false;
     use_mass_alternation = false;
     log_data             = false;
+    use_estimated_external_wrench  = true;
 
     kinova_mediator robot_driver_1;
     kinova_mediator robot_driver_2;

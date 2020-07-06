@@ -79,6 +79,7 @@ double desired_null_space_angle      = 90.0; // Unit degrees
 double task_time_limit_sec           = 600.0;
 
 bool log_data                        = false;
+bool use_estimated_external_wrench   = false;
 bool control_null_space              = false;
 bool compensate_gravity              = false;
 bool use_mass_alternation            = false;
@@ -199,6 +200,8 @@ const Eigen::VectorXd null_space_abag_parameters = (Eigen::VectorXd(6) << 0.1, 0
 const Eigen::VectorXd compensation_parameters = (Eigen::VectorXd(12) << -0.08, -0.07, 0.0, 1.2, 0.015,
                                                                          0.00016, 0.0025, 0.00002,
                                                                          60, 6, 3, 3).finished();
+
+const Eigen::VectorXd wrench_estimation_gain = (Eigen::VectorXd(7) << 25.0, 25.0, 25.0, 25.0, 25.0, 25.0, 25.0).finished();
 
 // Create an event listener that will set the promise action event to the exit value
 // Will set promise to either END or ABORT
@@ -549,8 +552,8 @@ int define_task(dynamics_controller *dyn_controller)
 
         default:
             // HOME pose
-            tube_start_position = std::vector<double>{0.39514, 0.00134662, 0.433724};
-            desired_ee_pose     = { 0.65514, 0.01434662, 0.433724, // Linear: Vector
+            tube_start_position = std::vector<double>{    0.395153,  0.00136493,    0.433647};
+            desired_ee_pose     = { 0.59514, 0.00136493, 0.433647, // Linear: Vector
                                     0.0, 0.0, -1.0, // Angular: Rotation matrix
                                     1.0, 0.0, 0.0,
                                     0.0, -1.0, 0.0};
@@ -766,7 +769,8 @@ int run_main_control(kinova_mediator &robot_driver)
                                     null_space_abag_parameters, compensation_parameters,
                                     STOP_MOTION_ERROR_ALPHA,
                                     STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                    wrench_estimation_gain);
     }
     else if (desired_task_model == task_model::moveGuarded)
     {
@@ -777,7 +781,8 @@ int run_main_control(kinova_mediator &robot_driver)
                                     null_space_abag_parameters, compensation_parameters,
                                     STOP_MOTION_ERROR_ALPHA,
                                     STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                    wrench_estimation_gain);
     }
     else if (desired_task_model == task_model::moveTo_follow_path)
     {
@@ -788,7 +793,8 @@ int run_main_control(kinova_mediator &robot_driver)
                                     null_space_abag_parameters, compensation_parameters,
                                     STOP_MOTION_ERROR_ALPHA,
                                     STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                    wrench_estimation_gain);
 
     }
     else if (desired_task_model == task_model::moveTo_weight_compensation)
@@ -800,7 +806,8 @@ int run_main_control(kinova_mediator &robot_driver)
                                     null_space_abag_parameters, compensation_parameters,
                                     STOP_MOTION_ERROR_ALPHA,
                                     STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                    wrench_estimation_gain);
     }
     else if (desired_task_model == task_model::moveTo)
     {
@@ -811,7 +818,8 @@ int run_main_control(kinova_mediator &robot_driver)
                                     null_space_abag_parameters, compensation_parameters,
                                     STOP_MOTION_ERROR_ALPHA,
                                     STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                    wrench_estimation_gain);
     }
 
     else if (desired_task_model == task_model::gravity_compensation)
@@ -823,7 +831,8 @@ int run_main_control(kinova_mediator &robot_driver)
                                     null_space_abag_parameters, compensation_parameters,
                                     STOP_MOTION_ERROR_ALPHA,
                                     STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                    wrench_estimation_gain);
     }
     else
     {
@@ -831,7 +840,7 @@ int run_main_control(kinova_mediator &robot_driver)
         return -1;
     }
 
-    return_flag = controller.initialize(desired_control_mode, desired_dynamics_interface, log_data, motion_profile_id);
+    return_flag = controller.initialize(desired_control_mode, desired_dynamics_interface, motion_profile_id, log_data, use_estimated_external_wrench);
     if (return_flag != 0)
     {
         printf("Error in intializing the arm\n");
@@ -856,9 +865,18 @@ int run_main_control(kinova_mediator &robot_driver)
         loop_start_time = std::chrono::steady_clock::now();
         if (!stopping_sequence_on) total_time_sec = loop_iteration_count * DT_SEC;
 
-        //Get current robot state from the joint sensors: angles and velocities 
-        // robot_driver.get_robot_state(joint_pos, joint_vel, joint_torque, wrenches[robot_chain.getNrOfSegments()- 1]);
-        robot_driver.get_joint_state(joint_pos, joint_vel, joint_torque);
+        //Get current state from robot sensors
+        if (use_estimated_external_wrench)
+        {
+            robot_driver.get_joint_state(joint_pos, joint_vel, joint_torque);
+            return_flag = controller.estimate_external_wrench(joint_pos, joint_vel, joint_torque, wrenches_full_model[robot_chain_full.getNrOfSegments()- 1]);
+            if (return_flag != 0)
+            {
+                printf("Error in external wrench estimation\n");
+                trigger_stopping_sequence = true;
+            }
+        }
+        else robot_driver.get_robot_state(joint_pos, joint_vel, joint_torque, wrenches_full_model[robot_chain_full.getNrOfSegments()- 1]);
 
         // Make one control iteration (step) -> Update control commands
         return_flag = controller.step(joint_pos, joint_vel, wrenches_full_model[robot_chain_full.getNrOfSegments()- 1], torque_command, total_time_sec, loop_iteration_count, stop_loop_iteration_count, stopping_sequence_on);
@@ -967,7 +985,8 @@ int main(int argc, char **argv)
     compensate_gravity   = true;
     control_null_space   = false;
     use_mass_alternation = false;
-    log_data             = false;
+    log_data             = true;
+    use_estimated_external_wrench  = true;
 
     kinova_mediator robot_driver;
     int return_flag = 0;
@@ -1014,7 +1033,8 @@ int main(int argc, char **argv)
                                   null_space_abag_parameters, compensation_parameters,
                                   STOP_MOTION_ERROR_ALPHA,
                                   STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                  wrench_estimation_gain);
     }
     else if (desired_task_model == task_model::moveGuarded)
     {
@@ -1025,7 +1045,8 @@ int main(int argc, char **argv)
                                   null_space_abag_parameters, compensation_parameters,
                                   STOP_MOTION_ERROR_ALPHA,
                                   STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                  wrench_estimation_gain);
     }
     else if (desired_task_model == task_model::moveTo_follow_path)
     {
@@ -1036,7 +1057,8 @@ int main(int argc, char **argv)
                                   null_space_abag_parameters, compensation_parameters,
                                   STOP_MOTION_ERROR_ALPHA,
                                   STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                  wrench_estimation_gain);
     }
     else if (desired_task_model == task_model::moveTo_weight_compensation)
     {
@@ -1047,7 +1069,8 @@ int main(int argc, char **argv)
                                   null_space_abag_parameters, compensation_parameters,
                                   STOP_MOTION_ERROR_ALPHA,
                                   STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                  wrench_estimation_gain);
     }
     else if (desired_task_model == task_model::moveTo)
     {
@@ -1058,7 +1081,8 @@ int main(int argc, char **argv)
                                   null_space_abag_parameters, compensation_parameters,
                                   STOP_MOTION_ERROR_ALPHA,
                                   STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                  wrench_estimation_gain);
     }
 
     else if (desired_task_model == task_model::gravity_compensation)
@@ -1070,11 +1094,12 @@ int main(int argc, char **argv)
                                   null_space_abag_parameters, compensation_parameters,
                                   STOP_MOTION_ERROR_ALPHA,
                                   STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                  wrench_estimation_gain);
     }
     else return 0;
 
-    initial_result = controller.initialize(desired_control_mode, desired_dynamics_interface, log_data, motion_profile_id);
+    initial_result = controller.initialize(desired_control_mode, desired_dynamics_interface, motion_profile_id, log_data, use_estimated_external_wrench);
     if (initial_result != 0) return -1;
 
     controller.control();

@@ -80,9 +80,18 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     cart_force_command_(NUM_OF_SEGMENTS_, KDL::Wrench::Zero()), 
     zero_wrenches_full_model_(robot_chain_full_.getNrOfSegments(), KDL::Wrench::Zero()),
     ext_wrench_(KDL::Wrench::Zero()), ext_wrench_base_(KDL::Wrench::Zero()),
-    compensated_weight_(KDL::Wrench::Zero()),
-    zero_joint_array_(NUM_OF_JOINTS_), gravity_torque_(NUM_OF_JOINTS_),
+    compensated_weight_(KDL::Wrench::Zero()), zero_joint_array_(NUM_OF_JOINTS_), 
+    gravity_torque_(NUM_OF_JOINTS_), coriolis_torque_(NUM_OF_JOINTS_),
+    estimated_ext_torque_(NUM_OF_JOINTS_), filtered_estimated_ext_torque_(NUM_OF_JOINTS_), 
+    estimated_momentum_integral_(NUM_OF_JOINTS_), initial_jnt_momentum_(NUM_OF_JOINTS_), 
+    jnt_mass_matrix_(NUM_OF_JOINTS_), previous_jnt_mass_matrix_(NUM_OF_JOINTS_), 
+    jnt_mass_matrix_dot_(NUM_OF_JOINTS_), jacobian_end_eff_(NUM_OF_JOINTS_), 
+    svd_U_(Eigen::MatrixXd::Zero(6, NUM_OF_JOINTS_)), svd_V_(Eigen::MatrixXd::Zero(NUM_OF_JOINTS_, NUM_OF_JOINTS_)),
+    jacobian_end_eff_inv_(Eigen::MatrixXd::Zero(NUM_OF_JOINTS_, NUM_OF_CONSTRAINTS_)),
+    jacobian_end_eff_inv_temp_(Eigen::MatrixXd::Zero(NUM_OF_JOINTS_, NUM_OF_JOINTS_)),
+    svd_S_(Eigen::VectorXd::Zero(NUM_OF_JOINTS_)), svd_tmp_(svd_S_), wrench_estimation_gain_(NUM_OF_JOINTS_),
     fk_vereshchagin_(robot_chain_), safety_monitor_(robot_driver_, true), 
+    jacobian_solver_(robot_chain_full_),
     fsm_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     abag_(NUM_OF_CONSTRAINTS_, abag_parameter::USE_ERROR_SIGN),
     abag_null_space_(1, abag_parameter::USE_ERROR_SIGN),
@@ -106,6 +115,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
                                                                   COMPENSATE_GRAVITY_? KDL::Twist::Zero() : ROOT_ACC_, NUM_OF_CONSTRAINTS_);
 
     this->id_solver_ = std::make_shared<KDL::Solver_RNE>(robot_chain_full_, KDL::Vector(0.0, 0.0, -9.81289), JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, false);
+
+    this->dynamic_parameter_solver_ = std::make_shared<KDL::ChainDynParam>(robot_chain_full_, KDL::Vector(0.0, 0.0, -9.81289));
 
     // Set default command interface to stop motion mode and initialize it as not safe
     desired_control_mode_.interface = control_mode::STOP_MOTION;
@@ -411,6 +422,7 @@ void dynamics_controller::write_to_file()
 
     // Write joint space state
     log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
+    log_file_joint_ << filtered_estimated_ext_torque_.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
 }
 
 // Set all values of desired state to 0 - public method
@@ -1936,7 +1948,8 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
                                          const Eigen::VectorXd &stop_motion_bias_threshold,
                                          const Eigen::VectorXd &stop_motion_bias_step,
                                          const Eigen::VectorXd &stop_motion_gain_threshold,
-                                         const Eigen::VectorXd &stop_motion_gain_step)
+                                         const Eigen::VectorXd &stop_motion_gain_step,
+                                         const Eigen::VectorXd &wrench_estimation_gain)
 {
     //First check input dimensions
     assert(max_command.size()             == NUM_OF_CONSTRAINTS_); 
@@ -1991,12 +2004,14 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
 
     this->null_space_parameters_   = null_space_parameters;
     this->compensation_parameters_ = compensation_parameters;
+    this->wrench_estimation_gain_  = wrench_estimation_gain;
 }
 
 int dynamics_controller::initialize(const int desired_control_mode, 
                                     const int desired_dynamics_interface,
+                                    const int desired_motion_profile,
                                     const bool store_control_data,
-                                    const int motion_profile)
+                                    const bool use_estimated_external_wrench)
 {
     //Exit the program if the "Stop Motion" mode is selected
     if (desired_control_mode == control_mode::STOP_MOTION) return -1;
@@ -2005,31 +2020,32 @@ int dynamics_controller::initialize(const int desired_control_mode,
     desired_control_mode_.interface = desired_control_mode;
     desired_dynamics_interface_ = desired_dynamics_interface;
     store_control_data_ = store_control_data;
+    use_estimated_external_wrench_ = use_estimated_external_wrench;
 
     switch (desired_task_model_)
     {
         case task_model::moveConstrained_follow_path:
-            fsm_result_ = fsm_.initialize_with_moveConstrained_follow_path(moveConstrained_follow_path_task_, motion_profile);
+            fsm_result_ = fsm_.initialize_with_moveConstrained_follow_path(moveConstrained_follow_path_task_, desired_motion_profile);
             break;
 
         case task_model::moveTo_follow_path:
-            fsm_result_ = fsm_.initialize_with_moveTo_follow_path(moveTo_follow_path_task_, motion_profile);
+            fsm_result_ = fsm_.initialize_with_moveTo_follow_path(moveTo_follow_path_task_, desired_motion_profile);
             break;
 
         case task_model::moveTo:
-            fsm_result_ = fsm_.initialize_with_moveTo(moveTo_task_, motion_profile);
+            fsm_result_ = fsm_.initialize_with_moveTo(moveTo_task_, desired_motion_profile);
             break;
 
         case task_model::moveGuarded:
-            fsm_result_ = fsm_.initialize_with_moveGuarded(moveGuarded_task_, motion_profile);
+            fsm_result_ = fsm_.initialize_with_moveGuarded(moveGuarded_task_, desired_motion_profile);
             break;
 
         case task_model::moveTo_weight_compensation:
-            fsm_result_ = fsm_.initialize_with_moveTo_weight_compensation(moveTo_weight_compensation_task_, motion_profile, compensation_parameters_);
+            fsm_result_ = fsm_.initialize_with_moveTo_weight_compensation(moveTo_weight_compensation_task_, desired_motion_profile, compensation_parameters_);
             break;
 
         case task_model::full_pose:
-            fsm_result_ = fsm_.initialize_with_full_pose(full_pose_task_, motion_profile);
+            fsm_result_ = fsm_.initialize_with_full_pose(full_pose_task_, desired_motion_profile);
             break;
 
         case task_model::gravity_compensation:
@@ -2119,6 +2135,12 @@ int dynamics_controller::initialize(const int desired_control_mode,
         return -1;
     }
 
+    if (use_estimated_external_wrench_)
+    {
+        dynamic_parameter_solver_->JntToMass(robot_state_.q, jnt_mass_matrix_);
+        initial_jnt_momentum_.data = jnt_mass_matrix_.data.lazyProduct(robot_state_.qd.data);
+    }
+
     // First make sure that the robot is not moving
     stopping_sequence_on_ = true;
     if (control() == -1)
@@ -2135,6 +2157,9 @@ int dynamics_controller::initialize(const int desired_control_mode,
     stop_loop_iteration_count_ = 0;
     error_logger_.error_source_ = error_source::empty;
     error_logger_.error_status_ = 0;
+
+    KDL::SetToZero(estimated_momentum_integral_);
+    KDL::SetToZero(estimated_ext_torque_);
 
     // Make sure that the robot is locked (freezed)
     engage_lock();
@@ -2155,6 +2180,88 @@ void dynamics_controller::engage_lock()
      * In the case of youBot: Sets velocities of arm's joints to 0
      */
     robot_driver_->stop_robot_motion();
+}
+
+// Momentum-observer based wrench estimation
+int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_position_measured,
+                                                  const KDL::JntArray &joint_velocity_measured,
+                                                  const KDL::JntArray &joint_torque_measured, 
+                                                  KDL::Wrench &ext_force_torque)
+{
+    int solver_result = this->dynamic_parameter_solver_->JntToMass(joint_position_measured, jnt_mass_matrix_);
+    if (solver_result != 0) return solver_result;
+    solver_result = this->dynamic_parameter_solver_->JntToCoriolis(joint_position_measured, joint_velocity_measured, coriolis_torque_);
+    if (solver_result != 0) return solver_result;
+
+    KDL::JntArray gravity_trq(NUM_OF_JOINTS_);
+    // if (!COMPENSATE_GRAVITY_ && desired_task_model_ != task_model::gravity_compensation)
+    // {
+    //     solver_result = this->dynamic_parameter_solver_->JntToGravity(joint_position_measured, gravity_trq);
+    //     if (solver_result != 0) return solver_result;
+    // }
+
+    solver_result = this->dynamic_parameter_solver_->JntToGravity(joint_position_measured, gravity_trq);
+    if (solver_result != 0) return solver_result;
+    jnt_mass_matrix_dot_.data = (jnt_mass_matrix_.data - previous_jnt_mass_matrix_.data) / DT_SEC_;
+    estimated_momentum_integral_.data += (-joint_torque_measured.data - 
+                                          gravity_trq.data - coriolis_torque_.data + jnt_mass_matrix_dot_.data * joint_velocity_measured.data + 
+                                          filtered_estimated_ext_torque_.data) * DT_SEC_;
+
+    estimated_ext_torque_.data = wrench_estimation_gain_.asDiagonal() * (jnt_mass_matrix_.data.lazyProduct(joint_velocity_measured.data) - 
+                                                                         estimated_momentum_integral_.data - 
+                                                                         initial_jnt_momentum_.data);
+
+    // First order low-pass filter
+    double alpha = 0.5;
+    for (int i = 0; i < NUM_OF_JOINTS_; i++)
+        filtered_estimated_ext_torque_(i) = alpha * filtered_estimated_ext_torque_(i) + (1.0 - alpha) * estimated_ext_torque_(i);
+
+    previous_jnt_mass_matrix_.data = jnt_mass_matrix_.data;
+
+    solver_result = jacobian_solver_.JntToJac(joint_position_measured, jacobian_end_eff_);
+    if (solver_result != 0) return solver_result;
+
+    // Compute the SVD of the jacobian using Eigen functions
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(jacobian_end_eff_.data.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+    Eigen::VectorXd singular_inv(svd.singularValues());
+    for (int j = 0; j < singular_inv.size(); ++j) singular_inv(j) = (singular_inv(j) < 1e-8) ? 0.0 : 1.0 / singular_inv(j);
+
+    // std::cout << svd.singularValues() << std::endl;
+
+    jacobian_end_eff_inv_.noalias() = svd.matrixV() * singular_inv.matrix().asDiagonal() * svd.matrixU().adjoint();
+
+    // Compute the SVD of the jacobian using Eigen functions: generic function for any matrix size
+
+
+
+    // Compute the SVD of the jacobian using KDL functions
+    // solver_result = KDL::svd_eigen_HH(jacobian_end_eff_.data.transpose(), svd_U_, svd_S_, svd_V_, svd_tmp_);
+    // if (0 != solver_result)
+    // {
+    //     ext_force_torque = KDL::Wrench();
+    //     printf("SVD failed\n");
+    //     return -1;
+    // }
+
+    // for (unsigned int i = 0; i < svd_S_.size(); i++)
+    // {
+    //     if (svd_S_(i) < 1e-8) svd_S_(i) = 0.0;
+    //     else svd_S_(i) = 1.0 / svd_S_(i);
+    // }
+
+    // jacobian_end_eff_inv_temp_.noalias() = svd_V_ * svd_S_.asDiagonal();
+    // jacobian_end_eff_inv_.noalias() = jacobian_end_eff_inv_temp_ * svd_U_.transpose();
+
+
+    // std::cout << jacobian_end_eff_inv_ << std::endl;
+
+
+    // Compute End-Effector Cartesian forces from joint external torques
+    Eigen::VectorXd wrench = jacobian_end_eff_inv_ * filtered_estimated_ext_torque_.data;
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++) ext_force_torque(i) = wrench(i);
+
+    return 0;
 }
 
 /**
@@ -2345,8 +2452,19 @@ int dynamics_controller::control()
         loop_start_time_ = std::chrono::steady_clock::now();
         if (!stopping_sequence_on_) total_time_sec_ = loop_iteration_count_ * DT_SEC_;
 
-        //Get current robot state from joint sensors
-        robot_driver_->get_joint_state(robot_state_.q, robot_state_.qd, robot_state_.measured_torque);
+        // Get current state from robot sensors
+        if (use_estimated_external_wrench_) 
+        {
+            robot_driver_->get_joint_state(robot_state_.q, robot_state_.qd, robot_state_.measured_torque);
+            return_flag = estimate_external_wrench(robot_state_.q, robot_state_.qd, robot_state_.measured_torque, ext_wrench_);
+            if (return_flag != 0)
+            {
+                error_logger_.error_source_ = error_source::ext_wrench_estimation;
+                error_logger_.error_status_ = return_flag;
+                trigger_stopping_sequence_ = true;
+            }
+        }
+        else robot_driver_->get_robot_state(robot_state_.q, robot_state_.qd, robot_state_.measured_torque, ext_wrench_);
 
         state_q   = robot_state_.q;
         state_qd  = robot_state_.qd;

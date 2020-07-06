@@ -84,7 +84,8 @@ const double time_horizon_sec        = 2.5;
 double tube_speed                    = 0.01;
 double desired_null_space_angle      = 90.0; // Unit degrees
 double task_time_limit_sec           = 600.0;
-const bool log_data                  = true;
+bool log_data                        = false;
+bool use_estimated_external_wrench   = false;
 bool control_null_space              = false;
 bool compensate_gravity              = false;
 bool use_mass_alternation            = false;
@@ -552,6 +553,8 @@ int main(int argc, char **argv)
     motion_profile_id    = m_profile::CONSTANT;
     task_time_limit_sec  = 18.5;
     tube_speed           = 0.0;
+    log_data             = false;
+    use_estimated_external_wrench  = false;
     compensate_gravity   = false;
     use_mass_alternation = true;
     tube_tolerances      = std::vector<double>{0.001, 0.01, 0.01, 
@@ -686,10 +689,7 @@ int main(int argc, char **argv)
         }
     }
 
-    initial_result = controller.initialize(desired_control_mode, 
-                                           desired_dynamics_interface,
-                                           log_data,
-                                           motion_profile_id);
+    initial_result = controller.initialize(desired_control_mode, desired_dynamics_interface, motion_profile_id, log_data, use_estimated_external_wrench);
     if (initial_result != 0) return -1;
     controller.control();
     controller.deinitialize();

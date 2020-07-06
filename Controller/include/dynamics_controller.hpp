@@ -28,6 +28,9 @@ SOFTWARE.
 #include <solver_vereshchagin.hpp>
 #include <fk_vereshchagin.hpp>
 #include <solver_recursive_newton_euler.hpp>
+#include <kdl/chaindynparam.hpp>
+#include <kdl/chainjnttojacsolver.hpp>
+#include <kdl/utilities/svd_eigen_HH.hpp>
 #include <state_specification.hpp>
 #include <robot_mediator.hpp>
 #include <geometry_utils.hpp>
@@ -65,7 +68,8 @@ enum class error_source
     weight_compensator = 4,
     joint_safety_monitor = 5,
     cartesian_safety_monitor = 6,
-    fsm = 7
+    fsm = 7,
+    ext_wrench_estimation = 8
 };
 
 class dynamics_controller
@@ -110,17 +114,22 @@ class dynamics_controller
                         const Eigen::VectorXd &stop_motion_bias_threshold,
                         const Eigen::VectorXd &stop_motion_bias_step,
                         const Eigen::VectorXd &stop_motion_gain_threshold,
-                        const Eigen::VectorXd &stop_motion_gain_step);
+                        const Eigen::VectorXd &stop_motion_gain_step,
+                        const Eigen::VectorXd &wrench_estimation_gain);
     int initialize(const int desired_control_mode, 
                    const int desired_dynamics_interface,
+                   const int desired_motion_profile,
                    const bool store_control_data,
-                   const int motion_profile);
+                   const bool use_estimated_external_wrench);
     void deinitialize();
 
     void engage_lock();
     int apply_joint_control_commands(const bool bypass_safeties);
     int monitor_joint_safety();
-
+    int estimate_external_wrench(const KDL::JntArray &joint_position_measured,
+                                 const KDL::JntArray &joint_velocity_measured,
+                                 const KDL::JntArray &joint_torque_measured, 
+                                 KDL::Wrench &ext_force_torque);
     void write_to_file();
 
     void reset_desired_state();
@@ -259,11 +268,14 @@ class dynamics_controller
     Eigen::VectorXd abag_command_, abag_stop_motion_command_, max_command_, compensation_parameters_, null_space_parameters_, force_task_parameters_, min_sat_limits_, filtered_bias_;
     KDL::Wrenches cart_force_command_, zero_wrenches_full_model_;
     KDL::Wrench ext_wrench_, ext_wrench_base_, compensated_weight_;
-    KDL::JntArray zero_joint_array_, gravity_torque_;
+    KDL::JntArray zero_joint_array_, gravity_torque_, coriolis_torque_, estimated_ext_torque_, filtered_estimated_ext_torque_, estimated_momentum_integral_, initial_jnt_momentum_;
+    KDL::JntSpaceInertiaMatrix jnt_mass_matrix_, previous_jnt_mass_matrix_, jnt_mass_matrix_dot_;
+    KDL::Jacobian jacobian_end_eff_;
+    Eigen::MatrixXd svd_U_, svd_V_, jacobian_end_eff_inv_, jacobian_end_eff_inv_temp_;
+    Eigen::VectorXd svd_S_, svd_tmp_, wrench_estimation_gain_;
 
-    std::shared_ptr<KDL::Solver_Vereshchagin> hd_solver_;
-    std::shared_ptr<KDL::Solver_RNE> id_solver_;
     KDL::FK_Vereshchagin fk_vereshchagin_;
+    KDL::ChainJntToJacSolver jacobian_solver_;
     safety_monitor safety_monitor_;
     ABAG abag_, abag_null_space_, abag_stop_motion_;
     finite_state_machine fsm_;
@@ -275,6 +287,10 @@ class dynamics_controller
     std::vector<state_specification> predicted_states_; 
 
     const Eigen::IOFormat WRITE_FORMAT_STOP_MOTION;
+
+    std::shared_ptr<KDL::Solver_Vereshchagin> hd_solver_;
+    std::shared_ptr<KDL::Solver_RNE> id_solver_;
+    std::shared_ptr<KDL::ChainDynParam> dynamic_parameter_solver_;
 
     int update_commands(); //Performs single update of control commands and dynamics computations
     int update_stop_motion_commands();
