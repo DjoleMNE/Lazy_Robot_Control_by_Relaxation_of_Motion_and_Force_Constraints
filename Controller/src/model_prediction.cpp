@@ -238,8 +238,7 @@ KDL::Frame model_prediction::integrate_pose(const KDL::Frame &current_pose,
          * Exponential map on SO(3) only: Decoupled calculation 
          * See "Modern Robotics" Book, 2017, sections 9.2.1 and 11.3.3.
         */
-        return current_pose * KDL::Frame(geometry::exp_map_so3(current_twist.rot), 
-                                         current_twist.vel);
+        return current_pose * KDL::Frame(geometry::exp_map_so3(current_twist.rot), current_twist.vel);
     }
     
     return current_pose * geometry::exp_map_se3(current_twist);
@@ -257,17 +256,13 @@ void model_prediction::save_pose_to_file(std::ofstream &pose_data_file,
     for(int j = 0; j < 3; j++) pose_data_file << pose.p(j) << std::endl;
 }
 
-void model_prediction::save_twist_to_file(std::ofstream &twist_data_file, 
-                                         const KDL::Twist &twist)
+void model_prediction::save_twist_to_file(std::ofstream &twist_data_file, const KDL::Twist &twist)
 {
-    if (!twist_data_file.is_open())
-    {
-        std::cout << "Unable to open the twist file" << std::endl;
-    }
+    if (!twist_data_file.is_open()) std::cout << "Unable to open the twist file" << std::endl;
     for (int j = 0; j < 6; j++) twist_data_file << twist(j) << std::endl;
 }
 
-// Forward position and velocity kinematics, given the itegrated values
+// Forward position and velocity kinematics, given the integrated values
 void model_prediction::compute_FK(state_specification &predicted_state)
 {
     int fk_solver_result_;

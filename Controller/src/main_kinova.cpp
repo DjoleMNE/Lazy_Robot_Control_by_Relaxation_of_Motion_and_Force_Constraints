@@ -223,17 +223,6 @@ std::function<void(Kinova::Api::Base::ActionNotification)> create_event_listener
     };
 }
 
-/*****************************
- * Example related function *
- *****************************/
-int64_t GetTickUs()
-{
-    struct timespec start;
-    clock_gettime(CLOCK_MONOTONIC, &start);
-
-    return (start.tv_sec * 1000000LLU) + (start.tv_nsec / 1000);
-}
-
 //Make sure that the control loop runs exactly with the specified frequency
 int enforce_loop_frequency(const int dt)
 {
@@ -552,7 +541,7 @@ int define_task(dynamics_controller *dyn_controller)
 
         default:
             // HOME pose
-            tube_start_position = std::vector<double>{    0.395153,  0.00136493,    0.433647};
+            tube_start_position = std::vector<double>{ 0.395153, 0.00136493, 0.433647};
             desired_ee_pose     = { 0.59514, 0.00136493, 0.433647, // Linear: Vector
                                     0.0, 0.0, -1.0, // Angular: Rotation matrix
                                     1.0, 0.0, 0.0,
@@ -566,13 +555,11 @@ int define_task(dynamics_controller *dyn_controller)
             switch (path_type)
             {
                 case path_types::STEP_PATH:
-                    motion_profile::draw_step_xy(tube_path_points, 6, 0.001,
-                                                 desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
+                    motion_profile::draw_step_xy(tube_path_points, 6, 0.001, desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
                     break;
                 
                 case path_types::INF_SIGN_PATH:
-                    motion_profile::draw_inf_sign_xy(tube_path_points, 0.5, 0.4, 0.18, 0.5, 
-                                                     desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
+                    motion_profile::draw_inf_sign_xy(tube_path_points, 0.5, 0.4, 0.18, 0.5, desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
                     break;
 
                 case path_types::SINE_PATH:
@@ -965,7 +952,6 @@ int run_main_control(kinova_mediator &robot_driver)
 
 int main(int argc, char **argv)
 {
-    // printf("kinova MAIN Started \n");
     RATE_HZ              = 1000; // Loop frequency in Hz
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                              false, false, false}; // Angular
@@ -1084,7 +1070,6 @@ int main(int argc, char **argv)
                                   STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
                                   wrench_estimation_gain);
     }
-
     else if (desired_task_model == task_model::gravity_compensation)
     {
         controller.set_parameters(time_horizon_amplitude, abag_error_type, 

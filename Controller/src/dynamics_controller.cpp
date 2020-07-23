@@ -138,7 +138,7 @@ void dynamics_controller::print_settings_info()
     #endif
     
     printf("Selected controller settings:\n");
-    printf("Control Loop Frequency: %d Hz", RATE_HZ_);
+    printf("Control Loop Frequency: %d Hz\n", RATE_HZ_);
 
     printf("Joint Interface: ");
     switch(desired_control_mode_.interface) 
@@ -535,8 +535,8 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     desired_state_.frame_velocity[END_EFF_](0) = tube_speed;
     desired_state_.frame_velocity[END_EFF_](5) = 0.0;
     desired_state_.external_force[END_EFF_](2) = tube_force; // Sensor/tool frame
-    desired_state_.external_force[END_EFF_](3) = 0.0;// Sensor/tool frame
-    desired_state_.external_force[END_EFF_](4) = 0.0;// Sensor/tool frame
+    desired_state_.external_force[END_EFF_](3) = 0.0; // Sensor/tool frame
+    desired_state_.external_force[END_EFF_](4) = 0.0; // Sensor/tool frame
     compute_null_space_command_ = control_null_space;
     desired_null_space_angle_   = desired_null_space_angle;
     transform_force_drivers_    = true;
@@ -925,9 +925,8 @@ void dynamics_controller::define_gravity_compensation_task(const double task_tim
 }
 
 // Define Cartesian Acceleration task on the end-effector - Public Method
-void dynamics_controller::define_ee_acc_constraint(
-                            const std::vector<bool> &constraint_direction,
-                            const std::vector<double> &cartesian_acceleration)
+void dynamics_controller::define_ee_acc_constraint(const std::vector<bool> &constraint_direction,
+                                                   const std::vector<double> &cartesian_acceleration)
 {    
     //Call private method for this state
     set_ee_acc_constraints(desired_state_, 
@@ -936,10 +935,9 @@ void dynamics_controller::define_ee_acc_constraint(
 }
 
 // Define Cartesian Acceleration task on the end-effector - Private Method
-void dynamics_controller::set_ee_acc_constraints(
-                                state_specification &state,
-                                const std::vector<bool> &constraint_direction, 
-                                const std::vector<double> &cartesian_acceleration)
+void dynamics_controller::set_ee_acc_constraints(state_specification &state,
+                                                 const std::vector<bool> &constraint_direction,
+                                                 const std::vector<double> &cartesian_acceleration)
 {    
     assert(constraint_direction.size()   == NUM_OF_CONSTRAINTS_);
     assert(cartesian_acceleration.size() == NUM_OF_CONSTRAINTS_);
@@ -1352,8 +1350,8 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             // Motion error is, in this case, expressed in the task frame
             transform_drivers_ = true;
 
-            // Feedforward force for ensuring stable contact alignment once control mode switch occurs
-            // Maybe it would be good to make this part as an intermediate state.. see Markus Klotzbücher PhD thesis (p. 110)
+            // Feedforward force for ensuring stable contact alignment once mode-switch occurs
+            // Maybe it would be good to make this part as an intermediate state. see Markus Klotzbücher PhD thesis (p. 110)
             if (apply_feedforward_force_)
             {
                 feedforward_loop_count_++;
@@ -1884,8 +1882,7 @@ int dynamics_controller::compute_weight_compensation_control_commands()
                                                                 COMPENSATE_GRAVITY_? KDL::Twist::Zero() : ROOT_ACC_, 
                                                                 NUM_OF_CONSTRAINTS_));
 
-            this->id_solver_.reset(new KDL::Solver_RNE(robot_chain_full_, KDL::Vector(0.0, 0.0, -9.81289),
-                                                       JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, false));
+            this->id_solver_.reset(new KDL::Solver_RNE(robot_chain_full_, KDL::Vector(0.0, 0.0, -9.81289), JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, false));
         }
         else
         {
@@ -2165,7 +2162,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
     engage_lock();
 
     //Print information about controller settings
-    // print_settings_info();
+    print_settings_info();
     return 0;
 }
 
@@ -2233,8 +2230,6 @@ int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_pos
 
     // Compute the SVD of the jacobian using Eigen functions: generic function for any matrix size
 
-
-
     // Compute the SVD of the jacobian using KDL functions
     // solver_result = KDL::svd_eigen_HH(jacobian_end_eff_.data.transpose(), svd_U_, svd_S_, svd_V_, svd_tmp_);
     // if (0 != solver_result)
@@ -2253,9 +2248,7 @@ int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_pos
     // jacobian_end_eff_inv_temp_.noalias() = svd_V_ * svd_S_.asDiagonal();
     // jacobian_end_eff_inv_.noalias() = jacobian_end_eff_inv_temp_ * svd_U_.transpose();
 
-
     // std::cout << jacobian_end_eff_inv_ << std::endl;
-
 
     // Compute End-Effector Cartesian forces from joint external torques
     Eigen::VectorXd wrench = jacobian_end_eff_inv_ * filtered_estimated_ext_torque_.data;
