@@ -96,6 +96,7 @@ public:
     void get_link_inertias(Inertias &h);
     void get_bias_force(Wrenches &u);
     void get_control_torque(JntArray &tau_control);
+    void get_total_torque(JntArray &tau_total);
     void get_constraint_torque(JntArray &tau_constraint);
     void get_constraint_magnitude(Eigen::VectorXd &nu_);
 
@@ -139,6 +140,7 @@ private:
     JntArray beta_N;
     JntArray ext_torque;
     JntArray controlTorque;
+    JntArray totalTorque;
     JntArray constraintTorque;
     Matrix6Xd E_input; // Input matrix of constraint forces. Expressed w.r.t. base frame. 
     Eigen::VectorXd nu;

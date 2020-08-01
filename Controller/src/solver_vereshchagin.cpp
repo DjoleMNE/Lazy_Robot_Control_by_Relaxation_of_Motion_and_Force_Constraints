@@ -68,6 +68,7 @@ Solver_Vereshchagin::Solver_Vereshchagin(const Chain& chain_,
     nu_sum.resize(nc);
     ext_torque.resize(nj);
     controlTorque.resize(nj);
+    totalTorque.resize(nj);
     constraintTorque.resize(nj);
     M_0_inverse.resize(nc, nc);
     Um = MatrixXd::Identity(nc, nc);
@@ -90,11 +91,11 @@ Solver_Vereshchagin::Solver_Vereshchagin(const Chain& chain_,
  * @return error/success code
  */
 
-int Solver_Vereshchagin::CartToJnt(const JntArray &q, const JntArray &q_dot, 
-                                   JntArray &q_dotdot, const Jacobian& alfa, 
-                                   const JntArray& beta, 
-                                   const Wrenches& force_ext_natural, 
-                                   const Wrenches& force_ext_virtual, 
+int Solver_Vereshchagin::CartToJnt(const JntArray &q, const JntArray &q_dot,
+                                   JntArray &q_dotdot, const Jacobian& alfa,
+                                   const JntArray& beta,
+                                   const Wrenches& force_ext_natural,
+                                   const Wrenches& force_ext_virtual,
                                    JntArray &torques)
 {
     if (nj != chain.getNrOfJoints())
@@ -474,8 +475,11 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
         constraintTorque(j) = constraint_torque;
 
         // Summing contributions for true control torque:
-        controlTorque(j) = constraintTorque(j) + ext_torque(j) + torques(j);
+        controlTorque(j) = constraintTorque(j) + ext_torque(j);
         // controlTorque(j) = ext_torque(j);
+
+        // Summing contributions that are felt at the joint: control + nature + external
+        totalTorque(j) = s.u + parent_forceProjection + controlTorque(j);
 
         // Torque saturation
         if (saturate_torques_)
@@ -485,7 +489,7 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
         }
 
         s.constAccComp = constraint_torque / s.D;
-        s.nullspaceAccComp = s.u / s.D;
+        s.nullspaceAccComp = (s.u + ext_torque(j)) / s.D;
 
         // total joint acceleration resulting from accelerations of parent joints, constraint forces and nullspace forces.
         // equation g) qdotdot[i] = D^-1(u - Z'(P*acc[i-1] + E*nu) Vereshchagin89'
@@ -578,6 +582,12 @@ void Solver_Vereshchagin::get_control_torque(JntArray &tau_control)
 {
     assert(tau_control.rows() == controlTorque.rows());
     tau_control = controlTorque;
+}
+
+void Solver_Vereshchagin::get_total_torque(JntArray &tau_total)
+{
+    assert(tau_total.rows() == totalTorque.rows());
+    tau_total = totalTorque;
 }
 
 void Solver_Vereshchagin::get_constraint_torque(JntArray &tau_constraint)
