@@ -1,1 +1,0 @@
-ADD_LIBRARY( usecase-joystick-${OROCOS_TARGET} SHARED Joystick.cpp )
