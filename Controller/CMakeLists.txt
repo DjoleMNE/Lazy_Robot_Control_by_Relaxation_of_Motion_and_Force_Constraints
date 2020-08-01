@@ -91,6 +91,8 @@ if("${ROBOT}" STREQUAL "lwr")
     src/motion_profile.cpp
     src/solver_vereshchagin.cpp
     src/solver_recursive_newton_euler.cpp
+    src/fd_solver_rne.cpp
+    src/ldl_solver_eigen.cpp
     src/fk_vereshchagin.cpp
     src/lwr_mediator.cpp
     src/lwr_kdl_model.cpp
@@ -113,6 +115,8 @@ elseif("${ROBOT}" STREQUAL "kinova")
     src/motion_profile.cpp
     src/solver_vereshchagin.cpp
     src/solver_recursive_newton_euler.cpp
+    src/fd_solver_rne.cpp
+    src/ldl_solver_eigen.cpp
     src/fk_vereshchagin.cpp
     src/kinova_mediator.cpp
     src/safety_monitor.cpp
@@ -133,6 +137,8 @@ else()
     src/motion_profile.cpp
     src/solver_vereshchagin.cpp
     src/solver_recursive_newton_euler.cpp
+    src/fd_solver_rne.cpp
+    src/ldl_solver_eigen.cpp
     src/fk_vereshchagin.cpp
     src/youbot_mediator.cpp
     src/youbot_custom_model.cpp

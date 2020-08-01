@@ -46,7 +46,7 @@ namespace KDL{
          * \param chain The kinematic chain to calculate the forward dynamics for, an internal copy will be made.
          * \param grav The gravity vector to use during the calculation.
          */
-        FdSolver_RNE(const Chain& chain, Vector grav);
+        FdSolver_RNE(const Chain& _chain, const Vector &_grav, const std::vector<double> &joint_inertia);
         ~FdSolver_RNE(){};
 
         /**
@@ -105,6 +105,7 @@ namespace KDL{
         Eigen::VectorXd D_eig;
         Eigen::VectorXd r_eig;
         Eigen::VectorXd acc_eig;
+        std::vector<double> joint_inertia_;
     };
 }
 
