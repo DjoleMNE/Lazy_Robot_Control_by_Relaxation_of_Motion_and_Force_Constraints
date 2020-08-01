@@ -43,7 +43,8 @@ enum desired_pose
     CANDLE       = 0,
     HOME         = 1,
     RETRACT      = 2,
-    PACKAGING    = 3
+    PACKAGING    = 3,
+    HOME_FORWARD = 4
 };
 
 enum path_types
@@ -75,12 +76,14 @@ int robot_model_id                   = kinova_model::URDF;
 int id                               = robot_id::KINOVA_GEN3_1;
 const double time_horizon_amplitude  = 2.5;
 double tube_speed                    = 0.01;
+double tube_force                    = 0.03;
 double desired_null_space_angle      = 90.0; // Unit degrees
 double task_time_limit_sec           = 600.0;
 
 bool log_data                        = false;
 bool use_estimated_external_wrench   = false;
 bool control_null_space              = false;
+bool control_null_space_moveConstrained = false;
 bool compensate_gravity              = false;
 bool use_mass_alternation            = false;
 auto error_callback = [](Kinova::Api::KError err){ cout << "_________ callback error _________" << err.toString(); };
@@ -88,15 +91,27 @@ auto error_callback = [](Kinova::Api::KError err){ cout << "_________ callback e
 std::vector<bool> control_dims       = {true, true, true, // Linear
                                         false, false, false}; // Angular
 
+std::vector<bool> control_dims_moveConstrained = {true, true, true, // Linear
+                                                  true, true, false}; // Angular
+
 // Last parameter: Numer of points
-const std::vector<double> path_parameters = {0.5, 3.5, 0.05, 0.008, 12};
+const std::vector<double> path_parameters = {0.5, 3.5, 0.05, 0.008, 2}; // last parameter must be min 2
+const std::vector<double> path_parameters_moveConstrained = {0.5, 0.5, 0.05, 0.008, 2};
 std::vector<double> tube_start_position   = {0.0, 0.0, 0.0};
 std::vector<double> tube_tolerances       = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+// Tube tolerances: x pos,    y pos,      z force, 
+//                  x torque, y torque,   null-space, 
+//                  x vel,    z_a pos/vel
+std::vector<double> tube_tolerances_moveConstrained = {0.003, 0.03, 0.003,  
+                                                       0.005, 0.005, 25.0, 
+                                                       0.003, 0.001};
 
 std::vector< std::vector<double> > tube_path_points(path_parameters[4], std::vector<double>(3, 0.0));
 std::vector< std::vector<double> > path_poses(path_parameters[4] - 1,   std::vector<double>(12, 0.0));
 
-const Eigen::VectorXd max_command         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 10.0, 10.0, 10.0).finished();
+const Eigen::VectorXd max_command                 = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 10.0, 10.0, 10.0).finished();
+const Eigen::VectorXd max_command_moveConstrained = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 30.0, 20.0, 20.0, 10.0).finished();
 
 // Full Pose ABAG parameters
 const Eigen::VectorXd error_alpha         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
@@ -183,6 +198,23 @@ const Eigen::VectorXd gain_step_4           = (Eigen::VectorXd(NUMBER_OF_CONSTRA
                                             << 0.002600, 0.002600, 0.002600, 
                                                0.015152, 0.015152, 0.015152).finished();
 
+// moveConstrained-follow_path-torque ABAG parameters
+const Eigen::VectorXd error_alpha_5         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.900000, 0.850000, 0.950000,
+                                               0.850000, 0.850000, 0.800000).finished();
+const Eigen::VectorXd bias_threshold_5      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.000457, 0.000407, 0.000407, 
+                                               0.000507, 0.000507, 0.000507).finished();
+const Eigen::VectorXd bias_step_5           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.000495, 0.000495, 0.000905, 
+                                               0.000495, 0.000495, 0.000495).finished();
+const Eigen::VectorXd gain_threshold_5      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.452492, 0.552492, 0.452492, 
+                                               0.452492, 0.452492, 0.402492).finished();
+const Eigen::VectorXd gain_step_5           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
+                                            << 0.002500, 0.002500, 0.003652, 
+                                               0.002052, 0.002052, 0.002052).finished();
+
 // Stop Motion control parameters used by the ABAG -> parameters specific each robot type... test these values
 const Eigen::VectorXd STOP_MOTION_ERROR_ALPHA    = (Eigen::VectorXd(JOINTS) << 0.800000, 0.800000, 0.800000, 0.800000, 0.800000, 0.800000, 0.800000).finished();
 const Eigen::VectorXd STOP_MOTION_BIAS_THRESHOLD = (Eigen::VectorXd(JOINTS) << 0.000557, 0.006000, 0.000557, 0.006500, 0.000457, 0.006500, 0.000457).finished();
@@ -193,6 +225,7 @@ const Eigen::VectorXd STOP_MOTION_GAIN_STEP      = (Eigen::VectorXd(JOINTS) << 0
 const Eigen::VectorXd min_bias_sat               = Eigen::VectorXd::Constant(6, -1.0);
 const Eigen::VectorXd min_command_sat            = Eigen::VectorXd::Constant(6, -1.0);
 const Eigen::VectorXd null_space_abag_parameters = (Eigen::VectorXd(6) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1).finished(); // Last param is max command
+const Eigen::VectorXd null_space_abag_parameters_moveConstrained = (Eigen::VectorXd(6) << 0.850000, 0.000507, 0.000455, 0.452492, 0.001552, 250.0).finished(); // Last param is max command
 
 //  Parameters for weight compensation: x_bias-offset (-1.0 <-> 1.0), y_bias-offset, z_bias-offset, K proportional, error-tube(0.0 <-> 1.0),
 //                                      bias-variance, gain-variance, bias slope, 
@@ -540,6 +573,14 @@ int define_task(dynamics_controller *dyn_controller)
                                     0.0, -0.997564, -0.0697565, // Angular: Rotation matrix
                                     1.0,  0.0,       0.0,
                                     0.0, -0.0697565, 0.997564};
+            break;
+
+        case desired_pose::HOME_FORWARD:
+            tube_start_position = std::vector<double>{0.39514, 0.00134662, 0.433724};
+            desired_ee_pose     = { 0.39514, 0.00134662, 0.433724, // Linear: Vector
+                                    0.0, 0.0, -1.0, // Angular: Rotation matrix
+                                    1.0, 0.0, 0.0,
+                                    0.0, -1.0, 0.0};
             break;
 
         default:
@@ -958,27 +999,36 @@ int run_main_control(kinova_mediator &robot_driver)
 
 int main(int argc, char **argv)
 {
-    RATE_HZ              = 1000; // Loop frequency in Hz
+    RATE_HZ              = 700; // Loop frequency in Hz
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                              false, false, false}; // Angular
-    tube_tolerances      = std::vector<double>{0.01, 0.02, 0.02,
+    tube_tolerances      = std::vector<double>{0.01, 0.01, 0.01,
                                                0.0, 0.0, 0.0,
-                                               0.001, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
-    environment          = kinova_environment::REAL;
+                                               0.0, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
+    // Tube tolerances: x pos,    y pos,      z force, 
+    //                  x torque, y torque,   null-space, 
+    //                  x vel,    z_a pos/vel
+    tube_tolerances_moveConstrained = std::vector<double> {0.003, 0.03, 0.003,
+                                                           0.005, 0.005, 25.0,
+                                                           0.003, 0.001};
+
+    environment          = kinova_environment::SIMULATION;
     robot_model_id       = kinova_model::URDF;
-    id                   = robot_id::KINOVA_GEN3_2;
+    id                   = robot_id::KINOVA_GEN3_1;
     desired_pose_id      = desired_pose::HOME;
     desired_control_mode = control_mode::TORQUE;
-    desired_task_model   = task_model::moveTo;
-    path_type            = path_types::SINE_PATH;
+    desired_task_model   = task_model::full_pose;
+    path_type            = path_types::STEP_PATH;
     motion_profile_id    = m_profile::CONSTANT;
-    task_time_limit_sec  = 5.5;
-    tube_speed           = 0.01;
+    task_time_limit_sec  = 25.5;
+    tube_speed           = 0.0;
+    tube_force           = 0.3;
     compensate_gravity   = true;
     control_null_space   = false;
     use_mass_alternation = false;
     log_data             = true;
     use_estimated_external_wrench  = true;
+    control_null_space_moveConstrained = false;
 
     kinova_mediator robot_driver;
     int return_flag = 0;
