@@ -666,9 +666,12 @@ void run_test(kinova_mediator &robot_driver)
     const KDL::JntArray ZERO_JOINT_ARRAY(7);
 
     KDL::Chain robot_chain = robot_driver.get_robot_model();
-    const KDL::Wrenches zero_wrenches(robot_chain.getNrOfSegments(), KDL::Wrench::Zero());
+    // Above main chain is prepared for vereshchagin (nj == ns) but full contains additional segments
+    KDL::Chain robot_chain_full = robot_driver.get_full_robot_model();
 
-    std::shared_ptr<KDL::Solver_RNE> id_solver = std::make_shared<KDL::Solver_RNE>(robot_chain, KDL::Vector(0.0, 0.0, -9.81289), robot_driver.get_joint_inertia(), robot_driver.get_joint_torque_limits(), true);
+    const KDL::Wrenches zero_wrenches_full_model(robot_chain_full.getNrOfSegments(), KDL::Wrench::Zero());
+
+    std::shared_ptr<KDL::Solver_RNE> id_solver = std::make_shared<KDL::Solver_RNE>(robot_chain_full, KDL::Vector(0.0, 0.0, -9.81289), robot_driver.get_joint_inertia(), robot_driver.get_joint_torque_limits(), true);
 
     // Real-time loop
     while (total_time_sec < task_time_limit_sec)
@@ -680,7 +683,7 @@ void run_test(kinova_mediator &robot_driver)
         // robot_driver.get_robot_state(jnt_position, jnt_velocity, jnt_torque, end_effector_wrench);
         robot_driver.get_joint_state(jnt_position, jnt_velocity, jnt_torque);
 
-        return_flag = id_solver->CartToJnt(jnt_position, ZERO_JOINT_ARRAY, ZERO_JOINT_ARRAY, zero_wrenches, jnt_command_torque);
+        return_flag = id_solver->CartToJnt(jnt_position, ZERO_JOINT_ARRAY, ZERO_JOINT_ARRAY, zero_wrenches_full_model, jnt_command_torque);
         if (return_flag != 0)
         {
             robot_driver.stop_robot_motion();
@@ -1001,12 +1004,12 @@ int main(int argc, char **argv)
     assert(JOINTS == robot_driver.get_robot_model().getNrOfSegments());
     // if (robot_driver.stop_robot_motion() == -1) return 0;
 
-    run_test(robot_driver); return 0;
+    // run_test(robot_driver); return 0;
 
-    // if (run_main_control(robot_driver) == -1) return 0;
-    // robot_driver.deinitialize();
-    // return_flag = go_to(robot_driver, desired_pose::RETRACT);
-    // return 0;
+    if (run_main_control(robot_driver) == -1) return 0;
+    robot_driver.deinitialize();
+    return_flag = go_to(robot_driver, desired_pose::RETRACT);
+    return 0;
 
     dynamics_controller controller(&robot_driver, RATE_HZ, compensate_gravity);
 

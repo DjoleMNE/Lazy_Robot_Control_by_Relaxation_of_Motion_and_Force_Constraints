@@ -38,12 +38,11 @@ model_prediction::model_prediction(const KDL::Chain &robot_chain):
 }
 
 // Used for checking joint limits
-void model_prediction::integrate_joint_space(
-                            const state_specification &current_state,
-                            std::vector<state_specification> &predicted_states,
-                            const double dt_sec, const int num_of_steps, 
-                            const int method, const bool fk_required,
-                            const bool recompute_acceleration)
+void model_prediction::integrate_joint_space(const state_specification &current_state,
+                                             std::vector<state_specification> &predicted_states,
+                                             const double dt_sec, const int num_of_steps, 
+                                             const int method, const bool fk_required,
+                                             const bool recompute_acceleration)
 {
     assert(("Number of steps higher than the size of provided vector of states", num_of_steps <= predicted_states.size()));  
     assert(NUM_OF_JOINTS_ == predicted_states[0].qd.rows()); 
