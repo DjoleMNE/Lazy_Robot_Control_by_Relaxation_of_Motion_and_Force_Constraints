@@ -79,18 +79,18 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     filtered_bias_(Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_)),
     cart_force_command_(NUM_OF_SEGMENTS_, KDL::Wrench::Zero()), 
     zero_wrenches_full_model_(robot_chain_full_.getNrOfSegments(), KDL::Wrench::Zero()),
-    ext_wrench_(KDL::Wrench::Zero()), ext_wrench_base_(KDL::Wrench::Zero()),
+    ext_wrench_(KDL::Wrench::Zero()), ext_wrench_2_(KDL::Wrench::Zero()), ext_wrench_base_(KDL::Wrench::Zero()),
     compensated_weight_(KDL::Wrench::Zero()), zero_joint_array_(NUM_OF_JOINTS_), 
     gravity_torque_(NUM_OF_JOINTS_), coriolis_torque_(NUM_OF_JOINTS_),
-    estimated_ext_torque_(NUM_OF_JOINTS_), filtered_estimated_ext_torque_(NUM_OF_JOINTS_), 
-    estimated_momentum_integral_(NUM_OF_JOINTS_), initial_jnt_momentum_(NUM_OF_JOINTS_), 
-    jnt_mass_matrix_(NUM_OF_JOINTS_), previous_jnt_mass_matrix_(NUM_OF_JOINTS_), 
-    jnt_mass_matrix_dot_(NUM_OF_JOINTS_), jacobian_end_eff_(NUM_OF_JOINTS_), 
-    svd_U_(Eigen::MatrixXd::Zero(6, NUM_OF_JOINTS_)), svd_V_(Eigen::MatrixXd::Zero(NUM_OF_JOINTS_, NUM_OF_JOINTS_)),
+    estimated_ext_torque_(NUM_OF_JOINTS_), estimated_ext_torque_2_(NUM_OF_JOINTS_),
+    filtered_estimated_ext_torque_(NUM_OF_JOINTS_), filtered_estimated_ext_torque_2_(NUM_OF_JOINTS_),
+    estimated_momentum_integral_(NUM_OF_JOINTS_), estimated_momentum_integral_2_(NUM_OF_JOINTS_),
+    initial_jnt_momentum_(NUM_OF_JOINTS_),
+    jnt_mass_matrix_(NUM_OF_JOINTS_), previous_jnt_mass_matrix_(NUM_OF_JOINTS_),
+    jnt_mass_matrix_dot_(NUM_OF_JOINTS_), jacobian_end_eff_(NUM_OF_JOINTS_),
     jacobian_end_eff_inv_(Eigen::MatrixXd::Zero(NUM_OF_JOINTS_, NUM_OF_CONSTRAINTS_)),
-    jacobian_end_eff_inv_temp_(Eigen::MatrixXd::Zero(NUM_OF_JOINTS_, NUM_OF_JOINTS_)),
-    svd_S_(Eigen::VectorXd::Zero(NUM_OF_JOINTS_)), svd_tmp_(svd_S_), wrench_estimation_gain_(NUM_OF_JOINTS_),
-    fk_vereshchagin_(robot_chain_), safety_monitor_(robot_driver_, true), 
+    wrench_estimation_gain_(NUM_OF_JOINTS_), wrench_estimation_gain_2_(NUM_OF_JOINTS_),
+    fk_vereshchagin_(robot_chain_), safety_monitor_(robot_driver_, true),
     jacobian_solver_(robot_chain_full_),
     fsm_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     abag_(NUM_OF_CONSTRAINTS_, abag_parameter::USE_ERROR_SIGN),
@@ -1908,6 +1908,7 @@ int dynamics_controller::evaluate_dynamics()
     if (hd_solver_result != 0) return hd_solver_result;
 
     this->hd_solver_->get_control_torque(robot_state_.control_torque);
+    this->hd_solver_->get_total_torque(robot_state_.total_torque);
 
     return hd_solver_result;
 }
@@ -2002,6 +2003,8 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
     this->null_space_parameters_   = null_space_parameters;
     this->compensation_parameters_ = compensation_parameters;
     this->wrench_estimation_gain_  = wrench_estimation_gain;
+
+    wrench_estimation_gain_2_ = (Eigen::VectorXd(7) << 25.0, 25.0, 25.0, 25.0, 25.0, 25.0, 25.0).finished();
 }
 
 int dynamics_controller::initialize(const int desired_control_mode, 
@@ -2105,7 +2108,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
 
         log_file_joint_.open(dynamics_parameter::LOG_FILE_JOINT_PATH);
         assert(log_file_joint_.is_open());
-        for(int i = 0; i < NUM_OF_JOINTS_; i++) 
+        for(int i = 0; i < NUM_OF_JOINTS_; i++)
             log_file_joint_ << JOINT_TORQUE_LIMITS_[i] << " ";
         log_file_joint_ << std::endl;
 
@@ -2156,7 +2159,9 @@ int dynamics_controller::initialize(const int desired_control_mode,
     error_logger_.error_status_ = 0;
 
     KDL::SetToZero(estimated_momentum_integral_);
+    KDL::SetToZero(estimated_momentum_integral_2_);
     KDL::SetToZero(estimated_ext_torque_);
+    KDL::SetToZero(estimated_ext_torque_2_);
 
     // Make sure that the robot is locked (freezed)
     engage_lock();
@@ -2185,26 +2190,34 @@ int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_pos
                                                   const KDL::JntArray &joint_torque_measured, 
                                                   KDL::Wrench &ext_force_torque)
 {
+    /**
+    * ==========================================
+    * Momentum-observer: generic implementation
+    * ==========================================
+    */
     int solver_result = this->dynamic_parameter_solver_->JntToMass(joint_position_measured, jnt_mass_matrix_);
     if (solver_result != 0) return solver_result;
     solver_result = this->dynamic_parameter_solver_->JntToCoriolis(joint_position_measured, joint_velocity_measured, coriolis_torque_);
     if (solver_result != 0) return solver_result;
 
-    KDL::JntArray gravity_trq(NUM_OF_JOINTS_);
-    // if (!COMPENSATE_GRAVITY_ && desired_task_model_ != task_model::gravity_compensation)
-    // {
-    //     solver_result = this->dynamic_parameter_solver_->JntToGravity(joint_position_measured, gravity_trq);
-    //     if (solver_result != 0) return solver_result;
-    // }
-
-    solver_result = this->dynamic_parameter_solver_->JntToGravity(joint_position_measured, gravity_trq);
-    if (solver_result != 0) return solver_result;
     jnt_mass_matrix_dot_.data = (jnt_mass_matrix_.data - previous_jnt_mass_matrix_.data) / DT_SEC_;
-    estimated_momentum_integral_.data += (-joint_torque_measured.data - 
-                                          gravity_trq.data - coriolis_torque_.data + jnt_mass_matrix_dot_.data * joint_velocity_measured.data + 
-                                          filtered_estimated_ext_torque_.data) * DT_SEC_;
+    previous_jnt_mass_matrix_.data = jnt_mass_matrix_.data;
 
-    estimated_ext_torque_.data = wrench_estimation_gain_.asDiagonal() * (jnt_mass_matrix_.data.lazyProduct(joint_velocity_measured.data) - 
+    KDL::JntArray total_torque(NUM_OF_JOINTS_);
+    total_torque.data = -joint_torque_measured.data - coriolis_torque_.data + jnt_mass_matrix_dot_.data * joint_velocity_measured.data;
+
+    if (COMPENSATE_GRAVITY_)
+    {
+        solver_result = this->dynamic_parameter_solver_->JntToGravity(joint_position_measured, gravity_torque_);
+        if (solver_result != 0) return solver_result;
+        total_torque.data -= gravity_torque_.data;
+    }
+
+    estimated_momentum_integral_.data += (total_torque.data + filtered_estimated_ext_torque_.data) * DT_SEC_;
+
+    KDL::JntArray model_based_momentum(NUM_OF_JOINTS_);
+    model_based_momentum.data = jnt_mass_matrix_.data.lazyProduct(joint_velocity_measured.data);
+    estimated_ext_torque_.data = wrench_estimation_gain_.asDiagonal() * (model_based_momentum.data - 
                                                                          estimated_momentum_integral_.data - 
                                                                          initial_jnt_momentum_.data);
 
@@ -2213,46 +2226,42 @@ int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_pos
     for (int i = 0; i < NUM_OF_JOINTS_; i++)
         filtered_estimated_ext_torque_(i) = alpha * filtered_estimated_ext_torque_(i) + (1.0 - alpha) * estimated_ext_torque_(i);
 
-    previous_jnt_mass_matrix_.data = jnt_mass_matrix_.data;
-
+    // Propagate joint torques to Cartesian wrench
     solver_result = jacobian_solver_.JntToJac(joint_position_measured, jacobian_end_eff_);
     if (solver_result != 0) return solver_result;
 
-    // Compute the SVD of the jacobian using Eigen functions
+    // Compute SVD of the jacobian using Eigen functions
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(jacobian_end_eff_.data.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
 
     Eigen::VectorXd singular_inv(svd.singularValues());
     for (int j = 0; j < singular_inv.size(); ++j) singular_inv(j) = (singular_inv(j) < 1e-8) ? 0.0 : 1.0 / singular_inv(j);
-
-    // std::cout << svd.singularValues() << std::endl;
-
     jacobian_end_eff_inv_.noalias() = svd.matrixV() * singular_inv.matrix().asDiagonal() * svd.matrixU().adjoint();
-
-    // Compute the SVD of the jacobian using Eigen functions: generic function for any matrix size
-
-    // Compute the SVD of the jacobian using KDL functions
-    // solver_result = KDL::svd_eigen_HH(jacobian_end_eff_.data.transpose(), svd_U_, svd_S_, svd_V_, svd_tmp_);
-    // if (0 != solver_result)
-    // {
-    //     ext_force_torque = KDL::Wrench();
-    //     printf("SVD failed\n");
-    //     return -1;
-    // }
-
-    // for (unsigned int i = 0; i < svd_S_.size(); i++)
-    // {
-    //     if (svd_S_(i) < 1e-8) svd_S_(i) = 0.0;
-    //     else svd_S_(i) = 1.0 / svd_S_(i);
-    // }
-
-    // jacobian_end_eff_inv_temp_.noalias() = svd_V_ * svd_S_.asDiagonal();
-    // jacobian_end_eff_inv_.noalias() = jacobian_end_eff_inv_temp_ * svd_U_.transpose();
-
-    // std::cout << jacobian_end_eff_inv_ << std::endl;
 
     // Compute End-Effector Cartesian forces from joint external torques
     Eigen::VectorXd wrench = jacobian_end_eff_inv_ * filtered_estimated_ext_torque_.data;
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++) ext_force_torque(i) = wrench(i);
+
+    /**
+    * ====================================================
+    * Momentum-observer: Vereshchain-based implementation
+    * ====================================================
+    */
+
+    total_torque.data = -joint_torque_measured.data + robot_state_.total_torque.data - robot_state_.control_torque.data;
+    estimated_momentum_integral_2_.data += (total_torque.data + filtered_estimated_ext_torque_2_.data) * DT_SEC_;
+
+    estimated_ext_torque_2_.data = wrench_estimation_gain_2_.asDiagonal() * (model_based_momentum.data - 
+                                                                             estimated_momentum_integral_2_.data - 
+                                                                             initial_jnt_momentum_.data);
+
+    // First order low-pass filter
+    alpha = 0.75;
+    for (int i = 0; i < NUM_OF_JOINTS_; i++)
+        filtered_estimated_ext_torque_2_(i) = alpha * filtered_estimated_ext_torque_2_(i) + (1.0 - alpha) * estimated_ext_torque_2_(i);
+
+    // Compute End-Effector Cartesian forces from joint external torques
+    wrench = jacobian_end_eff_inv_ * filtered_estimated_ext_torque_2_.data;
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++) ext_wrench_2_(i) = wrench(i);
 
     return 0;
 }

@@ -201,7 +201,7 @@ const Eigen::VectorXd compensation_parameters = (Eigen::VectorXd(12) << -0.08, -
                                                                          0.00016, 0.0025, 0.00002,
                                                                          60, 6, 3, 3).finished();
 
-const Eigen::VectorXd wrench_estimation_gain = (Eigen::VectorXd(7) << 25.0, 25.0, 25.0, 25.0, 25.0, 25.0, 25.0).finished();
+const Eigen::VectorXd wrench_estimation_gain = (Eigen::VectorXd(7) << 30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 30.0).finished();
 
 // Create an event listener that will set the promise action event to the exit value
 // Will set promise to either END or ABORT
@@ -499,8 +499,11 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
 
         KDL::JntArray config(JOINTS);
         for (int i = 0; i < JOINTS; i++) 
-            config(i) = DEG_TO_RAD(configuration_array[i]);  
+            config(i) = DEG_TO_RAD(configuration_array[i]);
+
         robot_driver.set_joint_positions(config);
+        robot_driver.set_joint_velocities(KDL::JntArray(7));
+        robot_driver.set_joint_torques(KDL::JntArray(7));
     }
     return 0;
 }
@@ -542,7 +545,7 @@ int define_task(dynamics_controller *dyn_controller)
         default:
             // HOME pose
             tube_start_position = std::vector<double>{ 0.395153, 0.00136493, 0.433647};
-            desired_ee_pose     = { 0.59514, 0.00136493, 0.433647, // Linear: Vector
+            desired_ee_pose     = { 0.39514, 0.00136493, 0.433647, // Linear: Vector
                                     0.0, 0.0, -1.0, // Angular: Rotation matrix
                                     1.0, 0.0, 0.0,
                                     0.0, -1.0, 0.0};

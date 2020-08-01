@@ -251,8 +251,7 @@ class dynamics_controller
     std::vector< std::deque<double> > stop_motion_setpoint_array_;
     int fsm_result_, fsm_force_task_result_, previous_task_status_, tube_section_count_;
     bool transform_drivers_, transform_force_drivers_, apply_feedforward_force_, 
-         compute_null_space_command_, write_contact_time_to_file_,
-         compensate_unknown_weight_, trigger_stopping_sequence_, stopping_sequence_on_;
+         compute_null_space_command_, write_contact_time_to_file_, compensate_unknown_weight_, trigger_stopping_sequence_, stopping_sequence_on_;
 
     moveTo_task moveTo_task_;
     moveGuarded_task moveGuarded_task_;
@@ -267,12 +266,13 @@ class dynamics_controller
     double horizon_amplitude_, null_space_abag_command_, null_space_angle_, desired_null_space_angle_, updated_mass_estimation_;
     Eigen::VectorXd abag_command_, abag_stop_motion_command_, max_command_, compensation_parameters_, null_space_parameters_, force_task_parameters_, min_sat_limits_, filtered_bias_;
     KDL::Wrenches cart_force_command_, zero_wrenches_full_model_;
-    KDL::Wrench ext_wrench_, ext_wrench_base_, compensated_weight_;
-    KDL::JntArray zero_joint_array_, gravity_torque_, coriolis_torque_, estimated_ext_torque_, filtered_estimated_ext_torque_, estimated_momentum_integral_, initial_jnt_momentum_;
+    KDL::Wrench ext_wrench_, ext_wrench_2_, ext_wrench_base_, compensated_weight_;
+    KDL::JntArray zero_joint_array_, gravity_torque_, coriolis_torque_, estimated_ext_torque_, estimated_ext_torque_2_, filtered_estimated_ext_torque_, 
+                  filtered_estimated_ext_torque_2_, estimated_momentum_integral_, estimated_momentum_integral_2_, initial_jnt_momentum_;
     KDL::JntSpaceInertiaMatrix jnt_mass_matrix_, previous_jnt_mass_matrix_, jnt_mass_matrix_dot_;
     KDL::Jacobian jacobian_end_eff_;
-    Eigen::MatrixXd svd_U_, svd_V_, jacobian_end_eff_inv_, jacobian_end_eff_inv_temp_;
-    Eigen::VectorXd svd_S_, svd_tmp_, wrench_estimation_gain_;
+    Eigen::MatrixXd jacobian_end_eff_inv_;
+    Eigen::VectorXd wrench_estimation_gain_, wrench_estimation_gain_2_;
 
     KDL::FK_Vereshchagin fk_vereshchagin_;
     KDL::ChainJntToJacSolver jacobian_solver_;
