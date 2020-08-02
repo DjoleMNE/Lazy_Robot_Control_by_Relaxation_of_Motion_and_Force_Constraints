@@ -63,13 +63,8 @@ void kinova_mediator::get_robot_state(KDL::JntArray &joint_positions,
                                       KDL::JntArray &joint_torques,
                                       KDL::Wrench &end_effector_wrench)
 {
-    if (kinova_environment_ != kinova_environment::SIMULATION) base_feedback_ = base_cyclic_->RefreshFeedback();
-
-    get_joint_positions(joint_positions);
-    get_joint_velocities(joint_velocities);
-    get_joint_torques(joint_torques);
+    get_joint_state(joint_positions, joint_velocities, joint_torques);
     get_end_effector_wrench(end_effector_wrench);
-    // std::cout << base_feedback_.actuators(0).jitter_comm() << std::endl;
 }
 
 // Update joint space state: measured positions, velocities and torques
@@ -101,12 +96,15 @@ void kinova_mediator::get_joint_positions(KDL::JntArray &joint_positions)
     for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
         joint_positions(i) = DEG_TO_RAD(base_feedback_.actuators(i).position());
 
-    // Kinova API provides only positive angle values
-    // This operation is required to align the logic with our safety monitor
-    // We need to convert some angles to negative values
-    if (joint_positions(1) > DEG_TO_RAD(180.0)) joint_positions(1) = joint_positions(1) - DEG_TO_RAD(360.0);
-    if (joint_positions(3) > DEG_TO_RAD(180.0)) joint_positions(3) = joint_positions(3) - DEG_TO_RAD(360.0);
-    if (joint_positions(5) > DEG_TO_RAD(180.0)) joint_positions(5) = joint_positions(5) - DEG_TO_RAD(360.0);
+    if (kinova_environment_ != kinova_environment::SIMULATION) 
+    {
+        // Kinova API provides only positive angle values
+        // This operation is required to align the logic with our safety monitor
+        // We need to convert some angles to negative values
+        if (joint_positions(1) > DEG_TO_RAD(180.0)) joint_positions(1) = joint_positions(1) - DEG_TO_RAD(360.0);
+        if (joint_positions(3) > DEG_TO_RAD(180.0)) joint_positions(3) = joint_positions(3) - DEG_TO_RAD(360.0);
+        if (joint_positions(5) > DEG_TO_RAD(180.0)) joint_positions(5) = joint_positions(5) - DEG_TO_RAD(360.0);
+    }
 }
 
 //Set Joint Positions

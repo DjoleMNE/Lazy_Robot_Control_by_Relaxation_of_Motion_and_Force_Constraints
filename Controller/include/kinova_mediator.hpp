@@ -109,15 +109,6 @@ class kinova_mediator: public robot_mediator
 							          const KDL::JntArray &joint_torques,
 							          const int desired_control_mode);
 
-		// Get current joint positions
-		virtual void get_joint_positions(KDL::JntArray &joint_positions);
-		// Get current joint velocities 
-		virtual void get_joint_velocities(KDL::JntArray &joint_velocities);
-		// Get current joint torques
-		virtual void get_joint_torques(KDL::JntArray &joint_torques);
-		// Get measured / estimated external forces acting on the end-effector
-		virtual void get_end_effector_wrench(KDL::Wrench &end_effector_wrench);
-
 		// Set joint position command
 		virtual int set_joint_positions(const KDL::JntArray &joint_positions);
 		// Set joint velocity command
@@ -183,6 +174,15 @@ class kinova_mediator: public robot_mediator
 		// Variable for alternating servoing mode (High or Low level control)
 		Kinova::Api::Base::ServoingModeInformation servoing_mode_;
 		Kinova::Api::ActuatorConfig::ControlModeInformation control_mode_message_;
+
+		// Get current joint positions
+		virtual void get_joint_positions(KDL::JntArray &joint_positions);
+		// Get current joint velocities 
+		virtual void get_joint_velocities(KDL::JntArray &joint_velocities);
+		// Get current joint torques
+		virtual void get_joint_torques(KDL::JntArray &joint_torques);
+		// Get measured / estimated external forces acting on the end-effector
+		virtual void get_end_effector_wrench(KDL::Wrench &end_effector_wrench);
 
 		// Increses index of the command's frame id (buffer)
 		void increment_command_id();

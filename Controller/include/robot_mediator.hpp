@@ -77,15 +77,6 @@ class robot_mediator
 									  const KDL::JntArray &joint_torques,
 							   		  const int desired_control_mode) = 0;
 
-		// Get current joint positions
-		virtual void get_joint_positions(KDL::JntArray &joint_positions)  = 0;
-		// Get current joint velocities 
-		virtual void get_joint_velocities(KDL::JntArray &joint_velocities) = 0;
-		// Get current joint torques
-		virtual void get_joint_torques(KDL::JntArray &joint_torques) = 0;
-		// Get measured / estimated external forces acting on the end-effector
-		virtual void get_end_effector_wrench(KDL::Wrench &end_effector_wrench) = 0;
-
 		// Set joint position command
 		virtual int set_joint_positions(const KDL::JntArray &joint_positions) = 0;
 		// Set joint velocity command
@@ -108,5 +99,15 @@ class robot_mediator
 		virtual KDL::Twist get_root_acceleration() = 0;
 		virtual KDL::Chain get_robot_model() = 0;
 		virtual KDL::Chain get_full_robot_model() = 0;
+
+	private:
+		// Get current joint positions
+		virtual void get_joint_positions(KDL::JntArray &joint_positions)  = 0;
+		// Get current joint velocities 
+		virtual void get_joint_velocities(KDL::JntArray &joint_velocities) = 0;
+		// Get current joint torques
+		virtual void get_joint_torques(KDL::JntArray &joint_torques) = 0;
+		// Get measured / estimated external forces acting on the end-effector
+		virtual void get_end_effector_wrench(KDL::Wrench &end_effector_wrench) = 0;
 };
 #endif /* ROBOT_MEDIATOR_HPP */
