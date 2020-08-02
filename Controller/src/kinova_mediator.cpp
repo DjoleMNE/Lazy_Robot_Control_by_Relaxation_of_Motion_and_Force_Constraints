@@ -143,7 +143,7 @@ int kinova_mediator::set_joint_positions(const KDL::JntArray &joint_positions)
             return -1;
         }
     }
-    else // Necessary to safe current commands as the next state for the simulation environment
+    else // Necessary to save current commands as the next state for the simulation environment
     {
         for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
             base_feedback_.mutable_actuators(i)->set_position(RAD_TO_DEG(joint_positions(i)));
@@ -195,7 +195,7 @@ int kinova_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities)
             return -1;
         }
     }
-    else // Necessary to safe current commands as the next state for the simulation environment
+    else // Necessary to save current commands as the next state for the simulation environment
     {
         for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
             base_feedback_.mutable_actuators(i)->set_velocity(RAD_TO_DEG(joint_velocities(i)));
@@ -246,7 +246,7 @@ int kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
             return -1;
         }
     }
-    else // Necessary to safe current commands as the next state for the simulation environment
+    else // Necessary to save current commands as the next state for the simulation environment
     {
         for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
             base_feedback_.mutable_actuators(i)->set_torque(joint_torques(i));
@@ -254,7 +254,7 @@ int kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
     return 0;
 }
 
-// Get measured / estimated external forces acting on the end-effector
+// Get measured / estimated external forces acting on the end-effector... Not yet working in low-level Kinova control mode
 void kinova_mediator::get_end_effector_wrench(KDL::Wrench &end_effector_wrench)
 {
     // Linear forces given in Newton, angular in Newton * meters
@@ -523,7 +523,7 @@ KDL::Chain kinova_mediator::get_full_robot_model()
     return full_chain; 
 }
 
-//Extract youBot model from URDF file
+//Extract kinova model from URDF file
 int kinova_mediator::get_model_from_urdf()
 {
     if (!kinova_urdf_model_.initFile(kinova_constants::urdf_path))

@@ -90,7 +90,7 @@ namespace KDL{
             }
 
             // Add effective rotor inertia to diagonal entries 
-            H_eig(i, i) = H_eig(i, i) + joint_inertia_[i];
+            H_eig(i, i) += joint_inertia_[i];
         }
 
         ldl_solver_eigen(H_eig, Tzeroacc_eig, L_eig, D_eig, r_eig, acc_eig);
