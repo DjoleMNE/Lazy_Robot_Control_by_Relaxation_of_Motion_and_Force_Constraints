@@ -51,7 +51,8 @@ namespace KDL{
         ns = chain.getNrOfSegments();
     }
 
-    int FdSolver_RNE::CartToJnt(const JntArray &q, const JntArray &q_dot, const JntArray &torques, const Wrenches& f_ext, JntArray &q_dotdot)
+    int FdSolver_RNE::CartToJnt(const JntArray &q, const JntArray &q_dot, const JntArray &torques, 
+                                const Wrenches& f_ext, JntArray &q_dotdot, KDL::JntArray &total_torque)
     {
         if(nj != chain.getNrOfJoints() || ns != chain.getNrOfSegments())
             return (error = E_NOT_UP_TO_DATE);
@@ -72,10 +73,9 @@ namespace KDL{
         if (error < 0) return (error);
 
         // Calculate non-inertial internal torques by inputting zero joint acceleration to ID
-        for (unsigned int i=0;i<nj;i++)
-        {
+        for (unsigned int i = 0; i < nj; i++)
             q_dotdot(i) = 0.0;
-        }
+
         error = IdSolver.CartToJnt(q, q_dot, q_dotdot, f_ext, Tzeroacc);
         if (error < 0) return (error);
 
@@ -93,12 +93,11 @@ namespace KDL{
             H_eig(i, i) += joint_inertia_[i];
         }
 
+        total_torque.data = Tzeroacc_eig;
         ldl_solver_eigen(H_eig, Tzeroacc_eig, L_eig, D_eig, r_eig, acc_eig);
 
         for(unsigned int i=0; i < nj; i++)
-        {
             q_dotdot(i) = acc_eig(i);
-        }
 
         return (error = E_NOERROR);
     }
