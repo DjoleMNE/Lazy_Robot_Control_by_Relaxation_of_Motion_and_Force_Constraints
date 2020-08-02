@@ -91,7 +91,7 @@ namespace KDL{
         void RK4Integrator(unsigned int& nj, const double& t, double& dt, KDL::JntArray& q, KDL::JntArray& q_dot,
                            KDL::JntArray& torques, KDL::Wrenches& f_ext, KDL::FdSolver_RNE& fdsolver,
                            KDL::JntArray& q_dotdot, KDL::JntArray& dq, KDL::JntArray& dq_dot,
-                           KDL::JntArray& q_temp, KDL::JntArray& q_dot_temp);
+                           KDL::JntArray& q_temp, KDL::JntArray& q_dot_temp, KDL::JntArray &total_torque);
 
     private:
         const Chain& chain;

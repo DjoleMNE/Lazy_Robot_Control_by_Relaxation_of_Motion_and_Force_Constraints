@@ -105,9 +105,9 @@ namespace KDL{
     void FdSolver_RNE::RK4Integrator(unsigned int& nj, const double& t, double& dt, KDL::JntArray& q, KDL::JntArray& q_dot,
                                      KDL::JntArray& torques, KDL::Wrenches& f_ext, KDL::FdSolver_RNE& fdsolver,
                                      KDL::JntArray& q_dotdot, KDL::JntArray& dq, KDL::JntArray& dq_dot,
-                                     KDL::JntArray& q_temp, KDL::JntArray& q_dot_temp)
+                                     KDL::JntArray& q_temp, KDL::JntArray& q_dot_temp, KDL::JntArray &total_torque)
     {
-        fdsolver.CartToJnt(q, q_dot, torques, f_ext, q_dotdot);
+        fdsolver.CartToJnt(q, q_dot, torques, f_ext, q_dotdot, total_torque);
         for (unsigned int i=0; i<nj; ++i)
         {
             q_temp(i) = q(i) + q_dot(i)*dt/2.0;
@@ -115,7 +115,7 @@ namespace KDL{
             dq(i) = q_dot(i);
             dq_dot(i) = q_dotdot(i);
         }
-        fdsolver.CartToJnt(q_temp, q_dot_temp, torques, f_ext, q_dotdot);
+        fdsolver.CartToJnt(q_temp, q_dot_temp, torques, f_ext, q_dotdot, total_torque);
         for (unsigned int i=0; i<nj; ++i)
         {
             q_temp(i) = q(i) + q_dot_temp(i)*dt/2.0;
@@ -123,7 +123,7 @@ namespace KDL{
             dq(i) += 2.0*q_dot_temp(i);
             dq_dot(i) += 2.0*q_dotdot(i);
         }
-        fdsolver.CartToJnt(q_temp, q_dot_temp, torques, f_ext, q_dotdot);
+        fdsolver.CartToJnt(q_temp, q_dot_temp, torques, f_ext, q_dotdot, total_torque);
         for (unsigned int i=0; i<nj; ++i)
         {
             q_temp(i) = q(i) + q_dot_temp(i)*dt;
@@ -131,7 +131,7 @@ namespace KDL{
             dq(i) += 2.0*q_dot_temp(i);
             dq_dot(i) += 2.0*q_dotdot(i);
         }
-        fdsolver.CartToJnt(q_temp, q_dot_temp, torques, f_ext, q_dotdot);
+        fdsolver.CartToJnt(q_temp, q_dot_temp, torques, f_ext, q_dotdot, total_torque);
         for (unsigned int i=0; i<nj; ++i)
         {
             dq(i) = (dq(i)+q_dot_temp(i))*dt/6.0;

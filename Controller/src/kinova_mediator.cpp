@@ -244,7 +244,7 @@ int kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
             return -1;
         }
     }
-    else // Necessary to save current commands as the next state for the simulation environment
+    else // Necessary to use current commands to generate the next state for the simulation environment
     {
         for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
             base_feedback_.mutable_actuators(i)->set_torque(joint_torques(i));
@@ -271,7 +271,7 @@ int kinova_mediator::set_control_mode(const int desired_control_mode)
     {
         try
         {
-            switch (desired_control_mode)
+            switch (control_mode_)
             {
                 case control_mode::TORQUE:
                     // Set actuators in torque mode
@@ -685,6 +685,7 @@ void kinova_mediator::initialize(const int robot_model,
         for (int i = 0; i < ACTUATOR_COUNT; i++)
         {
             base_feedback_.add_actuators();
+            base_feedback_.mutable_actuators(i)->set_position(0.0);
             base_command_.add_actuators()->set_position(base_feedback_.actuators(i).position());
         }
         // Set connection flag
@@ -704,8 +705,7 @@ void kinova_mediator::initialize(const int robot_model,
     {
         // Set initialization flag for the user
         is_initialized_ = true;
-        // printf("Kinova initialized successfully! \n\n");
-    } 
+    }
 }
 
 void kinova_mediator::deinitialize()
