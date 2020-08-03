@@ -99,7 +99,6 @@ class dynamics_controller
              const bool stopping_behaviour_on);
 
     void set_parameters(const double damper_amplitude,
-                        const int abag_error_type,
                         const Eigen::VectorXd &max_command,
                         const Eigen::VectorXd &error_alpha, 
                         const Eigen::VectorXd &bias_threshold, 

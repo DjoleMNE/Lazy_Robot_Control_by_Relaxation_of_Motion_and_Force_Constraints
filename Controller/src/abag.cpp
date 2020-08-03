@@ -26,32 +26,31 @@ SOFTWARE.
 #include <abag.hpp>
 
 // Constructor without the predefined set/s of parameters
-ABAG::ABAG(const int num_of_dimensions, const bool use_error_sign):
-    DIMENSIONS_(num_of_dimensions), use_error_sign_(use_error_sign),
-    error_sign_(Eigen::VectorXd::Zero(num_of_dimensions)),
-    ONES_(Eigen::VectorXd::Ones(num_of_dimensions)), 
-    signal(num_of_dimensions), parameter(num_of_dimensions)
+ABAG::ABAG(const int num_of_dimensions):
+    DIMENSIONS_(num_of_dimensions),
+    error_sign_(Eigen::VectorXd::Zero(DIMENSIONS_)),
+    ONES_(Eigen::VectorXd::Ones(DIMENSIONS_)), 
+    signal(DIMENSIONS_), parameter(DIMENSIONS_)
 {
     assert(("ABAG Controller not initialized properly", DIMENSIONS_ > 0));
 }
 
 // Constructor with all predefined set/s of parameters
-ABAG::ABAG(const int num_of_dimensions, const bool use_error_sign, 
-           const Eigen::VectorXd &error_alpha,
+ABAG::ABAG(const int num_of_dimensions, const Eigen::VectorXd &error_alpha,
            const Eigen::VectorXd &bias_threshold, const Eigen::VectorXd &bias_step, 
            const Eigen::VectorXd &gain_threshold, const Eigen::VectorXd &gain_step,
            const Eigen::VectorXd &min_bias_sat_limit, const Eigen::VectorXd &max_bias_sat_limit,
            const Eigen::VectorXd &min_gain_sat_limit, const Eigen::VectorXd &max_gain_sat_limit,
            const Eigen::VectorXd &min_command_sat_limit, const Eigen::VectorXd &max_command_sat_limit):
-    DIMENSIONS_(num_of_dimensions), use_error_sign_(use_error_sign),
-    error_sign_(Eigen::VectorXd::Zero(num_of_dimensions)),
-    ONES_(Eigen::VectorXd::Ones(num_of_dimensions)), 
-    signal(num_of_dimensions), parameter(error_alpha, 
-                                         bias_threshold, bias_step, 
-                                         gain_threshold, gain_step, 
-                                         min_bias_sat_limit, max_bias_sat_limit, 
-                                         min_gain_sat_limit, max_gain_sat_limit, 
-                                         min_command_sat_limit, max_command_sat_limit)
+    DIMENSIONS_(num_of_dimensions),
+    error_sign_(Eigen::VectorXd::Zero(DIMENSIONS_)),
+    ONES_(Eigen::VectorXd::Ones(DIMENSIONS_)), 
+    signal(DIMENSIONS_), parameter(error_alpha, 
+                                   bias_threshold, bias_step, 
+                                   gain_threshold, gain_step, 
+                                   min_bias_sat_limit, max_bias_sat_limit, 
+                                   min_gain_sat_limit, max_gain_sat_limit, 
+                                   min_command_sat_limit, max_command_sat_limit)
 {
     // Enforce general parameter constraints and those defined in the original publication 
     assert(("ABAG Controller not initialized properly", DIMENSIONS_ > 0));
@@ -106,13 +105,11 @@ void ABAG::update_error(const Eigen::VectorXd &raw_error)
     *   Else if, e.g. the velocity is given as a period of rotation, 
     *   the error calculation should be the same as in the original pseudo code.
     */
-    
+
     error_sign_ = raw_error.cwiseSign();
-    
-    // Using raw error here instead of sign is an experimental feature!
-    // Be carefull with setting "use_error_sign_" flag!
-    signal.error_ = parameter.ERROR_ALPHA.cwiseProduct( signal.error_ ) + \
-                    (ONES_ - parameter.ERROR_ALPHA).cwiseProduct( use_error_sign_? error_sign_ : raw_error );
+
+    signal.error_ = parameter.ERROR_ALPHA.cwiseProduct(signal.error_) + 
+                   (ONES_ - parameter.ERROR_ALPHA).cwiseProduct(error_sign_);
 }
 
 // - private method
@@ -443,18 +440,4 @@ void ABAG::set_max_command_sat_limit(const Eigen::VectorXd &sat_limit)
     assert(("Not valid dimension number", sat_limit.rows() <= DIMENSIONS_));
 
     parameter.MAX_COMMAND_SAT_LIMIT = sat_limit;
-}
-
-void ABAG::set_error_type(const int type)
-{
-    switch (type)
-    {
-        case error_type::RAW:
-            use_error_sign_ = false;
-            break;
-    
-        default:
-            use_error_sign_ = true;
-            break;
-    }
 }

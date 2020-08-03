@@ -63,7 +63,6 @@ const int MILLISECOND                = 1000;
 const int JOINTS                     = 7;
 const int NUMBER_OF_CONSTRAINTS      = 6;
 const int desired_dynamics_interface = dynamics_interface::CART_ACCELERATION;
-const int abag_error_type            = error_type::SIGN;
 int RATE_HZ                          = 1000; // Hz
 int motion_profile_id                = m_profile::CONSTANT;
 int path_type                        = path_types::STEP_PATH;
@@ -770,7 +769,7 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
 
     if (desired_task_model == task_model::full_pose) 
     {
-        controller_1.set_parameters(time_horizon_amplitude, abag_error_type, 
+        controller_1.set_parameters(time_horizon_amplitude,
                                     max_command, error_alpha,
                                     bias_threshold, bias_step, gain_threshold,
                                     gain_step, min_bias_sat, min_command_sat,
@@ -779,7 +778,7 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
                                     STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
                                     STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
 
-        controller_2.set_parameters(time_horizon_amplitude, abag_error_type, 
+        controller_2.set_parameters(time_horizon_amplitude,
                                     max_command, error_alpha,
                                     bias_threshold, bias_step, gain_threshold,
                                     gain_step, min_bias_sat, min_command_sat,
@@ -790,7 +789,7 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
     }
     else if (desired_task_model == task_model::moveGuarded)
     {
-        controller_1.set_parameters(time_horizon_amplitude, abag_error_type, 
+        controller_1.set_parameters(time_horizon_amplitude,
                                     max_command, error_alpha_1,
                                     bias_threshold_1, bias_step_1, gain_threshold_1,
                                     gain_step_1, min_bias_sat, min_command_sat,
@@ -799,7 +798,7 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
                                     STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
                                     STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
 
-        controller_2.set_parameters(time_horizon_amplitude, abag_error_type, 
+        controller_2.set_parameters(time_horizon_amplitude, 
                                     max_command, error_alpha_1,
                                     bias_threshold_1, bias_step_1, gain_threshold_1,
                                     gain_step_1, min_bias_sat, min_command_sat,
@@ -810,7 +809,7 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
     }
     else if (desired_task_model == task_model::moveTo_follow_path)
     {
-        controller_1.set_parameters(time_horizon_amplitude, abag_error_type, 
+        controller_1.set_parameters(time_horizon_amplitude, 
                                     max_command, error_alpha_3,
                                     bias_threshold_3, bias_step_3, gain_threshold_3,
                                     gain_step_3, min_bias_sat, min_command_sat,
@@ -819,7 +818,7 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
                                     STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
                                     STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
 
-        controller_2.set_parameters(time_horizon_amplitude, abag_error_type, 
+        controller_2.set_parameters(time_horizon_amplitude, 
                                     max_command, error_alpha_3,
                                     bias_threshold_3, bias_step_3, gain_threshold_3,
                                     gain_step_3, min_bias_sat, min_command_sat,
@@ -831,7 +830,7 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
     }
     else if (desired_task_model == task_model::moveTo_weight_compensation)
     {
-        controller_1.set_parameters(time_horizon_amplitude, abag_error_type, 
+        controller_1.set_parameters(time_horizon_amplitude,
                                     max_command, error_alpha_4,
                                     bias_threshold_4, bias_step_4, gain_threshold_4,
                                     gain_step_4, min_bias_sat, min_command_sat,
@@ -840,7 +839,7 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
                                     STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
                                     STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
 
-        controller_2.set_parameters(time_horizon_amplitude, abag_error_type, 
+        controller_2.set_parameters(time_horizon_amplitude,
                                     max_command, error_alpha_4,
                                     bias_threshold_4, bias_step_4, gain_threshold_4,
                                     gain_step_4, min_bias_sat, min_command_sat,
@@ -851,7 +850,7 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
     }
     else if (desired_task_model == task_model::moveTo)
     {
-        controller_1.set_parameters(time_horizon_amplitude, abag_error_type, 
+        controller_1.set_parameters(time_horizon_amplitude,
                                     max_command, error_alpha_2,
                                     bias_threshold_2, bias_step_2, gain_threshold_2,
                                     gain_step_2, min_bias_sat, min_command_sat,
@@ -860,7 +859,7 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
                                     STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
                                     STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
 
-        controller_2.set_parameters(time_horizon_amplitude, abag_error_type, 
+        controller_2.set_parameters(time_horizon_amplitude,
                                     max_command, error_alpha_2,
                                     bias_threshold_2, bias_step_2, gain_threshold_2,
                                     gain_step_2, min_bias_sat, min_command_sat,
@@ -871,7 +870,7 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
     }
     else if (desired_task_model == task_model::gravity_compensation)
     {
-        controller_1.set_parameters(time_horizon_amplitude, abag_error_type, 
+        controller_1.set_parameters(time_horizon_amplitude,
                                     max_command, error_alpha,
                                     bias_threshold, bias_step, gain_threshold,
                                     gain_step, min_bias_sat, min_command_sat,
@@ -880,7 +879,7 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
                                     STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
                                     STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP);
 
-        controller_2.set_parameters(time_horizon_amplitude, abag_error_type, 
+        controller_2.set_parameters(time_horizon_amplitude,
                                     max_command, error_alpha,
                                     bias_threshold, bias_step, gain_threshold,
                                     gain_step, min_bias_sat, min_command_sat,

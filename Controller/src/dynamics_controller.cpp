@@ -93,9 +93,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     fk_vereshchagin_(robot_chain_), safety_monitor_(robot_driver_, true),
     jacobian_solver_(robot_chain_full_),
     fsm_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
-    abag_(NUM_OF_CONSTRAINTS_, abag_parameter::USE_ERROR_SIGN),
-    abag_null_space_(1, abag_parameter::USE_ERROR_SIGN),
-    abag_stop_motion_(NUM_OF_JOINTS_, abag_parameter::USE_ERROR_SIGN),
+    abag_(NUM_OF_CONSTRAINTS_), abag_null_space_(1), abag_stop_motion_(NUM_OF_JOINTS_),
     predictor_(robot_chain_),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     robot_state_base_(robot_state_), desired_state_(robot_state_),
@@ -1931,7 +1929,6 @@ int dynamics_controller::compute_gravity_compensation_control_commands()
 }
 
 void dynamics_controller::set_parameters(const double horizon_amplitude,
-                                         const int abag_error_type,
                                          const Eigen::VectorXd &max_command,
                                          const Eigen::VectorXd &error_alpha, 
                                          const Eigen::VectorXd &bias_threshold, 
@@ -1984,7 +1981,6 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
     abag_.set_gain_step(gain_step);
     abag_.set_min_bias_sat_limit(min_bias_sat);
     abag_.set_min_command_sat_limit(min_command_sat);
-    abag_.set_error_type(abag_error_type);
 
     abag_null_space_.set_error_alpha(   null_space_parameters(0), 0);
     abag_null_space_.set_bias_threshold(null_space_parameters(1), 0);

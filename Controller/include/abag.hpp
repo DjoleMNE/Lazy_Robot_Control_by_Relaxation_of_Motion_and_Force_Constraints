@@ -23,6 +23,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+/**
+ * Adaptive-Bias-Adaptive-Gain (ABAG) Controller
+ * Original publication: Franchi, Antonio, and Anthony Mallet. 
+ * "Adaptive closed-loop speed control of BLDC motors with applications to 
+ * multi-rotor aerial vehicles." 2017 IEEE International Conference on Robotics 
+ * and Automation (ICRA). IEEE, 2017.
+ */
+
 #ifndef ABAG_HPP_
 #define ABAG_HPP_
 #include <Eigen/Core>
@@ -35,19 +43,12 @@ SOFTWARE.
 #include <cmath>
 #include <stdlib.h>     /* abs */
 
-enum error_type 
-{
-    RAW = 0,
-    SIGN = 1
-};
-
 class ABAG
 {
   public:
-    ABAG(const int num_of_dimensions, const bool use_error_sign);
+    ABAG(const int num_of_dimensions);
 
-    ABAG(const int num_of_dimensions, const bool use_error_sign, 
-         const Eigen::VectorXd &error_alpha,
+    ABAG(const int num_of_dimensions, const Eigen::VectorXd &error_alpha,
          const Eigen::VectorXd &bias_threshold, const Eigen::VectorXd &bias_step, 
          const Eigen::VectorXd &gain_threshold, const Eigen::VectorXd &gain_step,
          const Eigen::VectorXd &min_bias_sat_limit, const Eigen::VectorXd &max_bias_sat_limit,
@@ -92,15 +93,12 @@ class ABAG
     void set_min_command_sat_limit(const Eigen::VectorXd &sat_limit);
     void set_max_command_sat_limit(const Eigen::VectorXd &sat_limit);
 
-    void set_error_type(const int type);
-
     void reset_state();
     void reset_state(const int dimension);
 
   private:
     const int DIMENSIONS_;
     const Eigen::VectorXd ONES_;
-    bool use_error_sign_;
     Eigen::VectorXd error_sign_;
 
     struct abag_signal 
