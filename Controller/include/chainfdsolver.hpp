@@ -53,7 +53,7 @@ namespace KDL
 			 *
 			 * @return if < 0 something went wrong
 			 */
-        virtual int CartToJnt(const JntArray &q, const JntArray &q_dot, const JntArray &torques, const Wrenches& f_ext,JntArray &q_dotdot)=0;
+        virtual int CartToJnt(const JntArray &q, const JntArray &q_dot, const JntArray &torques, const Wrenches& f_ext, JntArray &q_dotdot, JntArray &total_torque)=0;
 	};
 
 }

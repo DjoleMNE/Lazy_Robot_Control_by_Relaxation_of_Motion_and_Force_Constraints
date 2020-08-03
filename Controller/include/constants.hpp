@@ -97,12 +97,15 @@ namespace kinova_constants
     extern const std::vector<double> joint_stopping_torque_limits;
 
     extern const std::vector<double> joint_inertia;
+    extern const std::vector<double> joint_sim_inertia;
 
     extern const std::string config_path;    
     extern const std::string urdf_path;
+    extern const std::string urdf_sim_path;
 
     extern const std::string root_name;
     extern const std::string tooltip_name;
+    extern const std::string tooltip_sim_name;
 }
 
 namespace lwr_constants

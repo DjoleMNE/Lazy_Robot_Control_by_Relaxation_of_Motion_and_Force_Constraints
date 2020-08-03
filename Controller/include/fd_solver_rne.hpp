@@ -58,7 +58,7 @@ namespace KDL{
          * \param f_ext The external forces (no gravity) on the segments
          * Output parameters:
          * \param q_dotdot The resulting joint accelerations
-         * \param total_torque The total torque felt (acting) on the joint: control + nature + ext
+         * \param total_torque The total torque felt (acting) on the joint: control - nature + ext
          */
         int CartToJnt(const JntArray &q, const JntArray &q_dot, const JntArray &torques, 
                       const Wrenches& f_ext, JntArray &q_dotdot, KDL::JntArray &total_torque);

@@ -101,11 +101,15 @@ namespace kinova_constants
    const std::vector<double> joint_position_thresholds {DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10)};
 
    const std::vector<double> joint_offsets {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
     // Rotor inertia - "d" in the algorithm:
    const std::vector<double> joint_inertia {0.5580, 0.5580, 0.5580, 0.5580, 0.1389, 0.1389, 0.1389};
-    // const std::vector<double> joint_inertia {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+//    const std::vector<double> joint_inertia {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+   const std::vector<double> joint_sim_inertia {0.5580, 0.5580, 0.5580, 0.5580, 0.1389, 0.1389, 0.1389};
+//    const std::vector<double> joint_sim_inertia {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
    const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/kinova-gen3_urdf_V12.urdf";
+   const std::string urdf_sim_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/kinova-gen3_urdf_V12_sim.urdf";
 
    // 7 joints, 7 links, 8 frames
    const std::string root_name = "base_link";
@@ -116,6 +120,7 @@ namespace kinova_constants
     * Arm length: 1.12586m
     */
    const std::string tooltip_name = "Bracelet_Link";
+   const std::string tooltip_sim_name = "EndEffector_Link";
 
    /**
     * With EndEffector_Link parameter, last frame is at the real end-effector's frame.

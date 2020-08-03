@@ -58,7 +58,8 @@ class robot_mediator
 		// Initializes variables and calibrates the manipulator
 		virtual void initialize(const int robot_model,
 								const int robot_environment,
-								const int id) = 0;
+								const int id,
+                                const double DT_SEC) = 0;
 
 		// Update joint space state: measured positions, velocities and torques
 		virtual void get_joint_state(KDL::JntArray &joint_positions,

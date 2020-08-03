@@ -28,6 +28,7 @@ SOFTWARE.
 #define KINOVA_MEDIATOR_HPP
 #include <robot_mediator.hpp>
 #include <kdl_parser/kdl_parser.hpp>
+#include <state_specification.hpp>
 #include <urdf/model.h>
 #include <constants.hpp>
 #include <memory>
@@ -46,6 +47,8 @@ SOFTWARE.
 #include <stdlib.h> /* abs */
 #include <unistd.h>
 #include <Eigen/Dense>// Eigen
+#include <model_prediction.hpp>
+#include <fd_solver_rne.hpp>
 
 #include <KDetailedException.h>
 
@@ -85,7 +88,8 @@ class kinova_mediator: public robot_mediator
 		// Initializes variables and calibrates the manipulator
 		virtual void initialize(const int robot_model,
 								const int robot_environment,
-								const int id);
+								const int id,
+                                const double DT_SEC);
 
 		virtual bool is_initialized();
 
@@ -119,6 +123,8 @@ class kinova_mediator: public robot_mediator
 		virtual int stop_robot_motion();
 		// Set desired control mode for robot actuators (position/velocity/torque)
 		int set_control_mode(const int desired_control_mode);
+		// Set external wrenches for the simulation
+		void set_ext_wrenches_sim(const KDL::Wrenches &ext_wrenches_sim);
 
 		virtual std::vector<double> get_maximum_joint_pos_limits();
 		virtual std::vector<double> get_minimum_joint_pos_limits();
@@ -143,8 +149,9 @@ class kinova_mediator: public robot_mediator
 		int control_mode_;
 		bool add_offsets_;
 		bool connection_established_;
+        double DT_SEC_;
 
-		KDL::Chain kinova_chain_;		
+		KDL::Chain kinova_chain_, kinova_sim_chain_;		
 		KDL::Tree kinova_tree_;
     	urdf::Model kinova_urdf_model_;
 
@@ -152,7 +159,13 @@ class kinova_mediator: public robot_mediator
 		const KDL::Vector linear_root_acc_;
 		const KDL::Vector angular_root_acc_;
 		const KDL::Twist root_acc_;
-        
+
+        KDL::Wrenches ext_wrenches_sim_;
+		state_specification robot_state_;
+    	std::vector<state_specification> predicted_states_; 
+		std::shared_ptr<model_prediction> predictor_;
+		std::shared_ptr<KDL::FdSolver_RNE> fd_solver_rne_;
+
 		// Handles for the kinova manipulator and kdl urdf parsel
 		// Create API objects
 	    std::shared_ptr<Kinova::Api::TransportClientTcp> transport_;
@@ -187,8 +200,9 @@ class kinova_mediator: public robot_mediator
 		// Increses index of the command's frame id (buffer)
 		void increment_command_id();
 
-		//Extract youBot model from urdf file
+		//Extract kinova model from urdf file
         int get_model_from_urdf();
+        int get_sim_model_from_urdf();
 
 		// void error_callback_(Kinova::Api::KError err);
 

@@ -57,7 +57,8 @@ class youbot_mediator: public robot_mediator
 		// Initializes variables and calibrates the manipulator
 		virtual void initialize(const int robot_model,
 								const int robot_environment,
-								const int id);
+								const int id,
+                                const double DT_SEC);
 		
 		virtual bool is_initialized();
 

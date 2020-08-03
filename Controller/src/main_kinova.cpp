@@ -517,7 +517,7 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
 
     else
     {
-        robot_driver.initialize(robot_model_id, environment, id);
+        robot_driver.initialize(robot_model_id, environment, id,  1.0 / static_cast<double>(RATE_HZ));
         if (!robot_driver.is_initialized())
         {
             printf("Robot is not initialized\n");
@@ -534,9 +534,14 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
         for (int i = 0; i < JOINTS; i++) 
             config(i) = DEG_TO_RAD(configuration_array[i]);
 
+        // Kinova API provides only positive angle values
+        // This operation is required to align the logic with our safety monitor
+        // We need to convert some angles to negative values
+        if (config(1) > DEG_TO_RAD(180.0)) config(1) -= DEG_TO_RAD(360.0);
+        if (config(3) > DEG_TO_RAD(180.0)) config(3) -= DEG_TO_RAD(360.0);
+        if (config(5) > DEG_TO_RAD(180.0)) config(5) -= DEG_TO_RAD(360.0);
+
         robot_driver.set_joint_positions(config);
-        robot_driver.set_joint_velocities(KDL::JntArray(7));
-        robot_driver.set_joint_torques(KDL::JntArray(7));
     }
     return 0;
 }
@@ -736,7 +741,7 @@ void run_test(kinova_mediator &robot_driver)
         {
             if (robot_driver.set_control_mode(control_mode::TORQUE) == -1)
             {
-                printf("Incorrect control mode\n");
+                printf("Problem with setting control mode in robot's mediator\n");
                 return;
             }
         }
@@ -1044,7 +1049,7 @@ int main(int argc, char **argv)
     // calibrate_torque_offsets(); return 0;
 
     // Extract robot model and if not simulation, establish connection with motor drivers
-    if (!robot_driver.is_initialized()) robot_driver.initialize(robot_model_id, environment, id);
+    if (!robot_driver.is_initialized()) robot_driver.initialize(robot_model_id, environment, id, 1.0 / static_cast<double>(RATE_HZ));
     if (!robot_driver.is_initialized())
     {
         printf("Robot is not initialized\n");

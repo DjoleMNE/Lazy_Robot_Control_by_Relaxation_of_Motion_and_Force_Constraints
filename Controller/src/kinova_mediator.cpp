@@ -29,6 +29,8 @@ SOFTWARE.
 #define PORT 10000
 #define PORT_REAL_TIME 10001
 #define ACTUATOR_COUNT 7
+#define SEGMENT_COUNT_FULL 8
+#define NUM_OF_CONSTRAINTS 6
 
 kinova_mediator::kinova_mediator(): 
     is_initialized_(false), kinova_id(robot_id::KINOVA_GEN3_1),
@@ -36,6 +38,7 @@ kinova_mediator::kinova_mediator():
     kinova_environment_(kinova_environment::SIMULATION),
     control_mode_(control_mode::STOP_MOTION),
     add_offsets_(false), connection_established_(false),
+    DT_SEC_(0.0),
     linear_root_acc_(kinova_constants::root_acceleration[0],
                      kinova_constants::root_acceleration[1],
                      kinova_constants::root_acceleration[2]),
@@ -43,6 +46,9 @@ kinova_mediator::kinova_mediator():
                       kinova_constants::root_acceleration[4],
                       kinova_constants::root_acceleration[5]),
     root_acc_(linear_root_acc_, angular_root_acc_),
+    ext_wrenches_sim_(SEGMENT_COUNT_FULL, KDL::Wrench::Zero()),
+    robot_state_(ACTUATOR_COUNT, SEGMENT_COUNT_FULL, SEGMENT_COUNT_FULL + 1, NUM_OF_CONSTRAINTS),
+    predicted_states_(1, robot_state_),
     transport_(nullptr), transport_real_time_(nullptr), router_(nullptr),
     router_real_time_(nullptr), session_manager_(nullptr),
     session_manager_real_time_(nullptr), base_(nullptr),
@@ -96,14 +102,14 @@ void kinova_mediator::get_joint_positions(KDL::JntArray &joint_positions)
     for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
         joint_positions(i) = DEG_TO_RAD(base_feedback_.actuators(i).position());
 
-    if (kinova_environment_ != kinova_environment::SIMULATION) 
+    if (kinova_environment_ != kinova_environment::SIMULATION)
     {
         // Kinova API provides only positive angle values
         // This operation is required to align the logic with our safety monitor
         // We need to convert some angles to negative values
-        if (joint_positions(1) > DEG_TO_RAD(180.0)) joint_positions(1) = joint_positions(1) - DEG_TO_RAD(360.0);
-        if (joint_positions(3) > DEG_TO_RAD(180.0)) joint_positions(3) = joint_positions(3) - DEG_TO_RAD(360.0);
-        if (joint_positions(5) > DEG_TO_RAD(180.0)) joint_positions(5) = joint_positions(5) - DEG_TO_RAD(360.0);
+        if (joint_positions(1) > DEG_TO_RAD(180.0)) joint_positions(1) -= DEG_TO_RAD(360.0);
+        if (joint_positions(3) > DEG_TO_RAD(180.0)) joint_positions(3) -= DEG_TO_RAD(360.0);
+        if (joint_positions(5) > DEG_TO_RAD(180.0)) joint_positions(5) -= DEG_TO_RAD(360.0);
     }
 }
 
@@ -195,8 +201,17 @@ int kinova_mediator::set_joint_velocities(const KDL::JntArray &joint_velocities)
     }
     else // Necessary to save current commands as the next state for the simulation environment
     {
+        // Set previously simulated (generated) state to be the current
+        get_joint_positions(robot_state_.q);
+
+        // Integrate jnt. vel. to simulate the next robot state
+        predictor_->integrate_to_position(KDL::JntArray(ACTUATOR_COUNT), joint_velocities, robot_state_.q, predicted_states_[0].q, integration_method::SYMPLECTIC_EULER, DT_SEC_);
+
         for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
+        {
+            base_feedback_.mutable_actuators(i)->set_position(RAD_TO_DEG(predicted_states_[0].q(i)));
             base_feedback_.mutable_actuators(i)->set_velocity(RAD_TO_DEG(joint_velocities(i)));
+        }
     }
     return 0;
 }
@@ -246,8 +261,29 @@ int kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
     }
     else // Necessary to use current commands to generate the next state for the simulation environment
     {
+        // Set previously simulated (generated) state to be the current
+        get_joint_positions(robot_state_.q);
+        get_joint_velocities(robot_state_.qd);
+
+        // Call FD solver (inverse-inertia version) to compute jnt acc. given the control torque commands.
+        int solver_return = this->fd_solver_rne_->CartToJnt(robot_state_.q, robot_state_.qd, joint_torques, 
+                                                            ext_wrenches_sim_, robot_state_.qdd, robot_state_.total_torque);
+        if (solver_return != 0)
+        {
+            printf("FD solver in mediator returned error: %d", solver_return);
+            return -1;
+        }
+
+        // Integrate jnt acc. to simulate the next robot state
+        predictor_->integrate_joint_space(robot_state_, predicted_states_, DT_SEC_, 1,
+                                          integration_method::SYMPLECTIC_EULER, false, false);
+        
         for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
-            base_feedback_.mutable_actuators(i)->set_torque(joint_torques(i));
+        {
+            base_feedback_.mutable_actuators(i)->set_position(RAD_TO_DEG(predicted_states_[0].q(i)));
+            base_feedback_.mutable_actuators(i)->set_velocity(RAD_TO_DEG(predicted_states_[0].qd(i)));
+            base_feedback_.mutable_actuators(i)->set_torque(-joint_torques(i));
+        }
     }
     return 0;
 }
@@ -262,6 +298,13 @@ void kinova_mediator::get_end_effector_wrench(KDL::Wrench &end_effector_wrench)
     end_effector_wrench.torque(0) = base_feedback_.base().tool_external_wrench_torque_x();
     end_effector_wrench.torque(1) = base_feedback_.base().tool_external_wrench_torque_y();
     end_effector_wrench.torque(2) = base_feedback_.base().tool_external_wrench_torque_z();
+}
+
+// Set external wrenches for the simulation. FD solver expects wrenches to be expressed in respective link's frame... not the base frame
+void kinova_mediator::set_ext_wrenches_sim(const KDL::Wrenches &ext_wrenches_sim)
+{
+    assert(ext_wrenches_sim_.size() == ext_wrenches_sim.size());
+    ext_wrenches_sim_ = ext_wrenches_sim;
 }
 
 int kinova_mediator::set_control_mode(const int desired_control_mode)
@@ -328,34 +371,25 @@ int kinova_mediator::set_joint_command(const KDL::JntArray &joint_positions,
     assert(joint_velocities.rows() == kinova_constants::NUMBER_OF_JOINTS);
     assert(joint_torques.rows()    == kinova_constants::NUMBER_OF_JOINTS);
 
-    if (kinova_environment_ == kinova_environment::SIMULATION)
-    {
-        set_joint_torques(joint_torques);
-        set_joint_velocities(joint_velocities);
-        set_joint_positions(joint_positions);
-        control_mode_ = desired_control_mode;
+    switch (desired_control_mode)
+    {   
+        case control_mode::TORQUE:
+            if (control_mode_ != control_mode::TORQUE) set_control_mode(desired_control_mode);
+            return set_joint_torques(joint_torques);
+
+        case control_mode::VELOCITY:
+            if (control_mode_ != control_mode::VELOCITY) set_control_mode(desired_control_mode);
+            return set_joint_velocities(joint_velocities);
+
+        case control_mode::POSITION:
+            if (control_mode_ != control_mode::POSITION) set_control_mode(desired_control_mode);
+            return set_joint_positions(joint_positions);
+
+        default:
+            assert(("Unknown control mode!", false));
+            return -1;
     }
-    else
-    {
-        switch (desired_control_mode)
-        {   
-            case control_mode::TORQUE:
-                if (control_mode_ != control_mode::TORQUE) set_control_mode(desired_control_mode);
-                return set_joint_torques(joint_torques);
 
-            case control_mode::VELOCITY:
-                if (control_mode_ != control_mode::VELOCITY) set_control_mode(desired_control_mode);
-                return set_joint_velocities(joint_velocities);
-
-            case control_mode::POSITION:
-                if (control_mode_ != control_mode::POSITION) set_control_mode(desired_control_mode);
-                return set_joint_positions(joint_positions);
-
-            default: 
-                assert(("Unknown control mode!", false));
-                return -1;
-        }
-    }
     return 0;
 }
 
@@ -544,6 +578,32 @@ int kinova_mediator::get_model_from_urdf()
     return 0;
 }
 
+//Extract kinova Sim model from URDF file
+int kinova_mediator::get_sim_model_from_urdf()
+{
+    if (!kinova_urdf_model_.initFile(kinova_constants::urdf_sim_path))
+    {
+        printf("ERROR: Failed to parse simulation urdf robot model \n");
+        return -1;
+    }
+
+    //Extract KDL tree from the URDF file
+    if (!kdl_parser::treeFromUrdfModel(kinova_urdf_model_, kinova_tree_))
+    {
+        printf("ERROR: Failed to construct simulation kdl tree \n");
+        return -1;
+    }
+
+    //Extract KDL chain from KDL tree
+    kinova_tree_.getChain(kinova_constants::root_name, 
+                          kinova_constants::tooltip_sim_name, 
+                          kinova_sim_chain_);
+    
+    // Initialize ext sim wrenches with correct number of segments
+    ext_wrenches_sim_ = KDL::Wrenches(kinova_sim_chain_.getNrOfSegments(), KDL::Wrench::Zero());
+    return 0;
+}
+
 int kinova_mediator::get_robot_ID()
 {
     return kinova_id;
@@ -557,11 +617,13 @@ bool kinova_mediator::is_initialized()
 // Initialize variables and calibrate the manipulator: 
 void kinova_mediator::initialize(const int robot_model,
                                  const int robot_environment,
-                                 const int id)
+                                 const int id,
+                                 const double DT_SEC)
 {
     kinova_model_       = robot_model;
     kinova_id           = id;
     kinova_environment_ = robot_environment;
+    DT_SEC_             = DT_SEC;
     kinova_chain_       = KDL::Chain();
 
     // Reset Flags
@@ -700,7 +762,16 @@ void kinova_mediator::initialize(const int robot_model,
         return;
     }
 
-    if (parser_result != 0 || !connection_established_)  printf("Cannot create Kinova model! \n");
+    //Extract Kinova simulation model from the URDF file
+    int simulation_parser_result = get_sim_model_from_urdf();
+    this->predictor_ = std::make_shared<model_prediction>(kinova_sim_chain_);
+    this->fd_solver_rne_ = std::make_shared<KDL::FdSolver_RNE>(kinova_sim_chain_, 
+                                                               KDL::Vector(kinova_constants::root_acceleration[0],
+                                                                           kinova_constants::root_acceleration[1],
+                                                                          -kinova_constants::root_acceleration[2]), 
+                                                               kinova_constants::joint_sim_inertia);
+
+    if (parser_result != 0 || !connection_established_ || simulation_parser_result != 0)  printf("Cannot create Kinova model! \n");
     else
     {
         // Set initialization flag for the user

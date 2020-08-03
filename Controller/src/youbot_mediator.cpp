@@ -370,7 +370,8 @@ bool youbot_mediator::is_initialized()
 // Initialize variables and calibrate the manipulator: 
 void youbot_mediator::initialize(const int robot_model,
                                  const int robot_environment,
-                                 const int id)
+                                 const int id,
+                                 const double DT_SEC)
 {
     youbot_model_       = robot_model;
     youbot_environment_ = robot_environment;
