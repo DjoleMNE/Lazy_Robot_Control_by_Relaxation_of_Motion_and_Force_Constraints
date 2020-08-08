@@ -156,8 +156,11 @@ namespace lwr_constants
    const std::vector<double> joint_position_thresholds {DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10)};
 
    const std::vector<double> joint_offsets {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    // Rotor inertia - "d" in the algorithm:
-   const std::vector<double> joint_inertia {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+   // Rotor inertia - "d" in the algorithm:
+   // Taken from: Jubien, A., Gautier, M. and Janot, A., 2014. Dynamic identification of the Kuka LWR robot using motor torques
+   // and joint torque sensors data. IFAC Proceedings Volumes, 2014., 47(3), pp.8391-8396.
+   const std::vector<double> joint_inertia {3.19, 3.05, 1.98, 2.05, 0.787, 0.391, 0.394};
 
    const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/lwr.urdf";
    const std::string urdf_with_ati_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/lwr_with_ati.urdf";
