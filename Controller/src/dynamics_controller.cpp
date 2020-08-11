@@ -2188,7 +2188,10 @@ int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_pos
 {
     /**
     * ==========================================
-    * Momentum-observer: generic implementation
+    * Momentum-observer - generic implementation based on: 
+    * S. Haddadin, A. De Luca and A. Albu-Schäffer, 
+    * "Robot Collisions: A Survey on Detection, Isolation, and Identification," 
+    * in IEEE Transactions on Robotics, vol. 33(6), pp. 1292-1312, 2017.
     * ==========================================
     */
     int solver_result = this->dynamic_parameter_solver_->JntToMass(joint_position_measured, jnt_mass_matrix_);
