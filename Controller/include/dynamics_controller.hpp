@@ -272,6 +272,7 @@ class dynamics_controller
     KDL::Jacobian jacobian_end_eff_;
     Eigen::MatrixXd jacobian_end_eff_inv_;
     Eigen::VectorXd wrench_estimation_gain_, wrench_estimation_gain_2_;
+    KDL::Frame tool_tip_frame_full_model_;
 
     KDL::FK_Vereshchagin fk_vereshchagin_;
     KDL::ChainJntToJacSolver jacobian_solver_;
@@ -290,6 +291,7 @@ class dynamics_controller
     std::shared_ptr<KDL::Solver_Vereshchagin> hd_solver_;
     std::shared_ptr<KDL::Solver_RNE> id_solver_;
     std::shared_ptr<KDL::ChainDynParam> dynamic_parameter_solver_;
+    std::shared_ptr<KDL::ChainFkSolverPos_recursive> fk_pos_solver_;
 
     int update_commands(); //Performs single update of control commands and dynamics computations
     int update_stop_motion_commands();

@@ -90,6 +90,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     jnt_mass_matrix_dot_(NUM_OF_JOINTS_), jacobian_end_eff_(NUM_OF_JOINTS_),
     jacobian_end_eff_inv_(Eigen::MatrixXd::Zero(NUM_OF_JOINTS_, NUM_OF_CONSTRAINTS_)),
     wrench_estimation_gain_(NUM_OF_JOINTS_), wrench_estimation_gain_2_(NUM_OF_JOINTS_),
+    tool_tip_frame_full_model_(KDL::Frame::Identity()),
     fk_vereshchagin_(robot_chain_), safety_monitor_(robot_driver_, true),
     jacobian_solver_(robot_chain_full_),
     fsm_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
@@ -115,6 +116,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     this->id_solver_ = std::make_shared<KDL::Solver_RNE>(robot_chain_full_, KDL::Vector(0.0, 0.0, -9.81289), JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, false);
 
     this->dynamic_parameter_solver_ = std::make_shared<KDL::ChainDynParam>(robot_chain_full_, KDL::Vector(0.0, 0.0, -9.81289));
+
+    this->fk_pos_solver_ = std::make_shared<KDL::ChainFkSolverPos_recursive>(robot_chain_full_);
 
     // Set default command interface to stop motion mode and initialize it as not safe
     desired_control_mode_.interface = control_mode::STOP_MOTION;
