@@ -2223,21 +2223,6 @@ int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_pos
     for (int i = 0; i < NUM_OF_JOINTS_; i++)
         filtered_estimated_ext_torque_(i) = alpha * filtered_estimated_ext_torque_(i) + (1.0 - alpha) * estimated_ext_torque_(i);
 
-    // Propagate joint torques to Cartesian wrench
-    solver_result = jacobian_solver_.JntToJac(joint_position_measured, jacobian_end_eff_);
-    if (solver_result != 0) return solver_result;
-
-    // Compute SVD of the jacobian using Eigen functions
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd(jacobian_end_eff_.data.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
-
-    Eigen::VectorXd singular_inv(svd.singularValues());
-    for (int j = 0; j < singular_inv.size(); ++j) singular_inv(j) = (singular_inv(j) < 1e-8) ? 0.0 : 1.0 / singular_inv(j);
-    jacobian_end_eff_inv_.noalias() = svd.matrixV() * singular_inv.matrix().asDiagonal() * svd.matrixU().adjoint();
-
-    // Compute End-Effector Cartesian forces from joint external torques
-    Eigen::VectorXd wrench = jacobian_end_eff_inv_ * filtered_estimated_ext_torque_.data;
-    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++) ext_force_torque(i) = wrench(i);
-
     /**
     * ====================================================
     * Momentum-observer: Vereshchain-based implementation
@@ -2256,7 +2241,31 @@ int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_pos
     for (int i = 0; i < NUM_OF_JOINTS_; i++)
         filtered_estimated_ext_torque_2_(i) = alpha * filtered_estimated_ext_torque_2_(i) + (1.0 - alpha) * estimated_ext_torque_2_(i);
 
+    /**
+    * ========================================================================================
+    * Propagate joint torques to Cartesian wrench using a pseudo inverse of Jacobian-Transpose
+    * ========================================================================================
+    */
+    solver_result = jacobian_solver_.JntToJac(joint_position_measured, jacobian_end_eff_);
+    if (solver_result != 0) return solver_result;
+
+    solver_result = fk_pos_solver_->JntToCart(joint_position_measured, tool_tip_frame_full_model_);
+    if (solver_result != 0) return solver_result;
+
+    jacobian_end_eff_.changeBase(tool_tip_frame_full_model_.M.Inverse());
+
+    // Compute SVD of the jacobian using Eigen functions
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(jacobian_end_eff_.data.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+    Eigen::VectorXd singular_inv(svd.singularValues());
+    for (int j = 0; j < singular_inv.size(); ++j) singular_inv(j) = (singular_inv(j) < 1e-8) ? 0.0 : 1.0 / singular_inv(j);
+    jacobian_end_eff_inv_.noalias() = svd.matrixV() * singular_inv.matrix().asDiagonal() * svd.matrixU().adjoint();
+
     // Compute End-Effector Cartesian forces from joint external torques
+    Eigen::VectorXd wrench = jacobian_end_eff_inv_ * filtered_estimated_ext_torque_.data;
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++) ext_force_torque(i) = wrench(i);
+
+    // Compute End-Effector Cartesian forces from joint external torques: Vereshchagin-based momentum observer
     wrench = jacobian_end_eff_inv_ * filtered_estimated_ext_torque_2_.data;
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++) ext_wrench_2_(i) = wrench(i);
 
