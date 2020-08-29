@@ -1061,7 +1061,7 @@ int dynamics_controller::apply_joint_control_commands(const bool bypass_safeties
     }
     else
     {
-        // Is desired control mode safe or not.
+        // Check if the desired control mode is safe or not
         if (monitor_joint_safety() == control_mode::STOP_MOTION)
         {
             desired_control_mode_.is_safe = false;
@@ -1916,7 +1916,7 @@ int dynamics_controller::compute_gravity_compensation_control_commands()
     int id_solver_result = this->id_solver_->CartToJnt(robot_state_.q, zero_joint_array_, zero_joint_array_, zero_wrenches_full_model_, gravity_torque_);
     if (id_solver_result != 0) return id_solver_result;
 
-    if (desired_task_model_ != task_model::gravity_compensation) robot_state_.control_torque.data = robot_state_.control_torque.data + gravity_torque_.data;
+    if (desired_task_model_ != task_model::gravity_compensation) robot_state_.control_torque.data += gravity_torque_.data;
     else robot_state_.control_torque.data = gravity_torque_.data;
 
     for (int j = 0; j < NUM_OF_JOINTS_; j++)
@@ -2187,37 +2187,32 @@ int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_pos
                                                   KDL::Wrench &ext_force_torque)
 {
     /**
-    * ==========================================
-    * Momentum-observer - generic implementation based on: 
-    * S. Haddadin, A. De Luca and A. Albu-Schäffer, 
-    * "Robot Collisions: A Survey on Detection, Isolation, and Identification," 
+    * ==========================================================================
+    * Momentum observer - generic implementation based on:
+    * S. Haddadin, A. De Luca and A. Albu-Schäffer,
+    * "Robot Collisions: A Survey on Detection, Isolation, and Identification,"
     * in IEEE Transactions on Robotics, vol. 33(6), pp. 1292-1312, 2017.
-    * ==========================================
+    * ==========================================================================
     */
     int solver_result = this->dynamic_parameter_solver_->JntToMass(joint_position_measured, jnt_mass_matrix_);
     if (solver_result != 0) return solver_result;
     solver_result = this->dynamic_parameter_solver_->JntToCoriolis(joint_position_measured, joint_velocity_measured, coriolis_torque_);
+    if (solver_result != 0) return solver_result;
+    solver_result = this->dynamic_parameter_solver_->JntToGravity(joint_position_measured, gravity_torque_);
     if (solver_result != 0) return solver_result;
 
     jnt_mass_matrix_dot_.data = (jnt_mass_matrix_.data - previous_jnt_mass_matrix_.data) / DT_SEC_;
     previous_jnt_mass_matrix_.data = jnt_mass_matrix_.data;
 
     KDL::JntArray total_torque(NUM_OF_JOINTS_);
-    total_torque.data = -joint_torque_measured.data - coriolis_torque_.data + jnt_mass_matrix_dot_.data * joint_velocity_measured.data;
-
-    if (COMPENSATE_GRAVITY_)
-    {
-        solver_result = this->dynamic_parameter_solver_->JntToGravity(joint_position_measured, gravity_torque_);
-        if (solver_result != 0) return solver_result;
-        total_torque.data -= gravity_torque_.data;
-    }
+    total_torque.data = -joint_torque_measured.data - gravity_torque_.data - coriolis_torque_.data + jnt_mass_matrix_dot_.data * joint_velocity_measured.data;
 
     estimated_momentum_integral_.data += (total_torque.data + filtered_estimated_ext_torque_.data) * DT_SEC_;
 
     KDL::JntArray model_based_momentum(NUM_OF_JOINTS_);
     model_based_momentum.data = jnt_mass_matrix_.data.lazyProduct(joint_velocity_measured.data);
-    estimated_ext_torque_.data = wrench_estimation_gain_.asDiagonal() * (model_based_momentum.data - 
-                                                                         estimated_momentum_integral_.data - 
+    estimated_ext_torque_.data = wrench_estimation_gain_.asDiagonal() * (model_based_momentum.data -
+                                                                         estimated_momentum_integral_.data -
                                                                          initial_jnt_momentum_.data);
 
     // First order low-pass filter
@@ -2249,8 +2244,8 @@ int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_pos
     total_torque.data = -joint_torque_measured.data + robot_state_.total_torque.data - robot_state_.control_torque.data;
     estimated_momentum_integral_2_.data += (total_torque.data + filtered_estimated_ext_torque_2_.data) * DT_SEC_;
 
-    estimated_ext_torque_2_.data = wrench_estimation_gain_2_.asDiagonal() * (model_based_momentum.data - 
-                                                                             estimated_momentum_integral_2_.data - 
+    estimated_ext_torque_2_.data = wrench_estimation_gain_2_.asDiagonal() * (model_based_momentum.data -
+                                                                             estimated_momentum_integral_2_.data -
                                                                              initial_jnt_momentum_.data);
 
     // First order low-pass filter
