@@ -44,7 +44,8 @@ enum desired_pose
     HOME         = 1,
     RETRACT      = 2,
     PACKAGING    = 3,
-    HOME_FORWARD = 4
+    HOME_FORWARD = 4,
+    HOME_BACK    = 5
 };
 
 enum path_types
@@ -387,21 +388,24 @@ void calibrate_torque_offsets()
 int go_to(kinova_mediator &robot_driver, const int desired_pose_)
 {
     std::vector<double> configuration_array(7, 0.0);
-    // Angle value are in units of degree
-    switch (desired_pose_)
+    switch (desired_pose_) // Angle value are in units of degree
     {
         case desired_pose::CANDLE:
             configuration_array = std::vector<double> {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+            break;
+        case desired_pose::HOME_BACK:
+            configuration_array = std::vector<double> {356.129, 304.126, 181.482, 250.087, 2.852, 328.367, 87.817};
             break;
         case desired_pose::PACKAGING:
             configuration_array = std::vector<double> {0.0, 330.0, 180.0, 214.0, 0.0, 115.0, 270.0};
             break;
         case desired_pose::RETRACT:
             configuration_array = std::vector<double> {0.0, 340.0, 180.0, 214.0, 0.0, 310.0, 90.0};
-            break;       
-        default:
+            break;
+        case desired_pose::HOME:
             configuration_array = std::vector<double> {0.0, 15.0, 180.0, 230.0, 0.0, 55.0, 90.0};
             break;
+        default: return -1;
     }
 
     if (environment != kinova_environment::SIMULATION)
@@ -513,7 +517,6 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
         delete transport;
         // printf("High-Level Control Completed\n");
     }
-
     else
     {
         robot_driver.initialize(robot_model_id, environment, id,  1.0 / static_cast<double>(RATE_HZ));
@@ -587,14 +590,23 @@ int define_task(dynamics_controller *dyn_controller)
                                     0.0, -1.0, 0.0};
             break;
 
-        default:
-            // HOME pose
+        case desired_pose::HOME_BACK:
+            tube_start_position = std::vector<double>{0.0125206, -0.00995057, 0.713622};
+            desired_ee_pose     = { 0.0125206, -0.00995057, 0.713622, // Linear: Vector
+                                    -0.0266768,   0.0747393,   -0.996846, // Angular: Rotation matrix
+                                     0.999461,   0.0210588,  -0.0251679,
+                                     0.0191113,   -0.996981,  -0.0752609};
+            break;
+
+        case desired_pose::HOME:
             tube_start_position = std::vector<double>{ 0.395153, 0.00136493, 0.433647};
             desired_ee_pose     = { 0.39514, 0.00136493, 0.433647, // Linear: Vector
                                     0.0, 0.0, -1.0, // Angular: Rotation matrix
                                     1.0, 0.0, 0.0,
                                     0.0, -1.0, 0.0};
             break;
+
+        default: return -1;
     }
 
     switch (desired_task_model)
@@ -1036,13 +1048,7 @@ int main(int argc, char **argv)
     control_null_space_moveConstrained = false;
 
     kinova_mediator robot_driver;
-    int return_flag = 0;
-    if      (desired_pose_id == desired_pose::HOME)      return_flag = go_to(robot_driver, desired_pose::HOME);
-    else if (desired_pose_id == desired_pose::CANDLE)    return_flag = go_to(robot_driver, desired_pose::CANDLE);
-    else if (desired_pose_id == desired_pose::RETRACT)   return_flag = go_to(robot_driver, desired_pose::RETRACT);
-    else if (desired_pose_id == desired_pose::PACKAGING) return_flag = go_to(robot_driver, desired_pose::PACKAGING);
-    else return 0;
-
+    int return_flag = go_to(robot_driver, desired_pose_id);
     if (return_flag != 0) return 0;
 
     // Calibration function should be used only one-time. The robot must be in the zero-configuration
