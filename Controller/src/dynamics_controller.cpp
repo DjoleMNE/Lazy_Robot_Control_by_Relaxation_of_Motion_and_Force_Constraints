@@ -2544,9 +2544,9 @@ void dynamics_controller::deinitialize()
         printf("Error Status: %d\n\n", error_logger_.error_status_);
     }
 
-    // printf("Loop Statistics: \n");
-    // printf("   - Number of iterations: %d\n", loop_iteration_count_);
-    // printf("   - Total time: %f sec\n", total_time_sec_);
+    printf("Loop Statistics: \n");
+    printf("   - Number of iterations: %d\n", loop_iteration_count_);
+    printf("   - Total time: %f sec\n", total_time_sec_);
     // printf("   - Delay in control loop occurred %d times\n\n", control_loop_delay_count_);
 }
 
