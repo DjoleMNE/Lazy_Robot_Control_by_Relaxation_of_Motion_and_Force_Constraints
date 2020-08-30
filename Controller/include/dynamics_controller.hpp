@@ -265,13 +265,13 @@ class dynamics_controller
     double horizon_amplitude_, null_space_abag_command_, null_space_angle_, desired_null_space_angle_, updated_mass_estimation_;
     Eigen::VectorXd abag_command_, abag_stop_motion_command_, max_command_, compensation_parameters_, null_space_parameters_, force_task_parameters_, min_sat_limits_, filtered_bias_;
     KDL::Wrenches cart_force_command_, zero_wrenches_full_model_;
-    KDL::Wrench ext_wrench_, ext_wrench_2_, ext_wrench_base_, compensated_weight_;
-    KDL::JntArray zero_joint_array_, gravity_torque_, coriolis_torque_, estimated_ext_torque_, estimated_ext_torque_2_, filtered_estimated_ext_torque_, 
-                  filtered_estimated_ext_torque_2_, estimated_momentum_integral_, estimated_momentum_integral_2_, initial_jnt_momentum_;
+    KDL::Wrench ext_wrench_, ext_wrench_base_, compensated_weight_;
+    KDL::JntArray zero_joint_array_, gravity_torque_, coriolis_torque_, estimated_ext_torque_, filtered_estimated_ext_torque_, 
+                  estimated_momentum_integral_, initial_jnt_momentum_, model_based_jnt_momentum_, total_torque_estimation_;
     KDL::JntSpaceInertiaMatrix jnt_mass_matrix_, previous_jnt_mass_matrix_, jnt_mass_matrix_dot_;
     KDL::Jacobian jacobian_end_eff_;
     Eigen::MatrixXd jacobian_end_eff_inv_;
-    Eigen::VectorXd wrench_estimation_gain_, wrench_estimation_gain_2_;
+    Eigen::VectorXd wrench_estimation_gain_;
     KDL::Frame tool_tip_frame_full_model_;
 
     KDL::FK_Vereshchagin fk_vereshchagin_;

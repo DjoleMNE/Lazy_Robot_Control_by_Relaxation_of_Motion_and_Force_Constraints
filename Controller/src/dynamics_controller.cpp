@@ -79,23 +79,19 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     filtered_bias_(Eigen::VectorXd::Zero(NUM_OF_CONSTRAINTS_)),
     cart_force_command_(NUM_OF_SEGMENTS_, KDL::Wrench::Zero()), 
     zero_wrenches_full_model_(robot_chain_full_.getNrOfSegments(), KDL::Wrench::Zero()),
-    ext_wrench_(KDL::Wrench::Zero()), ext_wrench_2_(KDL::Wrench::Zero()), ext_wrench_base_(KDL::Wrench::Zero()),
+    ext_wrench_(KDL::Wrench::Zero()), ext_wrench_base_(KDL::Wrench::Zero()),
     compensated_weight_(KDL::Wrench::Zero()), zero_joint_array_(NUM_OF_JOINTS_), 
     gravity_torque_(NUM_OF_JOINTS_), coriolis_torque_(NUM_OF_JOINTS_),
-    estimated_ext_torque_(NUM_OF_JOINTS_), estimated_ext_torque_2_(NUM_OF_JOINTS_),
-    filtered_estimated_ext_torque_(NUM_OF_JOINTS_), filtered_estimated_ext_torque_2_(NUM_OF_JOINTS_),
-    estimated_momentum_integral_(NUM_OF_JOINTS_), estimated_momentum_integral_2_(NUM_OF_JOINTS_),
-    initial_jnt_momentum_(NUM_OF_JOINTS_),
+    estimated_ext_torque_(NUM_OF_JOINTS_), filtered_estimated_ext_torque_(NUM_OF_JOINTS_),
+    estimated_momentum_integral_(NUM_OF_JOINTS_), initial_jnt_momentum_(NUM_OF_JOINTS_),
+    model_based_jnt_momentum_(NUM_OF_JOINTS_), total_torque_estimation_(NUM_OF_JOINTS_),
     jnt_mass_matrix_(NUM_OF_JOINTS_), previous_jnt_mass_matrix_(NUM_OF_JOINTS_),
     jnt_mass_matrix_dot_(NUM_OF_JOINTS_), jacobian_end_eff_(NUM_OF_JOINTS_),
     jacobian_end_eff_inv_(Eigen::MatrixXd::Zero(NUM_OF_JOINTS_, NUM_OF_CONSTRAINTS_)),
-    wrench_estimation_gain_(NUM_OF_JOINTS_), wrench_estimation_gain_2_(NUM_OF_JOINTS_),
-    tool_tip_frame_full_model_(KDL::Frame::Identity()),
-    fk_vereshchagin_(robot_chain_), safety_monitor_(robot_driver_, true),
-    jacobian_solver_(robot_chain_full_),
+    wrench_estimation_gain_(NUM_OF_JOINTS_), tool_tip_frame_full_model_(KDL::Frame::Identity()),
+    fk_vereshchagin_(robot_chain_), safety_monitor_(robot_driver_, true), jacobian_solver_(robot_chain_full_),
     fsm_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
-    abag_(NUM_OF_CONSTRAINTS_), abag_null_space_(1), abag_stop_motion_(NUM_OF_JOINTS_),
-    predictor_(robot_chain_),
+    abag_(NUM_OF_CONSTRAINTS_), abag_null_space_(1), abag_stop_motion_(NUM_OF_JOINTS_), predictor_(robot_chain_),
     robot_state_(NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_),
     robot_state_base_(robot_state_), desired_state_(robot_state_),
     desired_state_base_(robot_state_), predicted_state_(robot_state_), predicted_states_(2, robot_state_),
@@ -2019,8 +2015,6 @@ void dynamics_controller::set_parameters(const double horizon_amplitude,
     this->null_space_parameters_   = null_space_parameters;
     this->compensation_parameters_ = compensation_parameters;
     this->wrench_estimation_gain_  = wrench_estimation_gain;
-
-    wrench_estimation_gain_2_ = (Eigen::VectorXd(7) << 25.0, 25.0, 25.0, 25.0, 25.0, 25.0, 25.0).finished();
 }
 
 int dynamics_controller::initialize(const int desired_control_mode, 
@@ -2175,9 +2169,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
     error_logger_.error_status_ = 0;
 
     KDL::SetToZero(estimated_momentum_integral_);
-    KDL::SetToZero(estimated_momentum_integral_2_);
     KDL::SetToZero(estimated_ext_torque_);
-    KDL::SetToZero(estimated_ext_torque_2_);
 
     // Make sure that the robot is locked (freezed)
     engage_lock();
@@ -2224,14 +2216,11 @@ int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_pos
     jnt_mass_matrix_dot_.data = (jnt_mass_matrix_.data - previous_jnt_mass_matrix_.data) / DT_SEC_;
     previous_jnt_mass_matrix_.data = jnt_mass_matrix_.data;
 
-    KDL::JntArray total_torque(NUM_OF_JOINTS_);
-    total_torque.data = -joint_torque_measured.data - gravity_torque_.data - coriolis_torque_.data + jnt_mass_matrix_dot_.data * joint_velocity_measured.data;
+    total_torque_estimation_.data = -joint_torque_measured.data - gravity_torque_.data - coriolis_torque_.data + jnt_mass_matrix_dot_.data * joint_velocity_measured.data;
+    estimated_momentum_integral_.data += (total_torque_estimation_.data + filtered_estimated_ext_torque_.data) * DT_SEC_;
 
-    estimated_momentum_integral_.data += (total_torque.data + filtered_estimated_ext_torque_.data) * DT_SEC_;
-
-    KDL::JntArray model_based_momentum(NUM_OF_JOINTS_);
-    model_based_momentum.data = jnt_mass_matrix_.data.lazyProduct(joint_velocity_measured.data);
-    estimated_ext_torque_.data = wrench_estimation_gain_.asDiagonal() * (model_based_momentum.data -
+    model_based_jnt_momentum_.data = jnt_mass_matrix_.data.lazyProduct(joint_velocity_measured.data);
+    estimated_ext_torque_.data = wrench_estimation_gain_.asDiagonal() * (model_based_jnt_momentum_.data -
                                                                          estimated_momentum_integral_.data -
                                                                          initial_jnt_momentum_.data);
 
@@ -2239,24 +2228,6 @@ int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_pos
     double alpha = 0.5;
     for (int i = 0; i < NUM_OF_JOINTS_; i++)
         filtered_estimated_ext_torque_(i) = alpha * filtered_estimated_ext_torque_(i) + (1.0 - alpha) * estimated_ext_torque_(i);
-
-    /**
-    * ====================================================
-    * Momentum-observer: Vereshchain-based implementation
-    * ====================================================
-    */
-
-    total_torque.data = -joint_torque_measured.data + robot_state_.total_torque.data - robot_state_.control_torque.data;
-    estimated_momentum_integral_2_.data += (total_torque.data + filtered_estimated_ext_torque_2_.data) * DT_SEC_;
-
-    estimated_ext_torque_2_.data = wrench_estimation_gain_2_.asDiagonal() * (model_based_momentum.data -
-                                                                             estimated_momentum_integral_2_.data -
-                                                                             initial_jnt_momentum_.data);
-
-    // First order low-pass filter
-    alpha = 0.75;
-    for (int i = 0; i < NUM_OF_JOINTS_; i++)
-        filtered_estimated_ext_torque_2_(i) = alpha * filtered_estimated_ext_torque_2_(i) + (1.0 - alpha) * estimated_ext_torque_2_(i);
 
     /**
     * ========================================================================================
@@ -2281,10 +2252,6 @@ int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_pos
     // Compute End-Effector Cartesian forces from joint external torques
     Eigen::VectorXd wrench = jacobian_end_eff_inv_ * filtered_estimated_ext_torque_.data;
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++) ext_force_torque(i) = wrench(i);
-
-    // Compute End-Effector Cartesian forces from joint external torques: Vereshchagin-based momentum observer
-    wrench = jacobian_end_eff_inv_ * filtered_estimated_ext_torque_2_.data;
-    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++) ext_wrench_2_(i) = wrench(i);
 
     return 0;
 }
