@@ -328,7 +328,8 @@ void Solver_Vereshchagin::downwards_sweep(const Jacobian& alfa, const JntArray &
             s.PZ = s.P * s.Z;
 
             // Djordje: Additionally adding joint (rotor + gear) inertia: equation a) (see Vereshchagin89)
-            s.D = d(j) + dot(s.Z, s.PZ);
+            if (chain.getSegment(i - 1).getJoint().getType() != Joint::None) s.D = d(j) + dot(s.Z, s.PZ);
+            else s.D = dot(s.Z, s.PZ);
 
             s.PC = s.P * s.C;
 
@@ -475,10 +476,10 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
         constraintTorque(j) = constraint_torque;
 
         // Summing contributions for true control torque:
+        // Here, virtual feed-forward torques should also be added. However, those are not yet implemented in the interface
         controlTorque(j) = constraintTorque(j) + ext_torque(j);
-        // controlTorque(j) = ext_torque(j);
 
-        // Summing contributions that are felt at the joint: control + nature + external
+        // Summing all the contributions that are felt at the joint: control + nature + external
         totalTorque(j) = s.u + parent_forceProjection + controlTorque(j);
 
         // Torque saturation
