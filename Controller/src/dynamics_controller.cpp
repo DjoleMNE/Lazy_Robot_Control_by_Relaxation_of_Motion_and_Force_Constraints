@@ -1486,18 +1486,30 @@ void dynamics_controller::compute_moveTo_task_error()
 
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
-    // Check for tube on velocity
+    // Linear Tube Velocity processing
     if ((desired_state_.frame_velocity[END_EFF_].vel(0) != 0.0) && \
         (std::fabs(abag_error_vector_(0)) <= moveTo_task_.tube_tolerances[6]))
     {
         abag_error_vector_(0) = 0.0;
     }
 
-    // Other parts of the ABAG error are position errors
-    for (int i = 1; i < NUM_OF_CONSTRAINTS_; i++)
+    // Position error processing
+    for (int i = 1; i < 3; i++)
     {
         if ( std::fabs(predicted_error_twist_(i)) <= moveTo_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
         else abag_error_vector_(i) = predicted_error_twist_(i);        
+    }
+
+    // Orientation error processing
+    if (std::fabs(predicted_error_twist_.tail<3>().norm()) <= moveTo_task_.tube_tolerances[3]) abag_error_vector_.tail<3>().setZero();
+    else
+    {
+        for (int i = 3; i < NUM_OF_CONSTRAINTS_; i++)
+        {
+            // Filter out the noise amplified by the nonlinearity of rotation matrices and logarithmic map
+            if ( std::fabs(predicted_error_twist_(i)) <= 0.009 ) abag_error_vector_(i) = 0.0;
+            else abag_error_vector_(i) = predicted_error_twist_(i);
+        }
     }
 
     // Additional Cartesian force to keep residual part of the robot in a good configuration
@@ -1596,6 +1608,11 @@ void dynamics_controller::compute_full_pose_task_error()
 
     fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
     abag_error_vector_ = predicted_error_twist_;
+    for (int i = 3; i < NUM_OF_CONSTRAINTS_; i++)
+    {
+        // Filter out the noise amplified by the nonlinearity of rotation matrices and logarithmic map
+        if (std::fabs(abag_error_vector_(i)) <= 0.009) abag_error_vector_(i) = 0.0;
+    }
 
     // Additional Cartesian force to keep residual part of the robot in a good configuration
     if (compute_null_space_command_) compute_moveToGuarded_null_space_task_error();
