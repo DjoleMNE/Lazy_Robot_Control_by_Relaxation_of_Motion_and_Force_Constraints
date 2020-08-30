@@ -899,6 +899,10 @@ int run_main_control(kinova_mediator &robot_driver)
 
     KDL::JntArray torque_command(7), joint_pos(7), joint_vel(7), joint_torque(7);
     KDL::Wrenches wrenches_full_model(robot_chain_full.getNrOfSegments(), KDL::Wrench::Zero());
+    KDL::Wrenches wrenches_full_model_sim(robot_chain_full.getNrOfSegments(), KDL::Wrench::Zero());
+
+    wrenches_full_model_sim[robot_chain_full.getNrOfSegments() - 1] = KDL::Wrench(KDL::Vector(0.0, -2.0, 0.0),
+                                                                                  KDL::Vector(0.0, 0.0, 0.0));
 
     double total_time_sec = 0.0;
     int loop_iteration_count = 0;
@@ -976,6 +980,8 @@ int run_main_control(kinova_mediator &robot_driver)
         }
         else // Nominal task execution mode
         {
+            // Set external wrenches for the simulation. FD solver expects wrenches to be expressed in respective link's frame... not the base frame
+            // if (loop_iteration_count == 3000) robot_driver.set_ext_wrenches_sim(wrenches_full_model_sim);
             if (!trigger_stopping_sequence)
             {
                 // Apply joint commands using safe control interface
