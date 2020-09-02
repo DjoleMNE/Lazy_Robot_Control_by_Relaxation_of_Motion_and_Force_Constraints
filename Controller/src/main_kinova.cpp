@@ -933,7 +933,7 @@ int run_main_control(kinova_mediator &robot_driver)
         else robot_driver.get_robot_state(joint_pos, joint_vel, joint_torque, wrenches_full_model[robot_chain_full.getNrOfSegments()- 1]);
 
         // Make one control iteration (step) -> Update control commands
-        return_flag = controller.step(joint_pos, joint_vel, wrenches_full_model[robot_chain_full.getNrOfSegments()- 1], torque_command, total_time_sec, loop_iteration_count, stop_loop_iteration_count, stopping_sequence_on);
+        return_flag = controller.step(joint_pos, joint_vel, joint_torque, wrenches_full_model[robot_chain_full.getNrOfSegments()- 1], torque_command, total_time_sec, loop_iteration_count, stop_loop_iteration_count, stopping_sequence_on);
         if (return_flag == -1) trigger_stopping_sequence = true;
 
         if (stopping_sequence_on) // Robot will be controlled to stop its motion and eventually lock

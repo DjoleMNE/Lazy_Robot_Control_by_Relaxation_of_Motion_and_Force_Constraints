@@ -2357,10 +2357,10 @@ int dynamics_controller::update_commands()
 
 /**
  * Perform single step of the control loop, given current robot joint state
- * Required for either main internal control loop and the RTT's updateHook method
 */
 int dynamics_controller::step(const KDL::JntArray &q_input,
                               const KDL::JntArray &qd_input,
+                              const KDL::JntArray &tau_measured,
                               const KDL::Wrench &ext_force_torque,
                               KDL::JntArray &tau_output,
                               const double time_passed_sec,
@@ -2370,6 +2370,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
 {
     robot_state_.q  = q_input;
     robot_state_.qd = qd_input;
+    robot_state_.measured_torque = tau_measured;
     ext_wrench_     = ext_force_torque;
     total_time_sec_ = time_passed_sec;
     loop_iteration_count_ = main_loop_iteration;
@@ -2463,7 +2464,7 @@ int dynamics_controller::control()
         ext_force_torque = ext_wrench_;
 
         // Make one control iteration (step) -> Update control commands
-        return_flag = step(state_q, state_qd, ext_force_torque, ctrl_torque, total_time_sec_, loop_iteration_count_, stop_loop_iteration_count_, stopping_sequence_on_);
+        return_flag = step(state_q, state_qd, robot_state_.measured_torque, ext_force_torque, ctrl_torque, total_time_sec_, loop_iteration_count_, stop_loop_iteration_count_, stopping_sequence_on_);
         if (return_flag == -1) trigger_stopping_sequence_ = true;
 
         if (stopping_sequence_on_) // Robot will be controlled to stop its motion and eventually lock

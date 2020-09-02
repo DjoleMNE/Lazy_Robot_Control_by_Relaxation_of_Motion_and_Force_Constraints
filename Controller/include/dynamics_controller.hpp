@@ -91,6 +91,7 @@ class dynamics_controller
     */
     int step(const KDL::JntArray &q_input,
              const KDL::JntArray &qd_input,
+             const KDL::JntArray &tau_measured,
              const KDL::Wrench &ext_force_torque, 
              KDL::JntArray &tau_output,
              const double time_passed_sec,
