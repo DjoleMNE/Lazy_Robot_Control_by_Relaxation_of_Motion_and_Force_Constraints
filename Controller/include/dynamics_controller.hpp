@@ -28,6 +28,7 @@ SOFTWARE.
 #include <solver_vereshchagin.hpp>
 #include <fk_vereshchagin.hpp>
 #include <solver_recursive_newton_euler.hpp>
+#include "dynamic_parameter_solver.hpp"
 #include <kdl/chaindynparam.hpp>
 #include <kdl/chainjnttojacsolver.hpp>
 #include <kdl/utilities/svd_eigen_HH.hpp>
@@ -291,7 +292,7 @@ class dynamics_controller
 
     std::shared_ptr<KDL::Solver_Vereshchagin> hd_solver_;
     std::shared_ptr<KDL::Solver_RNE> id_solver_;
-    std::shared_ptr<KDL::ChainDynParam> dynamic_parameter_solver_;
+    std::shared_ptr<KDL::Solver_Dynamic_Parameter> dynamic_parameter_solver_;
     std::shared_ptr<KDL::ChainFkSolverPos_recursive> fk_pos_solver_;
 
     int update_commands(); //Performs single update of control commands and dynamics computations

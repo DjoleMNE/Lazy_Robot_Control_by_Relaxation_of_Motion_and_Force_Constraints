@@ -46,30 +46,29 @@ namespace KDL {
      */
     class Solver_Dynamic_Parameter : public SolverI
     {
-    public:
-        Solver_Dynamic_Parameter(const KDL::Chain& chain, const KDL::Vector _grav,
-                                 const std::vector<double> _joint_inertia);
+        public:
+        Solver_Dynamic_Parameter(const KDL::Chain& chain, const KDL::Vector _grav, const std::vector<double> _joint_inertia);
         virtual ~Solver_Dynamic_Parameter();
 
         virtual int JntToCoriolis(const KDL::JntArray &q, const KDL::JntArray &q_dot, KDL::JntArray &coriolis);
-	virtual int JntToMass(const KDL::JntArray &q, KDL::JntSpaceInertiaMatrix& H);
-	virtual int JntToGravity(const KDL::JntArray &q, KDL::JntArray &gravity);
+        virtual int JntToMass(const KDL::JntArray &q, KDL::JntSpaceInertiaMatrix& H);
+        virtual int JntToGravity(const KDL::JntArray &q, KDL::JntArray &gravity);
 
-    /// @copydoc KDL::SolverI::updateInternalDataStructures()
-    virtual void updateInternalDataStructures();
+        /// @copydoc KDL::SolverI::updateInternalDataStructures()
+        virtual void updateInternalDataStructures();
 
-    private:
+        private:
         const KDL::Chain& chain;
-	int nr;  // unused, remove in a future version
-	unsigned int nj;
+        int nr;  // unused, remove in a future version
+        unsigned int nj;
         unsigned int ns;	
-	KDL::Vector grav;
-	KDL::Vector vectornull;
-	KDL::JntArray jntarraynull;
-	KDL::ChainIdSolver_RNE chainidsolver_coriolis;
-	KDL::ChainIdSolver_RNE chainidsolver_gravity;
-    const std::vector<double> joint_inertia_;
-	std::vector<KDL::Wrench> wrenchnull;
+        KDL::Vector grav;
+        KDL::Vector vectornull;
+        KDL::JntArray jntarraynull;
+        KDL::ChainIdSolver_RNE chainidsolver_coriolis;
+        KDL::ChainIdSolver_RNE chainidsolver_gravity;
+        const std::vector<double> joint_inertia_;
+        std::vector<KDL::Wrench> wrenchnull;
         std::vector<KDL::Frame> X;
         std::vector<KDL::Twist> S;
         //std::vector<RigidBodyInertia> I;

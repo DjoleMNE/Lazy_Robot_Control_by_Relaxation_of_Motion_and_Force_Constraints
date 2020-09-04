@@ -125,17 +125,15 @@ namespace KDL {
 	return (error = E_NOERROR);
     }
 
-    //calculate coriolis matrix C
+    //calculate coriolis joint torques
     int Solver_Dynamic_Parameter::JntToCoriolis(const KDL::JntArray &q, const KDL::JntArray &q_dot, KDL::JntArray &coriolis)
     {
         //make a null matrix with the size of q_dotdot and a null wrench
         SetToZero(jntarraynull);
-
-        //the calculation of coriolis matrix C
         return chainidsolver_coriolis.CartToJnt(q, q_dot, jntarraynull, wrenchnull, coriolis);
     }
 
-    //calculate gravity matrix G
+    //calculate gravity joint torques
     int Solver_Dynamic_Parameter::JntToGravity(const KDL::JntArray &q, KDL::JntArray &gravity)
     {
         //make a null matrix with the size of q_dotdot and a null wrench

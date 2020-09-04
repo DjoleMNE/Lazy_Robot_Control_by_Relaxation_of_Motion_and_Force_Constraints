@@ -91,6 +91,7 @@ if("${ROBOT}" STREQUAL "lwr")
     src/motion_profile.cpp
     src/solver_vereshchagin.cpp
     src/solver_recursive_newton_euler.cpp
+    src/dynamic_parameter_solver.cpp
     src/fd_solver_rne.cpp
     src/ldl_solver_eigen.cpp
     src/fk_vereshchagin.cpp
@@ -115,6 +116,7 @@ elseif("${ROBOT}" STREQUAL "kinova")
     src/motion_profile.cpp
     src/solver_vereshchagin.cpp
     src/solver_recursive_newton_euler.cpp
+    src/dynamic_parameter_solver.cpp
     src/fd_solver_rne.cpp
     src/ldl_solver_eigen.cpp
     src/fk_vereshchagin.cpp
@@ -137,6 +139,7 @@ else()
     src/motion_profile.cpp
     src/solver_vereshchagin.cpp
     src/solver_recursive_newton_euler.cpp
+    src/dynamic_parameter_solver.cpp
     src/fd_solver_rne.cpp
     src/ldl_solver_eigen.cpp
     src/fk_vereshchagin.cpp
