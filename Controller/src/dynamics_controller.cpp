@@ -2216,7 +2216,7 @@ int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_pos
     jnt_mass_matrix_dot_.data = (jnt_mass_matrix_.data - previous_jnt_mass_matrix_.data) / DT_SEC_;
     previous_jnt_mass_matrix_.data = jnt_mass_matrix_.data;
 
-    total_torque_estimation_.data = -joint_torque_measured.data - gravity_torque_.data - coriolis_torque_.data + jnt_mass_matrix_dot_.data * joint_velocity_measured.data;
+    total_torque_estimation_.data = robot_state_.control_torque.data - gravity_torque_.data - coriolis_torque_.data + jnt_mass_matrix_dot_.data * joint_velocity_measured.data;
     estimated_momentum_integral_.data += (total_torque_estimation_.data + filtered_estimated_ext_torque_.data) * DT_SEC_;
 
     model_based_jnt_momentum_.data = jnt_mass_matrix_.data.lazyProduct(joint_velocity_measured.data);
