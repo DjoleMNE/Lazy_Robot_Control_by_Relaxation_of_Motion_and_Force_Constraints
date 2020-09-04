@@ -59,7 +59,6 @@ namespace KDL {
 
         private:
         const KDL::Chain& chain;
-        int nr;  // unused, remove in a future version
         unsigned int nj;
         unsigned int ns;	
         KDL::Vector grav;
@@ -71,7 +70,6 @@ namespace KDL {
         std::vector<KDL::Wrench> wrenchnull;
         std::vector<KDL::Frame> X;
         std::vector<KDL::Twist> S;
-        //std::vector<RigidBodyInertia> I;
         std::vector<KDL::ArticulatedBodyInertia, Eigen::aligned_allocator<KDL::ArticulatedBodyInertia> > Ic;
         KDL::Wrench F;
         KDL::Twist ag;
