@@ -567,11 +567,11 @@ int define_task(dynamics_controller *dyn_controller)
     switch (desired_pose_id)
     {
         case desired_pose::CANDLE:
-            tube_start_position = std::vector<double>{0.0, -0.0248591, 0.92586};
+            tube_start_position = std::vector<double>{0.0, -0.0248591, 1.12586};
             desired_ee_pose     = { 0.0, -0.0248591, 1.12586, // Linear: Vector
                                     1.0, 0.0, 0.0, // Angular: Rotation matrix
-                                    0.0, 1.0, 0.0,
-                                    0.0, 0.0, 1.0};
+                                    0.0, -1.0, 0.0,
+                                    0.0, 0.0, -1.0};
             break;
 
         case desired_pose::RETRACT:
@@ -703,7 +703,6 @@ int define_task(dynamics_controller *dyn_controller)
         default:
             assert(("Unsupported task model", false));
             return -1;
-            break;
     }
 
     return 0;
