@@ -84,7 +84,9 @@ namespace kinova_constants
     extern const int NUMBER_OF_FRAMES;
 
     //Arm's root acceleration
-    extern const std::vector<double> root_acceleration;
+    extern const std::vector<double> root_acceleration_1;
+    extern const std::vector<double> root_acceleration_2;
+    extern const std::vector<double> root_acceleration_sim;
 
     extern const std::vector<double> joint_position_limits_max;
     extern const std::vector<double> joint_position_limits_min;

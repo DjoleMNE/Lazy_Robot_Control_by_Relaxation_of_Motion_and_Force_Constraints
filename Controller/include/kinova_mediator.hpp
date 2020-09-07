@@ -155,11 +155,6 @@ class kinova_mediator: public robot_mediator
 		KDL::Tree kinova_tree_;
     	urdf::Model kinova_urdf_model_;
 
-		//Arm's root acceleration
-		const KDL::Vector linear_root_acc_;
-		const KDL::Vector angular_root_acc_;
-		const KDL::Twist root_acc_;
-
         KDL::Wrenches ext_wrenches_sim_;
 		state_specification robot_state_;
     	std::vector<state_specification> predicted_states_; 

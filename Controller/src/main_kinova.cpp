@@ -734,7 +734,7 @@ void run_test(kinova_mediator &robot_driver)
 
     const KDL::Wrenches zero_wrenches_full_model(robot_chain_full.getNrOfSegments(), KDL::Wrench::Zero());
 
-    std::shared_ptr<KDL::Solver_RNE> id_solver = std::make_shared<KDL::Solver_RNE>(robot_chain_full, KDL::Vector(0.0, 0.0, -9.81289), robot_driver.get_joint_inertia(), robot_driver.get_joint_torque_limits(), true);
+    std::shared_ptr<KDL::Solver_RNE> id_solver = std::make_shared<KDL::Solver_RNE>(robot_chain_full, -1 * robot_driver.get_root_acceleration().vel, robot_driver.get_joint_inertia(), robot_driver.get_joint_torque_limits(), true);
 
     // Real-time loop
     while (total_time_sec < task_time_limit_sec)

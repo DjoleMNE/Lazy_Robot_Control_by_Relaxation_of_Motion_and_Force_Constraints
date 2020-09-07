@@ -37,15 +37,7 @@ kinova_mediator::kinova_mediator():
     kinova_model_(kinova_model::URDF),
     kinova_environment_(kinova_environment::SIMULATION),
     control_mode_(control_mode::STOP_MOTION),
-    add_offsets_(false), connection_established_(false),
-    DT_SEC_(0.0),
-    linear_root_acc_(kinova_constants::root_acceleration[0],
-                     kinova_constants::root_acceleration[1],
-                     kinova_constants::root_acceleration[2]),
-    angular_root_acc_(kinova_constants::root_acceleration[3],
-                      kinova_constants::root_acceleration[4],
-                      kinova_constants::root_acceleration[5]),
-    root_acc_(linear_root_acc_, angular_root_acc_),
+    add_offsets_(false), connection_established_(false), DT_SEC_(0.0),
     ext_wrenches_sim_(SEGMENT_COUNT_FULL, KDL::Wrench::Zero()),
     robot_state_(ACTUATOR_COUNT, SEGMENT_COUNT_FULL, SEGMENT_COUNT_FULL + 1, NUM_OF_CONSTRAINTS),
     predicted_states_(1, robot_state_),
@@ -520,7 +512,18 @@ std::vector<double> kinova_mediator::get_joint_offsets()
 
 KDL::Twist kinova_mediator::get_root_acceleration()
 {
-    return root_acc_;
+    if (kinova_id == robot_id::KINOVA_GEN3_1) return KDL::Twist(KDL::Vector(kinova_constants::root_acceleration_1[0],
+                                                                            kinova_constants::root_acceleration_1[1],
+                                                                            kinova_constants::root_acceleration_1[2]),
+                                                                KDL::Vector(kinova_constants::root_acceleration_1[3],
+                                                                            kinova_constants::root_acceleration_1[4],
+                                                                            kinova_constants::root_acceleration_1[5]));
+    else return KDL::Twist(KDL::Vector(kinova_constants::root_acceleration_2[0],
+                                       kinova_constants::root_acceleration_2[1],
+                                       kinova_constants::root_acceleration_2[2]),
+                           KDL::Vector(kinova_constants::root_acceleration_2[3],
+                                       kinova_constants::root_acceleration_2[4],
+                                       kinova_constants::root_acceleration_2[5]));
 }
 
 KDL::Chain kinova_mediator::get_robot_model() 
@@ -766,9 +769,9 @@ void kinova_mediator::initialize(const int robot_model,
     int simulation_parser_result = get_sim_model_from_urdf();
     this->predictor_ = std::make_shared<model_prediction>(kinova_sim_chain_);
     this->fd_solver_rne_ = std::make_shared<KDL::FdSolver_RNE>(kinova_sim_chain_, 
-                                                               KDL::Vector(kinova_constants::root_acceleration[0],
-                                                                           kinova_constants::root_acceleration[1],
-                                                                          -kinova_constants::root_acceleration[2]), 
+                                                               KDL::Vector(kinova_constants::root_acceleration_sim[0],
+                                                                           kinova_constants::root_acceleration_sim[1],
+                                                                          -kinova_constants::root_acceleration_sim[2]), 
                                                                kinova_constants::joint_sim_inertia);
 
     if (parser_result != 0 || !connection_established_ || simulation_parser_result != 0)  printf("Cannot create Kinova model! \n");

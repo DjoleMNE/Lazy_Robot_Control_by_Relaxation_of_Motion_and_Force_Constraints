@@ -109,9 +109,9 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     this->hd_solver_ = std::make_shared<KDL::Solver_Vereshchagin>(robot_chain_, JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, !COMPENSATE_GRAVITY_,
                                                                   COMPENSATE_GRAVITY_? KDL::Twist::Zero() : ROOT_ACC_, NUM_OF_CONSTRAINTS_);
 
-    this->id_solver_ = std::make_shared<KDL::Solver_RNE>(robot_chain_full_, KDL::Vector(0.0, 0.0, -9.81289), JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, false);
+    this->id_solver_ = std::make_shared<KDL::Solver_RNE>(robot_chain_full_, -1 * ROOT_ACC_.vel, JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, false);
 
-    this->dynamic_parameter_solver_ = std::make_shared<KDL::Solver_Dynamic_Parameter>(robot_chain_full_, KDL::Vector(0.0, 0.0, -9.81289), JOINT_INERTIA_);
+    this->dynamic_parameter_solver_ = std::make_shared<KDL::Solver_Dynamic_Parameter>(robot_chain_full_, -1 * ROOT_ACC_.vel, JOINT_INERTIA_);
 
     this->fk_pos_solver_ = std::make_shared<KDL::ChainFkSolverPos_recursive>(robot_chain_full_);
 
@@ -1896,7 +1896,7 @@ int dynamics_controller::compute_weight_compensation_control_commands()
                                                                 COMPENSATE_GRAVITY_? KDL::Twist::Zero() : ROOT_ACC_, 
                                                                 NUM_OF_CONSTRAINTS_));
 
-            this->id_solver_.reset(new KDL::Solver_RNE(robot_chain_full_, KDL::Vector(0.0, 0.0, -9.81289), JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, false));
+            this->id_solver_.reset(new KDL::Solver_RNE(robot_chain_full_, -1 * ROOT_ACC_.vel, JOINT_INERTIA_, JOINT_TORQUE_LIMITS_, false));
         }
         else
         {

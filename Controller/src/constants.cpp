@@ -86,7 +86,10 @@ namespace kinova_constants
    const int NUMBER_OF_FRAMES(8);
 
    //Arm's root acceleration
-   const std::vector<double> root_acceleration {0.0, 0.0, 9.81289, 0.0, 0.0, 0.0};
+   const std::vector<double> root_acceleration_1 {-0.07, 0.04, 9.48, 0.0, 0.0, 0.0}; // For Kinova 1
+   const std::vector<double> root_acceleration_2 {0.0, 0.0, 9.81289, 0.0, 0.0, 0.0};  // For Kinova 2
+//    const std::vector<double> root_acceleration_sim {0.0, 0.0, 9.81289, 0.0, 0.0, 0.0}; // For internal simulation in the mediator
+   const std::vector<double> root_acceleration_sim {-0.07, 0.04, 9.48, 0.0, 0.0, 0.0}; // For internal simulation in the mediator
 
    // Limits from Kinova manual-> Must be confirmed
    const std::vector<double> joint_position_limits_max {DEG_TO_RAD(9999.0), DEG_TO_RAD(127.0), DEG_TO_RAD(9999.0), DEG_TO_RAD(147.8), DEG_TO_RAD(9999.0), DEG_TO_RAD(120.3), DEG_TO_RAD(9999.0)};
