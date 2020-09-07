@@ -987,7 +987,7 @@ int run_main_control(kinova_mediator &robot_driver)
         else // Nominal task execution mode
         {
             // Set external wrenches for the simulation. FD solver expects wrenches to be expressed in respective link's frame... not the base frame
-            // if (loop_iteration_count == 3000) robot_driver.set_ext_wrenches_sim(wrenches_full_model_sim);
+            if (loop_iteration_count == 3000) robot_driver.set_ext_wrenches_sim(wrenches_full_model_sim);
             if (!trigger_stopping_sequence)
             {
                 // Apply joint commands using safe control interface
