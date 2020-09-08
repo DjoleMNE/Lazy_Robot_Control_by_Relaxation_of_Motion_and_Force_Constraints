@@ -769,17 +769,13 @@ void kinova_mediator::initialize(const int robot_model,
     int simulation_parser_result = get_sim_model_from_urdf();
     this->predictor_ = std::make_shared<model_prediction>(kinova_sim_chain_);
     this->fd_solver_rne_ = std::make_shared<KDL::FdSolver_RNE>(kinova_sim_chain_, 
-                                                               KDL::Vector(kinova_constants::root_acceleration_sim[0],
-                                                                           kinova_constants::root_acceleration_sim[1],
-                                                                          -kinova_constants::root_acceleration_sim[2]), 
+                                                               -1 * KDL::Vector(kinova_constants::root_acceleration_sim[0],
+                                                                                kinova_constants::root_acceleration_sim[1],
+                                                                                kinova_constants::root_acceleration_sim[2]), 
                                                                kinova_constants::joint_sim_inertia);
 
     if (parser_result != 0 || !connection_established_ || simulation_parser_result != 0)  printf("Cannot create Kinova model! \n");
-    else
-    {
-        // Set initialization flag for the user
-        is_initialized_ = true;
-    }
+    else is_initialized_ = true; // Set initialization flag for the user
 }
 
 void kinova_mediator::deinitialize()

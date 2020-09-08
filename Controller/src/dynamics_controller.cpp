@@ -2240,6 +2240,7 @@ int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_pos
     solver_result = fk_pos_solver_->JntToCart(joint_position_measured, tool_tip_frame_full_model_);
     if (solver_result != 0) return solver_result;
 
+    // Transform the jacobian from the base to tool-tip frame
     jacobian_end_eff_.changeBase(tool_tip_frame_full_model_.M.Inverse());
 
     // Compute SVD of the jacobian using Eigen functions
