@@ -110,7 +110,7 @@ std::vector<double> tube_tolerances_moveConstrained = {0.003, 0.03, 0.003,
 std::vector< std::vector<double> > tube_path_points(path_parameters[4], std::vector<double>(3, 0.0));
 std::vector< std::vector<double> > path_poses(path_parameters[4] - 1,   std::vector<double>(12, 0.0));
 
-const Eigen::VectorXd max_command                 = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 10.0, 10.0, 10.0).finished();
+const Eigen::VectorXd max_command                 = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 20.0, 20.0, 20.0).finished();
 const Eigen::VectorXd max_command_moveConstrained = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 30.0, 20.0, 20.0, 10.0).finished();
 
 // Full Pose ABAG parameters
@@ -119,16 +119,16 @@ const Eigen::VectorXd error_alpha         = (Eigen::VectorXd(NUMBER_OF_CONSTRAIN
                                                0.900000, 0.900000, 0.900000).finished();
 const Eigen::VectorXd bias_threshold      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.000407, 0.000407, 0.000407, 
-                                               0.000407, 0.000407, 0.000407).finished();
+                                               0.000500, 0.000500, 0.000500).finished();
 const Eigen::VectorXd bias_step           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.000495, 0.000495, 0.000495, 
-                                               0.000400, 0.000400, 0.000400).finished();
+                                               0.000800, 0.000800, 0.000800).finished();
 const Eigen::VectorXd gain_threshold      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.552492, 0.552492, 0.552492, 
-                                               0.552492, 0.552492, 0.552492).finished();
+                                               0.650000, 0.650000, 0.650000).finished();
 const Eigen::VectorXd gain_step           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.003152, 0.003152, 0.003152, 
-                                               0.003152, 0.003152, 0.003152).finished();
+                                               0.002500, 0.002500, 0.002500).finished();
 
 // moveGuarded-torque ABAG parameters
 const Eigen::VectorXd error_alpha_1         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
