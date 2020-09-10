@@ -60,8 +60,8 @@ constexpr auto TIMEOUT_DURATION      = std::chrono::seconds{20};
 std::chrono::steady_clock::time_point loop_start_time;
 std::chrono::duration <double, std::micro> loop_interval{};
 
-const int SECOND                     = 1000000;
-const int MILLISECOND                = 1000;
+const int SECOND                     = 1000000; // Number of microseconds in one second
+const int MILLISECOND                = 1000; // Number of microseconds in one millisecond
 const int JOINTS                     = 7;
 const int NUMBER_OF_CONSTRAINTS      = 6;
 const int desired_dynamics_interface = dynamics_interface::CART_ACCELERATION;
@@ -88,14 +88,13 @@ bool compensate_gravity              = false;
 bool use_mass_alternation            = false;
 auto error_callback = [](Kinova::Api::KError err){ cout << "_________ callback error _________" << err.toString(); };
 
-std::vector<bool> control_dims       = {true, true, true, // Linear
-                                        false, false, false}; // Angular
+std::vector<bool> control_dims                 = {true, true, true, // Linear
+                                                  false, false, false}; // Angular
 
 std::vector<bool> control_dims_moveConstrained = {true, true, true, // Linear
                                                   true, true, false}; // Angular
 
-// Last parameter: Numer of points
-const std::vector<double> path_parameters = {0.5, 3.5, 0.05, 0.008, 2}; // last parameter must be min 2
+const std::vector<double> path_parameters = {0.5, 3.5, 0.05, 0.008, 2}; // last parameter must be min 2 (number of points)
 const std::vector<double> path_parameters_moveConstrained = {0.5, 0.5, 0.05, 0.008, 2};
 std::vector<double> tube_start_position   = {0.0, 0.0, 0.0};
 std::vector<double> tube_tolerances       = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -103,8 +102,8 @@ std::vector<double> tube_tolerances       = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 
 // Tube tolerances: x pos,    y pos,      z force, 
 //                  x torque, y torque,   null-space, 
 //                  x vel,    z_a pos/vel
-std::vector<double> tube_tolerances_moveConstrained = {0.003, 0.03, 0.003,  
-                                                       0.005, 0.005, 25.0, 
+std::vector<double> tube_tolerances_moveConstrained = {0.003, 0.03, 0.003,
+                                                       0.005, 0.005, 25.0,
                                                        0.003, 0.001};
 
 std::vector< std::vector<double> > tube_path_points(path_parameters[4], std::vector<double>(3, 0.0));

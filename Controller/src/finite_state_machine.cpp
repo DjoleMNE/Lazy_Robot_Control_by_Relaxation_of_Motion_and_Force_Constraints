@@ -770,8 +770,7 @@ int finite_state_machine::update_weight_compensation_task_status(const int loop_
 
 int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_force,
                                                    const KDL::Wrench &ext_force,
-                                                   const double current_task_time,
-                                                   const double time_threshold)
+                                                   const double current_task_time)
 {
     // First filter the measurements. Data is too noisy.
     low_pass_filter(ext_force, 0.70);
@@ -792,7 +791,7 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
 
         previous_task_time_ = current_task_time;
 
-        if (total_contact_time_ >= time_threshold)
+        if (total_contact_time_ >= 0.014)
         {
             #ifndef NDEBUG       
                 printf("Contact Lost!\n");
@@ -801,9 +800,7 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
         } 
         return task_status::CRUISE;
     }
-
-    // Approach control mode
-    else
+    else // Approach control mode
     {
         if (!contact_alignment_secured(desired_force, ext_wrench_)) total_contact_time_ = 0.0;
         else total_contact_time_ += current_task_time - previous_task_time_;
@@ -859,8 +856,7 @@ bool finite_state_machine::contact_detected(const double linear_force_threshold,
     return false;    
 }
 
-void finite_state_machine::low_pass_filter(const KDL::Wrench &ext_force,
-                                           const double alpha)
+void finite_state_machine::low_pass_filter(const KDL::Wrench &ext_force, const double alpha)
 {
     for (int i = 0; i < 6; i++)
         ext_wrench_(i) = alpha * ext_wrench_(i) + (1 - alpha) * ext_force(i);

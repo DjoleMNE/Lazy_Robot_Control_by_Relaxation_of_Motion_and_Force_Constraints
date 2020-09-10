@@ -86,7 +86,7 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     estimated_momentum_integral_(NUM_OF_JOINTS_), initial_jnt_momentum_(NUM_OF_JOINTS_),
     model_based_jnt_momentum_(NUM_OF_JOINTS_), total_torque_estimation_(NUM_OF_JOINTS_),
     jnt_mass_matrix_(NUM_OF_JOINTS_), previous_jnt_mass_matrix_(NUM_OF_JOINTS_),
-    jnt_mass_matrix_dot_(NUM_OF_JOINTS_), jacobian_end_eff_(NUM_OF_JOINTS_),
+    jnt_mass_matrix_dot_(NUM_OF_JOINTS_), jacobian_end_eff_(NUM_OF_JOINTS_), jacobian_end_eff_transformed_(NUM_OF_JOINTS_),
     jacobian_end_eff_inv_(Eigen::MatrixXd::Zero(NUM_OF_JOINTS_, NUM_OF_CONSTRAINTS_)),
     wrench_estimation_gain_(NUM_OF_JOINTS_), tool_tip_frame_full_model_(KDL::Frame::Identity()),
     fk_vereshchagin_(robot_chain_), safety_monitor_(robot_driver_, true), jacobian_solver_(robot_chain_full_),
@@ -294,7 +294,7 @@ int dynamics_controller::update_current_state()
     robot_driver_->get_joint_state(robot_state_.q, robot_state_.qd, robot_state_.measured_torque);
 
     // Get Cart poses and velocities
-    return fk_vereshchagin_.JntToCart(robot_state_.q, robot_state_.qd, robot_state_.frame_pose, robot_state_.frame_velocity);;
+    return fk_vereshchagin_.JntToCart(robot_state_.q, robot_state_.qd, robot_state_.frame_pose, robot_state_.frame_velocity);
 }
 
 // Write control data to a file
@@ -457,7 +457,7 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     moveConstrained_follow_path_task_.goal_poses = moveConstrained_follow_path_task_.tf_poses;
 
     CTRL_DIM_           = constraint_direction;
-    POS_TUBE_DIM_[0]    = CTRL_DIM_[0]; POS_TUBE_DIM_[1]    = CTRL_DIM_[1]; 
+    POS_TUBE_DIM_[0]    = CTRL_DIM_[0]; POS_TUBE_DIM_[1]    = CTRL_DIM_[1];
     MOTION_CTRL_DIM_[0] = CTRL_DIM_[0]; MOTION_CTRL_DIM_[1] = CTRL_DIM_[1]; MOTION_CTRL_DIM_[5] = CTRL_DIM_[5];
     FORCE_CTRL_DIM_[3]  = CTRL_DIM_[3]; FORCE_CTRL_DIM_[4]  = CTRL_DIM_[4];
 
@@ -1179,8 +1179,9 @@ void dynamics_controller::compute_moveConstrained_null_space_task_error()
 }
 
 /**
- * Compute the control error for position velocity and force tube deviations.
+ * Compute the control error for position, velocity and force tube deviations.
  * Error function for moveConstrained_follow_path task.
+ * This function expects external wrench values expressed w.r.t. robot's tool-tip frame
 */
 void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 {
@@ -1202,17 +1203,17 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
     ext_wrench_base_ = moveConstrained_follow_path_task_.tf_force * ext_wrench_;
     desired_state_base_.external_force[END_EFF_] = moveConstrained_follow_path_task_.tf_force * desired_state_.external_force[END_EFF_];
 
-    // Force-task FSM has priority over motion-task FSM
-    // This function expects external wrench values to be expressed w.r.t. sensor frame
-    if (previous_task_status_ != task_status::STOP_ROBOT) fsm_force_task_result_ = fsm_.update_force_task_status(desired_state_.external_force[END_EFF_], ext_wrench_, total_time_sec_, 0.014);
+    /*
+    * Force-task FSM has priority over motion-task FSM
+    * However, Vereshchagin prioritizes motion (acceleration) task specs w.r.t. force task specs
+    */
+    if (previous_task_status_ != task_status::STOP_ROBOT) fsm_force_task_result_ = fsm_.update_force_task_status(desired_state_.external_force[END_EFF_], ext_wrench_, total_time_sec_);
 
     switch (fsm_force_task_result_)
     {
         case task_status::APPROACH:
-            // Set ABAG parameters for linear Z axis velocity control
-            if (previous_task_status_ == task_status::NOMINAL)
+            if (previous_task_status_ == task_status::NOMINAL) // Set ABAG parameters for linear Z axis velocity control
             {
-                // Parameters for Velocity controlled DOF
                 abag_.set_error_alpha(   abag_parameter::ERROR_ALPHA(2),    2);
                 abag_.set_bias_threshold(abag_parameter::BIAS_THRESHOLD(2), 2);
                 abag_.set_bias_step(     abag_parameter::BIAS_STEP(2),      2);
@@ -1250,14 +1251,12 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             break;
 
         case task_status::CRUISE:
-            // Set ABAG parameters for linear Z axis force control
-            if (previous_task_status_ == task_status::APPROACH)
+            if (previous_task_status_ == task_status::APPROACH) // Set ABAG parameters for linear Z axis force control
             {
                 abag_.reset_state(0);
                 abag_.reset_state(1);
                 abag_.reset_state(2);
-                
-                // Parameters for linear force controlled DOF
+
                 abag_.set_error_alpha(   force_task_parameters_(0), 2);
                 abag_.set_bias_threshold(force_task_parameters_(1), 2);
                 abag_.set_bias_step(     force_task_parameters_(2), 2);
@@ -1503,7 +1502,7 @@ void dynamics_controller::compute_moveTo_task_error()
         for (int i = 3; i < NUM_OF_CONSTRAINTS_; i++)
         {
             // Filter out the noise amplified by the nonlinearity of rotation matrices and logarithmic map
-            if ( std::fabs(predicted_error_twist_(i)) <= 0.009 ) abag_error_vector_(i) = 0.0;
+            if ( std::fabs(predicted_error_twist_(i)) <= 0.0 ) abag_error_vector_(i) = 0.0;
             else abag_error_vector_(i) = predicted_error_twist_(i);
         }
     }
@@ -1607,7 +1606,7 @@ void dynamics_controller::compute_full_pose_task_error()
     for (int i = 3; i < NUM_OF_CONSTRAINTS_; i++)
     {
         // Filter out the noise amplified by the nonlinearity of rotation matrices and logarithmic map
-        if (std::fabs(abag_error_vector_(i)) <= 0.009) abag_error_vector_(i) = 0.0;
+        if (std::fabs(abag_error_vector_(i)) <= 0.0) abag_error_vector_(i) = 0.0;
     }
 
     // Additional Cartesian force to keep residual part of the robot in a good configuration
@@ -2239,10 +2238,11 @@ int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_pos
     if (solver_result != 0) return solver_result;
 
     // Transform the jacobian from the base to tool-tip frame
-    jacobian_end_eff_.changeBase(tool_tip_frame_full_model_.M.Inverse());
+    jacobian_end_eff_transformed_ = jacobian_end_eff_;
+    jacobian_end_eff_transformed_.changeBase(tool_tip_frame_full_model_.M.Inverse());
 
     // Compute SVD of the jacobian using Eigen functions
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd(jacobian_end_eff_.data.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(jacobian_end_eff_transformed_.data.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
 
     Eigen::VectorXd singular_inv(svd.singularValues());
     for (int j = 0; j < singular_inv.size(); ++j) singular_inv(j) = (singular_inv(j) < 1e-8) ? 0.0 : 1.0 / singular_inv(j);

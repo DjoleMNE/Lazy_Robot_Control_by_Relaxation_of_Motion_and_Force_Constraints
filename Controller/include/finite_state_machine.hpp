@@ -173,8 +173,7 @@ class finite_state_machine
                                                    Eigen::VectorXd &filtered_bias);
         int update_force_task_status(const KDL::Wrench &desired_force, 
                                      const KDL::Wrench &ext_force,
-                                     const double current_task_time,
-                                     const double time_threshold);
+                                     const double current_task_time);
         int update_motion_task_status(const state_specification &robot_state,
                                       state_specification &desired_state,
                                       const KDL::Twist &current_error,

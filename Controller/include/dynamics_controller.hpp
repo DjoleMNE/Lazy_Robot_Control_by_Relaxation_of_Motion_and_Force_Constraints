@@ -271,7 +271,7 @@ class dynamics_controller
     KDL::JntArray zero_joint_array_, gravity_torque_, coriolis_torque_, estimated_ext_torque_, filtered_estimated_ext_torque_, 
                   estimated_momentum_integral_, initial_jnt_momentum_, model_based_jnt_momentum_, total_torque_estimation_;
     KDL::JntSpaceInertiaMatrix jnt_mass_matrix_, previous_jnt_mass_matrix_, jnt_mass_matrix_dot_;
-    KDL::Jacobian jacobian_end_eff_;
+    KDL::Jacobian jacobian_end_eff_, jacobian_end_eff_transformed_;
     Eigen::MatrixXd jacobian_end_eff_inv_;
     Eigen::VectorXd wrench_estimation_gain_;
     KDL::Frame tool_tip_frame_full_model_;
