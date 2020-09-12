@@ -331,41 +331,41 @@ void calibrate_torque_offsets()
 
     std::this_thread::sleep_for(std::chrono::milliseconds(5000));
     auto torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-    // torque_offset_message.set_torque_offset(0.0f);
-    torque_offset_message.set_torque_offset(0.00592135f);
+    torque_offset_message.set_torque_offset(0.0f);
+    // torque_offset_message.set_torque_offset(0.00592135f);
     actuator_config->SetTorqueOffset(torque_offset_message, 1);
 
     torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
     // torque_offset_message.set_torque_offset(0.0f);
-    // torque_offset_message.set_torque_offset(0.00253617f);
-    torque_offset_message.set_torque_offset(-0.165179f);
+    torque_offset_message.set_torque_offset(0.00253617f);
+    // torque_offset_message.set_torque_offset(-0.165179f);
     actuator_config->SetTorqueOffset(torque_offset_message, 2);
 
     torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-    // torque_offset_message.set_torque_offset(0.0f);
-    torque_offset_message.set_torque_offset(0.00214829f);
+    torque_offset_message.set_torque_offset(0.0f);
+    // torque_offset_message.set_torque_offset(0.00214829f);
     actuator_config->SetTorqueOffset(torque_offset_message, 3);
 
     torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
     // torque_offset_message.set_torque_offset(0.0f);
-    // torque_offset_message.set_torque_offset(0.00153136f);
-    torque_offset_message.set_torque_offset(-0.0492138f);
+    torque_offset_message.set_torque_offset(0.00153136f);
+    // torque_offset_message.set_torque_offset(-0.0492138f);
     actuator_config->SetTorqueOffset(torque_offset_message, 4);
 
     torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-    // torque_offset_message.set_torque_offset(0.0f);
-    torque_offset_message.set_torque_offset(-0.00036302f);
+    torque_offset_message.set_torque_offset(0.0f);
+    // torque_offset_message.set_torque_offset(-0.00036302f);
     actuator_config->SetTorqueOffset(torque_offset_message, 5);
 
     torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
     // torque_offset_message.set_torque_offset(0.0f);
-    // torque_offset_message.set_torque_offset(0.00137371f);
-    torque_offset_message.set_torque_offset(-0.00558801f);
+    torque_offset_message.set_torque_offset(0.00137371f);
+    // torque_offset_message.set_torque_offset(-0.00558801f);
     actuator_config->SetTorqueOffset(torque_offset_message, 6);
 
     torque_offset_message = Kinova::Api::ActuatorConfig::TorqueOffset();
-    // torque_offset_message.set_torque_offset(0.0f);
-    torque_offset_message.set_torque_offset(-0.000393912f);
+    torque_offset_message.set_torque_offset(0.0f);
+    // torque_offset_message.set_torque_offset(-0.000393912f);
     actuator_config->SetTorqueOffset(torque_offset_message, 7);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(1500));
