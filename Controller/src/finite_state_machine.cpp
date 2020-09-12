@@ -136,7 +136,16 @@ int finite_state_machine::update_moveConstrained_follow_path_task(state_specific
         return task_status::STOP_CONTROL;
     }
 
-    if (goal_reached_) return task_status::STOP_ROBOT;
+    if (goal_reached_ || contact_detected_) return task_status::STOP_ROBOT;
+
+    if (std::fabs(ext_wrench_(0)) > moveConstrained_follow_path_task_.contact_threshold_linear ||
+        std::fabs(ext_wrench_(1)) > moveConstrained_follow_path_task_.contact_threshold_linear) 
+    {
+        printf("Non-desired contact occurred\n");
+
+        contact_detected_ = true;
+        return task_status::STOP_ROBOT;
+    }
 
     bool final_section_reached = false;
     if ((unsigned)tube_section_count == moveConstrained_follow_path_task_.tf_poses.size() - 1) final_section_reached = true;
@@ -151,9 +160,9 @@ int finite_state_machine::update_moveConstrained_follow_path_task(state_specific
     // Check if the robot has reached the final goal area
     if (count == 2 && final_section_reached) 
     {   
-        #ifndef NDEBUG       
+        // #ifndef NDEBUG
             printf("Whole path covered\n");
-        #endif
+        // #endif
 
         goal_reached_ = true;
         return task_status::STOP_ROBOT;
@@ -762,20 +771,15 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
                                                    const double current_task_time)
 {
     // First filter the measurements. Data is too noisy.
-    low_pass_filter(ext_force, 0.70);
+    low_pass_filter(ext_force, 0.0);
 
     // for (int i = 0; i < 6; i++) 
     //     log_file_ext_force_ << ext_wrench_(i) << " ";
     // log_file_ext_force_ << std::endl;
     
-    // Cruise control mode
-    if (contact_alignment_performed_)
+    if (contact_alignment_performed_) // Cruise control mode
     {
-        if (!contact_detected(moveConstrained_follow_path_task_.contact_threshold_linear, 
-                              moveConstrained_follow_path_task_.contact_threshold_angular))
-        {
-            total_contact_time_ += current_task_time - previous_task_time_;
-        }
+        if (std::fabs(ext_wrench_(2)) < 0.5) total_contact_time_ += current_task_time - previous_task_time_;
         else total_contact_time_ = 0.0;
 
         previous_task_time_ = current_task_time;
@@ -806,9 +810,10 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
 bool finite_state_machine::contact_alignment_secured(const KDL::Wrench &desired_force,
                                                      const KDL::Wrench &ext_force)
 {
-    if (std::fabs(ext_force(2)) < 0.016 || std::fabs(ext_force(2)) > 1.0) return false;
-    if (std::fabs(ext_force(3)) > 0.0029) return false;
-    if (std::fabs(ext_force(4)) > 0.0029) return false;
+    if (std::fabs(ext_force(2)) < 5.0) return false;
+    // if (std::fabs(ext_force(2)) < 0.016 || std::fabs(ext_force(2)) > 1.0) return false;
+    // if (std::fabs(ext_force(3)) > 0.1) return false;
+    // if (std::fabs(ext_force(4)) > 0.1) return false;
 
     return true;
 }
