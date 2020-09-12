@@ -458,8 +458,13 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
 
     CTRL_DIM_           = constraint_direction;
     POS_TUBE_DIM_[0]    = CTRL_DIM_[0]; POS_TUBE_DIM_[1]    = CTRL_DIM_[1];
-    MOTION_CTRL_DIM_[0] = CTRL_DIM_[0]; MOTION_CTRL_DIM_[1] = CTRL_DIM_[1]; MOTION_CTRL_DIM_[5] = CTRL_DIM_[5];
+    MOTION_CTRL_DIM_[0] = CTRL_DIM_[0]; MOTION_CTRL_DIM_[1] = CTRL_DIM_[1];
     FORCE_CTRL_DIM_[3]  = CTRL_DIM_[3]; FORCE_CTRL_DIM_[4]  = CTRL_DIM_[4];
+
+    // Reset the motion and force flags. Each will be later set by a different task stage
+    FORCE_CTRL_DIM_ [2] = false;
+    MOTION_CTRL_DIM_[2] = false;
+    MOTION_CTRL_DIM_[5] = false;
 
     // X-Y-Z linear
     KDL::Vector x_world(1.0, 0.0, 0.0);
@@ -1186,20 +1191,21 @@ void dynamics_controller::compute_moveConstrained_null_space_task_error()
 void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 {
     // Saturate linear force measurements in Z (sensor frame) direction
-    if (ext_wrench_(2) < 0.0) ext_wrench_(2) = 0.0;
-
-    // Reset the flags
-    for (int i = 0; i < 6; i++)
-    {
-        MOTION_CTRL_DIM_[i] = false;
-        FORCE_CTRL_DIM_[i]  = false;
-    }
+    // if (ext_wrench_(2) > 0.0) ext_wrench_(2) = 0.0;
 
     // Additional Cartesian force to keep residual part of the robot in a good configuration
     if (compute_null_space_command_) compute_moveConstrained_null_space_task_error();
 
     // Tool-tip is the task frame for force DOFs
-    moveConstrained_follow_path_task_.tf_force = robot_state_.frame_pose[END_EFF_].M;
+    // moveConstrained_follow_path_task_.tf_force = robot_state_.frame_pose[END_EFF_].M;
+    if (!use_estimated_external_wrench_)
+    {
+        int solver_result = fk_pos_solver_->JntToCart(robot_state_.q, tool_tip_frame_full_model_);
+        if (solver_result != 0) fsm_result_ = task_status::STOP_ROBOT;
+        return;
+    }
+    moveConstrained_follow_path_task_.tf_force = tool_tip_frame_full_model_.M;
+
     ext_wrench_base_ = moveConstrained_follow_path_task_.tf_force * ext_wrench_;
     desired_state_base_.external_force[END_EFF_] = moveConstrained_follow_path_task_.tf_force * desired_state_.external_force[END_EFF_];
 
@@ -1207,7 +1213,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
     * Force-task FSM has priority over motion-task FSM
     * However, Vereshchagin prioritizes motion (acceleration) task specs w.r.t. force task specs
     */
-    if (previous_task_status_ != task_status::STOP_ROBOT) fsm_force_task_result_ = fsm_.update_force_task_status(desired_state_.external_force[END_EFF_], ext_wrench_, total_time_sec_);
+    fsm_force_task_result_ = fsm_.update_force_task_status(desired_state_.external_force[END_EFF_], ext_wrench_, total_time_sec_);
 
     switch (fsm_force_task_result_)
     {
@@ -1221,7 +1227,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
                 abag_.set_gain_step(     abag_parameter::GAIN_STEP(2),      2);
                 abag_.set_min_bias_sat_limit(   Eigen::VectorXd::Constant(6, -1.0));
                 abag_.set_min_command_sat_limit(Eigen::VectorXd::Constant(6, -1.0));
-                max_command_(2) = 60.0;
+                max_command_(2) = 20.0;
             }
 
             // Control Linear X velocity w.r.t. base frame
@@ -1233,7 +1239,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             if (std::fabs(abag_error_vector_(1)) <= moveConstrained_follow_path_task_.tube_tolerances[6]) abag_error_vector_(1) = 0.0;
 
             // Control Linear Z velocity w.r.t. base frame
-            abag_error_vector_(2) = -0.02 - robot_state_.frame_velocity[END_EFF_](2);
+            abag_error_vector_(2) = -0.002 - robot_state_.frame_velocity[END_EFF_](2);
             if (std::fabs(abag_error_vector_(2)) <= moveConstrained_follow_path_task_.tube_tolerances[6]) abag_error_vector_(2) = 0.0;
             MOTION_CTRL_DIM_[2] = true; FORCE_CTRL_DIM_[2] = false;
 
@@ -1244,6 +1250,8 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             // Control moment Y w.r.t. sensor/tool frame
             abag_error_vector_(4) = 0.0 - ext_wrench_(4);
             if (std::fabs(abag_error_vector_(4)) <= moveConstrained_follow_path_task_.tube_tolerances[4]) abag_error_vector_(4) = 0.0;
+
+            MOTION_CTRL_DIM_[5] = false;
 
             // Set null-space error tolerance; small null-space oscillations are desired in this mode
             // moveConstrained_follow_path_task_.null_space_tolerance = 15.0;
@@ -1289,61 +1297,47 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 
             current_error_twist_(0) = POS_TUBE_DIM_[0]? current_error_twist_(0) : 0.0;
             current_error_twist_(1) = POS_TUBE_DIM_[1]? current_error_twist_(1) : 0.0;
+            // current_error_twist_(5) = POS_TUBE_DIM_[5]? current_error_twist_(5) : 0.0;
 
             // fsm_result_ = task_status::CRUISE_THROUGH_TUBE;
             fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
-
-            // for (int i = 0; i < 2; i++)
-            // {
-            //     abag_error_vector_(i) = desired_state_.frame_velocity[END_EFF_](i) - robot_state_.frame_velocity[END_EFF_](i);
-            //     if (std::fabs(abag_error_vector_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[6]) abag_error_vector_(i) = 0.0;
-            //     MOTION_CTRL_DIM_[i] = true;
-            // }
+            if (fsm_result_ == task_status::STOP_ROBOT) return;
 
             // Check for tube on velocity X-linear
             abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_](0) - robot_state_.frame_velocity[END_EFF_](0);
             if ((desired_state_.frame_velocity[END_EFF_](0) != 0.0) && (std::fabs(abag_error_vector_(0)) <= moveConstrained_follow_path_task_.tube_tolerances[6])) abag_error_vector_(0) = 0.0;
-            MOTION_CTRL_DIM_[0] = true;
 
             // Check for tube on position Y-linear
             abag_error_vector_(1) = predicted_error_twist_(1);
             if (std::fabs(abag_error_vector_(1)) <= moveConstrained_follow_path_task_.tube_tolerances[1]) abag_error_vector_(1) = 0.0;
-            MOTION_CTRL_DIM_[1] = true;
 
-            // Check for tube on force: Z linear, sensor frame
-            abag_error_vector_(2) = desired_state_.external_force[END_EFF_](2) - ext_wrench_(2);
+            // Check for tube on force: Z linear, tool-tip frame
+            abag_error_vector_(2) = -1 * desired_state_.external_force[END_EFF_](2) + ext_wrench_(2);
             if (std::fabs(abag_error_vector_(2)) <= moveConstrained_follow_path_task_.tube_tolerances[2]) abag_error_vector_(2) = 0.0;
-            FORCE_CTRL_DIM_[2] = true;
+            FORCE_CTRL_DIM_[2] = CTRL_DIM_[2]; MOTION_CTRL_DIM_[2] = false;
 
+            // Check for tube on moment: X and Y angular, tool-tip frame
+            abag_error_vector_(3) =  std::atan2(-ext_wrench_(1), ext_wrench_(2));
+            // abag_error_vector_(3) = std::atan2(-ext_wrench_(2), -ext_wrench_(1));
+            if (std::fabs(abag_error_vector_(3)) <= moveConstrained_follow_path_task_.tube_tolerances[3]) abag_error_vector_(3) = 0.0;
+            abag_error_vector_(4) = std::atan2(-ext_wrench_(0), ext_wrench_(2));
+            // abag_error_vector_(4) = std::atan2(-ext_wrench_(2), -ext_wrench_(0));
+            if (std::fabs(abag_error_vector_(4)) <= moveConstrained_follow_path_task_.tube_tolerances[4]) abag_error_vector_(4) = 0.0;
 
-            // Check for tube on moments: X & Y-angular, sensor frame
+            // Check for tube on moments: X & Y-angular, tool-tip frame
             // for (int i = 3; i < 5; i++)
             // {
-            //     abag_error_vector_(i) = 0.0 - ext_wrench_(i);
+            //     abag_error_vector_(i) = 0.0 + ext_wrench_(i);
             //     if (std::fabs(abag_error_vector_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[i]) abag_error_vector_(i) = 0.0;
-            //     FORCE_CTRL_DIM_[i]  = true;       
             // }
 
-            // Check for tube on angular force: X angular, sensor frame
-            abag_error_vector_(3) = std::atan2(-ext_wrench_(1), ext_wrench_(2));
-            if (std::fabs(abag_error_vector_(3)) <= moveConstrained_follow_path_task_.tube_tolerances[3]) abag_error_vector_(3) = 0.0;
-            FORCE_CTRL_DIM_[3]  = true;
-
-            // Check for tube on angular force: Y-angular, sensor frame
-            abag_error_vector_(4) = std::atan2(-ext_wrench_(0), ext_wrench_(2));
-            if (std::fabs(abag_error_vector_(4)) <= moveConstrained_follow_path_task_.tube_tolerances[4]) abag_error_vector_(4) = 0.0;
-            FORCE_CTRL_DIM_[4]  = true;
-
             // Check for tube on angular velocity: Z-angular
-            // abag_error_vector_(5) = 0.0 - robot_state_.frame_velocity[END_EFF_](5);
-            // if (std::fabs(abag_error_vector_(5)) <= moveConstrained_follow_path_task_.tube_tolerances[7]) abag_error_vector_(5) = 0.0;
-            // MOTION_CTRL_DIM_[5] = true;
+            abag_error_vector_(5) = desired_state_.frame_velocity[END_EFF_](5) - robot_state_.frame_velocity[END_EFF_](5);
+            if (std::fabs(abag_error_vector_(5)) <= moveConstrained_follow_path_task_.tube_tolerances[7]) abag_error_vector_(5) = 0.0;
+            MOTION_CTRL_DIM_[5] = CTRL_DIM_[5];
 
             // Set null-space error tolerance; small null-space oscillations are desired in this mode
             // moveConstrained_follow_path_task_.null_space_tolerance = 25.0;
-
-            // Motion error is, in this case, expressed in the task frame
-            transform_drivers_ = true;
 
             // Feedforward force for ensuring stable contact alignment once mode-switch occurs
             // Maybe it would be good to make this part as an intermediate state. see Markus Klotzbücher PhD thesis (p. 110)
@@ -1351,23 +1345,16 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             {
                 feedforward_loop_count_++;
                 if (feedforward_loop_count_ > 20) apply_feedforward_force_ = false;
-                else abag_error_vector_(2) = 1.0; // ABAG does not care about raw error magnitude
             }
 
-            if (fsm_result_ == task_status::STOP_ROBOT) fsm_force_task_result_ = task_status::STOP_ROBOT;
-            else break;
+            // Motion error is, in this case, expressed in the task frame
+            transform_drivers_ = true;
+            break;
 
         default:
-            if (previous_task_status_ != task_status::STOP_ROBOT) write_contact_time_to_file_ = true;
-            fsm_result_ = task_status::STOP_ROBOT;
-            
-            // Reset the flags
-            for (int i = 0; i < 6; i++)
-            {
-                MOTION_CTRL_DIM_[i] = false;
-                FORCE_CTRL_DIM_[i]  = false;
-            }
+            write_contact_time_to_file_ = true;
             compute_null_space_command_ = false;
+            fsm_result_ = task_status::STOP_ROBOT;
             return;
     }
 }
@@ -1740,10 +1727,10 @@ void dynamics_controller::compute_null_space_control_commands()
     KDL::SetToZero(cart_force_command_[3].force);
     robot_state_.feedforward_torque(3) = 0.0;
 
-    // Null space control commands to align third segment with arm's plane
     if (compute_null_space_command_)
     {
         // Used for moveConstrained task execution with LWR 4 robot
+        // Null space control commands to align third segment with arm's plane
         if (desired_task_model_ == task_model::moveConstrained_follow_path)
         {
             // Compute null-space control command
@@ -1755,8 +1742,7 @@ void dynamics_controller::compute_null_space_control_commands()
             // Transform the Cartesian force from arm's plane-frame to base frame
             cart_force_command_[3].force = moveConstrained_follow_path_task_.null_space_plane_orientation * cart_force_command_[3].force;
         }
-        // Used for moveTo (follow_path) / moveGuarded task execution with youBot
-        else
+        else // Used for moveTo (follow_path) / moveGuarded task execution with youBot
         {
             // Compute null-space control command
             null_space_abag_command_ = abag_null_space_.update_state(null_space_abag_error_)(0) * null_space_parameters_(5);
@@ -1770,7 +1756,6 @@ void dynamics_controller::compute_null_space_control_commands()
 void dynamics_controller::compute_cart_control_commands()
 {
     abag_command_ = abag_.update_state(abag_error_vector_).transpose();
-    KDL::SetToZero(cart_force_command_[END_EFF_]);
 
     switch (desired_dynamics_interface_)
     {
@@ -1803,10 +1788,13 @@ void dynamics_controller::compute_cart_control_commands()
                 for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
                     cart_force_command_[END_EFF_](i) = FORCE_CTRL_DIM_[i]? abag_command_(i) * max_command_(i) : 0.0;
             }
+            else KDL::SetToZero(cart_force_command_[END_EFF_]);
 
             // Change the reference frame of External Forces, from the task frame to the base frame
             if (transform_force_drivers_) transform_force_driver();
-            if (apply_feedforward_force_) cart_force_command_[END_EFF_](2) = - max_command_(2)/3;
+
+            // Add feedforward Cart force for the tool-tip. By expressing it w.r.t. base frame, dependence on tool-tip orientation is removed
+            if (apply_feedforward_force_) cart_force_command_[END_EFF_](2) = -max_command_(2) / 3;
             break;
 
         default:
@@ -2390,12 +2378,14 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
 
         compute_control_error();
 
-        if (check_fsm_status() == -1)
+        status = check_fsm_status();
+        if (status == -1)
         {
             error_logger_.error_source_ = error_source::fsm;
             error_logger_.error_status_ = -1;
             return -1;
         }
+        else if (status == 1) return -1;
 
         if (update_commands() == -1) return -1;
     }
