@@ -199,20 +199,20 @@ const Eigen::VectorXd gain_step_4           = (Eigen::VectorXd(NUMBER_OF_CONSTRA
 
 // moveConstrained-follow_path-torque ABAG parameters
 const Eigen::VectorXd error_alpha_5         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.900000, 0.850000, 0.950000,
-                                               0.850000, 0.850000, 0.800000).finished();
+                                            << 0.900000, 0.900000, 0.950000,
+                                               0.850000, 0.850000, 0.900000).finished();
 const Eigen::VectorXd bias_threshold_5      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.000457, 0.000407, 0.000407, 
-                                               0.000507, 0.000507, 0.000507).finished();
+                                               0.000507, 0.000507, 0.000457).finished();
 const Eigen::VectorXd bias_step_5           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.000495, 0.000495, 0.000905, 
-                                               0.000495, 0.000495, 0.000495).finished();
+                                            << 0.000500, 0.000400, 0.000905, 
+                                               0.000495, 0.000495, 0.000500).finished();
 const Eigen::VectorXd gain_threshold_5      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.452492, 0.552492, 0.452492, 
-                                               0.452492, 0.452492, 0.402492).finished();
+                                            << 0.502492, 0.502492, 0.452492, 
+                                               0.452492, 0.452492, 0.502492).finished();
 const Eigen::VectorXd gain_step_5           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.002500, 0.002500, 0.003652, 
-                                               0.002052, 0.002052, 0.002052).finished();
+                                            << 0.002552, 0.002552, 0.003652, 
+                                               0.002052, 0.002052, 0.002552).finished();
 
 // Stop Motion control parameters used by the ABAG -> parameters specific each robot type... test these values
 const Eigen::VectorXd STOP_MOTION_ERROR_ALPHA    = (Eigen::VectorXd(JOINTS) << 0.800000, 0.800000, 0.800000, 0.800000, 0.800000, 0.800000, 0.800000).finished();
@@ -617,6 +617,41 @@ int define_task(dynamics_controller *dyn_controller)
 
     switch (desired_task_model)
     {
+        case task_model::moveConstrained_follow_path:
+            switch (path_type)
+            {
+                case path_types::STEP_PATH:
+                    motion_profile::draw_step_xy(tube_path_points, 6, 0.07, desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
+                    break;
+
+                case path_types::INF_SIGN_PATH:
+                    motion_profile::draw_inf_sign_xy(tube_path_points, 0.3, 0.2, 1.0, 1.0, desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
+                    break;
+
+                case path_types::SINE_PATH:
+                    motion_profile::draw_sine_xy(tube_path_points, path_parameters_moveConstrained[0], path_parameters_moveConstrained[1],
+                                                 path_parameters_moveConstrained[2], path_parameters_moveConstrained[3], 
+                                                 desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
+                    break;
+
+                default:
+                    printf("Unsupported path type");
+                    return false;
+            }
+
+            dyn_controller->define_moveConstrained_follow_path_task(std::vector<bool>{control_dims_moveConstrained[0], control_dims_moveConstrained[1], control_dims_moveConstrained[2], // Linear
+                                                                                      control_dims_moveConstrained[3], control_dims_moveConstrained[4], control_dims_moveConstrained[5]},// Angular
+                                                                    tube_path_points,
+                                                                    tube_tolerances_moveConstrained,
+                                                                    tube_speed,
+                                                                    tube_force,
+                                                                    90.5, 90.4, //contact_threshold linear and angular
+                                                                    task_time_limit_sec,// time_limit
+                                                                    control_null_space_moveConstrained,
+                                                                    desired_null_space_angle,
+                                                                    path_poses); // TF pose
+            break;
+
         case task_model::moveTo_follow_path:
             switch (path_type)
             {
@@ -864,6 +899,19 @@ int run_main_control(kinova_mediator &robot_driver)
                                     STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
                                     wrench_estimation_gain);
     }
+    else if (desired_task_model == task_model::moveConstrained_follow_path)
+    {
+        controller.set_parameters(time_horizon_amplitude, 
+                                  max_command_moveConstrained, error_alpha_5,
+                                  bias_threshold_5, bias_step_5, gain_threshold_5,
+                                  gain_step_5, min_bias_sat, min_command_sat,
+                                  null_space_abag_parameters_moveConstrained, 
+                                  compensation_parameters,
+                                  STOP_MOTION_ERROR_ALPHA,
+                                  STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                  wrench_estimation_gain);
+    }
     else if (desired_task_model == task_model::moveTo)
     {
         controller.set_parameters(time_horizon_amplitude,
@@ -1039,9 +1087,9 @@ int main(int argc, char **argv)
     // Tube tolerances: x pos,    y pos,      z force, 
     //                  x torque, y torque,   null-space, 
     //                  x vel,    z_a pos/vel
-    tube_tolerances_moveConstrained = std::vector<double> {0.003, 0.03, 0.003,
+    tube_tolerances_moveConstrained = std::vector<double> {0.003, 0.001, 0.003,
                                                            0.005, 0.005, 25.0,
-                                                           0.003, 0.001};
+                                                           0.001, 0.001};
     max_command                 = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 20.0, 20.0, 20.0).finished();
     max_command_moveConstrained = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 10.0, 2.0, 2.0, 20.0).finished();
 
@@ -1055,8 +1103,8 @@ int main(int argc, char **argv)
     motion_profile_id    = m_profile::CONSTANT;
     time_horizon_amplitude = 2.5;
     task_time_limit_sec  = 25.5;
-    tube_speed           = 0.0;
-    tube_force           = 0.3;
+    tube_speed           = 0.015;
+    tube_force           = -5.5;
     compensate_gravity   = true;
     control_null_space   = false;
     use_mass_alternation = false;
@@ -1141,6 +1189,19 @@ int main(int argc, char **argv)
                                   STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
                                   STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
                                   wrench_estimation_gain);
+    }
+    else if (desired_task_model == task_model::moveConstrained_follow_path)
+    {
+        controller.set_parameters(time_horizon_amplitude,
+                                    max_command_moveConstrained, error_alpha_5,
+                                    bias_threshold_5, bias_step_5, gain_threshold_5,
+                                    gain_step_5, min_bias_sat, min_command_sat,
+                                    null_space_abag_parameters_moveConstrained, 
+                                    compensation_parameters,
+                                    STOP_MOTION_ERROR_ALPHA,
+                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                    wrench_estimation_gain);
     }
     else if (desired_task_model == task_model::moveTo)
     {
