@@ -464,14 +464,14 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     // X-Y-Z linear
     KDL::Vector x_world(1.0, 0.0, 0.0);
     std::vector<double> task_frame_pose(12, 0.0);
-    KDL::Rotation task_orientation = KDL::Rotation::EulerZYZ(0.0, 0.0, -M_PI/4);
+    // KDL::Rotation task_orientation = KDL::Rotation::EulerZYZ(0.0, 0.0, -M_PI/4);
     for (int i = 0; (unsigned)i < tube_path_points.size() - 1; i++)
     {
         KDL::Vector tube_start_position = KDL::Vector(tube_path_points[i    ][0], tube_path_points[i    ][1], tube_path_points[i    ][2]);
         KDL::Vector tf_position         = KDL::Vector(tube_path_points[i + 1][0], tube_path_points[i + 1][1], tube_path_points[i + 1][2]);
 
-        tube_start_position = task_orientation * tube_start_position;
-        tf_position         = task_orientation * tf_position;
+        // tube_start_position = task_orientation * tube_start_position;
+        // tf_position         = task_orientation * tf_position;
 
         KDL::Vector x_task  = tf_position - tube_start_position;
         x_task.Normalize();
@@ -486,14 +486,14 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
         task_frame_pose[2] = tf_position[2];
 
         KDL::Rotation tf_orientation;
-        if(cosine < (-1 + 1e-6))
+        if (cosine < (-1 + 1e-6))
         {
             tf_orientation = KDL::Rotation::EulerZYZ(M_PI, 0.0, 0.0);
             task_frame_pose[3] = -1.0; task_frame_pose[4]  =  0.0; task_frame_pose[5]  = 0.0;
             task_frame_pose[6] =  0.0; task_frame_pose[7]  = -1.0; task_frame_pose[8]  = 0.0;
             task_frame_pose[9] =  0.0; task_frame_pose[10] =  0.0; task_frame_pose[11] = 1.0;
         }
-        else if(sine < 1e-6)
+        else if (sine < 1e-6)
         {
             tf_orientation = KDL::Rotation::Identity();
             task_frame_pose[3] = 1.0; task_frame_pose[4]  = 0.0; task_frame_pose[5]  = 0.0;
@@ -1248,13 +1248,12 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             // Set null-space error tolerance; small null-space oscillations are desired in this mode
             // moveConstrained_follow_path_task_.null_space_tolerance = 15.0;
 
-            // Motion error is computed in the base-frame
-            transform_drivers_ = false;
+            transform_drivers_ = false; // Motion error is computed in the base-frame
             fsm_result_ = task_status::APPROACH;
             break;
 
         case task_status::CRUISE:
-            if (previous_task_status_ == task_status::APPROACH) // Set ABAG parameters for linear Z axis force control
+            if (previous_task_status_ == task_status::APPROACH) // Re-set ABAG parameters for linear Z axis force control
             {
                 abag_.reset_state(0);
                 abag_.reset_state(1);
@@ -1269,9 +1268,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
                 abag_.set_min_command_sat_limit(min_sat_limits_);
                 max_command_(2) = force_task_parameters_(5);
                 apply_feedforward_force_ = true;
-
-                // Visualize time flag in control graphs, for this control mode switching
-                write_contact_time_to_file_ = true;
+                write_contact_time_to_file_ = true; // Visualize time flag in control graphs, for this control mode switching
             }
 
             // Update tube section count 
@@ -1281,7 +1278,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             // Make prediction while the state is expressed in the base frame
             make_Cartesian_predictions(horizon_amplitude_, 1);
 
-            //Change the reference frame of the robot motion state, from base frame to task frame
+            // Change the reference frame of the robot motion state, from base frame to task frame
             robot_state_.frame_pose[END_EFF_]        = moveConstrained_follow_path_task_.tf_poses[tube_section_count_].Inverse()   * robot_state_.frame_pose[END_EFF_];
             robot_state_.frame_velocity[END_EFF_]    = moveConstrained_follow_path_task_.tf_poses[tube_section_count_].M.Inverse() * robot_state_.frame_velocity[END_EFF_];
             predicted_state_.frame_pose[END_EFF_]    = moveConstrained_follow_path_task_.tf_poses[tube_section_count_].Inverse()   * predicted_state_.frame_pose[END_EFF_];
@@ -1622,8 +1619,7 @@ void dynamics_controller::compute_full_pose_task_error()
 */
 void dynamics_controller::compute_gravity_compensation_task_error()
 {
-    KDL::Wrench zero_ext_wrench;
-    fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, zero_ext_wrench, total_time_sec_, tube_section_count_);
+    fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
 }
 
 /**
@@ -2354,7 +2350,6 @@ int dynamics_controller::update_commands()
     }
     return 0;
 }
-
 
 /**
  * Perform single step of the control loop, given current robot joint state

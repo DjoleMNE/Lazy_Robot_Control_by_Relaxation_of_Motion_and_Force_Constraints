@@ -197,10 +197,7 @@ int finite_state_machine::update_moveConstrained_follow_path_task(state_specific
         desired_state.frame_velocity[END_EFF_].vel(0) = speed;      
 
         // Robot has crossed some tube section? If yes, switch to next one.
-        if ((current_error_(0) < moveConstrained_follow_path_task_.tube_tolerances[0]) && !final_section_reached)
-        {
-            return task_status::CHANGE_TUBE_SECTION;
-        }
+        if ((current_error_(0) < moveConstrained_follow_path_task_.tube_tolerances[0]) && !final_section_reached) return task_status::CHANGE_TUBE_SECTION;
         return task_status::CRUISE_THROUGH_TUBE;        
     }
     else
@@ -237,7 +234,6 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
         contact_detected_ = true;
         return task_status::STOP_ROBOT;
     }
-    contact_detected_ = false;
 
     bool final_section_reached = false;
     if ((unsigned)tube_section_count == moveTo_follow_path_task_.tf_poses.size() - 1) final_section_reached = true;
@@ -260,7 +256,6 @@ int finite_state_machine::update_moveTo_follow_path_task(state_specification &de
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         return task_status::STOP_ROBOT;
     }
-    goal_reached_ = false;
 
     /*
      * The robot has reached goal x axis area but it is out of y and z area?
@@ -336,7 +331,6 @@ int finite_state_machine::update_moveTo_weight_compensation_task(state_specifica
         contact_detected_ = true;
         return task_status::STOP_ROBOT;
     }
-    contact_detected_ = false;
 
     int count = 0;
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
@@ -354,7 +348,6 @@ int finite_state_machine::update_moveTo_weight_compensation_task(state_specifica
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         return task_status::STOP_ROBOT;
     }
-    goal_reached_ = false;
 
     /*
      * The robot has reached goal x area?
@@ -425,7 +418,6 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         contact_detected_ = true;
         return task_status::STOP_ROBOT;
     }
-    contact_detected_ = false;
 
     int count = 0;
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
@@ -443,7 +435,6 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         return task_status::STOP_ROBOT;
     }
-    goal_reached_ = false;
 
     /*
      * The robot has reached goal x area?
@@ -580,7 +571,6 @@ int finite_state_machine::update_gravity_compensation_task()
             printf("Time limit reached\n");
             time_limit_reached_ = true;
         }
-
         return task_status::STOP_CONTROL;
     }
 
@@ -631,7 +621,6 @@ int finite_state_machine::update_motion_task_status(const state_specification &r
             break;
 
          case task_model::gravity_compensation:
-            ext_wrench_ = ext_force;
             return update_gravity_compensation_task();
             break;
 
@@ -793,9 +782,7 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
 
         if (total_contact_time_ >= 0.014)
         {
-            #ifndef NDEBUG       
-                printf("Contact Lost!\n");
-            #endif
+            printf("Contact Lost!\n");
             return task_status::STOP_ROBOT;
         } 
         return task_status::CRUISE;
@@ -808,8 +795,8 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
         previous_task_time_ = current_task_time;
         if (total_contact_time_ >= 0.010) 
         {
-            total_contact_time_ = 0.0;
             contact_alignment_performed_ = true;
+            total_contact_time_ = 0.0;
             return task_status::CRUISE;
         }
         return task_status::APPROACH;

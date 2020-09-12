@@ -74,7 +74,7 @@ int desired_control_mode             = control_mode::TORQUE;
 int environment                      = kinova_environment::SIMULATION;
 int robot_model_id                   = kinova_model::URDF;
 int id                               = robot_id::KINOVA_GEN3_1;
-const double time_horizon_amplitude  = 2.5;
+double time_horizon_amplitude        = 2.5;
 double tube_speed                    = 0.01;
 double tube_force                    = 0.03;
 double desired_null_space_angle      = 90.0; // Unit degrees
@@ -109,8 +109,8 @@ std::vector<double> tube_tolerances_moveConstrained = {0.003, 0.03, 0.003,
 std::vector< std::vector<double> > tube_path_points(path_parameters[4], std::vector<double>(3, 0.0));
 std::vector< std::vector<double> > path_poses(path_parameters[4] - 1,   std::vector<double>(12, 0.0));
 
-const Eigen::VectorXd max_command                 = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 20.0, 20.0, 20.0).finished();
-const Eigen::VectorXd max_command_moveConstrained = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 30.0, 20.0, 20.0, 10.0).finished();
+Eigen::VectorXd max_command                 = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 20.0, 20.0, 20.0).finished();
+Eigen::VectorXd max_command_moveConstrained = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 1.0, 1.0, 1.0, 10.0).finished();
 
 // Full Pose ABAG parameters
 const Eigen::VectorXd error_alpha         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
@@ -808,7 +808,7 @@ int run_main_control(kinova_mediator &robot_driver)
 
     dynamics_controller controller(&robot_driver, RATE_HZ, compensate_gravity);
 
-    int return_flag = define_task(&controller); 
+    int return_flag = define_task(&controller);
     if (return_flag != 0)
     {
         printf("Error in defining task for robot\n");
@@ -1030,6 +1030,9 @@ int main(int argc, char **argv)
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                             //  false, false, false}; // Angular
                                              true, true, true}; // Angular
+    std::vector<bool> control_dims_moveConstrained = {true, true, true, // Linear
+                                                      true, true, true}; // Angular
+
     tube_tolerances      = std::vector<double>{0.01, 0.01, 0.01,
                                                0.0, 0.0, 0.0,
                                                0.0, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
@@ -1039,6 +1042,8 @@ int main(int argc, char **argv)
     tube_tolerances_moveConstrained = std::vector<double> {0.003, 0.03, 0.003,
                                                            0.005, 0.005, 25.0,
                                                            0.003, 0.001};
+    max_command                 = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 20.0, 20.0, 20.0).finished();
+    max_command_moveConstrained = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 10.0, 2.0, 2.0, 20.0).finished();
 
     environment          = kinova_environment::SIMULATION;
     robot_model_id       = kinova_model::URDF;
@@ -1048,6 +1053,7 @@ int main(int argc, char **argv)
     desired_task_model   = task_model::full_pose;
     path_type            = path_types::STEP_PATH;
     motion_profile_id    = m_profile::CONSTANT;
+    time_horizon_amplitude = 2.5;
     task_time_limit_sec  = 25.5;
     tube_speed           = 0.0;
     tube_force           = 0.3;
