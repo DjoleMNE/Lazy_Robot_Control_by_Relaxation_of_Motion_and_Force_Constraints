@@ -40,12 +40,13 @@ SOFTWARE.
 
 enum desired_pose
 {
-    CANDLE       = 0,
-    HOME         = 1,
-    RETRACT      = 2,
-    PACKAGING    = 3,
-    HOME_FORWARD = 4,
-    HOME_BACK    = 5
+    CANDLE         = 0,
+    HOME           = 1,
+    RETRACT        = 2,
+    PACKAGING      = 3,
+    HOME_FORWARD   = 4,
+    HOME_BACK      = 5,
+    APPROACH_TABLE = 6
 };
 
 enum path_types
@@ -399,6 +400,10 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
         case desired_pose::CANDLE:
             configuration_array = std::vector<double> {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
             break;
+        case desired_pose::APPROACH_TABLE:
+            configuration_array = std::vector<double> {0.001, 61.248, 180.03, 219.604, 359.952, 21.268, 88.583};
+            // configuration_array = std::vector<double> {0.001, 42.017, 179.56, 220.641, 2.761, 1.965, 88.101};
+            break;
         case desired_pose::HOME_BACK:
             configuration_array = std::vector<double> {356.129, 304.126, 181.482, 250.087, 2.852, 328.367, 87.817};
             break;
@@ -578,6 +583,14 @@ int define_task(dynamics_controller *dyn_controller)
                                     1.0, 0.0, 0.0, // Angular: Rotation matrix
                                     0.0, -1.0, 0.0,
                                     0.0, 0.0, -1.0};
+            break;
+
+        case desired_pose::APPROACH_TABLE:
+            tube_start_position = std::vector<double>{0.252245, 0.00115957, 0.0890743};
+            desired_ee_pose     = { 0.252245,   0.00115957, 0.0890743, // Linear: Vector
+                                    0.0257695, -0.999646,   0.00656261, // Angular: Rotation matrix
+                                    0.999667,   0.025775,   0.000757385,
+                                   -0.00092626, 0.00654091, 0.999978};
             break;
 
         case desired_pose::RETRACT:
@@ -1093,12 +1106,12 @@ int main(int argc, char **argv)
     max_command                 = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 20.0, 20.0, 20.0).finished();
     max_command_moveConstrained = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 10.0, 2.0, 2.0, 20.0).finished();
 
-    environment          = kinova_environment::SIMULATION;
+    environment          = kinova_environment::REAL;
     robot_model_id       = kinova_model::URDF;
     id                   = robot_id::KINOVA_GEN3_1;
-    desired_pose_id      = desired_pose::HOME;
+    desired_pose_id      = desired_pose::APPROACH_TABLE;
     desired_control_mode = control_mode::TORQUE;
-    desired_task_model   = task_model::full_pose;
+    desired_task_model   = task_model::moveConstrained_follow_path;
     path_type            = path_types::STEP_PATH;
     motion_profile_id    = m_profile::CONSTANT;
     time_horizon_amplitude = 2.5;
@@ -1134,7 +1147,7 @@ int main(int argc, char **argv)
 
     if (run_main_control(robot_driver) == -1) return 0;
     robot_driver.deinitialize();
-    return_flag = go_to(robot_driver, desired_pose::RETRACT);
+    return_flag = go_to(robot_driver, desired_pose::APPROACH_TABLE);
     return 0;
 
     dynamics_controller controller(&robot_driver, RATE_HZ, compensate_gravity);
