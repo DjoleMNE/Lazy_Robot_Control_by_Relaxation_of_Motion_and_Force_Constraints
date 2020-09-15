@@ -471,7 +471,7 @@ void Solver_Vereshchagin::final_upwards_sweep(JntArray &q_dotdot, JntArray &torq
 
         // Summing contributions for true control torque:
         // Here, virtual feed-forward torques should also be added. However, those are not yet implemented in the interface
-        controlTorque(j) = constraintTorque(j) + ext_torque(j);
+        controlTorque(j) = constraintTorque(j) + ext_torque(j) + torques(j);
 
         // Summing all the contributions that are felt at the joint: control + nature + external
         totalTorque(j) = s.u + parent_forceProjection + controlTorque(j);
