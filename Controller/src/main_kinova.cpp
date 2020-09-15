@@ -91,7 +91,6 @@ auto error_callback = [](Kinova::Api::KError err){ cout << "_________ callback e
 
 std::vector<bool> control_dims                 = {true, true, true, // Linear
                                                   false, false, false}; // Angular
-
 std::vector<bool> control_dims_moveConstrained = {true, true, true, // Linear
                                                   true, true, false}; // Angular
 
@@ -432,7 +431,6 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
             newfile.close();
         }
 
-
         // Create API objects
         auto transport = new Kinova::Api::TransportClientTcp();
         auto router = new Kinova::Api::RouterClient(transport, error_callback);
@@ -530,7 +528,7 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
     }
     else
     {
-        robot_driver.initialize(robot_model_id, environment, id,  1.0 / static_cast<double>(RATE_HZ));
+        robot_driver.initialize(robot_model_id, environment, id, 1.0 / static_cast<double>(RATE_HZ));
         if (!robot_driver.is_initialized())
         {
             printf("Robot is not initialized\n");
@@ -562,19 +560,6 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
 int define_task(dynamics_controller *dyn_controller)
 {
     std::vector<double> desired_ee_pose(12, 0.0);
-
-    // Create End_effector Cartesian Acceleration task
-    dyn_controller->define_ee_acc_constraint(std::vector<bool>{false, false, false, // Linear
-                                                               false, false, false}, // Angular
-                                             std::vector<double>{0.0, 0.0, 0.0, // Linear
-                                                                 0.0, 0.0, 0.0}); // Angular
-    // Create External Forces task
-    dyn_controller->define_ee_external_force(std::vector<double>{0.0, 0.0, 0.0, // Linear
-                                                                 0.0, 0.0, 0.0}); // Angular
-    // Create Feedforward torques task
-    dyn_controller->define_feedforward_torque(std::vector<double>{0.0, 0.0, 0.0, 0.0,
-                                                                  0.0, 0.0, 0.0});
-
     switch (desired_pose_id)
     {
         case desired_pose::CANDLE:
@@ -844,12 +829,6 @@ int run_main_control(kinova_mediator &robot_driver)
     // Constraint comming from the Vereshchagin HD solver
     assert(JOINTS == robot_driver.get_robot_model().getNrOfSegments());
 
-    // if (robot_driver.stop_robot_motion() == -1)
-    // {
-    //     printf("Error in stopping the robot\n");
-    //     return -1;
-    // }
-
     KDL::Chain robot_chain = robot_driver.get_robot_model();
     // Above main chain is prepared for vereshchagin (nj == ns) but full contains additional segments
     KDL::Chain robot_chain_full = robot_driver.get_full_robot_model();
@@ -878,39 +857,39 @@ int run_main_control(kinova_mediator &robot_driver)
     else if (desired_task_model == task_model::moveGuarded)
     {
         controller.set_parameters(time_horizon_amplitude,
-                                    max_command, error_alpha_1,
-                                    bias_threshold_1, bias_step_1, gain_threshold_1,
-                                    gain_step_1, min_bias_sat, min_command_sat,
-                                    null_space_abag_parameters, compensation_parameters,
-                                    STOP_MOTION_ERROR_ALPHA,
-                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
-                                    wrench_estimation_gain);
+                                  max_command, error_alpha_1,
+                                  bias_threshold_1, bias_step_1, gain_threshold_1,
+                                  gain_step_1, min_bias_sat, min_command_sat,
+                                  null_space_abag_parameters, compensation_parameters,
+                                  STOP_MOTION_ERROR_ALPHA,
+                                  STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                  wrench_estimation_gain);
     }
     else if (desired_task_model == task_model::moveTo_follow_path)
     {
         controller.set_parameters(time_horizon_amplitude,
-                                    max_command, error_alpha_3,
-                                    bias_threshold_3, bias_step_3, gain_threshold_3,
-                                    gain_step_3, min_bias_sat, min_command_sat,
-                                    null_space_abag_parameters, compensation_parameters,
-                                    STOP_MOTION_ERROR_ALPHA,
-                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
-                                    wrench_estimation_gain);
+                                  max_command, error_alpha_3,
+                                  bias_threshold_3, bias_step_3, gain_threshold_3,
+                                  gain_step_3, min_bias_sat, min_command_sat,
+                                  null_space_abag_parameters, compensation_parameters,
+                                  STOP_MOTION_ERROR_ALPHA,
+                                  STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                  wrench_estimation_gain);
 
     }
     else if (desired_task_model == task_model::moveTo_weight_compensation)
     {
         controller.set_parameters(time_horizon_amplitude,
-                                    max_command, error_alpha_4,
-                                    bias_threshold_4, bias_step_4, gain_threshold_4,
-                                    gain_step_4, min_bias_sat, min_command_sat,
-                                    null_space_abag_parameters, compensation_parameters,
-                                    STOP_MOTION_ERROR_ALPHA,
-                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
-                                    wrench_estimation_gain);
+                                  max_command, error_alpha_4,
+                                  bias_threshold_4, bias_step_4, gain_threshold_4,
+                                  gain_step_4, min_bias_sat, min_command_sat,
+                                  null_space_abag_parameters, compensation_parameters,
+                                  STOP_MOTION_ERROR_ALPHA,
+                                  STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                  wrench_estimation_gain);
     }
     else if (desired_task_model == task_model::moveConstrained_follow_path)
     {
@@ -928,27 +907,27 @@ int run_main_control(kinova_mediator &robot_driver)
     else if (desired_task_model == task_model::moveTo)
     {
         controller.set_parameters(time_horizon_amplitude,
-                                    max_command, error_alpha_2,
-                                    bias_threshold_2, bias_step_2, gain_threshold_2,
-                                    gain_step_2, min_bias_sat, min_command_sat,
-                                    null_space_abag_parameters, compensation_parameters,
-                                    STOP_MOTION_ERROR_ALPHA,
-                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
-                                    wrench_estimation_gain);
+                                  max_command, error_alpha_2,
+                                  bias_threshold_2, bias_step_2, gain_threshold_2,
+                                  gain_step_2, min_bias_sat, min_command_sat,
+                                  null_space_abag_parameters, compensation_parameters,
+                                  STOP_MOTION_ERROR_ALPHA,
+                                  STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                  wrench_estimation_gain);
     }
 
     else if (desired_task_model == task_model::gravity_compensation)
     {
         controller.set_parameters(time_horizon_amplitude,
-                                    max_command, error_alpha,
-                                    bias_threshold, bias_step, gain_threshold,
-                                    gain_step, min_bias_sat, min_command_sat,
-                                    null_space_abag_parameters, compensation_parameters,
-                                    STOP_MOTION_ERROR_ALPHA,
-                                    STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
-                                    STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
-                                    wrench_estimation_gain);
+                                  max_command, error_alpha,
+                                  bias_threshold, bias_step, gain_threshold,
+                                  gain_step, min_bias_sat, min_command_sat,
+                                  null_space_abag_parameters, compensation_parameters,
+                                  STOP_MOTION_ERROR_ALPHA,
+                                  STOP_MOTION_BIAS_THRESHOLD, STOP_MOTION_BIAS_STEP,
+                                  STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
+                                  wrench_estimation_gain);
     }
     else
     {
@@ -985,8 +964,8 @@ int run_main_control(kinova_mediator &robot_driver)
         loop_start_time = std::chrono::steady_clock::now();
         if (!stopping_sequence_on) total_time_sec = loop_iteration_count * DT_SEC;
 
-        //Get current state from robot sensors
-        if (use_estimated_external_wrench)
+        // Get current state from robot sensors
+        if (use_estimated_external_wrench && !stopping_sequence_on)
         {
             robot_driver.get_joint_state(joint_pos, joint_vel, joint_torque);
             return_flag = controller.estimate_external_wrench(joint_pos, joint_vel, joint_torque, wrenches_full_model[robot_chain_full.getNrOfSegments()- 1]);
@@ -1091,8 +1070,8 @@ int main(int argc, char **argv)
     control_dims         = std::vector<bool>{true, true, true, // Linear
                                             //  false, false, false}; // Angular
                                              true, true, true}; // Angular
-    std::vector<bool> control_dims_moveConstrained = {true, true, true, // Linear
-                                                      true, true, true}; // Angular
+    control_dims_moveConstrained = {true, true, true, // Linear
+                                    true, true, true}; // Angular
 
     tube_tolerances      = std::vector<double>{0.01, 0.01, 0.01,
                                                0.0, 0.0, 0.0,
@@ -1140,7 +1119,6 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    assert(JOINTS == robot_driver.get_robot_model().getNrOfSegments());
     // if (robot_driver.stop_robot_motion() == -1) return 0;
 
     // run_test(robot_driver); return 0;
@@ -1240,7 +1218,11 @@ int main(int argc, char **argv)
                                   STOP_MOTION_GAIN_THRESHOLD, STOP_MOTION_GAIN_STEP,
                                   wrench_estimation_gain);
     }
-    else return 0;
+    else
+    {
+        printf("Error in setting the parameters\n");
+        return -1;
+    }
 
     initial_result = controller.initialize(desired_control_mode, desired_dynamics_interface, motion_profile_id, log_data, use_estimated_external_wrench);
     if (initial_result != 0) return -1;
