@@ -200,8 +200,8 @@ const Eigen::VectorXd gain_step_4           = (Eigen::VectorXd(NUMBER_OF_CONSTRA
 
 // moveConstrained-follow_path-torque ABAG parameters
 const Eigen::VectorXd error_alpha_5         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.900000, 0.900000, 0.950000,
-                                               0.850000, 0.850000, 0.900000).finished();
+                                            << 0.900000, 0.900000, 0.900000,
+                                               0.900000, 0.900000, 0.900000).finished();
 const Eigen::VectorXd bias_threshold_5      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.000457, 0.000407, 0.000407, 
                                                0.000507, 0.000507, 0.000457).finished();
@@ -1101,10 +1101,10 @@ int main(int argc, char **argv)
     //                  x torque, y torque,   null-space, 
     //                  x vel,    z_a pos/vel
     tube_tolerances_moveConstrained = std::vector<double> {0.003, 0.001, 0.003,
-                                                           0.005, 0.005, 25.0,
-                                                           0.001, 0.001};
+                                                           0.0, 0.0, 25.0,
+                                                           0.001, 0.005};
     max_command                 = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 20.0, 20.0, 20.0).finished();
-    max_command_moveConstrained = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 10.0, 2.0, 2.0, 20.0).finished();
+    max_command_moveConstrained = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 15.0, 1.0, 1.0, 25.0).finished();
 
     environment          = kinova_environment::REAL;
     robot_model_id       = kinova_model::URDF;
@@ -1117,7 +1117,7 @@ int main(int argc, char **argv)
     time_horizon_amplitude = 2.5;
     task_time_limit_sec  = 25.5;
     tube_speed           = 0.015;
-    tube_force           = -5.5;
+    tube_force           = -10.5;
     compensate_gravity   = true;
     control_null_space   = false;
     use_mass_alternation = false;
