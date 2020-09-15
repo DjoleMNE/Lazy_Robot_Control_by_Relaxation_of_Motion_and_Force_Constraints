@@ -122,6 +122,17 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     error_logger_.robot_id_ = ROBOT_ID_;
     error_logger_.error_source_ = error_source::empty;
     error_logger_.error_status_ = 0;
+
+    // Clear Acceleration-Constraint task driver
+    define_ee_acc_constraint(std::vector<bool>{false, false, false, // Linear
+                                               false, false, false}, // Angular
+                             std::vector<double>{0.0, 0.0, 0.0, // Linear
+                                                 0.0, 0.0, 0.0}); // Angular
+    // Clear External-force task driver
+    define_ee_external_force(std::vector<double>{0.0, 0.0, 0.0, // Linear
+                                                 0.0, 0.0, 0.0}); // Angular
+    // Clear Feedforward-torques task driver
+    define_feedforward_torque(std::vector<double>{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0});
 }
 
 //Print information about controller settings
@@ -926,7 +937,6 @@ void dynamics_controller::define_gravity_compensation_task(const double task_tim
     KDL::SetToZero(cart_force_command_[END_EFF_]);
 }
 
-// Define Cartesian Acceleration task on the end-effector - Public Method
 void dynamics_controller::define_ee_acc_constraint(const std::vector<bool> &constraint_direction,
                                                    const std::vector<double> &cartesian_acceleration)
 {    
@@ -980,7 +990,6 @@ void dynamics_controller::set_ee_acc_constraints(state_specification &state,
         state.ee_acceleration_energy(i) = cartesian_acceleration[i];
 }
 
-// Define External force task - Public Method
 void dynamics_controller::define_ee_external_force(const std::vector<double> &external_force)
 {
     //Call private method for this state
@@ -1003,7 +1012,6 @@ void dynamics_controller::set_external_forces(state_specification &state,
                                                               external_force[5]));
 }
 
-// Define FeedForward joint torques task - Public Method
 void dynamics_controller::define_feedforward_torque(const std::vector<double> &ff_torque)
 {
     //Call private method for this state

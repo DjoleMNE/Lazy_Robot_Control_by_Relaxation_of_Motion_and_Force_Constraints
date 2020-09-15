@@ -201,12 +201,6 @@ class dynamics_controller
 
     void define_gravity_compensation_task(const double task_time_limit_sec);
 
-    // Methods for defining robot task via 3 interfaces exposed by Vereshchagin
-    void define_ee_acc_constraint(const std::vector<bool> &constraint_direction,
-                                  const std::vector<double> &cartesian_acceleration);
-    void define_ee_external_force(const std::vector<double> &external_force);
-    void define_feedforward_torque(const std::vector<double> &ff_torque);
-
   private:
     const int RATE_HZ_;
     const long DT_MICRO_, DT_1KHZ_MICRO_, DT_STOPPING_MICRO_;
@@ -325,6 +319,12 @@ class dynamics_controller
     int evaluate_dynamics();
     int compute_gravity_compensation_control_commands();
     int enforce_loop_frequency(const int dt);
+
+    // Methods for defining robot task via 3 interfaces exposed by Vereshchagin
+    void define_ee_acc_constraint(const std::vector<bool> &constraint_direction,
+                                  const std::vector<double> &cartesian_acceleration);
+    void define_ee_external_force(const std::vector<double> &external_force);
+    void define_feedforward_torque(const std::vector<double> &ff_torque);
 
     void set_ee_acc_constraints(state_specification &state,
                                 const std::vector<bool> &constraint_direction,
