@@ -1191,7 +1191,7 @@ void dynamics_controller::compute_moveConstrained_null_space_task_error()
 void dynamics_controller::compute_moveConstrained_follow_path_task_error()
 {
     // Saturate linear force measurements in Z (sensor frame) direction
-    // if (ext_wrench_(2) > 0.0) ext_wrench_(2) = 0.0;
+    if (ext_wrench_(2) > 0.0) ext_wrench_(2) = 0.0;
 
     // Additional Cartesian force to keep residual part of the robot in a good configuration
     if (compute_null_space_command_) compute_moveConstrained_null_space_task_error();
@@ -1239,17 +1239,15 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             if (std::fabs(abag_error_vector_(1)) <= moveConstrained_follow_path_task_.tube_tolerances[6]) abag_error_vector_(1) = 0.0;
 
             // Control Linear Z velocity w.r.t. base frame
-            abag_error_vector_(2) = -0.002 - robot_state_.frame_velocity[END_EFF_](2);
-            if (std::fabs(abag_error_vector_(2)) <= moveConstrained_follow_path_task_.tube_tolerances[6]) abag_error_vector_(2) = 0.0;
+            abag_error_vector_(2) = -0.003 - robot_state_.frame_velocity[END_EFF_](2);
+            // if (std::fabs(abag_error_vector_(2)) <= 0.0001) abag_error_vector_(2) = 0.0;
             MOTION_CTRL_DIM_[2] = true; FORCE_CTRL_DIM_[2] = false;
 
-            // Control moment X w.r.t. sensor/tool frame
-            abag_error_vector_(3) = 0.0 - ext_wrench_(3);
-            if (std::fabs(abag_error_vector_(3)) <= moveConstrained_follow_path_task_.tube_tolerances[3]) abag_error_vector_(3) = 0.0;
-
-            // Control moment Y w.r.t. sensor/tool frame
-            abag_error_vector_(4) = 0.0 - ext_wrench_(4);
-            if (std::fabs(abag_error_vector_(4)) <= moveConstrained_follow_path_task_.tube_tolerances[4]) abag_error_vector_(4) = 0.0;
+            // Control moment X & Y w.r.t. sensor/tool frame
+            // abag_error_vector_(3) = 0.0 - ext_wrench_(3);
+            // abag_error_vector_(4) = 0.0 - ext_wrench_(4);
+            // if (std::fabs(abag_error_vector_(3)) <= moveConstrained_follow_path_task_.tube_tolerances[3]) abag_error_vector_(3) = 0.0;
+            // if (std::fabs(abag_error_vector_(4)) <= moveConstrained_follow_path_task_.tube_tolerances[4]) abag_error_vector_(4) = 0.0;
 
             MOTION_CTRL_DIM_[5] = false;
 
@@ -1319,17 +1317,12 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             // Check for tube on moment: X and Y angular, tool-tip frame
             abag_error_vector_(3) =  std::atan2(-ext_wrench_(1), ext_wrench_(2));
             // abag_error_vector_(3) = std::atan2(-ext_wrench_(2), -ext_wrench_(1));
-            if (std::fabs(abag_error_vector_(3)) <= moveConstrained_follow_path_task_.tube_tolerances[3]) abag_error_vector_(3) = 0.0;
+            // abag_error_vector_(3) = 0.0 + ext_wrench_(3);
             abag_error_vector_(4) = std::atan2(-ext_wrench_(0), ext_wrench_(2));
             // abag_error_vector_(4) = std::atan2(-ext_wrench_(2), -ext_wrench_(0));
+            // abag_error_vector_(4) = 0.0 + ext_wrench_(4);
+            if (std::fabs(abag_error_vector_(3)) <= moveConstrained_follow_path_task_.tube_tolerances[3]) abag_error_vector_(3) = 0.0;
             if (std::fabs(abag_error_vector_(4)) <= moveConstrained_follow_path_task_.tube_tolerances[4]) abag_error_vector_(4) = 0.0;
-
-            // Check for tube on moments: X & Y-angular, tool-tip frame
-            // for (int i = 3; i < 5; i++)
-            // {
-            //     abag_error_vector_(i) = 0.0 + ext_wrench_(i);
-            //     if (std::fabs(abag_error_vector_(i)) <= moveConstrained_follow_path_task_.tube_tolerances[i]) abag_error_vector_(i) = 0.0;
-            // }
 
             // Check for tube on angular velocity: Z-angular
             abag_error_vector_(5) = desired_state_.frame_velocity[END_EFF_](5) - robot_state_.frame_velocity[END_EFF_](5);
@@ -1782,7 +1775,7 @@ void dynamics_controller::compute_cart_control_commands()
             // Change the reference frame of constraint forces, from task frame to base frame
             if (transform_drivers_) transform_motion_driver();
 
-            // Use external force interface only for force commands in task specs
+            // Use external force interface only for the force commands defined in the task specs
             if (desired_task_model_ == task_model::moveConstrained_follow_path)
             {
                 for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
@@ -1892,7 +1885,7 @@ int dynamics_controller::compute_weight_compensation_control_commands()
     return compensation_status;
 }
 
-//Calculate robot dynamics - Resolve motion and forces using the Vereshchagin HD solver
+// Calculate robot dynamics - Resolve motion and forces using the Vereshchagin HD solver
 int dynamics_controller::evaluate_dynamics()
 {
     int hd_solver_result = this->hd_solver_->CartToJnt(robot_state_.q,

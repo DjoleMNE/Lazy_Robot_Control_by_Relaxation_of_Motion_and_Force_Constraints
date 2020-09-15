@@ -810,7 +810,7 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
 bool finite_state_machine::contact_alignment_secured(const KDL::Wrench &desired_force,
                                                      const KDL::Wrench &ext_force)
 {
-    if (std::fabs(ext_force(2)) < 5.0) return false;
+    if (std::fabs(ext_force(2)) < 11.0) return false;
     // if (std::fabs(ext_force(2)) < 0.016 || std::fabs(ext_force(2)) > 1.0) return false;
     // if (std::fabs(ext_force(3)) > 0.1) return false;
     // if (std::fabs(ext_force(4)) > 0.1) return false;
