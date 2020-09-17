@@ -133,20 +133,20 @@ const Eigen::VectorXd gain_step           = (Eigen::VectorXd(NUMBER_OF_CONSTRAIN
 
 // moveGuarded-torque ABAG parameters
 const Eigen::VectorXd error_alpha_1         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.850000, 0.900000, 0.900000, 
-                                               0.850000, 0.850000, 0.850000).finished();
+                                            << 0.900000, 0.900000, 0.900000, 
+                                               0.900000, 0.900000, 0.900000).finished();
 const Eigen::VectorXd bias_threshold_1      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.000407, 0.000407, 0.000407, 
-                                               0.001007, 0.001007, 0.001007).finished();
+                                            << 0.000457, 0.000407, 0.000407, 
+                                               0.000500, 0.000500, 0.000500).finished();
 const Eigen::VectorXd bias_step_1           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.000550, 0.000495, 0.000495, 
-                                               0.003495, 0.003495, 0.003495).finished();
+                                            << 0.000500, 0.000400, 0.000400, 
+                                               0.000800, 0.000800, 0.000800).finished();
 const Eigen::VectorXd gain_threshold_1      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.552492, 0.552492, 0.552492, 
-                                               0.252492, 0.252492, 0.252492).finished();
+                                            << 0.502492, 0.502492, 0.502492, 
+                                               0.650000, 0.650000, 0.650000).finished();
 const Eigen::VectorXd gain_step_1           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
-                                            << 0.003152, 0.003152, 0.003152, 
-                                               0.002552, 0.002552, 0.002552).finished();
+                                            << 0.002552, 0.002552, 0.002552, 
+                                               0.002500, 0.002500, 0.002500).finished();
 
 // moveTo-torque ABAG parameters
 const Eigen::VectorXd error_alpha_2         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
@@ -154,16 +154,16 @@ const Eigen::VectorXd error_alpha_2         = (Eigen::VectorXd(NUMBER_OF_CONSTRA
                                                0.900000, 0.900000, 0.900000).finished();
 const Eigen::VectorXd bias_threshold_2      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.000457, 0.000407, 0.000407, 
-                                               0.000407, 0.000407, 0.000407).finished();
+                                               0.000500, 0.000500, 0.000500).finished();
 const Eigen::VectorXd bias_step_2           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.000500, 0.000400, 0.000400, 
-                                               0.000400, 0.000400, 0.000400).finished();
+                                               0.000800, 0.000800, 0.000800).finished();
 const Eigen::VectorXd gain_threshold_2      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.502492, 0.502492, 0.502492, 
-                                               0.502492, 0.502492, 0.502492).finished();
+                                               0.650000, 0.650000, 0.650000).finished();
 const Eigen::VectorXd gain_step_2           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.002552, 0.002552, 0.002552, 
-                                               0.002552, 0.002552, 0.002552).finished();
+                                               0.002500, 0.002500, 0.002500).finished();
 
 // moveTo-follow_path-torque ABAG parameters
 const Eigen::VectorXd error_alpha_3         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
@@ -606,7 +606,7 @@ int define_task(dynamics_controller *dyn_controller)
 
         case desired_pose::HOME:
             tube_start_position = std::vector<double>{ 0.395153, 0.00136493, 0.433647};
-            desired_ee_pose     = { 0.39514, 0.00136493, 0.433647, // Linear: Vector
+            desired_ee_pose     = { 0.49514, 0.00136493, 0.433647, // Linear: Vector
                                     0.0, 0.0, -1.0, // Angular: Rotation matrix
                                     1.0, 0.0, 0.0,
                                     0.0, -1.0, 0.0};
