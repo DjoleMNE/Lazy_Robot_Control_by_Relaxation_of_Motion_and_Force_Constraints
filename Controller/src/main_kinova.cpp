@@ -96,8 +96,8 @@ std::vector<bool> control_dims                 = {true, true, true, // Linear
 std::vector<bool> control_dims_moveConstrained = {true, true, true, // Linear
                                                   true, true, false}; // Angular
 
-const std::vector<double> path_parameters = {0.5, 3.5, 0.05, 0.008, 2}; // last parameter must be min 2 (number of points)
-const std::vector<double> path_parameters_moveConstrained = {0.5, 0.5, 0.05, 0.008, 2};
+std::vector<double> path_parameters       = {1.5, 1.7, 0.03, 0.003, 2}; // last parameter must be min 2 (number of points)
+std::vector<double> path_parameters_moveConstrained = {1.5, 1.7, 0.03, 0.003, 100};
 std::vector<double> tube_start_position   = {0.0, 0.0, 0.0};
 std::vector<double> tube_tolerances       = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
@@ -109,7 +109,9 @@ std::vector<double> tube_tolerances_moveConstrained = {0.003, 0.03, 0.003,
                                                        0.003, 0.001};
 
 std::vector< std::vector<double> > tube_path_points(path_parameters[4], std::vector<double>(3, 0.0));
+std::vector< std::vector<double> > tube_path_points_moveConstrained(path_parameters_moveConstrained[4], std::vector<double>(3, 0.0));
 std::vector< std::vector<double> > path_poses(path_parameters[4] - 1,   std::vector<double>(12, 0.0));
+std::vector< std::vector<double> > path_poses_moveConstrained(path_parameters_moveConstrained[4] - 1,   std::vector<double>(12, 0.0));
 
 Eigen::VectorXd max_command                 = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 20.0, 20.0, 20.0).finished();
 Eigen::VectorXd max_command_moveConstrained = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 1.0, 1.0, 1.0, 10.0).finished();
@@ -621,15 +623,15 @@ int define_task(dynamics_controller *dyn_controller)
             switch (path_type)
             {
                 case path_types::STEP_PATH:
-                    motion_profile::draw_step_xy(tube_path_points, 6, 0.07, desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
+                    motion_profile::draw_step_xy(tube_path_points_moveConstrained, 6, 0.07, desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
                     break;
 
                 case path_types::INF_SIGN_PATH:
-                    motion_profile::draw_inf_sign_xy(tube_path_points, 0.3, 0.2, 1.0, 1.0, desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
+                    motion_profile::draw_inf_sign_xy(tube_path_points_moveConstrained, 0.3, 0.2, 1.0, 1.0, desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
                     break;
 
                 case path_types::SINE_PATH:
-                    motion_profile::draw_sine_xy(tube_path_points, path_parameters_moveConstrained[0], path_parameters_moveConstrained[1],
+                    motion_profile::draw_sine_xy(tube_path_points_moveConstrained, path_parameters_moveConstrained[0], path_parameters_moveConstrained[1],
                                                  path_parameters_moveConstrained[2], path_parameters_moveConstrained[3], 
                                                  desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
                     break;
@@ -641,7 +643,7 @@ int define_task(dynamics_controller *dyn_controller)
 
             dyn_controller->define_moveConstrained_follow_path_task(std::vector<bool>{control_dims_moveConstrained[0], control_dims_moveConstrained[1], control_dims_moveConstrained[2], // Linear
                                                                                       control_dims_moveConstrained[3], control_dims_moveConstrained[4], control_dims_moveConstrained[5]},// Angular
-                                                                    tube_path_points,
+                                                                    tube_path_points_moveConstrained,
                                                                     tube_tolerances_moveConstrained,
                                                                     tube_speed,
                                                                     tube_force,
@@ -649,7 +651,7 @@ int define_task(dynamics_controller *dyn_controller)
                                                                     task_time_limit_sec,// time_limit
                                                                     control_null_space_moveConstrained,
                                                                     desired_null_space_angle,
-                                                                    path_poses); // TF pose
+                                                                    path_poses_moveConstrained); // TF pose
             break;
 
         case task_model::moveTo_follow_path:
@@ -1081,11 +1083,13 @@ int main(int argc, char **argv)
     // Tube tolerances: x pos,    y pos,      z force, 
     //                  x torque, y torque,   null-space, 
     //                  x vel,    z_a pos/vel
-    tube_tolerances_moveConstrained = std::vector<double> {0.003, 0.001, 0.003,
+    tube_tolerances_moveConstrained = std::vector<double> {0.003, 0.005, 0.003,
                                                            0.0, 0.0, 25.0,
                                                            0.001, 0.005};
-    max_command                 = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 20.0, 20.0, 20.0).finished();
-    max_command_moveConstrained = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 15.0, 1.0, 1.0, 25.0).finished();
+    max_command                     = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 20.0, 20.0, 20.0).finished();
+    max_command_moveConstrained     = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 15.0, 1.0, 1.0, 25.0).finished();
+    path_parameters                 = std::vector<double>{1.5, 1.7, 0.03, 0.003, 2}; // last parameter must be min 2 (number of points)
+    path_parameters_moveConstrained = std::vector<double>{1.5, 1.7, 0.03, 0.003, 2};
 
     environment          = kinova_environment::REAL;
     robot_model_id       = kinova_model::URDF;
@@ -1097,8 +1101,10 @@ int main(int argc, char **argv)
     motion_profile_id    = m_profile::CONSTANT;
     time_horizon_amplitude = 2.5;
     task_time_limit_sec  = 25.5;
-    tube_speed           = 0.015;
+    tube_speed           = 0.02;
     tube_force           = -10.5;
+    contact_threshold_linear  = 50.0;
+    contact_threshold_angular = 50.0;
     compensate_gravity   = true;
     control_null_space   = false;
     use_mass_alternation = false;
