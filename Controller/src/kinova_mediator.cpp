@@ -284,12 +284,13 @@ int kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
 void kinova_mediator::get_end_effector_wrench(KDL::Wrench &end_effector_wrench)
 {
     // Linear forces given in Newton, angular in Newton * meters
-    end_effector_wrench.force(0)  = base_feedback_.base().tool_external_wrench_force_x();
-    end_effector_wrench.force(1)  = base_feedback_.base().tool_external_wrench_force_y();
-    end_effector_wrench.force(2)  = base_feedback_.base().tool_external_wrench_force_z();
-    end_effector_wrench.torque(0) = base_feedback_.base().tool_external_wrench_torque_x();
-    end_effector_wrench.torque(1) = base_feedback_.base().tool_external_wrench_torque_y();
-    end_effector_wrench.torque(2) = base_feedback_.base().tool_external_wrench_torque_z();
+    KDL::SetToZero(end_effector_wrench);
+    // end_effector_wrench.force(0)  = base_feedback_.base().tool_external_wrench_force_x();
+    // end_effector_wrench.force(1)  = base_feedback_.base().tool_external_wrench_force_y();
+    // end_effector_wrench.force(2)  = base_feedback_.base().tool_external_wrench_force_z();
+    // end_effector_wrench.torque(0) = base_feedback_.base().tool_external_wrench_torque_x();
+    // end_effector_wrench.torque(1) = base_feedback_.base().tool_external_wrench_torque_y();
+    // end_effector_wrench.torque(2) = base_feedback_.base().tool_external_wrench_torque_z();
 }
 
 // Set external wrenches for the simulation. FD solver expects wrenches to be expressed in respective link's frame... not the base frame

@@ -1469,11 +1469,7 @@ void dynamics_controller::compute_moveTo_task_error()
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
     // Linear Tube Velocity processing
-    if ((desired_state_.frame_velocity[END_EFF_].vel(0) != 0.0) && \
-        (std::fabs(abag_error_vector_(0)) <= moveTo_task_.tube_tolerances[6]))
-    {
-        abag_error_vector_(0) = 0.0;
-    }
+    if ((fsm_result_ == task_status::CRUISE_THROUGH_TUBE) && (std::fabs(abag_error_vector_(0)) <= moveTo_task_.tube_tolerances[6])) abag_error_vector_(0) = 0.0;
 
     // Position error processing
     for (int i = 1; i < 3; i++)
@@ -1589,6 +1585,7 @@ void dynamics_controller::compute_full_pose_task_error()
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
 
     fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
+
     abag_error_vector_ = predicted_error_twist_;
     for (int i = 3; i < NUM_OF_CONSTRAINTS_; i++)
     {
@@ -2408,7 +2405,12 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
             error_logger_.error_status_ = -1;
             return -1;
         }
-        else if (status == 1) return -1;
+        else if (status == 1)
+        {
+            error_logger_.error_source_ = error_source::fsm;
+            error_logger_.error_status_ = 1;
+            return -1;
+        }
 
         if (update_commands() == -1) return -1;
     }

@@ -80,6 +80,8 @@ double tube_speed                    = 0.01;
 double tube_force                    = 0.03;
 double desired_null_space_angle      = 90.0; // Unit degrees
 double task_time_limit_sec           = 600.0;
+double contact_threshold_linear      = 35.0; // N
+double contact_threshold_angular     = 2.0; // Nm
 
 bool log_data                        = false;
 bool use_estimated_external_wrench   = false;
@@ -677,7 +679,7 @@ int define_task(dynamics_controller *dyn_controller)
                                                             tube_path_points,
                                                             tube_tolerances,
                                                             tube_speed,
-                                                            1.0, 0.1, //contact_threshold linear and angular
+                                                            contact_threshold_linear, contact_threshold_angular,
                                                             task_time_limit_sec,// time_limit
                                                             control_null_space,
                                                             desired_null_space_angle,
@@ -690,7 +692,7 @@ int define_task(dynamics_controller *dyn_controller)
                                                tube_start_position,
                                                tube_tolerances,
                                                tube_speed,
-                                               1.0, 0.1, //contact_threshold linear and angular
+                                               contact_threshold_linear, contact_threshold_angular,
                                                task_time_limit_sec,// time_limit
                                                control_null_space,
                                                desired_null_space_angle,
@@ -703,7 +705,7 @@ int define_task(dynamics_controller *dyn_controller)
                                                     tube_start_position,
                                                     tube_tolerances,
                                                     tube_speed,
-                                                    1.0, 0.1, //contact_threshold linear and angular
+                                                    contact_threshold_linear, contact_threshold_angular,
                                                     task_time_limit_sec,// time_limit
                                                     control_null_space,
                                                     desired_null_space_angle,
@@ -716,7 +718,7 @@ int define_task(dynamics_controller *dyn_controller)
                                                                    tube_start_position,
                                                                    tube_tolerances,
                                                                    tube_speed,
-                                                                   1.0, 0.1, // contact_threshold linear and angular
+                                                                   contact_threshold_linear, contact_threshold_angular,
                                                                    task_time_limit_sec,// time_limit
                                                                    control_null_space,
                                                                    desired_null_space_angle,
@@ -728,7 +730,7 @@ int define_task(dynamics_controller *dyn_controller)
             dyn_controller->define_full_pose_task(std::vector<bool>{control_dims[0], control_dims[1], control_dims[2], // Linear
                                                                     control_dims[3], control_dims[4], control_dims[5]}, // Angular
                                                   desired_ee_pose,
-                                                  1.0, 0.2, //contact_threshold linear and angular
+                                                  contact_threshold_linear, contact_threshold_angular,
                                                   task_time_limit_sec,
                                                   control_null_space,
                                                   desired_null_space_angle,
@@ -946,7 +948,7 @@ int run_main_control(kinova_mediator &robot_driver)
     KDL::Wrenches wrenches_full_model(robot_chain_full.getNrOfSegments(), KDL::Wrench::Zero());
     KDL::Wrenches wrenches_full_model_sim(robot_chain_full.getNrOfSegments(), KDL::Wrench::Zero());
 
-    wrenches_full_model_sim[robot_chain_full.getNrOfSegments() - 1] = KDL::Wrench(KDL::Vector(0.0, -2.0, 0.0),
+    wrenches_full_model_sim[robot_chain_full.getNrOfSegments() - 1] = KDL::Wrench(KDL::Vector(0.0, -2.2, 0.0),
                                                                                   KDL::Vector(0.0, 0.0, 0.0));
 
     double total_time_sec = 0.0;
@@ -1068,13 +1070,13 @@ int main(int argc, char **argv)
 {
     RATE_HZ              = 700; // Loop frequency in Hz
     control_dims         = std::vector<bool>{true, true, true, // Linear
-                                            //  false, false, false}; // Angular
-                                             true, true, true}; // Angular
+                                             false, false, false}; // Angular
+                                            //  true, true, true}; // Angular
     control_dims_moveConstrained = {true, true, true, // Linear
                                     true, true, true}; // Angular
 
     tube_tolerances      = std::vector<double>{0.01, 0.01, 0.01,
-                                               0.0, 0.0, 0.0,
+                                               0.01, 0.0, 0.0,
                                                0.0, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
     // Tube tolerances: x pos,    y pos,      z force, 
     //                  x torque, y torque,   null-space, 

@@ -404,8 +404,6 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 {
     if (total_control_time_sec_ > moveTo_task_.time_limit) 
     {
-        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
-
         // #ifndef NDEBUG
             if (!time_limit_reached_) printf("Time limit reached\n");
         // #endif
@@ -503,8 +501,7 @@ int finite_state_machine::update_moveGuarded_task(state_specification &desired_s
 
     if (contact_detected_) return task_status::STOP_ROBOT;
     
-    if (contact_detected(moveGuarded_task_.contact_threshold_linear, 
-                         moveGuarded_task_.contact_threshold_angular))
+    if (contact_detected(moveGuarded_task_.contact_threshold_linear, moveGuarded_task_.contact_threshold_angular))
     {
         // #ifndef NDEBUG       
             printf("Contact occurred\n");
@@ -544,8 +541,7 @@ int finite_state_machine::update_full_pose_task(state_specification &desired_sta
 
     if (goal_reached_ || contact_detected_) return task_status::STOP_ROBOT;
 
-    if (contact_detected(full_pose_task_.contact_threshold_linear, 
-                         full_pose_task_.contact_threshold_angular))
+    if (contact_detected(full_pose_task_.contact_threshold_linear, full_pose_task_.contact_threshold_angular))
     {
         // #ifndef NDEBUG       
             printf("Contact occurred\n");
