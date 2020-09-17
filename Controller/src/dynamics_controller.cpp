@@ -1247,7 +1247,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             if (std::fabs(abag_error_vector_(1)) <= moveConstrained_follow_path_task_.tube_tolerances[6]) abag_error_vector_(1) = 0.0;
 
             // Control Linear Z velocity w.r.t. base frame
-            abag_error_vector_(2) = -0.003 - robot_state_.frame_velocity[END_EFF_](2);
+            abag_error_vector_(2) = -0.001 - robot_state_.frame_velocity[END_EFF_](2);
             // if (std::fabs(abag_error_vector_(2)) <= 0.0001) abag_error_vector_(2) = 0.0;
             MOTION_CTRL_DIM_[2] = true; FORCE_CTRL_DIM_[2] = false;
 
@@ -1521,8 +1521,7 @@ void dynamics_controller::compute_moveTo_weight_compensation_task_error()
     abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
 
     // Check for tube on velocity
-    if ((fsm_result_ == task_status::CRUISE_THROUGH_TUBE) && \
-        (std::fabs(abag_error_vector_(0)) <= moveTo_weight_compensation_task_.tube_tolerances[6]))  abag_error_vector_(0) = 0.0;
+    if ((fsm_result_ == task_status::CRUISE_THROUGH_TUBE) && (std::fabs(abag_error_vector_(0)) <= moveTo_weight_compensation_task_.tube_tolerances[6]))  abag_error_vector_(0) = 0.0;
 
     // Position error processing
     for (int i = 1; i < 3; i++)
@@ -1920,24 +1919,23 @@ int dynamics_controller::compute_weight_compensation_control_commands()
 // Calculate robot dynamics - Resolve motion and forces using the Vereshchagin HD solver
 int dynamics_controller::evaluate_dynamics()
 {
-    KDL::JntArray ext_force_driver_jnt_torque(NUM_OF_JOINTS_);
-    if (desired_task_model_ == task_model::moveConstrained_follow_path)
-    {
-        if (!use_estimated_external_wrench_)
-        {
-            int solver_result = jacobian_solver_.JntToJac(robot_state_.q, jacobian_end_eff_);
-            if (solver_result != 0)
-            {
-                fsm_result_ = task_status::STOP_ROBOT;
-                return -1;
-            }
-        }
-
-        // Necessary way of propagating forces, since Vereshchagin solver cannot take full model into account
-        robot_state_.feedforward_torque.data = geometry::ik_force(jacobian_end_eff_, cart_force_command_[END_EFF_]);
-        // ext_force_driver_jnt_torque.data = geometry::ik_force(jacobian_end_eff_, cart_force_command_[END_EFF_]);
-        KDL::SetToZero(cart_force_command_[END_EFF_]);
-    }
+    // KDL::JntArray ext_force_driver_jnt_torque(NUM_OF_JOINTS_);
+    // if (desired_task_model_ == task_model::moveConstrained_follow_path)
+    // {
+    //     if (!use_estimated_external_wrench_)
+    //     {
+    //         int solver_result = jacobian_solver_.JntToJac(robot_state_.q, jacobian_end_eff_);
+    //         if (solver_result != 0)
+    //         {
+    //             fsm_result_ = task_status::STOP_ROBOT;
+    //             return -1;
+    //         }
+    //     }
+    //     // Necessary way of propagating forces, since Vereshchagin solver cannot take full model into account
+    //     robot_state_.feedforward_torque.data = geometry::ik_force(jacobian_end_eff_, cart_force_command_[END_EFF_]);
+    //     // ext_force_driver_jnt_torque.data = geometry::ik_force(jacobian_end_eff_, cart_force_command_[END_EFF_]);
+    //     KDL::SetToZero(cart_force_command_[END_EFF_]);
+    // }
 
     // Vereshchagin solver
     int hd_solver_result = this->hd_solver_->CartToJnt(robot_state_.q,
@@ -1954,7 +1952,7 @@ int dynamics_controller::evaluate_dynamics()
     this->hd_solver_->get_control_torque(robot_state_.control_torque);
     this->hd_solver_->get_total_torque(robot_state_.total_torque);
 
-    if (desired_task_model_ == task_model::moveConstrained_follow_path) robot_state_.control_torque.data += ext_force_driver_jnt_torque.data;
+    // if (desired_task_model_ == task_model::moveConstrained_follow_path) robot_state_.control_torque.data += ext_force_driver_jnt_torque.data;
 
     return hd_solver_result;
 }
