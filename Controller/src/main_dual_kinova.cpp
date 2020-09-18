@@ -571,29 +571,63 @@ int define_task(dynamics_controller *dyn_controller)
                                     0.0, -0.0697565, 0.997564};
             break;
 
-        default:
-            // HOME pose
-            tube_start_position = std::vector<double>{0.39514, 0.00134662, 0.433724};
-            desired_ee_pose     = { 0.65514, 0.01434662, 0.433724, // Linear: Vector
+        case desired_pose::HOME:
+            tube_start_position = std::vector<double>{ 0.395153, 0.00136493, 0.433647};
+            desired_ee_pose     = { 0.49514, 0.00136493, 0.433647, // Linear: Vector
                                     0.0, 0.0, -1.0, // Angular: Rotation matrix
                                     1.0, 0.0, 0.0,
                                     0.0, -1.0, 0.0};
             break;
+
+        default: return -1;
     }
 
     switch (desired_task_model)
     {
+        case task_model::moveConstrained_follow_path:
+            switch (path_type)
+            {
+                case path_types::STEP_PATH:
+                    motion_profile::draw_step_xy(tube_path_points_moveConstrained, 6, 0.07, desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
+                    break;
+
+                case path_types::INF_SIGN_PATH:
+                    motion_profile::draw_inf_sign_xy(tube_path_points_moveConstrained, 0.3, 0.2, 1.0, 1.0, desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
+                    break;
+
+                case path_types::SINE_PATH:
+                    motion_profile::draw_sine_xy(tube_path_points_moveConstrained, path_parameters_moveConstrained[0], path_parameters_moveConstrained[1],
+                                                 path_parameters_moveConstrained[2], path_parameters_moveConstrained[3], 
+                                                 desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
+                    break;
+
+                default:
+                    printf("Unsupported path type");
+                    return false;
+            }
+
+            dyn_controller->define_moveConstrained_follow_path_task(std::vector<bool>{control_dims_moveConstrained[0], control_dims_moveConstrained[1], control_dims_moveConstrained[2], // Linear
+                                                                                      control_dims_moveConstrained[3], control_dims_moveConstrained[4], control_dims_moveConstrained[5]},// Angular
+                                                                    tube_path_points_moveConstrained,
+                                                                    tube_tolerances_moveConstrained,
+                                                                    tube_speed,
+                                                                    tube_force,
+                                                                    90.5, 90.4, //contact_threshold linear and angular
+                                                                    task_time_limit_sec,// time_limit
+                                                                    control_null_space_moveConstrained,
+                                                                    desired_null_space_angle,
+                                                                    path_poses_moveConstrained); // TF pose
+            break;
+
         case task_model::moveTo_follow_path:
             switch (path_type)
             {
                 case path_types::STEP_PATH:
-                    motion_profile::draw_step_xy(tube_path_points, 6, 0.001,
-                                                 desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
+                    motion_profile::draw_step_xy(tube_path_points, 6, 0.001, desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
                     break;
                 
                 case path_types::INF_SIGN_PATH:
-                    motion_profile::draw_inf_sign_xy(tube_path_points, 0.5, 0.4, 0.18, 0.5, 
-                                                     desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
+                    motion_profile::draw_inf_sign_xy(tube_path_points, 0.5, 0.4, 0.18, 0.5, desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
                     break;
 
                 case path_types::SINE_PATH:
@@ -692,20 +726,25 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
     int return_flag = 0;
     int iteration_count = 0;
     double total_time_sec = 0.0;
-    // double loop_time = 0.0;
+    int control_loop_delay_count = 0;
     
-    KDL::JntArray zero_joint_array(7), torque_command_1(7), joint_pos_1(7), joint_vel_1(7), joint_torque_1(7),
-                                       torque_command_2(7), joint_pos_2(7), joint_vel_2(7), joint_torque_2(7);
+    KDL::JntArray torque_command_1(7), joint_pos_1(7), joint_vel_1(7), joint_torque_1(7),
+                  torque_command_2(7), joint_pos_2(7), joint_vel_2(7), joint_torque_2(7);
+    const KDL::JntArray ZERO_JOINT_ARRAY(7);
 
     KDL::Chain robot_chain_1 = robot_driver_1.get_robot_model();
     KDL::Chain robot_chain_2 = robot_driver_2.get_robot_model();
-    KDL::Wrenches wrenches_1(robot_chain_1.getNrOfSegments(), KDL::Wrench::Zero());
-    KDL::Wrenches wrenches_2(robot_chain_2.getNrOfSegments(), KDL::Wrench::Zero());
 
-    std::shared_ptr<KDL::Solver_RNE> id_solver_1 = std::make_shared<KDL::Solver_RNE>(robot_chain_1, KDL::Vector(0.0, 0.0, -9.81289), robot_driver_1.get_joint_inertia(), robot_driver_1.get_joint_torque_limits(), true);
-    std::shared_ptr<KDL::Solver_RNE> id_solver_2 = std::make_shared<KDL::Solver_RNE>(robot_chain_2, KDL::Vector(0.0, 0.0, -9.81289), robot_driver_2.get_joint_inertia(), robot_driver_2.get_joint_torque_limits(), true);
+    // Above main chain is prepared for vereshchagin (nj == ns) but full contains additional segments
+    KDL::Chain robot_chain_full_1 = robot_driver_1.get_full_robot_model();
+    KDL::Chain robot_chain_full_2 = robot_driver_2.get_full_robot_model();
 
-    // printf("Test run started\n");
+    const KDL::Wrenches zero_wrenches_full_model_1(robot_chain_full_1.getNrOfSegments(), KDL::Wrench::Zero());
+    const KDL::Wrenches zero_wrenches_full_model_2(robot_chain_full_2.getNrOfSegments(), KDL::Wrench::Zero());
+
+    std::shared_ptr<KDL::Solver_RNE> id_solver_1 = std::make_shared<KDL::Solver_RNE>(robot_chain_full_1, -1 * robot_driver_1.get_root_acceleration().vel, robot_driver_1.get_joint_inertia(), robot_driver_1.get_joint_torque_limits(), true);
+    std::shared_ptr<KDL::Solver_RNE> id_solver_2 = std::make_shared<KDL::Solver_RNE>(robot_chain_full_2, -1 * robot_driver_2.get_root_acceleration().vel, robot_driver_2.get_joint_inertia(), robot_driver_2.get_joint_torque_limits(), true);
+
     // Real-time loop
     while (total_time_sec < task_time_limit_sec)
     {
@@ -715,13 +754,9 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
 
         robot_driver_1.get_joint_state(joint_pos_1, joint_vel_1, joint_torque_1);
         robot_driver_2.get_joint_state(joint_pos_2, joint_vel_2, joint_torque_2);
-        // std::cout << "Pos: " << jnt_array_feedback << std::endl;
-        // std::cout << "Vel: " << jnt_array_feedback_2 << std::endl;
-        // std::cout << "Torque: " << jnt_array_feedback_3 << std::endl;
-        // std::cout << std::endl;
 
         // Compute dynamics
-        id_solver_result = id_solver_1->CartToJnt(joint_pos_1, zero_joint_array, zero_joint_array, wrenches_1, torque_command_1);
+        id_solver_result = id_solver_1->CartToJnt(joint_pos_1, ZERO_JOINT_ARRAY, ZERO_JOINT_ARRAY, zero_wrenches_full_model_1, torque_command_1);
         if (id_solver_result != 0)
         {
             robot_driver_1.stop_robot_motion();
@@ -730,7 +765,7 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
             return;
         }
 
-        id_solver_result = id_solver_2->CartToJnt(joint_pos_2, zero_joint_array, zero_joint_array, wrenches_2, torque_command_2);
+        id_solver_result = id_solver_2->CartToJnt(joint_pos_2, ZERO_JOINT_ARRAY, ZERO_JOINT_ARRAY, zero_wrenches_full_model_2, torque_command_2);
         if (id_solver_result != 0)
         {
             robot_driver_2.stop_robot_motion();
@@ -773,12 +808,14 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
             return;
         }
 
-        enforce_loop_frequency(DT_MICRO);
+        if (enforce_loop_frequency(DT_MICRO) != 0) control_loop_delay_count++;
 
+        // static double loop_time = 0.0;
         // loop_time += std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - loop_start_time).count();
         // if (iteration_count == 2000) 
         // {
-        //     printf("%f\n", loop_time / 2000.0);
+        //     robot_driver.stop_robot_motion();
+        //     printf("Average loop time: %f\n", loop_time / 2000.0);
         //     break;
         // }
     }
@@ -786,6 +823,7 @@ void run_test(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
     robot_driver_1.stop_robot_motion();
     robot_driver_2.stop_robot_motion();
     printf("Task completed\n");
+    printf("Control loop delay count: %d\n", control_loop_delay_count);
 }
 
 int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_driver_2)
@@ -800,6 +838,10 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
 
     KDL::Chain robot_chain_1 = robot_driver_1.get_robot_model();
     KDL::Chain robot_chain_2 = robot_driver_2.get_robot_model();
+
+    // Above main chain is prepared for vereshchagin (nj == ns) but full contains additional segments
+    KDL::Chain robot_chain_full_1 = robot_driver_1.get_full_robot_model();
+    KDL::Chain robot_chain_full_2 = robot_driver_2.get_full_robot_model();
 
     dynamics_controller controller_1(&robot_driver_1, RATE_HZ, compensate_gravity);
     dynamics_controller controller_2(&robot_driver_2, RATE_HZ, compensate_gravity);
@@ -997,10 +1039,18 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
     KDL::JntArray torque_command_1(7), joint_pos_1(7), joint_vel_1(7), joint_torque_1(7),
                   torque_command_2(7), joint_pos_2(7), joint_vel_2(7), joint_torque_2(7);
 
-    KDL::Wrenches wrenches_1(robot_chain_1.getNrOfSegments(), KDL::Wrench::Zero());
-    KDL::Wrenches wrenches_2(robot_chain_2.getNrOfSegments(), KDL::Wrench::Zero());
+    KDL::Wrenches wrenches_full_model_1(robot_chain_full_1.getNrOfSegments(), KDL::Wrench::Zero());
+    KDL::Wrenches wrenches_full_model_2(robot_chain_full_2.getNrOfSegments(), KDL::Wrench::Zero());
 
-    // double loop_time = 0.0;
+    KDL::Wrenches wrenches_full_model_sim_1(robot_chain_full_1.getNrOfSegments(), KDL::Wrench::Zero());
+    KDL::Wrenches wrenches_full_model_sim_2(robot_chain_full_2.getNrOfSegments(), KDL::Wrench::Zero());
+
+    wrenches_full_model_sim_1[robot_chain_full_1.getNrOfSegments() - 1] = KDL::Wrench(KDL::Vector(0.0, -2.0, 0.0),
+                                                                                      KDL::Vector(0.0, 0.0, 0.0));
+
+    wrenches_full_model_sim_2[robot_chain_full_2.getNrOfSegments() - 1] = KDL::Wrench(KDL::Vector(0.0, -2.0, 0.0),
+                                                                                      KDL::Vector(0.0, 0.0, 0.0));
+
     double total_time_sec = 0.0;
     int loop_iteration_count = 0;
     int stop_loop_iteration_count = 0;
@@ -1011,6 +1061,9 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
     bool robot_2_locked = false;
     int return_flag_1 = 0;
     int return_flag_2 = 0;
+
+    int estimation_flag_1 = 0;
+    int estimation_flag_2 = 0;
 
     // Real-time loop
     while (1)
