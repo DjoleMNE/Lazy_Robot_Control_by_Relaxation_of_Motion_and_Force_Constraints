@@ -1072,15 +1072,37 @@ int run_main_control(kinova_mediator &robot_driver_1, kinova_mediator &robot_dri
         loop_start_time = std::chrono::steady_clock::now();
         if (!stopping_sequence_on) total_time_sec = loop_iteration_count * DT_SEC;
 
-        //Get current robot state from the joint sensors: angles and velocities 
-        robot_driver_1.get_joint_state(joint_pos_1, joint_vel_1, joint_torque_1);
-        robot_driver_2.get_joint_state(joint_pos_2, joint_vel_2, joint_torque_2);
+        // Get current state from robot sensors
+        if (use_estimated_external_wrench && !stopping_sequence_on)
+        {
+            robot_driver_1.get_joint_state(joint_pos_1, joint_vel_1, joint_torque_1);
+            robot_driver_2.get_joint_state(joint_pos_2, joint_vel_2, joint_torque_2);
+
+            estimation_flag_1 = controller_1.estimate_external_wrench(joint_pos_1, joint_vel_1, joint_torque_1, wrenches_full_model_1[robot_chain_full_1.getNrOfSegments()- 1]);
+            if (estimation_flag_1 != 0)
+            {
+                printf("Error in external wrench estimation, robot 1\n");
+                trigger_stopping_sequence = true;
+            }
+
+            estimation_flag_2 = controller_2.estimate_external_wrench(joint_pos_2, joint_vel_2, joint_torque_2, wrenches_full_model_2[robot_chain_full_2.getNrOfSegments()- 1]);
+            if (estimation_flag_2 != 0)
+            {
+                printf("Error in external wrench estimation, robot 2\n");
+                trigger_stopping_sequence = true;
+            }
+        }
+        else
+        {
+            robot_driver_1.get_robot_state(joint_pos_1, joint_vel_1, joint_torque_1, wrenches_full_model_1[robot_chain_full_1.getNrOfSegments() - 1]);
+            robot_driver_2.get_robot_state(joint_pos_2, joint_vel_2, joint_torque_2, wrenches_full_model_2[robot_chain_full_2.getNrOfSegments() - 1]);
+        }
 
         // Make one control iteration (step) for both robots -> Update control commands
-        if (!robot_1_locked) return_flag_1 = controller_1.step(joint_pos_1, joint_vel_1, wrenches_1[robot_chain_1.getNrOfSegments()- 1], torque_command_1, total_time_sec, loop_iteration_count, stop_loop_iteration_count, stopping_sequence_on);
+        if (!robot_1_locked) return_flag_1 = controller_1.step(joint_pos_1, joint_vel_1, joint_torque_1, wrenches_full_model_1[robot_chain_full_1.getNrOfSegments()- 1], torque_command_1, total_time_sec, loop_iteration_count, stop_loop_iteration_count, stopping_sequence_on);
         if (return_flag_1 == -1) trigger_stopping_sequence = true;
 
-        if (!trigger_stopping_sequence && !robot_2_locked) return_flag_2 = controller_2.step(joint_pos_2, joint_vel_2, wrenches_2[robot_chain_2.getNrOfSegments()- 1], torque_command_2, total_time_sec, loop_iteration_count, stop_loop_iteration_count, stopping_sequence_on);
+        if (!trigger_stopping_sequence && !robot_2_locked) return_flag_2 = controller_2.step(joint_pos_2, joint_vel_2, joint_torque_2, wrenches_full_model_2[robot_chain_full_2.getNrOfSegments()- 1], torque_command_2, total_time_sec, loop_iteration_count, stop_loop_iteration_count, stopping_sequence_on);
         if (return_flag_2 == -1) trigger_stopping_sequence = true;
 
         if (stopping_sequence_on) // Robots will be controlled to stop their motion and eventually lock
