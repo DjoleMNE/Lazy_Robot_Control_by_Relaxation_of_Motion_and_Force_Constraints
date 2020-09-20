@@ -627,7 +627,7 @@ int define_task(dynamics_controller *dyn_controller)
                     break;
 
                 case path_types::INF_SIGN_PATH:
-                    motion_profile::draw_inf_sign_xy(tube_path_points_moveConstrained, 0.3, 0.2, 1.0, 1.0, desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
+                    motion_profile::draw_inf_sign_xy(tube_path_points_moveConstrained, 0.15, 0.2, 0.7, 1.0, desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
                     break;
 
                 case path_types::SINE_PATH:
@@ -1083,11 +1083,11 @@ int main(int argc, char **argv)
     // Tube tolerances: x pos,    y pos,      z force, 
     //                  x torque, y torque,   null-space, 
     //                  x vel,    z_a pos/vel
-    tube_tolerances_moveConstrained = std::vector<double> {0.003, 0.005, 0.003,
+    tube_tolerances_moveConstrained = std::vector<double> {0.003, 0.007, 0.003,
                                                            0.0, 0.0, 25.0,
-                                                           0.001, 0.005};
+                                                           0.0, 0.005};
     max_command                     = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 20.0, 20.0, 20.0).finished();
-    max_command_moveConstrained     = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 15.0, 1.0, 1.0, 25.0).finished();
+    max_command_moveConstrained     = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 0.5, 0.5, 25.0).finished();
     path_parameters                 = std::vector<double>{1.5, 1.7, 0.03, 0.003, 2}; // last parameter must be min 2 (number of points)
     path_parameters_moveConstrained = std::vector<double>{1.5, 1.7, 0.03, 0.003, 2};
 
@@ -1097,10 +1097,10 @@ int main(int argc, char **argv)
     desired_pose_id      = desired_pose::APPROACH_TABLE;
     desired_control_mode = control_mode::TORQUE;
     desired_task_model   = task_model::moveConstrained_follow_path;
-    path_type            = path_types::STEP_PATH;
+    path_type            = path_types::INF_SIGN_PATH;
     motion_profile_id    = m_profile::CONSTANT;
     time_horizon_amplitude = 2.5;
-    task_time_limit_sec  = 25.5;
+    task_time_limit_sec  = 40.5;
     tube_speed           = 0.02;
     tube_force           = -10.5;
     contact_threshold_linear  = 50.0;
