@@ -288,6 +288,7 @@ class dynamics_controller
     std::shared_ptr<KDL::Solver_RNE> id_solver_;
     std::shared_ptr<KDL::Solver_Dynamic_Parameter> dynamic_parameter_solver_;
     std::shared_ptr<KDL::ChainFkSolverPos_recursive> fk_pos_solver_;
+    std::shared_ptr<KDL::ChainFkSolverPos_recursive> fk_pos_solver_full_;
 
     int update_commands(); //Performs single update of control commands and dynamics computations
     int update_stop_motion_commands();

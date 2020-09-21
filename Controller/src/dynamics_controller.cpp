@@ -113,7 +113,8 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
 
     this->dynamic_parameter_solver_ = std::make_shared<KDL::Solver_Dynamic_Parameter>(robot_chain_full_, -1 * ROOT_ACC_.vel, JOINT_INERTIA_);
 
-    this->fk_pos_solver_ = std::make_shared<KDL::ChainFkSolverPos_recursive>(robot_chain_full_);
+    this->fk_pos_solver_ = std::make_shared<KDL::ChainFkSolverPos_recursive>(robot_chain_);
+    this->fk_pos_solver_full_ = std::make_shared<KDL::ChainFkSolverPos_recursive>(robot_chain_full_);
 
     // Set default command interface to stop motion mode and initialize it as not safe
     desired_control_mode_.interface = control_mode::STOP_MOTION;
@@ -539,6 +540,17 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
     moveConstrained_follow_path_task_.tf_force                     = KDL::Rotation::Identity();
     moveConstrained_follow_path_task_.null_space_plane_orientation = KDL::Rotation::Identity();
     moveConstrained_follow_path_task_.null_space_force_direction   = KDL::Vector::Zero();
+
+    /**
+     * Compute tranformation from the tool-tip to the end-effector frame.
+     * Necessary for the models where these two segments (frames) are not the same (aligned).
+     * KDL's implementation of the Vereshchagin solver cannot take full model into account.
+    */
+    KDL::Frame end_eff_frame;
+    KDL::Frame tool_tip_frame;
+    fk_pos_solver_->JntToCart(KDL::JntArray(NUM_OF_JOINTS_), end_eff_frame);
+    fk_pos_solver_full_->JntToCart(KDL::JntArray(NUM_OF_JOINTS_), tool_tip_frame);
+    moveConstrained_follow_path_task_.end_eff_wrt_tool_tip = tool_tip_frame.Inverse() * end_eff_frame;
 
     // Set null-space error tolerance; small null-space oscillations are desired in this mode
     moveConstrained_follow_path_task_.null_space_tolerance = moveConstrained_follow_path_task_.tube_tolerances[5];
@@ -1205,17 +1217,16 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
     if (compute_null_space_command_) compute_moveConstrained_null_space_task_error();
 
     // Tool-tip is the task frame for force DOFs
-    // moveConstrained_follow_path_task_.tf_force = robot_state_.frame_pose[END_EFF_].M;
     if (!use_estimated_external_wrench_)
     {
-        int solver_result = fk_pos_solver_->JntToCart(robot_state_.q, tool_tip_frame_full_model_);
+        int solver_result = fk_pos_solver_full_->JntToCart(robot_state_.q, tool_tip_frame_full_model_);
         if (solver_result != 0) fsm_result_ = task_status::STOP_ROBOT;
         return;
     }
     moveConstrained_follow_path_task_.tf_force = tool_tip_frame_full_model_.M;
 
-    ext_wrench_base_ = moveConstrained_follow_path_task_.tf_force * ext_wrench_;
-    desired_state_base_.external_force[END_EFF_] = moveConstrained_follow_path_task_.tf_force * desired_state_.external_force[END_EFF_];
+    ext_wrench_base_ = tool_tip_frame_full_model_.M * ext_wrench_;
+    desired_state_base_.external_force[END_EFF_] = tool_tip_frame_full_model_.M * desired_state_.external_force[END_EFF_];
 
     /*
     * Force-task FSM has priority over motion-task FSM
@@ -1247,7 +1258,7 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             if (std::fabs(abag_error_vector_(1)) <= moveConstrained_follow_path_task_.tube_tolerances[6]) abag_error_vector_(1) = 0.0;
 
             // Control Linear Z velocity w.r.t. base frame
-            abag_error_vector_(2) = -0.001 - robot_state_.frame_velocity[END_EFF_](2);
+            abag_error_vector_(2) = -0.006 - robot_state_.frame_velocity[END_EFF_](2);
             // if (std::fabs(abag_error_vector_(2)) <= 0.0001) abag_error_vector_(2) = 0.0;
             MOTION_CTRL_DIM_[2] = true; FORCE_CTRL_DIM_[2] = false;
 
@@ -1323,12 +1334,10 @@ void dynamics_controller::compute_moveConstrained_follow_path_task_error()
             FORCE_CTRL_DIM_[2] = CTRL_DIM_[2]; MOTION_CTRL_DIM_[2] = false;
 
             // Check for tube on moment: X and Y angular, tool-tip frame
-            abag_error_vector_(3) =  std::atan2(-ext_wrench_(1), ext_wrench_(2));
-            // abag_error_vector_(3) = std::atan2(-ext_wrench_(2), -ext_wrench_(1));
-            // abag_error_vector_(3) = 0.0 + ext_wrench_(3);
-            abag_error_vector_(4) = std::atan2(-ext_wrench_(0), ext_wrench_(2));
-            // abag_error_vector_(4) = std::atan2(-ext_wrench_(2), -ext_wrench_(0));
-            // abag_error_vector_(4) = 0.0 + ext_wrench_(4);
+            // abag_error_vector_(3) =  std::atan2(-ext_wrench_(1), ext_wrench_(2));
+            abag_error_vector_(3) = 0.0 + ext_wrench_(3);
+            // abag_error_vector_(4) = std::atan2(-ext_wrench_(0), ext_wrench_(2));
+            abag_error_vector_(4) = 0.0 + ext_wrench_(4);
             if (std::fabs(abag_error_vector_(3)) <= moveConstrained_follow_path_task_.tube_tolerances[3]) abag_error_vector_(3) = 0.0;
             if (std::fabs(abag_error_vector_(4)) <= moveConstrained_follow_path_task_.tube_tolerances[4]) abag_error_vector_(4) = 0.0;
 
@@ -1680,12 +1689,16 @@ void dynamics_controller::compute_control_error()
     }
 }
 
-//Change the reference frame of external (virtual) forces, from task frame to base frame
+// Change the reference frame of the external (virtual) forces, from task frame to base frame
 void dynamics_controller::transform_force_driver()
 {
     switch (desired_task_model_)
     {
         case task_model::moveConstrained_follow_path:
+            // First transform the wrench command from the tool-tip to the end-effector reference point but not the reference frame
+            cart_force_command_[END_EFF_] = cart_force_command_[END_EFF_].RefPoint(moveConstrained_follow_path_task_.end_eff_wrt_tool_tip.p);
+
+            // Now tranform the reference frame, from task frame to base frame
             cart_force_command_[END_EFF_] = moveConstrained_follow_path_task_.tf_force * cart_force_command_[END_EFF_];
             break;
         
@@ -1707,17 +1720,17 @@ void dynamics_controller::transform_force_driver()
     }
 }
 
-//Change the reference frame of constraint forces, from task frame to base frame
+// Change the reference frame of the constraint forces, from task frame to base frame
 void dynamics_controller::transform_motion_driver()
 {
     KDL::Wrench wrench_column;
     KDL::Twist twist_column;
     KDL::Jacobian alpha = robot_state_.ee_unit_constraint_force;
 
-    //Change the reference frame of constraint forces, from task frame to base frame
+    // Change the reference frame of constraint forces, from task frame to base frame
     for (int c = 0; c < NUM_OF_CONSTRAINTS_; c++)
     {
-        // Change Data Type of constraint forces to fit General KDL type
+        // Change data type of constraint forces to fit general KDL type
         wrench_column = KDL::Wrench(KDL::Vector(alpha(0, c), alpha(1, c), alpha(2, c)),
                                     KDL::Vector(alpha(3, c), alpha(4, c), alpha(5, c)));
         
@@ -1814,6 +1827,7 @@ void dynamics_controller::compute_cart_control_commands()
             // Use external force interface only for the force commands defined in the task specs
             if (desired_task_model_ == task_model::moveConstrained_follow_path)
             {
+                // Compute the wrench command for the tool-tip frame and reference point
                 for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
                     cart_force_command_[END_EFF_](i) = FORCE_CTRL_DIM_[i]? abag_command_(i) * max_command_(i) : 0.0;
             }
@@ -1924,24 +1938,6 @@ int dynamics_controller::compute_weight_compensation_control_commands()
 // Calculate robot dynamics - Resolve motion and forces using the Vereshchagin HD solver
 int dynamics_controller::evaluate_dynamics()
 {
-    // KDL::JntArray ext_force_driver_jnt_torque(NUM_OF_JOINTS_);
-    // if (desired_task_model_ == task_model::moveConstrained_follow_path)
-    // {
-    //     if (!use_estimated_external_wrench_)
-    //     {
-    //         int solver_result = jacobian_solver_.JntToJac(robot_state_.q, jacobian_end_eff_);
-    //         if (solver_result != 0)
-    //         {
-    //             fsm_result_ = task_status::STOP_ROBOT;
-    //             return -1;
-    //         }
-    //     }
-    //     // Necessary way of propagating forces, since Vereshchagin solver cannot take full model into account
-    //     robot_state_.feedforward_torque.data = geometry::ik_force(jacobian_end_eff_, cart_force_command_[END_EFF_]);
-    //     // ext_force_driver_jnt_torque.data = geometry::ik_force(jacobian_end_eff_, cart_force_command_[END_EFF_]);
-    //     KDL::SetToZero(cart_force_command_[END_EFF_]);
-    // }
-
     // Vereshchagin solver
     int hd_solver_result = this->hd_solver_->CartToJnt(robot_state_.q,
                                                        robot_state_.qd,
@@ -1956,8 +1952,6 @@ int dynamics_controller::evaluate_dynamics()
 
     this->hd_solver_->get_control_torque(robot_state_.control_torque);
     this->hd_solver_->get_total_torque(robot_state_.total_torque);
-
-    // if (desired_task_model_ == task_model::moveConstrained_follow_path) robot_state_.control_torque.data += ext_force_driver_jnt_torque.data;
 
     return hd_solver_result;
 }
@@ -2270,7 +2264,7 @@ int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_pos
     solver_result = jacobian_solver_.JntToJac(joint_position_measured, jacobian_end_eff_);
     if (solver_result != 0) return solver_result;
 
-    solver_result = fk_pos_solver_->JntToCart(joint_position_measured, tool_tip_frame_full_model_);
+    solver_result = fk_pos_solver_full_->JntToCart(joint_position_measured, tool_tip_frame_full_model_);
     if (solver_result != 0) return solver_result;
 
     // Transform the jacobian from the base to tool-tip frame

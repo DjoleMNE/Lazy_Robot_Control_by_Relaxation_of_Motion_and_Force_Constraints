@@ -128,9 +128,7 @@ int finite_state_machine::update_moveConstrained_follow_path_task(state_specific
 {
     if (total_control_time_sec_ > moveConstrained_follow_path_task_.time_limit) 
     {
-        #ifndef NDEBUG       
-            printf("Time limit reached\n");
-        #endif
+        printf("Time limit reached\n");
 
         time_limit_reached_ = true;
         return task_status::STOP_CONTROL;
@@ -196,14 +194,8 @@ int finite_state_machine::update_moveConstrained_follow_path_task(state_specific
         }
 
         // Check for necessary direction of motion
-        if ((sign(current_error_(0)) == -1) && final_section_reached)
-        {
-            speed = -1 * speed;
-            // #ifndef NDEBUG       
-            //     printf("Motion reversed.\n");
-            // #endif
-        }
-        desired_state.frame_velocity[END_EFF_].vel(0) = speed;      
+        if ((sign(current_error_(0)) == -1) && final_section_reached) speed = -1 * speed;
+        desired_state.frame_velocity[END_EFF_].vel(0) = speed;
 
         // Robot has crossed some tube section? If yes, switch to next one.
         if ((current_error_(0) < moveConstrained_follow_path_task_.tube_tolerances[0]) && !final_section_reached) return task_status::CHANGE_TUBE_SECTION;
@@ -806,7 +798,7 @@ int finite_state_machine::update_force_task_status(const KDL::Wrench &desired_fo
 bool finite_state_machine::contact_alignment_secured(const KDL::Wrench &desired_force,
                                                      const KDL::Wrench &ext_force)
 {
-    if (std::fabs(ext_force(2)) < 11.0) return false;
+    if (std::fabs(ext_force(2)) < 15.0) return false;
     // if (std::fabs(ext_force(2)) < 0.016 || std::fabs(ext_force(2)) > 1.0) return false;
     // if (std::fabs(ext_force(3)) > 0.1) return false;
     // if (std::fabs(ext_force(4)) > 0.1) return false;
