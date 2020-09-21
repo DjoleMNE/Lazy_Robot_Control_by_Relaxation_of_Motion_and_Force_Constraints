@@ -404,8 +404,7 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
             configuration_array = std::vector<double> {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
             break;
         case desired_pose::APPROACH_TABLE:
-            configuration_array = std::vector<double> {0.001, 61.248, 180.03, 219.604, 359.952, 21.268, 88.583};
-            // configuration_array = std::vector<double> {0.001, 42.017, 179.56, 220.641, 2.761, 1.965, 88.101};
+            configuration_array = std::vector<double> {0.001, 42.017, 179.56, 220.641, 2.761, 1.965, 88.101};
             break;
         case desired_pose::HOME_BACK:
             configuration_array = std::vector<double> {356.129, 304.126, 181.482, 250.087, 2.852, 328.367, 87.817};
@@ -575,11 +574,11 @@ int define_task(dynamics_controller *dyn_controller)
             break;
 
         case desired_pose::APPROACH_TABLE:
-            tube_start_position = std::vector<double>{0.252245, 0.00115957, 0.0890743};
-            desired_ee_pose     = { 0.252245,   0.00115957, 0.0890743, // Linear: Vector
-                                    0.0257695, -0.999646,   0.00656261, // Angular: Rotation matrix
-                                    0.999667,   0.025775,   0.000757385,
-                                   -0.00092626, 0.00654091, 0.999978};
+            tube_start_position = std::vector<double>{0.275073, 0.00364068, 0.177293};
+            desired_ee_pose     = { 0.275073,  0.00364068,    0.177293, // Linear: Vector
+                                    -0.0207239,   -0.999733,   -0.010216, // Angular: Rotation matrix
+                                    0.999763,  -0.0206545, -0.00685178,
+                                    0.00663895,  -0.0103556,    0.999924};
             break;
 
         case desired_pose::RETRACT:
@@ -1075,7 +1074,7 @@ int main(int argc, char **argv)
                                              false, false, false}; // Angular
                                             //  true, true, true}; // Angular
     control_dims_moveConstrained = {true, true, true, // Linear
-                                    true, true, true}; // Angular
+                                    true, true, false}; // Angular
 
     tube_tolerances      = std::vector<double>{0.01, 0.01, 0.01,
                                                0.01, 0.0, 0.0,
@@ -1087,7 +1086,7 @@ int main(int argc, char **argv)
                                                            0.0, 0.0, 25.0,
                                                            0.0, 0.005};
     max_command                     = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 20.0, 20.0, 20.0).finished();
-    max_command_moveConstrained     = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 0.5, 0.5, 25.0).finished();
+    max_command_moveConstrained     = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 50.0, 9.5, 9.5, 25.0).finished();
     path_parameters                 = std::vector<double>{1.5, 1.7, 0.03, 0.003, 2}; // last parameter must be min 2 (number of points)
     path_parameters_moveConstrained = std::vector<double>{1.5, 1.7, 0.03, 0.003, 2};
 
@@ -1100,9 +1099,9 @@ int main(int argc, char **argv)
     path_type            = path_types::INF_SIGN_PATH;
     motion_profile_id    = m_profile::CONSTANT;
     time_horizon_amplitude = 2.5;
-    task_time_limit_sec  = 40.5;
+    task_time_limit_sec  = 80.5;
     tube_speed           = 0.02;
-    tube_force           = -10.5;
+    tube_force           = -12.5;
     contact_threshold_linear  = 50.0;
     contact_threshold_angular = 50.0;
     compensate_gravity   = true;
