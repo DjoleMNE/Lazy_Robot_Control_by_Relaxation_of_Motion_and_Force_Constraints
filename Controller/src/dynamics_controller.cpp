@@ -1452,14 +1452,16 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
 */
 void dynamics_controller::compute_moveTo_task_error()
 {
+    make_Cartesian_predictions(horizon_amplitude_, 1);
+
     //Change the reference frame of the robot state, from base frame to task frame
     robot_state_.frame_pose[END_EFF_]        = moveTo_task_.tf_pose.Inverse()   * robot_state_.frame_pose[END_EFF_];
     robot_state_.frame_velocity[END_EFF_]    = moveTo_task_.tf_pose.M.Inverse() * robot_state_.frame_velocity[END_EFF_];
+    predicted_state_.frame_pose[END_EFF_]    = moveTo_task_.tf_pose.Inverse()   * predicted_state_.frame_pose[END_EFF_];
     desired_state_base_.frame_pose[END_EFF_] = moveTo_task_.tf_pose             * desired_state_.frame_pose[END_EFF_];
 
     current_error_twist_ = finite_displacement_twist(desired_state_, robot_state_);
 
-    make_Cartesian_predictions(horizon_amplitude_, 1);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
 
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
@@ -1502,14 +1504,16 @@ void dynamics_controller::compute_moveTo_task_error()
 */
 void dynamics_controller::compute_moveTo_weight_compensation_task_error()
 {
+    make_Cartesian_predictions(horizon_amplitude_, 1);
+
     //Change the reference frame of the robot state, from base frame to task frame
     robot_state_.frame_pose[END_EFF_]        = moveTo_weight_compensation_task_.tf_pose.Inverse()   * robot_state_.frame_pose[END_EFF_];
     robot_state_.frame_velocity[END_EFF_]    = moveTo_weight_compensation_task_.tf_pose.M.Inverse() * robot_state_.frame_velocity[END_EFF_];
+    predicted_state_.frame_pose[END_EFF_]    = moveTo_weight_compensation_task_.tf_pose.Inverse()   * predicted_state_.frame_pose[END_EFF_];
     desired_state_base_.frame_pose[END_EFF_] = moveTo_weight_compensation_task_.tf_pose             * desired_state_.frame_pose[END_EFF_];
 
     current_error_twist_ = finite_displacement_twist(desired_state_, robot_state_);
 
-    make_Cartesian_predictions(horizon_amplitude_, 1);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
 
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
@@ -1553,14 +1557,15 @@ void dynamics_controller::compute_moveTo_weight_compensation_task_error()
 */
 void dynamics_controller::compute_moveGuarded_task_error()
 {
+    make_Cartesian_predictions(horizon_amplitude_, 1);
+
     //Change the reference frame of the robot state, from base frame to task frame
     robot_state_.frame_pose[END_EFF_]        = moveGuarded_task_.tf_pose.Inverse()   * robot_state_.frame_pose[END_EFF_];
     robot_state_.frame_velocity[END_EFF_]    = moveGuarded_task_.tf_pose.M.Inverse() * robot_state_.frame_velocity[END_EFF_];
+    predicted_state_.frame_pose[END_EFF_]    = moveGuarded_task_.tf_pose.Inverse()   * predicted_state_.frame_pose[END_EFF_];
     desired_state_base_.frame_pose[END_EFF_] = moveGuarded_task_.tf_pose             * desired_state_.frame_pose[END_EFF_];
 
     current_error_twist_ = finite_displacement_twist(desired_state_, robot_state_);
-
-    make_Cartesian_predictions(horizon_amplitude_, 1);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
 
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
