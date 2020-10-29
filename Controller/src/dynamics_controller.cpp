@@ -317,7 +317,8 @@ void dynamics_controller::write_to_file()
         // Write measured state
         for (int i = 0; i < 3; i++)
             log_file_cart_ << robot_state_.frame_pose[END_EFF_].p(i) << " ";
-        for (int i = 3; i < 6; i++)
+        log_file_cart_ << predicted_error_twist_.tail<3>().norm() << " ";
+        for (int i = 4; i < 6; i++)
             log_file_cart_ << 0.0 << " ";
         log_file_cart_ << robot_state_.frame_velocity[END_EFF_](0) << " ";
         log_file_cart_ << robot_state_.frame_velocity[END_EFF_](5) << " ";
@@ -1145,8 +1146,7 @@ KDL::Twist dynamics_controller::finite_displacement_twist(const state_specificat
      * Source: Luh et al. "Resolved-acceleration control of 
      * mechanical manipulators".
     */
-    KDL::Rotation relative_rot_matrix = state_a.frame_pose[END_EFF_].M * \
-                                        state_b.frame_pose[END_EFF_].M.Inverse();
+    KDL::Rotation relative_rot_matrix = state_a.frame_pose[END_EFF_].M * state_b.frame_pose[END_EFF_].M.Inverse();
 
     // Error calculation for angular part, i.e. logarithmic map on SO(3).
     twist.rot = geometry::log_map_so3(relative_rot_matrix);
@@ -1421,14 +1421,16 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
     if (previous_task_status_ == task_status::CHANGE_TUBE_SECTION) tube_section_count_++;
     if ((unsigned)tube_section_count_ > moveTo_follow_path_task_.tf_poses.size() - 1) tube_section_count_ = moveTo_follow_path_task_.tf_poses.size() - 1;
 
+    make_Cartesian_predictions(horizon_amplitude_, 1);
+
     //Change the reference frame of the robot state, from base frame to task frame
     robot_state_.frame_pose[END_EFF_]        = moveTo_follow_path_task_.tf_poses[tube_section_count_].Inverse()   * robot_state_.frame_pose[END_EFF_];
     robot_state_.frame_velocity[END_EFF_]    = moveTo_follow_path_task_.tf_poses[tube_section_count_].M.Inverse() * robot_state_.frame_velocity[END_EFF_];
+    predicted_state_.frame_pose[END_EFF_]    = moveTo_follow_path_task_.tf_poses[tube_section_count_].Inverse()   * predicted_state_.frame_pose[END_EFF_];
     desired_state_base_.frame_pose[END_EFF_] = moveTo_follow_path_task_.tf_poses[tube_section_count_]             * desired_state_.frame_pose[END_EFF_];
 
     current_error_twist_ = finite_displacement_twist(desired_state_, robot_state_);
 
-    make_Cartesian_predictions(horizon_amplitude_, 1);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
 
     for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
@@ -1488,7 +1490,7 @@ void dynamics_controller::compute_moveTo_task_error()
     for (int i = 1; i < 3; i++)
     {
         if ( std::fabs(predicted_error_twist_(i)) <= moveTo_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
-        else abag_error_vector_(i) = predicted_error_twist_(i);        
+        else abag_error_vector_(i) = predicted_error_twist_(i);
     }
 
     // Orientation error processing

@@ -419,12 +419,12 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
     }
 
     int count = 0;
-    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_ - 2; i++)
     {
         if (std::fabs(current_error_(i)) <= moveTo_task_.tube_tolerances[i]) count++;
     }
     
-    if (count == NUM_OF_CONSTRAINTS_) 
+    if (count == NUM_OF_CONSTRAINTS_ - 2) 
     {
         // #ifndef NDEBUG       
             printf("Goal area reached\n");
@@ -442,7 +442,7 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
     */
     if ( (std::fabs(current_error_(0)) <= moveTo_task_.tube_tolerances[0]) || \
          ((std::fabs(current_error_(0)) >  moveTo_task_.tube_tolerances[0]) && \
-          (count < NUM_OF_CONSTRAINTS_ - 1)) 
+          (count < NUM_OF_CONSTRAINTS_ - 3)) 
        )
     {
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;

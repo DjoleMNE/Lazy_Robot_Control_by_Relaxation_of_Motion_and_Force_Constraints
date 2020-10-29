@@ -575,10 +575,10 @@ int define_task(dynamics_controller *dyn_controller)
 
         case desired_pose::APPROACH_TABLE:
             tube_start_position = std::vector<double>{0.275073, 0.00364068, 0.177293};
-            desired_ee_pose     = { 0.275073,  0.00364068,    0.177293, // Linear: Vector
-                                    -0.0207239,   -0.999733,   -0.010216, // Angular: Rotation matrix
-                                    0.999763,  -0.0206545, -0.00685178,
-                                    0.00663895,  -0.0103556,    0.999924};
+            desired_ee_pose     = { 0.275073, 0.00364068, 0.177293, // Linear: Vector
+                                    -0.0207239, -0.999733, -0.010216, // Angular: Rotation matrix
+                                    0.999763, -0.0206545, -0.00685178,
+                                    0.00663895, -0.0103556, 0.999924};
             break;
 
         case desired_pose::RETRACT:
@@ -607,7 +607,8 @@ int define_task(dynamics_controller *dyn_controller)
 
         case desired_pose::HOME:
             tube_start_position = std::vector<double>{ 0.395153, 0.00136493, 0.433647};
-            desired_ee_pose     = { 0.49514, 0.00136493, 0.433647, // Linear: Vector
+            // desired_ee_pose     = { 0.395153, 0.00136493, 0.433647, // Linear: Vector
+            desired_ee_pose     = { 0.545153, 0.00136493, 0.253647, // Linear: Vector
                                     0.0, 0.0, -1.0, // Angular: Rotation matrix
                                     1.0, 0.0, 0.0,
                                     0.0, -1.0, 0.0};
@@ -1070,14 +1071,15 @@ int run_main_control(kinova_mediator &robot_driver)
 int main(int argc, char **argv)
 {
     RATE_HZ              = 700; // Loop frequency in Hz
-    control_dims         = std::vector<bool>{true, true, true, // Linear
-                                             false, false, false}; // Angular
-                                            //  true, true, true}; // Angular
+    control_dims         = std::vector<bool>{true, false, true, // Linear
+    // control_dims         = std::vector<bool>{false, false, false, // Linear
+                                            //  false, false, false}; // Angular
+                                             true, true, true}; // Angular
     control_dims_moveConstrained = {true, true, true, // Linear
                                     true, true, false}; // Angular
 
-    tube_tolerances      = std::vector<double>{0.01, 0.01, 0.01,
-                                               0.01, 0.0, 0.0,
+    tube_tolerances      = std::vector<double>{0.01, 0.02, 0.02,
+                                               0.07, 0.0, 0.0,
                                                0.0, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
     // Tube tolerances: x pos,    y pos,      z force, 
     //                  x torque, y torque,   null-space, 
@@ -1093,18 +1095,18 @@ int main(int argc, char **argv)
     environment          = kinova_environment::REAL;
     robot_model_id       = kinova_model::URDF;
     id                   = robot_id::KINOVA_GEN3_1;
-    desired_pose_id      = desired_pose::APPROACH_TABLE;
+    desired_pose_id      = desired_pose::HOME;
     desired_control_mode = control_mode::TORQUE;
-    desired_task_model   = task_model::moveConstrained_follow_path;
+    desired_task_model   = task_model::moveTo;
     path_type            = path_types::INF_SIGN_PATH;
     motion_profile_id    = m_profile::CONSTANT;
     time_horizon_amplitude = 2.5;
-    task_time_limit_sec  = 80.5;
-    tube_speed           = 0.02;
+    task_time_limit_sec  = 120.5;
+    tube_speed           = 0.03;
     tube_force           = -12.5;
-    contact_threshold_linear  = 50.0;
-    contact_threshold_angular = 50.0;
-    compensate_gravity   = true;
+    contact_threshold_linear  = 500.0;
+    contact_threshold_angular = 500.0;
+    compensate_gravity   = false;
     control_null_space   = false;
     use_mass_alternation = false;
     log_data             = true;
@@ -1132,7 +1134,7 @@ int main(int argc, char **argv)
 
     if (run_main_control(robot_driver) == -1) return 0;
     robot_driver.deinitialize();
-    return_flag = go_to(robot_driver, desired_pose::APPROACH_TABLE);
+    return_flag = go_to(robot_driver, desired_pose::HOME);
     return 0;
 
     dynamics_controller controller(&robot_driver, RATE_HZ, compensate_gravity);
