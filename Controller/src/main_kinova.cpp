@@ -156,16 +156,16 @@ const Eigen::VectorXd error_alpha_2         = (Eigen::VectorXd(NUMBER_OF_CONSTRA
                                                0.900000, 0.900000, 0.900000).finished();
 const Eigen::VectorXd bias_threshold_2      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.000457, 0.000407, 0.000407, 
-                                               0.000500, 0.000500, 0.000500).finished();
+                                               0.000250, 0.000250, 0.000250).finished();
 const Eigen::VectorXd bias_step_2           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.000500, 0.000400, 0.000400, 
-                                               0.000800, 0.000800, 0.000800).finished();
+                                               0.000900, 0.000900, 0.000900).finished();
 const Eigen::VectorXd gain_threshold_2      = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.502492, 0.502492, 0.502492, 
-                                               0.650000, 0.650000, 0.650000).finished();
+                                               0.500000, 0.500000, 0.500000).finished();
 const Eigen::VectorXd gain_step_2           = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
                                             << 0.002552, 0.002552, 0.002552, 
-                                               0.002500, 0.002500, 0.002500).finished();
+                                               0.001000, 0.001000, 0.001000).finished();
 
 // moveTo-follow_path-torque ABAG parameters
 const Eigen::VectorXd error_alpha_3         = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) \
