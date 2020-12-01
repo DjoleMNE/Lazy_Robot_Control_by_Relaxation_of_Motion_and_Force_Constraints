@@ -606,9 +606,9 @@ int define_task(dynamics_controller *dyn_controller)
             break;
 
         case desired_pose::HOME:
-            tube_start_position = std::vector<double>{ 0.395153, 0.00136493, 0.433647};
+            tube_start_position = std::vector<double>{ 0.395153, 0.00136493, 0.45947};
             // desired_ee_pose     = { 0.395153, 0.00136493, 0.433647, // Linear: Vector
-            desired_ee_pose     = { 0.545153, 0.00136493, 0.253647, // Linear: Vector
+            desired_ee_pose     = { 0.52153, 0.00136493, 0.353647, // Linear: Vector
                                     0.0, 0.0, -1.0, // Angular: Rotation matrix
                                     1.0, 0.0, 0.0,
                                     0.0, -1.0, 0.0};
@@ -1078,9 +1078,9 @@ int main(int argc, char **argv)
     control_dims_moveConstrained = {true, true, true, // Linear
                                     true, true, false}; // Angular
 
-    tube_tolerances      = std::vector<double>{0.01, 0.02, 0.02,
-                                               0.07, 0.0, 0.0,
-                                               0.0, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
+    tube_tolerances      = std::vector<double>{0.01, 0.0, 0.02,
+                                               0.09, 0.0, 0.0,
+                                               0.003, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
     // Tube tolerances: x pos,    y pos,      z force, 
     //                  x torque, y torque,   null-space, 
     //                  x vel,    z_a pos/vel
@@ -1099,10 +1099,10 @@ int main(int argc, char **argv)
     desired_control_mode = control_mode::TORQUE;
     desired_task_model   = task_model::moveTo;
     path_type            = path_types::INF_SIGN_PATH;
-    motion_profile_id    = m_profile::CONSTANT;
+    motion_profile_id    = m_profile::S_CURVE;
     time_horizon_amplitude = 2.5;
-    task_time_limit_sec  = 120.5;
-    tube_speed           = 0.03;
+    tube_speed           = 0.02;
+    task_time_limit_sec  = 5.5;
     tube_force           = -12.5;
     contact_threshold_linear  = 500.0;
     contact_threshold_angular = 500.0;
