@@ -419,14 +419,14 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
     }
 
     int count = 0;
-    for (int i = 0; i < NUM_OF_CONSTRAINTS_ - 2; i++)
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_ - 3; i++)
     {
         if (std::fabs(current_error_(i)) <= moveTo_task_.tube_tolerances[i]) count++;
     }
     
-    if (count == NUM_OF_CONSTRAINTS_ - 2) 
+    if (count == NUM_OF_CONSTRAINTS_ - 3) 
     {
-        // #ifndef NDEBUG       
+        // #ifndef NDEBUG
             printf("Goal area reached\n");
         // #endif
 
@@ -437,12 +437,10 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 
     /*
      * The robot has reached goal x area?
-     * If yes, command zero X linear velocity to keep it in that area, until all DOFs gets back into tube.
-     * Else go with initially commanded tube speed.
-    */
+     */
     if ( (std::fabs(current_error_(0)) <= moveTo_task_.tube_tolerances[0]) || \
          ((std::fabs(current_error_(0)) >  moveTo_task_.tube_tolerances[0]) && \
-          (count < NUM_OF_CONSTRAINTS_ - 3)) 
+          (count < NUM_OF_CONSTRAINTS_ - 4)) 
        )
     {
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
@@ -461,7 +459,7 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
 
             case m_profile::S_CURVE:
                 speed = motion_profile::s_curve_function(std::fabs(current_error_(0)), 
-                                                         0.05, moveTo_task_.tube_speed, 5.0);
+                                                         0.05, moveTo_task_.tube_speed, 12.5);
                 break;
 
             default:
