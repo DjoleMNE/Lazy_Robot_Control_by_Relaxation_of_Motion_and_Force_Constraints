@@ -163,6 +163,7 @@ int finite_state_machine::update_moveConstrained_follow_path_task(state_specific
         // #endif
 
         goal_reached_ = true;
+        desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         return task_status::STOP_ROBOT;
     }
 
