@@ -2294,6 +2294,7 @@ int dynamics_controller::estimate_external_wrench(const KDL::JntArray &joint_pos
  */
 int dynamics_controller::update_stop_motion_commands()
 {
+    if (robot_driver_->get_robot_environment() == 1) return 1;
     if (stop_loop_iteration_count_ % dynamics_parameter::DECELERATION_UPDATE_DELAY == 0)
     {
         for (int i = 0; i < NUM_OF_JOINTS_; i++)

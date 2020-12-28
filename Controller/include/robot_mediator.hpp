@@ -54,6 +54,7 @@ class robot_mediator
 
 		virtual bool is_initialized() = 0;
 		virtual int get_robot_ID() = 0;
+		virtual int get_robot_environment() = 0;
 
 		// Initializes variables and calibrates the manipulator
 		virtual void initialize(const int robot_model,

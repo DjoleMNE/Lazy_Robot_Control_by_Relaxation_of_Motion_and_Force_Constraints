@@ -136,6 +136,7 @@ class kinova_mediator: public robot_mediator
 		virtual std::vector<double> get_joint_inertia();
 		virtual std::vector<double> get_joint_offsets();
 		virtual int get_robot_ID();
+		virtual int get_robot_environment();
 
 		virtual KDL::Twist get_root_acceleration();
 		virtual KDL::Chain get_robot_model();
