@@ -627,7 +627,7 @@ int define_task(dynamics_controller *dyn_controller)
                     break;
 
                 case path_types::INF_SIGN_PATH:
-                    motion_profile::draw_inf_sign_xy(tube_path_points_moveConstrained, 0.15, 0.2, 0.7, 1.0, desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
+                    motion_profile::draw_inf_sign_xy(tube_path_points_moveConstrained, 0.25, 0.25, 0.4, 1.0, desired_ee_pose[0], desired_ee_pose[1], desired_ee_pose[2]);
                     break;
 
                 case path_types::SINE_PATH:
@@ -1084,7 +1084,7 @@ int main(int argc, char **argv)
     // Tube tolerances: x pos,    y pos,      z force, 
     //                  x torque, y torque,   null-space, 
     //                  x vel,    z_a pos/vel
-    tube_tolerances_moveConstrained = std::vector<double> {0.003, 0.007, 0.003,
+    tube_tolerances_moveConstrained = std::vector<double> {0.003, 0.009, 0.003,
                                                            0.0, 0.0, 25.0,
                                                            0.0, 0.005};
     max_command                     = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 20.0, 20.0, 20.0).finished();
@@ -1095,15 +1095,15 @@ int main(int argc, char **argv)
     environment          = kinova_environment::REAL;
     robot_model_id       = kinova_model::URDF;
     id                   = robot_id::KINOVA_GEN3_1;
-    desired_pose_id      = desired_pose::HOME;
+    desired_pose_id      = desired_pose::APPROACH_TABLE;
     desired_control_mode = control_mode::TORQUE;
-    desired_task_model   = task_model::moveTo;
+    desired_task_model   = task_model::moveConstrained_follow_path;
     path_type            = path_types::INF_SIGN_PATH;
-    motion_profile_id    = m_profile::S_CURVE;
+    motion_profile_id    = m_profile::CONSTANT;
     time_horizon_amplitude = 2.5;
     tube_speed           = 0.02;
-    task_time_limit_sec  = 5.5;
-    tube_force           = -12.5;
+    task_time_limit_sec  = 35.5;
+    tube_force           = -18.5;
     contact_threshold_linear  = 500.0;
     contact_threshold_angular = 500.0;
     compensate_gravity   = false;

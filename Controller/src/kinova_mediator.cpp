@@ -613,6 +613,11 @@ int kinova_mediator::get_robot_ID()
     return kinova_id;
 }
 
+int kinova_mediator::get_robot_environment()
+{
+    return kinova_environment_;
+}
+
 bool kinova_mediator::is_initialized()
 {
     return is_initialized_;

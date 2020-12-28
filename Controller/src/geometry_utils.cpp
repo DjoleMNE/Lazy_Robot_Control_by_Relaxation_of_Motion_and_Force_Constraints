@@ -9,11 +9,11 @@ namespace geometry
     KDL::Rotation exp_map_so3(const KDL::Vector &current_twist)
     {   
         // If rotation is too small, just return identity matrix
-        if(current_twist.Norm() < MIN_ANGLE) return KDL::Rotation::Identity();
+        double norm = current_twist.Norm();
+        if (norm < MIN_ANGLE) return KDL::Rotation::Identity();
 
         // First normalize given twist vector!
-        return KDL::Rotation::Rot2(current_twist / current_twist.Norm(), 
-                                   current_twist.Norm());
+        return KDL::Rotation::Rot2(current_twist / norm, norm);
     }
 
     // Calculate exponential map for linear part of the given screw twist
