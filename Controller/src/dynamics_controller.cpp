@@ -1466,23 +1466,35 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
     fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
     if (fsm_result_ == task_status::STOP_CONTROL) return;
 
-    abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
+    if (CTRL_DIM_[0]) abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
+    else abag_error_vector_(0) = 0.0;
     
     // Check for tube on velocity
     if ((desired_state_.frame_velocity[END_EFF_].vel(0) != 0.0) && \
         (std::fabs(abag_error_vector_(0)) <= moveTo_follow_path_task_.tube_tolerances[6])) abag_error_vector_(0) = 0.0;
 
-    // Other parts of the ABAG error are position errors
-    for(int i = 1; i < NUM_OF_CONSTRAINTS_; i++)
+    // Position error processing
+    for(int i = 1; i < 3; i++)
     {
-        if ( std::fabs(predicted_error_twist_(i)) <= moveTo_follow_path_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
+        if (std::fabs(predicted_error_twist_(i)) <= moveTo_follow_path_task_.tube_tolerances[i] || !CTRL_DIM_[i]) abag_error_vector_(i) = 0.0;
         else abag_error_vector_(i) = predicted_error_twist_(i);        
+    }
+
+    // Orientation error processing
+    if (std::fabs(predicted_error_twist_.tail<3>().norm()) <= moveTo_follow_path_task_.tube_tolerances[3] || !CTRL_DIM_[3] || !CTRL_DIM_[4] || !CTRL_DIM_[5]) abag_error_vector_.tail<3>().setZero();
+    else
+    {
+        for (int i = 3; i < NUM_OF_CONSTRAINTS_; i++)
+        {
+            // Filter out the noise amplified by the nonlinearity of rotation matrices and logarithmic map
+            if ( std::fabs(predicted_error_twist_(i)) <= 0.02) abag_error_vector_(i) = 0.0;
+            else abag_error_vector_(i) = predicted_error_twist_(i);
+        }
     }
 
     // Additional Cartesian force to keep residual part of the robot in a good configuration
     if (compute_null_space_command_) compute_moveToGuarded_null_space_task_error();
 }
-
 
 /**
  * Compute the control error for tube deviations and velocity setpoint.
@@ -1517,18 +1529,18 @@ void dynamics_controller::compute_moveTo_task_error()
     // Position error processing
     for (int i = 1; i < 3; i++)
     {
-        if ( std::fabs(predicted_error_twist_(i)) <= moveTo_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
+        if (std::fabs(predicted_error_twist_(i)) <= moveTo_task_.tube_tolerances[i] || !CTRL_DIM_[i]) abag_error_vector_(i) = 0.0;
         else abag_error_vector_(i) = predicted_error_twist_(i);
     }
 
     // Orientation error processing
-    if (std::fabs(predicted_error_twist_.tail<3>().norm()) <= moveTo_task_.tube_tolerances[3]) abag_error_vector_.tail<3>().setZero();
+    if (std::fabs(predicted_error_twist_.tail<3>().norm()) <= moveTo_task_.tube_tolerances[3] || !CTRL_DIM_[3] || !CTRL_DIM_[4] || !CTRL_DIM_[5]) abag_error_vector_.tail<3>().setZero();
     else
     {
         for (int i = 3; i < NUM_OF_CONSTRAINTS_; i++)
         {
             // Filter out the noise amplified by the nonlinearity of rotation matrices and logarithmic map
-            if ( std::fabs(predicted_error_twist_(i)) <= 0.0 ) abag_error_vector_(i) = 0.0;
+            if ( std::fabs(predicted_error_twist_(i)) <= 0.02) abag_error_vector_(i) = 0.0;
             else abag_error_vector_(i) = predicted_error_twist_(i);
         }
     }
@@ -1561,7 +1573,8 @@ void dynamics_controller::compute_moveTo_weight_compensation_task_error()
     fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
     if (fsm_result_ == task_status::STOP_ROBOT || fsm_result_ == task_status::STOP_CONTROL) return;
 
-    abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
+    if (CTRL_DIM_[0]) abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
+    else abag_error_vector_(0) = 0.0;
 
     // Check for tube on velocity
     if ((fsm_result_ == task_status::CRUISE_THROUGH_TUBE) && (std::fabs(abag_error_vector_(0)) <= moveTo_weight_compensation_task_.tube_tolerances[6]))  abag_error_vector_(0) = 0.0;
@@ -1569,12 +1582,12 @@ void dynamics_controller::compute_moveTo_weight_compensation_task_error()
     // Position error processing
     for (int i = 1; i < 3; i++)
     {
-        if ( std::fabs(predicted_error_twist_(i)) <= moveTo_weight_compensation_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
+        if ( std::fabs(predicted_error_twist_(i)) <= moveTo_weight_compensation_task_.tube_tolerances[i] || !CTRL_DIM_[i]) abag_error_vector_(i) = 0.0;
         else abag_error_vector_(i) = predicted_error_twist_(i);        
     }
 
     // Orientation error processing
-    if (std::fabs(predicted_error_twist_.tail<3>().norm()) <= moveTo_weight_compensation_task_.tube_tolerances[3]) abag_error_vector_.tail<3>().setZero();
+    if (std::fabs(predicted_error_twist_.tail<3>().norm()) <= moveTo_weight_compensation_task_.tube_tolerances[3] || !CTRL_DIM_[3] || !CTRL_DIM_[4] || !CTRL_DIM_[5]) abag_error_vector_.tail<3>().setZero();
     else
     {
         for (int i = 3; i < NUM_OF_CONSTRAINTS_; i++)
@@ -1613,7 +1626,8 @@ void dynamics_controller::compute_moveGuarded_task_error()
     fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
     if (fsm_result_ == task_status::STOP_ROBOT || fsm_result_ == task_status::STOP_CONTROL) return;
 
-    abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
+    if (CTRL_DIM_[0]) abag_error_vector_(0) = desired_state_.frame_velocity[END_EFF_].vel(0) - robot_state_.frame_velocity[END_EFF_].vel(0);
+    else abag_error_vector_(0) = 0.0;
 
     // Check for tube on velocity
     if ((fsm_result_ == task_status::CRUISE_THROUGH_TUBE) && (std::fabs(abag_error_vector_(0)) <= moveGuarded_task_.tube_tolerances[6])) abag_error_vector_(0) = 0.0;
@@ -1621,12 +1635,12 @@ void dynamics_controller::compute_moveGuarded_task_error()
     // Position error processing
     for (int i = 1; i < 3; i++)
     {
-        if ( std::fabs(predicted_error_twist_(i)) <= moveGuarded_task_.tube_tolerances[i] ) abag_error_vector_(i) = 0.0;
+        if ( std::fabs(predicted_error_twist_(i)) <= moveGuarded_task_.tube_tolerances[i] || !CTRL_DIM_[i]) abag_error_vector_(i) = 0.0;
         else abag_error_vector_(i) = predicted_error_twist_(i);
     }
 
     // Orientation error processing
-    if (std::fabs(predicted_error_twist_.tail<3>().norm()) <= moveGuarded_task_.tube_tolerances[3]) abag_error_vector_.tail<3>().setZero();
+    if (std::fabs(predicted_error_twist_.tail<3>().norm()) <= moveGuarded_task_.tube_tolerances[3] || !CTRL_DIM_[3] || !CTRL_DIM_[4] || !CTRL_DIM_[5]) abag_error_vector_.tail<3>().setZero();
     else
     {
         for (int i = 3; i < NUM_OF_CONSTRAINTS_; i++)
@@ -1657,10 +1671,16 @@ void dynamics_controller::compute_full_pose_task_error()
     fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
 
     abag_error_vector_ = predicted_error_twist_;
-    for (int i = 3; i < NUM_OF_CONSTRAINTS_; i++)
+
+    // Position error computation
+    for (int i = 0; i < 3; i++)
+        abag_error_vector_(i) = CTRL_DIM_[i]? abag_error_vector_(i) : 0.0;
+
+    // Orientation error computation
+    if (!CTRL_DIM_[3] || !CTRL_DIM_[4] || !CTRL_DIM_[5])
     {
-        // Filter out the noise amplified by the nonlinearity of rotation matrices and logarithmic map
-        if (std::fabs(abag_error_vector_(i)) <= 0.0) abag_error_vector_(i) = 0.0;
+        for (int i = 3; i < NUM_OF_CONSTRAINTS_; i++)
+            abag_error_vector_(i) = 0.0;
     }
 
     // Additional Cartesian force to keep residual part of the robot in a good configuration
@@ -1834,7 +1854,10 @@ void dynamics_controller::compute_cart_control_commands()
         // Set virtual forces computed by the ABAG controller
         case dynamics_interface::CART_FORCE:
             for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+            {
                 cart_force_command_[END_EFF_](i) = CTRL_DIM_[i]? abag_command_(i) * max_command_(i) : 0.0;
+                if (fsm_result_ == task_status::STOP_ROBOT && FORCE_CTRL_DIM_[i]) cart_force_command_[END_EFF_](i) = 0.0;
+            }
 
             if (transform_drivers_) transform_force_driver();
             break;
@@ -1859,7 +1882,10 @@ void dynamics_controller::compute_cart_control_commands()
             {
                 // Compute the wrench command for the tool-tip frame and reference point
                 for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
-                    cart_force_command_[END_EFF_](i) = FORCE_CTRL_DIM_[i]? abag_command_(i) * max_command_(i) : 0.0;
+                {
+                    if (FORCE_CTRL_DIM_[i] && fsm_result_ != task_status::STOP_ROBOT) cart_force_command_[END_EFF_](i) = abag_command_(i) * max_command_(i);
+                    else cart_force_command_[END_EFF_](i) = 0.0;
+                }
             }
             else KDL::SetToZero(cart_force_command_[END_EFF_]);
 
@@ -2460,12 +2486,12 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
             error_logger_.error_status_ = -1;
             return -1;
         }
-        else if (status == 1)
-        {
-            error_logger_.error_source_ = error_source::fsm;
-            error_logger_.error_status_ = 1;
-            return -1;
-        }
+        // else if (status == 1)
+        // {
+        //     error_logger_.error_source_ = error_source::fsm;
+        //     error_logger_.error_status_ = 1;
+        //     return -1;
+        // }
 
         if (update_commands() == -1) return -1;
     }
@@ -2491,7 +2517,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
     tau_output = robot_state_.control_torque;
 
     // Log control data for visualization and debuging
-    if (store_control_data_) write_to_file();
+    if (store_control_data_ && !stopping_behaviour_on) write_to_file();
     return 0;
 }
 
