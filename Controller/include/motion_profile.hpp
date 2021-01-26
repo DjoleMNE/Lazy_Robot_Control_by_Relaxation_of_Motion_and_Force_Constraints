@@ -40,7 +40,8 @@ enum m_profile
     CONSTANT = 0,
     TANH = 1,
     S_CURVE = 2,
-    STEP = 3
+    STEP = 3,
+    RAMP = 4
 };
 
 namespace motion_profile
