@@ -46,7 +46,10 @@ enum desired_pose
     PACKAGING      = 3,
     HOME_FORWARD   = 4,
     HOME_BACK      = 5,
-    APPROACH_TABLE = 6
+    HOME_DOWN      = 6,
+    HOME_UP        = 7,
+    HOME_UP_2      = 8,
+    APPROACH_TABLE = 9
 };
 
 enum path_types
@@ -404,16 +407,30 @@ int go_to(kinova_mediator &robot_driver, const int desired_pose_)
             configuration_array = std::vector<double> {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
             break;
         case desired_pose::APPROACH_TABLE:
-            configuration_array = std::vector<double> {0.001, 42.017, 179.56, 220.641, 2.761, 1.965, 88.101};
+            // configuration_array = std::vector<double> {0.001, 42.017, 179.56, 220.641, 2.761, 1.965, 88.101}; // for test with out polishing tool
+            // configuration_array = std::vector<double> {48.795, 67.916, 76.724, 241.199, 64.802, 270.236, 18.503};// for test with polishing tool:center
+            // configuration_array = std::vector<double> {1.973, 31.26, 176.732, 267.612, 1.51, 302.826, 89.919};// for test with polishing tool:front
+            // configuration_array = std::vector<double> {224.329, 102.519, 118.864, 246.859, 301.916, 68.074, 190.767};// for test with polishing tool:180 deg back and down
+            configuration_array = std::vector<double> {0.0, 29.802, 180.487, 262.51, 0.0, 312.097, 90.287};// for test with polishing tool:front, ramp 180deg inverted
+            // configuration_array = std::vector<double> {350.32, 51.578, 236.031, 290.273, 315.925, 284.194, 133.585};// for test with polishing tool:front, ramp 180deg inverted, null_space moved
             break;
         case desired_pose::HOME_BACK:
-            configuration_array = std::vector<double> {356.129, 304.126, 181.482, 250.087, 2.852, 328.367, 87.817};
+            configuration_array = std::vector<double> {180.0, 15.0, 180.0, 230.0, 0.0, 55.0, 90.0};
             break;
         case desired_pose::PACKAGING:
             configuration_array = std::vector<double> {0.0, 330.0, 180.0, 214.0, 0.0, 115.0, 270.0};
             break;
         case desired_pose::RETRACT:
             configuration_array = std::vector<double> {0.0, 340.0, 180.0, 214.0, 0.0, 310.0, 90.0};
+            break;
+        case desired_pose::HOME_DOWN:
+            configuration_array = std::vector<double> {353.962, 2.714, 185.847, 260.143, 1.81, 327.854, 88.317};
+            break;
+        case desired_pose::HOME_UP:
+            configuration_array = std::vector<double> {354.009, 5.012, 187.623, 237.876, 1.868, 66.414, 87.982};
+            break;
+        case desired_pose::HOME_UP_2:
+            configuration_array = std::vector<double> {359.793, 97.913, 4.262, 238.062, 2.122, 74.802, 266.611};
             break;
         case desired_pose::HOME:
             configuration_array = std::vector<double> {0.0, 15.0, 180.0, 230.0, 0.0, 55.0, 90.0};
@@ -574,11 +591,40 @@ int define_task(dynamics_controller *dyn_controller)
             break;
 
         case desired_pose::APPROACH_TABLE:
-            tube_start_position = std::vector<double>{0.275073, 0.00364068, 0.177293};
-            desired_ee_pose     = { 0.275073, 0.00364068, 0.177293, // Linear: Vector
-                                    -0.0207239, -0.999733, -0.010216, // Angular: Rotation matrix
-                                    0.999763, -0.0206545, -0.00685178,
-                                    0.00663895, -0.0103556, 0.999924};
+            // tube_start_position = std::vector<double>{0.275073, 0.00364068, 0.177293}; // for test with out polishing tool
+            // desired_ee_pose     = { 0.275073, 0.00364068, 0.177293, // Linear: Vector
+            //                         -0.0207239, -0.999733, -0.010216, // Angular: Rotation matrix
+            //                         0.999763, -0.0206545, -0.00685178,
+            //                         0.00663895, -0.0103556, 0.999924};
+
+            // tube_start_position = std::vector<double>{0.336987, 0.00144331, 0.350254}; // for test with polishing tool:center
+            // desired_ee_pose     = {0.336987, 0.00144331, 0.350254, // Linear: Vector
+            //                        -0.0206334, -0.999743, -0.00941167, // Angular: Rotation matrix
+            //                         0.999764, -0.0205681, -0.0069796,
+            //                         0.00678422, -0.00955347, 0.999931};
+
+            // tube_start_position = std::vector<double>{0.477894, 0.00349779, 0.365029};// for test with polishing tool:front
+            // desired_ee_pose     = {0.477894, 0.00349779, 0.365029, // Linear: Vector
+            //                        -0.0275078, -0.99953, 0.0135681, // Angular: Rotation matrix
+            //                         0.999593, -0.0276079, -0.00724534,
+            //                         0.00761651, 0.0133633, 0.999882};
+
+            // tube_start_position = std::vector<double>{-0.374525, 0.00627562, -0.00995563};// for test with polishing tool:180 deg back and down
+            // desired_ee_pose     = {-0.374525, 0.00627562, -0.00995563, // Linear: Vector
+            //                        0.000183558, 0.991793, 0.127856, // Angular: Rotation matrix
+            //                        -1, 0.000178096, 5.41554e-05,
+            //                        3.09403e-05, -0.127856, 0.991793};
+
+            tube_start_position = std::vector<double>{0.468169, -0.00181314, 0.353854};// for test with polishing tool:front, ramp 180 deg inverted
+            desired_ee_pose     = {0.468169, -0.00181314, 0.353854, // Linear: Vector
+                                   0.00238073, -0.996484, -0.083747, // Angular: Rotation matrix
+                                   0.999986, 0.0019835, 0.00482606,
+                                   -0.00464298, -0.0837573, 0.996475};
+            // tube_start_position = std::vector<double>{0.565726, -0.1577, 0.371041};// for test with polishing tool:front, ramp 180 deg inverted, null_space moved
+            // desired_ee_pose     = {0.565726, -0.1577, 0.371041, // Linear: Vector
+            //                        -0.00325582, -0.997711, -0.0675378, // Angular: Rotation matrix
+            //                        0.99999, -0.00345493, 0.00283143,
+                                    // -0.00305829, -0.0675279, 0.997713};
             break;
 
         case desired_pose::RETRACT:
@@ -598,11 +644,35 @@ int define_task(dynamics_controller *dyn_controller)
             break;
 
         case desired_pose::HOME_BACK:
-            tube_start_position = std::vector<double>{0.0125206, -0.00995057, 0.713622};
-            desired_ee_pose     = { 0.0125206, -0.00995057, 0.713622, // Linear: Vector
-                                    -0.0266768,   0.0747393,   -0.996846, // Angular: Rotation matrix
-                                     0.999461,   0.0210588,  -0.0251679,
-                                     0.0191113,   -0.996981,  -0.0752609};
+            tube_start_position = std::vector<double>{-0.465034, -0.0131987, 0.149422};
+            desired_ee_pose     = {  -0.465034, -0.0131987, 0.149422, // Linear: Vector
+                                      0.0307943, 0.998958, -0.0336904, // Angular: Rotation matrix
+                                     -0.999509, 0.0309717, 0.00475512,
+                                      0.00579361, 0.0335274, 0.999421};
+            break;
+
+        case desired_pose::HOME_DOWN:
+            tube_start_position = std::vector<double>{ 0.403155, 0.00236782, 0.562052};
+            desired_ee_pose     = { 0.53555, 0.00236782, 0.410052, // Linear: Vector
+                                    0.0, -0.819152, -1.0, // Angular: Rotation matrix
+                                    1.0,  0.0, 0.0,
+                                    0.0, -0.573576, 0.819152};
+            break;
+
+        case desired_pose::HOME_UP:
+            tube_start_position = std::vector<double>{0.382323, -0.00355718, 0.547452};
+            desired_ee_pose     = { 0.552323, -0.00355718, 0.647452, // Linear: Vector
+                                    0.0, -0.819152, -1.0, // Angular: Rotation matrix
+                                    1.0,  0.0, 0.0,
+                                    0.0, -0.573576, 0.819152};
+            break;
+
+        case desired_pose::HOME_UP_2:
+            tube_start_position = std::vector<double>{0.382323, -0.00355718, 0.547452};
+            desired_ee_pose     = { 0.552323, -0.00355718, 0.657452, // Linear: Vector
+                                    0.0, -0.819152, -1.0, // Angular: Rotation matrix
+                                    1.0,  0.0, 0.0,
+                                    0.0, -0.573576, 0.819152};
             break;
 
         case desired_pose::HOME:
