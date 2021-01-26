@@ -222,13 +222,14 @@ else:
     plt.xlim(0, time_ticks[-1])
     plt.xticks(np.arange(0, num_samples, control_freq))
     plt.grid(True)
-    plt.ylabel('[m]', fontsize=20)
 
     if (desired_dim == 6):
         plt.ylabel(r'$[\frac{m}{s}]$', fontsize=20)
     elif (desired_dim == 8):
         plt.ylabel('[N]', fontsize=20)
     elif (desired_dim > 8):
+        plt.ylabel('[Nm]',  fontsize=22)
+    elif (desired_dim == 3):
         plt.ylabel('[rad]', fontsize=20)
     else:
         plt.ylabel('[m]', fontsize=20)

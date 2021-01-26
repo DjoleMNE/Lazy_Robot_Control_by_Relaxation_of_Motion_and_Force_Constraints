@@ -58,12 +58,17 @@ raw_error_2 = []
 raw_error_3 = []
 error     = []
 bias      = []
+bias_2    = []
+bias_3    = []
 gain      = []
+gain_2    = []
+gain_3    = []
 command   = []
-command_2   = []
-command_3   = []
+command_2 = []
+command_3 = []
 contact_time_tick = []
 time_ticks = []
+
 for sample_ in range (2, rows + 2, variable_num):
     tick = np.float32( input_data[sample_][11] )
     if (tick > 0): contact_time_tick.append(tick)
@@ -111,7 +116,11 @@ for sample_ in range (2, rows + 2, variable_num):
         raw_error_3.append( np.float32( input_data[2 + sample_][5] ) )
         error.append(       np.float32( input_data[3 + sample_][3] ) )
         bias.append(        np.float32( input_data[4 + sample_][3] ) )
+        bias_2.append(      np.float32( input_data[4 + sample_][4] ) )
+        bias_3.append(      np.float32( input_data[4 + sample_][5] ) )
         gain.append(        np.float32( input_data[5 + sample_][3] ) )
+        gain_2.append(      np.float32( input_data[5 + sample_][4] ) )
+        gain_3.append(      np.float32( input_data[5 + sample_][5] ) )
         command.append(     np.float32( input_data[6 + sample_][3] ) )
         command_2.append(   np.float32( input_data[6 + sample_][4] ) )
         command_3.append(   np.float32( input_data[6 + sample_][5] ) )
@@ -134,11 +143,21 @@ predicted = np.array(predicted)
 raw_error = np.array(raw_error)
 error     = np.array(error) 
 bias      = np.array(bias)
+bias_2    = np.array(bias_2)
+bias_3    = np.array(bias_3)
 gain      = np.array(gain)
+gain_2    = np.array(gain_2)
+gain_3    = np.array(gain_3)
 command   = np.array(command)
+command_2   = np.array(command_2)
+command_3   = np.array(command_3)
+
+if (desired_dim == 3): subplot_num = 5
+elif (desired_dim == 1): subplot_num = 1
+else: subplot_num = 3
 
 plt.ion()
-# if(desired_dim is 0):   plt.suptitle('Robot Position in Linear X Direction', fontsize=20)
+# if  (desired_dim is 0): plt.suptitle('Robot Position in Linear X Direction', fontsize=20)
 # elif(desired_dim is 1): plt.suptitle('Control of Robot Position in Linear Y Direction', fontsize=20)
 # elif(desired_dim is 2): plt.suptitle('Control of Robot Position in Linear Z Direction', fontsize=20)
 # elif(desired_dim is 3): plt.suptitle('Control of Robot\'s Orientation', fontsize=20)
@@ -161,17 +180,17 @@ if (desired_dim is 0):
     plt.figure(figsize = (8,8))
 
     plt.subplots_adjust(left=0.19)
-    # plt.title('Monitored Robot Position in Linear X Direction', fontsize=22)
+    # plt.title('Monitored Robot Position in Linear X Direction', fontsize=20)
     plt.plot(measured, c = 'limegreen', label='measured position', linewidth = 2, zorder = 2)
     plt.plot(desired, label='desired position', linewidth = 2, color = 'black', zorder = 3)
     if (show_tube):
         tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim] )))
     plt.plot(desired + tube_tolerance, c = 'red', label='upper tolerance', linewidth = 1.3, linestyle = '--', zorder = 2)
-    plt.plot(desired - tube_tolerance, c = 'blue', label='lower tolerance', linewidth = 1.3, linestyle = '--', zorder = 2)       
-    plt.legend( fontsize=15, ncol=2)
+    plt.plot(desired - tube_tolerance, c = 'blue', label='lower tolerance', linewidth = 1.3, linestyle = '--', zorder = 2)
+    plt.legend( fontsize=12, ncol=2)
     for tick in contact_time_tick:
         plt.axvline(x = contact_time_tick[0], linewidth = 1.3,  color='blue', zorder = 1)
-    plt.yticks(fontsize=22)
+    plt.yticks(fontsize=20)
     # if (control_freq > num_samples):
     #     time_ticks = np.arange(0, num_samples, 0.5)
     # else:
@@ -179,25 +198,25 @@ if (desired_dim is 0):
 
     time_ticks = np.arange(0, num_samples / control_freq, 1)
     plt.xlim(0, time_ticks[-1])
-    plt.xticks(np.arange(0, num_samples, control_freq), time_ticks,  fontsize=22)
+    plt.xticks(np.arange(0, num_samples, control_freq), time_ticks,  fontsize=20)
     plt.grid(True)
-    plt.ylabel('[m]',  fontsize=22)
-    plt.xlabel('time [s]',  fontsize=22)
+    plt.ylabel('[m]',  fontsize=20)
+    plt.xlabel('time [s]',  fontsize=20)
 
 else:
     if (desired_dim > 7): plt.figure(figsize = (30, 25))
     else: plt.figure(figsize = (10,15))
     plt.gca().set_axis_off()
     plt.subplots_adjust(hspace = 0.09, wspace = 15)
-    plt.subplots_adjust(left=0.15, right=0.96, top=0.95, bottom=0.07)
+    plt.subplots_adjust(left=0.15, right=0.96, top=0.98, bottom=0.08)
     plt.margins(0,0)
 
-    plt.subplot(4, 1, 1)
+    plt.subplot(subplot_num, 1, 1)
     if(desired_dim == 1):
         plt.plot(measured, c = 'limegreen', label='measured position', linewidth = 2, zorder = 2)
         # plt.plot(predicted, c = 'orange', label='predicted position', linewidth = 2, zorder = 2)
         show_tube = False
-        plt.xlabel('time [s]',  fontsize=22)
+        plt.xlabel('time [s]',  fontsize=20)
 
     if(desired_dim == 2):
         plt.plot(measured, c = 'limegreen', label='measured position', linewidth = 2, zorder = 2)
@@ -209,7 +228,7 @@ else:
         plt.plot(predicted, c = 'orange', label='predicted angle', linewidth = 2, zorder = 2)
         plt.plot(desired, label='desired angle', linewidth = 2, color = 'black', zorder = 3)
 
-    elif(desired_dim > 5 and desired_dim < 7):
+    elif(desired_dim == 6):
         plt.plot(measured, c = 'limegreen', label='measured velocity', linewidth = 2, zorder = 2)
         plt.plot(desired, label='desired velocity', linewidth = 2, color = 'black', zorder = 3)
 
@@ -225,117 +244,146 @@ else:
         plt.plot(measured, c = 'limegreen', label='measured moment', linewidth = 2, zorder = 2)
         plt.plot(desired, label='desired moment', linewidth = 2, color = 'black', zorder = 3) 
 
-    if(show_tube):
+    if (show_tube):
         if (desired_dim > 7):
             tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim-6] )))
         else:
             tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim] )))
+
         if (desired_dim==6):
             plt.plot(desired + tube_tolerance, c = 'red', label='upper tolerance', linewidth = 1.0, linestyle = '--', zorder = 2)
             plt.plot(desired - tube_tolerance, c = 'blue', label='lower tolerance', linewidth = 1.0, linestyle = '--', zorder = 2)
         else:
             plt.plot(desired + tube_tolerance, c = 'red', label='upper tolerance', linewidth = 2.5, linestyle = '--', zorder = 2)
             plt.plot(desired - tube_tolerance, c = 'blue', label='lower tolerance', linewidth = 2.5, linestyle = '--', zorder = 2)
+
         for tick in contact_time_tick:
             plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
 
-    if (desired_dim == 2 or desired_dim == 1):
+    if (desired_dim < 4):
         plt.ylim(-tube_tolerance[0]*2, tube_tolerance[0]*2)
-        # plt.legend(fontsize = 16, loc=0, ncol=2)
 
     # if (desired_dim == 8):
         # plt.ylim(desired[0] - tube_tolerance[0] - 0.1, desired[0] - tube_tolerance[0] + 0.1)
     
-    plt.legend(fontsize = 16, loc=0, ncol=1)
-    plt.yticks(fontsize=22)
+    plt.legend(fontsize = 12, loc=0, ncol=1)
+    plt.yticks(fontsize=20)
     time_ticks = np.arange(0, num_samples / control_freq, 1)
     plt.xlim(0, time_ticks[-1])
     plt.xticks(np.arange(0, num_samples, control_freq))
     plt.grid(True)
-    plt.ylabel('[m]',  fontsize=22)
     # if (desired_dim == 1): plt.gca().yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
 
 
     if (desired_dim == 6):
-        plt.ylabel(r'$[\frac{m}{s}]$',  fontsize=22)
+        plt.ylabel(r'$[\frac{m}{s}]$', fontsize=20)
     elif (desired_dim == 8):
-        plt.ylabel('[N]',  fontsize=22)
+        plt.ylabel('[N]',  fontsize=20)
     elif (desired_dim > 8):
-        plt.ylabel('[Nm]',  fontsize=22)
+        plt.ylabel('[Nm]',  fontsize=20)
     elif (desired_dim == 3):
-        plt.ylabel('[rad]',  fontsize=22)
+        plt.ylabel('[rad]',  fontsize=20)
     else:
-        plt.ylabel('[m]',  fontsize=22)
+        plt.ylabel('[m]',  fontsize=20)
+
     if(desired_dim != 1): plt.setp( plt.gca().get_xticklabels(), visible=False)
     else:
         plt.xlim(0, time_ticks[-1])
-        plt.xticks(np.arange(0, num_samples, control_freq), time_ticks,  fontsize=22)
+        plt.xticks(np.arange(0, num_samples, control_freq), time_ticks,  fontsize=20)
 
-    if(desired_dim != 1):
-        plt.subplot(4, 1, 2)
+    if (desired_dim != 1):
+        plt.subplot(subplot_num, 1, 2)
         if (desired_dim == 3):
-            plt.plot(raw_error, c = 'black', label=r'input error X angular', linewidth=2, zorder=2)
+            plt.plot(raw_error,   c = 'black',  label=r'input error X angular', linewidth=2, zorder=2)
             plt.plot(raw_error_2, c = 'purple', label=r'input error Y angular', linewidth=2, zorder=2)
             plt.plot(raw_error_3, c = 'orange', label=r'input error Z angular', linewidth=2, zorder=2)
         else:
             plt.plot(raw_error, c = 'purple', label=r'input error', linewidth=2, zorder=2)
+
         for tick in contact_time_tick:
             plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
-        plt.legend(fontsize = 16, loc=0,ncol=1)
-        # if (desired_dim==8): plt.ylim(-0.20, 0.10)
-        plt.yticks(fontsize=22)
+
+        plt.legend(fontsize = 12, loc=0,ncol=1)
+        plt.yticks(fontsize=20)
         plt.xlim(0, time_ticks[-1])
         plt.xticks(np.arange(0, num_samples, control_freq))
         plt.grid(True)
-        plt.ylabel('[m]',  fontsize=22)
 
         if (desired_dim == 6):
-            plt.ylabel(r'$[\frac{m}{s}]$',  fontsize=22)
+            plt.ylabel(r'$[\frac{m}{s}]$',  fontsize=20)
         elif (desired_dim == 8):
-            plt.ylabel('[N]',  fontsize=22)
+            plt.ylabel('[N]',  fontsize=20)
         elif (desired_dim > 8):
-            plt.ylabel('[Nm]',  fontsize=22)
+            plt.ylabel('[Nm]',  fontsize=20)
         elif (desired_dim == 3):
-            plt.ylabel('[rad]',  fontsize=22)
+            plt.ylabel('[rad]',  fontsize=20)
         else:
-            plt.ylabel('[m]',  fontsize=22)
+            plt.ylabel('[m]',  fontsize=20)
         plt.setp( plt.gca().get_xticklabels(), visible=False)
 
-        # plt.subplot(4, 1, 3)
+        # plt.subplot(subplot_num, 1, 3)
         # plt.plot(error, c = 'darkorange', label=r'ABAG: low-pass filtered error sign', linewidth=1, zorder=2)
         # for tick in contact_time_tick:
         #     plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
-        # plt.legend( fontsize=22)
+        # plt.legend( fontsize=12)
         # plt.ylim(-1.2, 1.2)
-        # plt.yticks(fontsize=22)
+        # plt.yticks(fontsize=20)
         # plt.xlim(0, time_ticks[-1])
-        # plt.xticks(np.arange(0, num_samples, control_freq), " ")
+        # plt.xticks(np.arange(0, num_samples, control_freq))
+        # plt.setp( plt.gca().get_xticklabels(), visible=False)
         # plt.grid(True)
-        # plt.ylabel('[%]',  fontsize=22)
+        # plt.ylabel('[%]',  fontsize=20)
 
-        plt.subplot(4, 1, 3)
-        # plt.plot(bias, c = 'green', label='ABAG: bias', linewidth = 2, zorder = 4)
-        # plt.plot(gain, c = 'red', label=r'ABAG: gain * sign(e)', linewidth = 2, zorder = 2)
-        if (desired_dim ==3):
-            plt.plot(command, c = 'blue', label='ABAG command: u - X axis', linewidth = 2.0, zorder = 3)
-            plt.plot(command_2, c = 'red', label='ABAG command: u - Y axis', linewidth = 2.0, zorder = 3)
-            plt.plot(command_3, c = 'green', label='ABAG command: u - Z axis', linewidth = 2.0, zorder = 3)
-        else: plt.plot(command, c = 'blue', label='ABAG command: u', linewidth = 2.0, zorder = 3)
+        if (desired_dim == 3):
+            plt.subplot(subplot_num, 1, 3)
+            plt.plot(command, c = 'blue', label='ABAG: command u - X axis', linewidth = 2.0, zorder = 3)
+            plt.plot(bias, c = 'green', label='ABAG: bias - X axis', linewidth = 2, zorder = 4)
+            plt.plot(gain, c = 'red', label=r'ABAG: gain * sign(e) - X axis', linewidth = 2, zorder = 2)
+            plt.legend(fontsize = 12, loc=0, ncol=1)
+            plt.yticks(fontsize=20)
+            plt.xlim(0, time_ticks[-1])
+            plt.xticks(np.arange(0, num_samples, control_freq))
+            plt.grid(True)
+            plt.ylabel('[%]',  fontsize=20)
+            plt.setp( plt.gca().get_xticklabels(), visible=False)
+            plt.ylim(-1.2, 1.2)
 
-        plt.ylim(-1.2, 1.2)
-        for tick in contact_time_tick:
-            plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
-        
+            plt.subplot(subplot_num, 1, 4)
+            plt.plot(command_2, c = 'blue', label='ABAG: command u - Y axis', linewidth = 2.0, zorder = 3)
+            plt.plot(bias_2, c = 'green', label='ABAG: bias - Y axis', linewidth = 2, zorder = 4)
+            plt.plot(gain_2, c = 'red', label=r'ABAG: gain * sign(e) - Y axis', linewidth = 2, zorder = 2)
+            plt.legend(fontsize = 12, loc=0, ncol=1)
+            plt.yticks(fontsize=20)
+            plt.xlim(0, time_ticks[-1])
+            plt.xticks(np.arange(0, num_samples, control_freq))
+            plt.grid(True)
+            plt.ylabel('[%]',  fontsize=20)
+            plt.setp( plt.gca().get_xticklabels(), visible=False)
+            plt.ylim(-1.2, 1.2)
+
+            plt.subplot(subplot_num, 1, 5)
+            plt.plot(command_3, c = 'blue', label='ABAG: command u - Z axis', linewidth = 2.0, zorder = 3)
+            plt.plot(bias_3, c = 'green', label='ABAG: bias - Z axis', linewidth = 2, zorder = 4)
+            plt.plot(gain_3, c = 'red', label=r'ABAG: gain * sign(e) - Z axis', linewidth = 2, zorder = 2)
+            plt.ylim(-1.2, 1.2)
+
+        else: 
+            plt.subplot(subplot_num, 1, 3)
+            plt.plot(command, c = 'blue', label='ABAG: command u', linewidth = 2.0, zorder = 3)
+            plt.plot(bias, c = 'green', label='ABAG: bias', linewidth = 2, zorder = 4)
+            plt.plot(gain, c = 'red', label=r'ABAG: gain * sign(e)', linewidth = 2, zorder = 2)
+
+
         # if(desired_dim is not 8):
         #     plt.ylim(-0.70, 0.70)
         #     plt.yticks(np.arange(-0.70, 0.70, 0.25),  fontsize=22)
-        plt.yticks( fontsize=22)
-        plt.legend(fontsize = 16, loc=0,ncol=1)
+        plt.yticks(fontsize=20)
+        plt.legend(fontsize = 12, loc=0, ncol=1)
         plt.xlim(0, time_ticks[-1])
-        plt.xticks(np.arange(0, num_samples, control_freq), time_ticks,  fontsize=22)
+        plt.xticks(np.arange(0, num_samples, control_freq), time_ticks,  fontsize=20)
         plt.grid(True)
-        plt.ylabel('[%]',  fontsize=22)
-        plt.xlabel('time [s]',  fontsize=22)
+        plt.ylabel('[%]',  fontsize=20)
+        plt.xlabel('time [s]',  fontsize=20)
 
 plt.draw()
 plt.pause(0.001)
