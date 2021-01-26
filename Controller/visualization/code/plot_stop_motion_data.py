@@ -11,7 +11,7 @@ desired_dim = np.int(sys.argv[1])
 
 print("Selected dimension: ", desired_dim)
 variable_num = 7
-time_stretch = 9
+time_stretch = 20
 
 filename = "../archive/stop_motion_error.txt"
 
@@ -74,7 +74,7 @@ gain      = np.array(gain)
 command   = np.array(command)
 
 plt.ion()
-plt.figure(figsize = (25, 12))
+plt.figure(figsize = (30, 12))
 if  (desired_dim is 0): plt.suptitle('Stop Motion Control - Joint 1', fontsize=20)
 elif(desired_dim is 1): plt.suptitle('Stop Motion Control - Joint 2', fontsize=20)
 elif(desired_dim is 2): plt.suptitle('Stop Motion Control - Joint 3', fontsize=20)
@@ -100,9 +100,11 @@ plt.plot(measured, c = 'limegreen', label='measured velocity', linewidth = 2, zo
 plt.plot(desired, label='desired velocity', linewidth = 2, color = 'black', zorder = 3)
 plt.legend(fontsize = 14, loc=0)
 plt.yticks(fontsize=14)
-time_ticks = np.round(np.arange(0, num_samples / control_freq, 1/time_stretch), 2)
-plt.xlim(0, time_ticks[-1])
-plt.xticks(np.arange(0, num_samples, control_freq), " ")
+# plt.ylim(-0.0002, 0.0002)
+# time_ticks = np.round(np.arange(0, num_samples / control_freq, 1/time_stretch), 2)
+# plt.xlim(0, time_ticks[-1])
+# plt.ylim(-0.001, 0.001)
+# plt.xticks(np.arange(0, num_samples, control_freq), " ")
 plt.grid(True)
 plt.ylabel(r'$[\frac{rad}{s}]$', fontsize=20)
 
@@ -110,8 +112,8 @@ plt.subplot(4, 1, 2)
 plt.plot(raw_error, c = 'purple', label=r'input error: e', linewidth=1, zorder=2)
 plt.legend(fontsize = 14)
 plt.yticks(fontsize=14)
-plt.xlim(0, time_ticks[-1])
-plt.xticks(np.arange(0, num_samples, control_freq), " ")
+# plt.xlim(0, time_ticks[-1])
+# plt.xticks(np.arange(0, num_samples, control_freq), " ")
 plt.grid(True)
 plt.ylabel(r'$[\frac{rad}{s}]$', fontsize=20)
 
@@ -120,8 +122,8 @@ plt.plot(error, c = 'darkorange', label=r'ABAG: low-pass filtered error sign', l
 plt.legend(fontsize = 14)
 plt.ylim(-1.2, 1.2)
 plt.yticks(fontsize=14)
-plt.xlim(0, time_ticks[-1])
-plt.xticks(np.arange(0, num_samples, control_freq), " ")
+# plt.xlim(0, time_ticks[-1])
+# plt.xticks(np.arange(0, num_samples, control_freq), " ")
 plt.grid(True)
 plt.ylabel('[%]', fontsize=20)
 
@@ -132,8 +134,8 @@ plt.plot(gain, c = 'red', label=r'ABAG: gain * sign(e)', linewidth = 2, zorder =
 plt.plot(command, c = 'blue', label='ABAG: u', linewidth = 1.0, zorder = 3)
 plt.yticks(fontsize=14)
 plt.legend(fontsize = 14, loc=8)
-plt.xlim(0, time_ticks[-1])
-plt.xticks(np.arange(0, num_samples, control_freq), time_ticks, fontsize=14)
+# plt.xlim(0, time_ticks[-1])
+# plt.xticks(np.arange(0, num_samples, control_freq), time_ticks, fontsize=14)
 plt.grid(True)
 plt.ylabel('[%]', fontsize=20)
 plt.xlabel('time [s]', fontsize=20)

@@ -67,7 +67,7 @@ def set_axes_equal(ax):
     origin = np.mean(limits, axis=1)
     radius = 0.5 * np.max(np.abs(limits[:, 1] - limits[:, 0]))
     set_axes_radius(ax, origin, radius)
-    ax.set_aspect('equal')
+    # ax.set_aspect('equal')
 
 with open(filename, "r") as f:
     all_data = [x.split() for x in f.readlines()]
