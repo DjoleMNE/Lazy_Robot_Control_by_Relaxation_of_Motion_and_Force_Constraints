@@ -314,10 +314,16 @@ void dynamics_controller::write_to_file()
 {
     if (!stopping_sequence_on_)
     {
-        // Write measured state
+        // Write measured and predicted state
         for (int i = 0; i < 3; i++)
+        {
             log_file_cart_ << robot_state_.frame_pose[END_EFF_].p(i) << " ";
-        log_file_cart_ << predicted_error_twist_.tail<3>().norm() << " ";
+            log_file_predictions_ << predicted_state_.frame_pose[END_EFF_].p(i) << " ";
+        }
+        log_file_cart_ << current_error_twist_.rot.Norm() << " ";
+        log_file_predictions_ << predicted_error_twist_.tail<3>().norm() << " ";
+        log_file_predictions_ << std::endl;
+
         for (int i = 4; i < 6; i++)
             log_file_cart_ << 0.0 << " ";
         log_file_cart_ << robot_state_.frame_velocity[END_EFF_](0) << " ";
