@@ -606,9 +606,8 @@ int define_task(dynamics_controller *dyn_controller)
             break;
 
         case desired_pose::HOME:
-            tube_start_position = std::vector<double>{ 0.395153, 0.00136493, 0.45947};
-            // desired_ee_pose     = { 0.395153, 0.00136493, 0.433647, // Linear: Vector
-            desired_ee_pose     = { 0.52153, 0.00136493, 0.353647, // Linear: Vector
+            tube_start_position = std::vector<double>{0.395153, 0.0013505, 0.433652};
+            desired_ee_pose     = { 0.395153, 0.0013505, 0.433652, // Linear: Vector
                                     0.0, 0.0, -1.0, // Angular: Rotation matrix
                                     1.0, 0.0, 0.0,
                                     0.0, -1.0, 0.0};
@@ -1078,32 +1077,34 @@ int main(int argc, char **argv)
     control_dims_moveConstrained = {true, true, true, // Linear
                                     true, true, false}; // Angular
 
-    tube_tolerances      = std::vector<double>{0.01, 0.0, 0.02,
+    max_command                     = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 20.0, 20.0, 20.0).finished();
+    max_command_moveConstrained     = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 50.0, 9.5, 9.5, 25.0).finished();
+    path_parameters                 = std::vector<double>{1.5, 1.7, 0.03, 0.003, 2}; // last parameter must be min 2 (number of points)
+
+    environment          = kinova_environment::REAL;
+    robot_model_id       = kinova_model::URDF;
+    id                   = robot_id::KINOVA_GEN3_1;
+    // desired_pose_id      = desired_pose::HOME_DOWN;
+    desired_pose_id      = desired_pose::HOME_UP_2;
+    desired_control_mode = control_mode::TORQUE;
+    desired_task_model   = task_model::moveTo;
+    path_type            = path_types::INF_SIGN_PATH;
+    motion_profile_id    = m_profile::S_CURVE;
+    if (desired_pose_id == desired_pose::HOME_UP) task_time_limit_sec  = 6.0;
+    else if (desired_pose_id == desired_pose::HOME_UP_2) task_time_limit_sec  = 6.2;
+    else task_time_limit_sec = 5.5;
+    tube_speed           = 0.07;
+    tube_force           = -18.5;
+    tube_tolerances      = std::vector<double>{0.01, 0.0001, 0.02,
                                                0.09, 0.0, 0.0,
-                                               0.003, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
+                                               tube_speed * 0.2, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
     // Tube tolerances: x pos,    y pos,      z force, 
     //                  x torque, y torque,   null-space, 
     //                  x vel,    z_a pos/vel
     tube_tolerances_moveConstrained = std::vector<double> {0.003, 0.009, 0.003,
                                                            0.0, 0.0, 25.0,
                                                            0.0, 0.005};
-    max_command                     = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 20.0, 20.0, 20.0).finished();
-    max_command_moveConstrained     = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 50.0, 9.5, 9.5, 25.0).finished();
-    path_parameters                 = std::vector<double>{1.5, 1.7, 0.03, 0.003, 2}; // last parameter must be min 2 (number of points)
-    path_parameters_moveConstrained = std::vector<double>{1.5, 1.7, 0.03, 0.003, 2};
-
-    environment          = kinova_environment::REAL;
-    robot_model_id       = kinova_model::URDF;
-    id                   = robot_id::KINOVA_GEN3_1;
-    desired_pose_id      = desired_pose::APPROACH_TABLE;
-    desired_control_mode = control_mode::TORQUE;
-    desired_task_model   = task_model::moveConstrained_follow_path;
-    path_type            = path_types::INF_SIGN_PATH;
-    motion_profile_id    = m_profile::CONSTANT;
     time_horizon_amplitude = 2.5;
-    tube_speed           = 0.02;
-    task_time_limit_sec  = 35.5;
-    tube_force           = -18.5;
     contact_threshold_linear  = 500.0;
     contact_threshold_angular = 500.0;
     compensate_gravity   = false;
@@ -1134,7 +1135,7 @@ int main(int argc, char **argv)
 
     if (run_main_control(robot_driver) == -1) return 0;
     robot_driver.deinitialize();
-    return_flag = go_to(robot_driver, desired_pose::HOME);
+    return_flag = go_to(robot_driver, desired_pose_id);
     return 0;
 
     dynamics_controller controller(&robot_driver, RATE_HZ, compensate_gravity);

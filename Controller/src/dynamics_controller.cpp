@@ -2284,7 +2284,7 @@ int dynamics_controller::initialize(const int desired_control_mode,
     error_logger_.error_status_ = 0;
 
     KDL::SetToZero(estimated_momentum_integral_);
-    KDL::SetToZero(estimated_ext_torque_);
+    KDL::SetToZero(filtered_estimated_ext_torque_);
 
     // Make sure that the robot is locked (freezed)
     engage_lock();
