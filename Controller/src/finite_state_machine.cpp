@@ -420,12 +420,12 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
     }
 
     int count = 0;
-    for (int i = 0; i < NUM_OF_CONSTRAINTS_ - 3; i++)
+    for (int i = 0; i < 4; i++)
     {
         if (std::fabs(current_error_(i)) <= moveTo_task_.tube_tolerances[i]) count++;
     }
     
-    if (count == NUM_OF_CONSTRAINTS_ - 3) 
+    if (count == 4) 
     {
         // #ifndef NDEBUG
             printf("Goal area reached\n");
@@ -436,40 +436,47 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
         return task_status::STOP_ROBOT;
     }
 
-    /*
-     * The robot has reached goal x area?
-     */
-    if ( (std::fabs(current_error_(0)) <= moveTo_task_.tube_tolerances[0]) || \
-         ((std::fabs(current_error_(0)) >  moveTo_task_.tube_tolerances[0]) && \
-          (count < NUM_OF_CONSTRAINTS_ - 4)) 
-       )
+    // Stop the motion IF the robot has reached goal-x area or IF other DoFs are not within tolerances
+    if ((std::fabs(current_error_(0)) <= moveTo_task_.tube_tolerances[0]) || count < 3) 
     {
         desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
         return task_status::START_TO_CRUISE;
     }
     else
     {
-        double speed = 0.0;
         switch (motion_profile_)
         {
             case m_profile::STEP:
-                speed = motion_profile::negative_step_function(std::fabs(current_error_(0)), 
-                                                               moveTo_task_.tube_speed, 
-                                                               0.25, 0.4, 0.2);
+                desired_state.frame_velocity[END_EFF_].vel(0) = motion_profile::negative_step_function(std::fabs(current_error_(0)), 
+                                                                                                       moveTo_task_.tube_speed,
+                                                                                                       0.25, 0.4, 0.2);
+                if (sign(current_error_(0)) == -1) desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
                 break;
 
             case m_profile::S_CURVE:
-                speed = motion_profile::s_curve_function(std::fabs(current_error_(0)), 
-                                                         0.05, moveTo_task_.tube_speed, 12.5);
+                desired_state.frame_velocity[END_EFF_].vel(0) = motion_profile::s_curve_function(std::fabs(current_error_(0)), 
+                                                                                                 0.0, moveTo_task_.tube_speed, 14.5);
+                break;
+
+            case m_profile::RAMP:
+                static int iterations = 0;
+                static std::deque<double> speed_array = motion_profile::ramp_array(0.0, 0.21, 0.001, 0.0001);
+                if (iterations % 10 == 0)
+                {
+                    if (speed_array.size() > 0)
+                    {
+                        desired_state.frame_velocity[END_EFF_].vel(0) = speed_array.front();
+                        speed_array.pop_front();
+                    }
+                }
+                iterations++;
+                if (sign(current_error_(0)) == -1) desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
                 break;
 
             default:
-                speed = moveTo_task_.tube_speed;
+                desired_state.frame_velocity[END_EFF_].vel(0) = (sign(current_error_(0)) == -1)? 0.0 : moveTo_task_.tube_speed;
                 break;
         }
-
-        if (sign(current_error_(0)) == -1) desired_state.frame_velocity[END_EFF_].vel(0) = -1 * speed;      
-        else desired_state.frame_velocity[END_EFF_].vel(0) = speed;              
     }
    
     return task_status::CRUISE_THROUGH_TUBE;
