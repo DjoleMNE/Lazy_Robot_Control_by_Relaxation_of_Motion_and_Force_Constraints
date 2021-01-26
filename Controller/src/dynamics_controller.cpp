@@ -1466,8 +1466,14 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
 
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
 
-    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+    for (int i = 0; i < 3; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
+    
+    if (CTRL_DIM_[3])
+    {
+        double angle = current_error_twist_.rot.Norm();
+        current_error_twist_(3) = (std::fabs(angle) <= moveTo_follow_path_task_.tube_tolerances[3])? 0.0 : angle;
+    }
 
     fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
     if (fsm_result_ == task_status::STOP_CONTROL) return;
@@ -1520,8 +1526,14 @@ void dynamics_controller::compute_moveTo_task_error()
 
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
 
-    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+    for (int i = 0; i < 3; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
+    
+    if (CTRL_DIM_[3])
+    {
+        double angle = current_error_twist_.rot.Norm();
+        current_error_twist_(3) = (std::fabs(angle) <= moveTo_task_.tube_tolerances[3])? 0.0 : angle;
+    }
 
     fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
     if (fsm_result_ == task_status::STOP_CONTROL) return;
@@ -1573,8 +1585,14 @@ void dynamics_controller::compute_moveTo_weight_compensation_task_error()
 
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
 
-    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+    for (int i = 0; i < 3; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
+    
+    if (CTRL_DIM_[3])
+    {
+        double angle = current_error_twist_.rot.Norm();
+        current_error_twist_(3) = (std::fabs(angle) <= moveTo_weight_compensation_task_.tube_tolerances[3])? 0.0 : angle;
+    }
 
     fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
     if (fsm_result_ == task_status::STOP_ROBOT || fsm_result_ == task_status::STOP_CONTROL) return;
@@ -1626,8 +1644,14 @@ void dynamics_controller::compute_moveGuarded_task_error()
     current_error_twist_ = finite_displacement_twist(desired_state_, robot_state_);
     predicted_error_twist_ = conversions::kdl_twist_to_eigen( finite_displacement_twist(desired_state_, predicted_state_) );
 
-    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+    for (int i = 0; i < 3; i++)
         current_error_twist_(i) = CTRL_DIM_[i]? current_error_twist_(i) : 0.0;
+    
+    if (CTRL_DIM_[3])
+    {
+        double angle = current_error_twist_.rot.Norm();
+        current_error_twist_(3) = (std::fabs(angle) <= moveGuarded_task_.tube_tolerances[3])? 0.0 : angle;
+    }
 
     fsm_result_ = fsm_.update_motion_task_status(robot_state_, desired_state_, current_error_twist_, ext_wrench_, total_time_sec_, tube_section_count_);
     if (fsm_result_ == task_status::STOP_ROBOT || fsm_result_ == task_status::STOP_CONTROL) return;
