@@ -101,6 +101,7 @@ struct moveTo_task
     std::vector<double> tube_start_position{std::vector<double>(3, 0.0)};
     std::vector<double> tube_tolerances{std::vector<double>(7, 0.0)};
     KDL::Vector null_space_force_direction;
+    double tube_length = 0.0;
     double null_space_tolerance = 0.0;  // Tolerance unit in degrees
     double tube_speed = 0.0;
     double contact_threshold_linear = 0.0;
@@ -185,7 +186,7 @@ class finite_state_machine
     private:
         const int NUM_OF_JOINTS_, NUM_OF_SEGMENTS_, NUM_OF_FRAMES_, NUM_OF_CONSTRAINTS_;
         const int END_EFF_;
-        int desired_task_model_, motion_profile_, loop_period_count_, compensator_trigger_count_;
+        int desired_task_model_, motion_profile_, loop_period_count_, compensator_trigger_count_, iterations_;
         double total_control_time_sec_, previous_task_time_, total_contact_time_;
         bool goal_reached_, time_limit_reached_, contact_detected_, 
              contact_alignment_performed_, write_compensation_time_to_file_;
@@ -203,6 +204,7 @@ class finite_state_machine
         moveTo_follow_path_task moveTo_follow_path_task_;
         moveConstrained_follow_path_task moveConstrained_follow_path_task_;
         std::ofstream log_file_ext_force_, log_file_compensation_;
+        std::deque<double> speed_array_;
 
         int update_full_pose_task(state_specification &desired_state);
         int update_gravity_compensation_task();

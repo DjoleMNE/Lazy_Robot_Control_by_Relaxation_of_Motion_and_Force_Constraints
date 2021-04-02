@@ -33,7 +33,7 @@ finite_state_machine::finite_state_machine(const int num_of_joints,
     NUM_OF_FRAMES_(num_of_frames), NUM_OF_CONSTRAINTS_(num_of_constraints),
     END_EFF_(NUM_OF_SEGMENTS_ - 1), desired_task_model_(task_model::full_pose),
     motion_profile_(m_profile::CONSTANT), loop_period_count_(0),
-    compensator_trigger_count_(0), total_control_time_sec_(0.0),
+    compensator_trigger_count_(0), iterations_(0), total_control_time_sec_(0.0),
     previous_task_time_(0.0), total_contact_time_(0.0),
     goal_reached_(false), time_limit_reached_(false), contact_detected_(false),
     contact_alignment_performed_(false), write_compensation_time_to_file_(false), 
@@ -74,6 +74,18 @@ int finite_state_machine::initialize_with_moveTo(const moveTo_task &task,
     desired_task_model_ = task_model::moveTo;
     moveTo_task_        = task;
     motion_profile_     = motion_profile;
+    switch (motion_profile_)
+    {
+        case m_profile::RAMP:
+            speed_array_ = motion_profile::ramp_array(0.0, 0.21, 0.001, 0.0001);
+            break;
+        case m_profile::S_CURVE:
+            speed_array_ = motion_profile::s_curve_array(0.0, moveTo_task_.tube_length, 0.0005, 0.0, moveTo_task_.tube_speed, M_PI / moveTo_task_.tube_length + 0.1);
+            break;
+        default:
+            speed_array_ = std::deque<double>(1, moveTo_task_.tube_speed);
+            break;
+    }
 
     return task_status::NOMINAL;
 }
@@ -454,22 +466,28 @@ int finite_state_machine::update_moveTo_task(state_specification &desired_state)
                 break;
 
             case m_profile::S_CURVE:
-                desired_state.frame_velocity[END_EFF_].vel(0) = motion_profile::s_curve_function(std::fabs(current_error_(0)), 
-                                                                                                 0.0, moveTo_task_.tube_speed, 14.5);
+                if (iterations_ % 8 == 0)
+                {
+                    if (speed_array_.size() > 0)
+                    {
+                        desired_state.frame_velocity[END_EFF_].vel(0) = speed_array_.front();
+                        speed_array_.pop_front();
+                    }
+                }
+                iterations_++;
+                if (sign(current_error_(0)) == -1) desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
                 break;
 
             case m_profile::RAMP:
-                static int iterations = 0;
-                static std::deque<double> speed_array = motion_profile::ramp_array(0.0, 0.21, 0.001, 0.0001);
-                if (iterations % 10 == 0)
+                if (iterations_ % 10 == 0)
                 {
-                    if (speed_array.size() > 0)
+                    if (speed_array_.size() > 0)
                     {
-                        desired_state.frame_velocity[END_EFF_].vel(0) = speed_array.front();
-                        speed_array.pop_front();
+                        desired_state.frame_velocity[END_EFF_].vel(0) = speed_array_.front();
+                        speed_array_.pop_front();
                     }
                 }
-                iterations++;
+                iterations_++;
                 if (sign(current_error_(0)) == -1) desired_state.frame_velocity[END_EFF_].vel(0) = 0.0;
                 break;
 

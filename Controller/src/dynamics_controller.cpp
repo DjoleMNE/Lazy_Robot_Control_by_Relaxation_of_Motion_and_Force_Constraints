@@ -692,7 +692,7 @@ void dynamics_controller::define_moveTo_task(
     KDL::Vector x_world(1.0, 0.0, 0.0);
     KDL::Vector tf_position = KDL::Vector(task_frame_pose[0], task_frame_pose[1], task_frame_pose[2]);
     KDL::Vector x_task = tf_position - KDL::Vector(tube_start_position[0], tube_start_position[1], tube_start_position[2]);
-    x_task.Normalize();
+    moveTo_task_.tube_length = x_task.Normalize();
 
     KDL::Vector cross_product = x_world * x_task;
     double cosine             = dot(x_world, x_task);

@@ -27,7 +27,6 @@ SOFTWARE.
 
 namespace motion_profile
 {
-
     std::deque<double> ramp_array(const double start_state, const double end_state,
                                   const double step, const double threshold)
     {
@@ -46,6 +45,28 @@ namespace motion_profile
         return setpoint_array;
     }
 
+    std::deque<double> s_curve_array(const double start_state, const double end_state,
+                                     const double step,
+                                     const double offset,
+                                     const double amplitude,
+                                     const double slope)
+    {
+        std::deque<double> setpoint_array;
+        double state = start_state;
+        double alpha = 0.9;
+        setpoint_array.push_back(offset + amplitude * std::sin(slope * state));
+
+        while (std::fabs(step) > 0.0 && std::fabs(state + step) < std::fabs(end_state))
+        {
+            state += step;
+
+            // First order low-pass filter
+            setpoint_array.push_back(alpha * setpoint_array.back() + (1.0 - alpha) * (offset + amplitude * std::sin(slope * state)));
+        }
+
+        setpoint_array.push_back(alpha * setpoint_array.back() + (1.0 - alpha) * (offset + amplitude * std::sin(slope * end_state)));
+        return setpoint_array;
+    }
 
     double tanh_function(const double state,
                          const double offset,
@@ -88,7 +109,6 @@ namespace motion_profile
         else return (1.0 - 2 * delta_slope) * magnitude;
     }
 
-
     double s_curve_function(const double state,
                             const double offset,
                             const double amplitude,
@@ -98,7 +118,6 @@ namespace motion_profile
         // else return offset + amplitude * std::sin(slope * state);
         return offset + amplitude * std::sin(slope * state);
     }
-
 
     void draw_sine_xz(std::vector< std::vector<double> > &path_points,
                       const double frequency_start,
@@ -172,8 +191,6 @@ namespace motion_profile
             path_points[i][2] = z   + offset_z;
         }
     }
-
-
 
     void draw_sine_xy(std::vector< std::vector<double> > &path_points,
                       const double frequency_start,

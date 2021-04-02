@@ -48,6 +48,9 @@ namespace motion_profile
 {
     std::deque<double> ramp_array(const double start, const double stop,
                                   const double rate, const double threshold);
+    std::deque<double> s_curve_array(const double start_state, const double end_state,
+                                     const double step, const double offset,
+                                     const double amplitude, const double slope);
     double tanh_function(const double state,
                          const double offset,
                          const double amplitude,
