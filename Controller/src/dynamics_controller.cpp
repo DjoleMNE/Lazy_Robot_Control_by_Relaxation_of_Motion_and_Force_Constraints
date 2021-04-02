@@ -1494,15 +1494,7 @@ void dynamics_controller::compute_moveTo_follow_path_task_error()
 
     // Orientation error processing
     if (std::fabs(predicted_error_twist_.tail<3>().norm()) <= moveTo_follow_path_task_.tube_tolerances[3] || !CTRL_DIM_[3] || !CTRL_DIM_[4] || !CTRL_DIM_[5]) abag_error_vector_.tail<3>().setZero();
-    else
-    {
-        for (int i = 3; i < NUM_OF_CONSTRAINTS_; i++)
-        {
-            // Filter out the noise amplified by the nonlinearity of rotation matrices and logarithmic map
-            if ( std::fabs(predicted_error_twist_(i)) <= 0.02) abag_error_vector_(i) = 0.0;
-            else abag_error_vector_(i) = predicted_error_twist_(i);
-        }
-    }
+    else abag_error_vector_.tail<3>() = predicted_error_twist_.tail<3>();
 
     // Additional Cartesian force to keep residual part of the robot in a good configuration
     if (compute_null_space_command_) compute_moveToGuarded_null_space_task_error();
@@ -1553,15 +1545,7 @@ void dynamics_controller::compute_moveTo_task_error()
 
     // Orientation error processing
     if (std::fabs(predicted_error_twist_.tail<3>().norm()) <= moveTo_task_.tube_tolerances[3] || !CTRL_DIM_[3] || !CTRL_DIM_[4] || !CTRL_DIM_[5]) abag_error_vector_.tail<3>().setZero();
-    else
-    {
-        for (int i = 3; i < NUM_OF_CONSTRAINTS_; i++)
-        {
-            // Filter out the noise amplified by the nonlinearity of rotation matrices and logarithmic map
-            if ( std::fabs(predicted_error_twist_(i)) <= 0.02) abag_error_vector_(i) = 0.0;
-            else abag_error_vector_(i) = predicted_error_twist_(i);
-        }
-    }
+    else abag_error_vector_.tail<3>() = predicted_error_twist_.tail<3>();
 
     // Additional Cartesian force to keep residual part of the robot in a good configuration
     if (compute_null_space_command_) compute_moveToGuarded_null_space_task_error();
@@ -1601,7 +1585,7 @@ void dynamics_controller::compute_moveTo_weight_compensation_task_error()
     else abag_error_vector_(0) = 0.0;
 
     // Check for tube on velocity
-    if ((fsm_result_ == task_status::CRUISE_THROUGH_TUBE) && (std::fabs(abag_error_vector_(0)) <= moveTo_weight_compensation_task_.tube_tolerances[6]))  abag_error_vector_(0) = 0.0;
+    if ((fsm_result_ == task_status::CRUISE_THROUGH_TUBE) && (std::fabs(abag_error_vector_(0)) <= moveTo_weight_compensation_task_.tube_tolerances[6])) abag_error_vector_(0) = 0.0;
 
     // Position error processing
     for (int i = 1; i < 3; i++)
@@ -1612,15 +1596,7 @@ void dynamics_controller::compute_moveTo_weight_compensation_task_error()
 
     // Orientation error processing
     if (std::fabs(predicted_error_twist_.tail<3>().norm()) <= moveTo_weight_compensation_task_.tube_tolerances[3] || !CTRL_DIM_[3] || !CTRL_DIM_[4] || !CTRL_DIM_[5]) abag_error_vector_.tail<3>().setZero();
-    else
-    {
-        for (int i = 3; i < NUM_OF_CONSTRAINTS_; i++)
-        {
-            // Filter out the noise amplified by the nonlinearity of rotation matrices and logarithmic map
-            if ( std::fabs(predicted_error_twist_(i)) <= 0.0 ) abag_error_vector_(i) = 0.0;
-            else abag_error_vector_(i) = predicted_error_twist_(i);
-        }
-    }
+    else abag_error_vector_.tail<3>() = predicted_error_twist_.tail<3>();
 
     // Additional Cartesian force to keep residual part of the robot in a good configuration
     if (compute_null_space_command_) compute_moveToGuarded_null_space_task_error();
@@ -1671,15 +1647,7 @@ void dynamics_controller::compute_moveGuarded_task_error()
 
     // Orientation error processing
     if (std::fabs(predicted_error_twist_.tail<3>().norm()) <= moveGuarded_task_.tube_tolerances[3] || !CTRL_DIM_[3] || !CTRL_DIM_[4] || !CTRL_DIM_[5]) abag_error_vector_.tail<3>().setZero();
-    else
-    {
-        for (int i = 3; i < NUM_OF_CONSTRAINTS_; i++)
-        {
-            // Filter out the noise amplified by the nonlinearity of rotation matrices and logarithmic map
-            if ( std::fabs(predicted_error_twist_(i)) <= 0.0 ) abag_error_vector_(i) = 0.0;
-            else abag_error_vector_(i) = predicted_error_twist_(i);
-        }
-    }
+    else abag_error_vector_.tail<3>() = predicted_error_twist_.tail<3>();
 
     // Additional Cartesian force to keep residual part of the robot in a good configuration
     if (compute_null_space_command_) compute_moveToGuarded_null_space_task_error();
@@ -2490,6 +2458,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
     total_time_sec_ = time_passed_sec;
     loop_iteration_count_ = main_loop_iteration;
     stop_loop_iteration_count_ = stop_loop_iteration;
+    stopping_sequence_on_ = stopping_behaviour_on;
 
     if (!stopping_behaviour_on) // Control main task in Cartesian State
     {
