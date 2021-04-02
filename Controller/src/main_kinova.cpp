@@ -677,7 +677,7 @@ int define_task(dynamics_controller *dyn_controller)
 
         case desired_pose::HOME:
             tube_start_position = std::vector<double>{0.395153, 0.0013505, 0.433652};
-            desired_ee_pose     = { 0.395153, 0.0013505, 0.433652, // Linear: Vector
+            desired_ee_pose     = { 0.565153, 0.0013505, 0.433652, // Linear: Vector
                                     0.0, 0.0, -1.0, // Angular: Rotation matrix
                                     1.0, 0.0, 0.0,
                                     0.0, -1.0, 0.0};
@@ -1147,25 +1147,25 @@ int main(int argc, char **argv)
     control_dims_moveConstrained = {true, true, true, // Linear
                                     true, true, false}; // Angular
 
-    max_command                     = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 20.0, 20.0, 20.0).finished();
+    max_command                     = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 20.0, 120.0, 120.0, 120.0).finished();
     max_command_moveConstrained     = (Eigen::VectorXd(NUMBER_OF_CONSTRAINTS) << 20.0, 20.0, 50.0, 9.5, 9.5, 25.0).finished();
     path_parameters                 = std::vector<double>{1.5, 1.7, 0.03, 0.003, 2}; // last parameter must be min 2 (number of points)
 
     environment          = kinova_environment::REAL;
     robot_model_id       = kinova_model::URDF;
     id                   = robot_id::KINOVA_GEN3_1;
-    // desired_pose_id      = desired_pose::HOME_DOWN;
-    desired_pose_id      = desired_pose::HOME_UP_2;
+    desired_pose_id      = desired_pose::HOME;
+    // desired_pose_id      = desired_pose::HOME_UP_2;
+    // desired_pose_id      = desired_pose::HOME_UP;
     desired_control_mode = control_mode::TORQUE;
     desired_task_model   = task_model::moveTo;
     path_type            = path_types::INF_SIGN_PATH;
     motion_profile_id    = m_profile::S_CURVE;
-    if (desired_pose_id == desired_pose::HOME_UP) task_time_limit_sec  = 6.0;
-    else if (desired_pose_id == desired_pose::HOME_UP_2) task_time_limit_sec  = 6.2;
-    else task_time_limit_sec = 5.5;
+    if (desired_pose_id == desired_pose::HOME_UP) task_time_limit_sec = 6.0;
+    else task_time_limit_sec = 6.5;
     tube_speed           = 0.07;
     tube_force           = -18.5;
-    tube_tolerances      = std::vector<double>{0.01, 0.0001, 0.02,
+    tube_tolerances      = std::vector<double>{0.01, control_dims[1]? 0.02 : 0.0001, 0.02,
                                                0.09, 0.0, 0.0,
                                                tube_speed * 0.2, 0.0}; // Last tolerance is in unit of degrees - Null-space tolerance
     // Tube tolerances: x pos,    y pos,      z force, 
