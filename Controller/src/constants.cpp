@@ -95,24 +95,30 @@ namespace kinova_constants
    const std::vector<double> joint_position_limits_max {DEG_TO_RAD(9999.0), DEG_TO_RAD(127.0), DEG_TO_RAD(9999.0), DEG_TO_RAD(147.8), DEG_TO_RAD(9999.0), DEG_TO_RAD(120.3), DEG_TO_RAD(9999.0)};
    const std::vector<double> joint_position_limits_min {DEG_TO_RAD(-9999.0), DEG_TO_RAD(-127.0), DEG_TO_RAD(-9999.0), DEG_TO_RAD(-147.8), DEG_TO_RAD(-9999.0), DEG_TO_RAD(-120.3), DEG_TO_RAD(-9999.0)};
 
-   const std::vector<double> joint_velocity_limits {DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0), DEG_TO_RAD(50.0)};
+   const std::vector<double> joint_velocity_limits {DEG_TO_RAD(99.0), DEG_TO_RAD(99.0), DEG_TO_RAD(99.0), DEG_TO_RAD(99.0), DEG_TO_RAD(149.0), DEG_TO_RAD(149.0), DEG_TO_RAD(149.0)};
    const std::vector<double> joint_acceleration_limits {5.19, 5.19, 5.19, 5.19, 9.99, 9.99, 9.99};
-   const std::vector<double> joint_torque_limits {39.0, 39.0, 39.0, 39.0, 9.0, 9.0, 9.0};
+
+   // High-level mode torque limits
+//    const std::vector<double> joint_torque_limits {39.0, 39.0, 39.0, 39.0, 9.0, 9.0, 9.0};
+   // Low-level mode torque limits: derived based on safety thresholds outlined in the KINOVA manual
+   const std::vector<double> joint_torque_limits {55.0, 55.0, 55.0, 55.0, 28.0, 28.0, 28.0};
+
+//    const std::vector<double> joint_stopping_torque_limits {0.6, 0.6, 0.6, 0.6, 0.3, 0.3, 0.3};
    const std::vector<double> joint_stopping_torque_limits {39.0, 39.0, 39.0, 39.0, 13.0, 13.0, 13.0};
 
    //  const std::vector<double> joint_position_thresholds {DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0), DEG_TO_RAD(0)};
-   const std::vector<double> joint_position_thresholds {DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10), DEG_TO_RAD(10)};
+   const std::vector<double> joint_position_thresholds {DEG_TO_RAD(0), DEG_TO_RAD(5), DEG_TO_RAD(0), DEG_TO_RAD(5), DEG_TO_RAD(0), DEG_TO_RAD(5), DEG_TO_RAD(0)};
 
    const std::vector<double> joint_offsets {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     // Rotor inertia - "d" in the algorithm:
-    const std::vector<double> joint_inertia {0.5580, 0.5580, 0.5580, 0.5580, 0.1389, 0.1389, 0.1389};
-    // const std::vector<double> joint_inertia {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    // const std::vector<double> joint_inertia {0.5580, 0.5580, 0.5580, 0.5580, 0.1389, 0.1389, 0.1389};
+    const std::vector<double> joint_inertia {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     const std::vector<double> joint_sim_inertia {0.5580, 0.5580, 0.5580, 0.5580, 0.1389, 0.1389, 0.1389};
     // const std::vector<double> joint_sim_inertia {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
-   const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/kinova-gen3_urdf_V12_with_polishing_tool.urdf";
-//    const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/kinova-gen3_urdf_V12.urdf";
+   // const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/kinova-gen3_urdf_V12_with_polishing_tool.urdf";
+   const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/kinova-gen3_urdf_V12.urdf";
    const std::string urdf_sim_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/kinova-gen3_urdf_V12_sim.urdf";
 
    // 7 joints, 7 links, 8 frames
