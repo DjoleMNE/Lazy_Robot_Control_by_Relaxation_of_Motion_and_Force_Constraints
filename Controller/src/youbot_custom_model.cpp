@@ -11,8 +11,7 @@
 #define DEGREE_PER_SECOND(x) (x)
 #define SECOND_PER_RADIAN(x) (x)
 
-#define PI 3.14159265358979323846
-#define DEG_TO_RAD(x) (x) * PI / 180.0
+#define DEG_TO_RAD(x) (x) * 3.14159265358979323846 / 180.0
 
 youbot_custom_model::youbot_custom_model(KDL::Chain &arm_chain): 
                     NUMBER_OF_BODIES_(7), 

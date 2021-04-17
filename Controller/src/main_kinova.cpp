@@ -78,6 +78,7 @@ int desired_control_mode             = control_mode::TORQUE;
 int environment                      = kinova_environment::SIMULATION;
 int robot_model_id                   = kinova_model::URDF;
 int id                               = robot_id::KINOVA_GEN3_1;
+double DT_SEC                        = 1.0 / static_cast<double>(RATE_HZ);
 double time_horizon_amplitude        = 2.5;
 double tube_speed                    = 0.01;
 double tube_force                    = 0.03;
@@ -823,7 +824,6 @@ int define_task(dynamics_controller *dyn_controller)
 void run_test(kinova_mediator &robot_driver)
 {
     const int DT_MICRO = SECOND / RATE_HZ;
-    const double DT_SEC = 1.0 / static_cast<double>(RATE_HZ);
     double total_time_sec = 0.0;
     int iteration_count = 0;
     int control_loop_delay_count = 0;
@@ -895,7 +895,6 @@ void run_test(kinova_mediator &robot_driver)
 
 int run_main_control(kinova_mediator &robot_driver)
 {
-    const double DT_SEC = 1.0 / static_cast<double>(RATE_HZ);
     const int DT_MICRO = SECOND / RATE_HZ;
     const int DT_STOPPING_MICRO = SECOND / dynamics_parameter::STOPPING_MOTION_LOOP_FREQ;
 
@@ -1140,7 +1139,8 @@ int run_main_control(kinova_mediator &robot_driver)
 int main(int argc, char **argv)
 {
     RATE_HZ              = 700; // Loop frequency in Hz
-    control_dims         = std::vector<bool>{true, false, true, // Linear
+    DT_SEC               = 1.0 / static_cast<double>(RATE_HZ); // Loop period in seconds
+    control_dims         = std::vector<bool>{true, true, true, // Linear
     // control_dims         = std::vector<bool>{false, false, false, // Linear
                                             //  false, false, false}; // Angular
                                              true, true, true}; // Angular

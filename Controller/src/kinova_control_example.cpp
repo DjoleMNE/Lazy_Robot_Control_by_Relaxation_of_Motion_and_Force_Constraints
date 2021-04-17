@@ -34,15 +34,14 @@ const int SECOND = 1000000;
 
 namespace k_api = Kinova::Api;
 
-#define PI 3.14159265358979323846
 #define IP_ADDRESS "192.168.1.10"
 
 #define PORT 10000
 #define PORT_REAL_TIME 10001
 
 #define ACTUATOR_COUNT 7
-#define DEG_TO_RAD(x) (x) * PI / 180.0
-#define RAD_TO_DEG(x) (x) * 180.0 / PI
+#define DEG_TO_RAD(x) (x) * 3.14159265358979323846 / 180.0
+#define RAD_TO_DEG(x) (x) * 180.0 / 3.14159265358979323846
 float TIME_DURATION = 30.0f; // Duration of the example (seconds)
 
 // Maximum allowed waiting time during actions

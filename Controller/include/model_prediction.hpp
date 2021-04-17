@@ -38,12 +38,6 @@ SOFTWARE.
 #include <cmath>
 #include <stdlib.h>     /* abs */
 
-enum integration_method 
-{
-    PREDICTOR_CORRECTOR = 0,
-    SYMPLECTIC_EULER = 1
-};
-
 class model_prediction
 {
 	public:
@@ -73,7 +67,7 @@ class model_prediction
 
 		// Vector integration from joint velocity to joint position/angle
 		void integrate_to_position(const KDL::JntArray &acceleration,
-								   const KDL::JntArray &predicted_velocity, 
+								   const KDL::JntArray &velocity, 
 								   const KDL::JntArray &current_position,
 								   KDL::JntArray &predicted_position,
 								   const int method,

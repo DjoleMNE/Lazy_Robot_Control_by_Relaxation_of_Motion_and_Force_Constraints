@@ -2,7 +2,7 @@
 Author(s): Djordje Vukcevic, Sven Schneider
 Institute: Hochschule Bonn-Rhein-Sieg
 
-Copyright (c) [2019]
+Copyright (c) [2021]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -53,12 +53,13 @@ void model_prediction::integrate_joint_space(const state_specification &current_
     // For each step in the future horizon
     for (int i = 0; i < num_of_steps; i++){   
 
-        integrate_to_velocity(temp_state_.qdd, temp_state_.qd,
-                              predicted_states[i].qd, method, dt_sec);
+        // Integrate accelerations to velocities - Classical Euler method
+        predicted_states[i].qd.data = temp_state_.qd.data + temp_state_.qdd.data * dt_sec;
 
-        integrate_to_position(temp_state_.qdd, predicted_states[i].qd,
-                              temp_state_.q, predicted_states[i].q, 
-                              method, dt_sec);
+        // Integrate velocities to positions
+        if      (method == integration_method::SYMPLECTIC_EULER)    predicted_states[i].q.data = temp_state_.q.data + predicted_states[i].qd.data                                 * dt_sec; // Symplectic Euler method
+        else if (method == integration_method::PREDICTOR_CORRECTOR) predicted_states[i].q.data = temp_state_.q.data + (temp_state_.qd.data - temp_state_.qdd.data * dt_sec / 2.0) * dt_sec; // Trapezoidal method
+        else assert(false);
 
         // TODO (Abstract description):
         // if(recompute_acceleration){
@@ -114,7 +115,7 @@ void model_prediction::integrate_to_velocity(const KDL::JntArray &acceleration,
 
 // Vector integration from joint velocity to joint position/angle
 void model_prediction::integrate_to_position(const KDL::JntArray &acceleration,
-                                             const KDL::JntArray &predicted_velocity, 
+                                             const KDL::JntArray &velocity, 
                                              const KDL::JntArray &current_position,
                                              KDL::JntArray &predicted_position,
                                              const int method,
@@ -123,12 +124,12 @@ void model_prediction::integrate_to_position(const KDL::JntArray &acceleration,
     switch(method) {
         case integration_method::SYMPLECTIC_EULER:
             //Integrate velocities to positions - Symplectic Euler method
-            predicted_position.data = current_position.data + predicted_velocity.data * dt_sec;
+            predicted_position.data = current_position.data + velocity.data * dt_sec;
             break;
         
         case integration_method::PREDICTOR_CORRECTOR:
             //Integrate velocities to joint positions - Trapezoidal method
-            predicted_position.data = current_position.data + dt_sec * (predicted_velocity.data - acceleration.data * dt_sec / 2.0);
+            predicted_position.data = current_position.data + dt_sec * (velocity.data - acceleration.data * dt_sec / 2.0);
             break;
         default: 
             assert(false);

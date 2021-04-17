@@ -31,9 +31,14 @@ SOFTWARE.
 #include <unistd.h>
 #include <cmath>
 
-#define PI 3.14159265358979323846
-#define DEG_TO_RAD(x) (x) * PI / 180.0
-#define RAD_TO_DEG(x) (x) * 180.0 / PI
+#define DEG_TO_RAD(x) (x) * 3.14159265358979323846 / 180.0
+#define RAD_TO_DEG(x) (x) * 180.0 / 3.14159265358979323846
+
+enum integration_method 
+{
+    PREDICTOR_CORRECTOR = 0,
+    SYMPLECTIC_EULER = 1
+};
 
 namespace youbot_constants
 {

@@ -22,6 +22,7 @@
 #include "solver_vereshchagin.hpp"
 #include "kdl/frames_io.hpp"
 #include "kdl/utilities/svd_eigen_HH.hpp"
+
 /**
  * \brief Dynamics calculations by constraints based on Vereshchagin 1989.
  * This class creates instance of hybrid dynamics solver.

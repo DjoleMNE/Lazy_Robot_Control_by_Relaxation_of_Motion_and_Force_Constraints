@@ -295,20 +295,6 @@ int dynamics_controller::check_fsm_status()
     }
 }
 
-/* 
-    If it is working on the real robot get sensor data from the driver 
-    or if simulation is on, replace current state with 
-    integrated joint velocities and positions.
-*/
-int dynamics_controller::update_current_state()
-{
-    // Get current robot state from joint sensors
-    robot_driver_->get_joint_state(robot_state_.q, robot_state_.qd, robot_state_.measured_torque);
-
-    // Get Cart poses and velocities
-    return fk_vereshchagin_.JntToCart(robot_state_.q, robot_state_.qd, robot_state_.frame_pose, robot_state_.frame_velocity);
-}
-
 // Write control data to a file
 void dynamics_controller::write_to_file()
 {
@@ -1675,11 +1661,7 @@ void dynamics_controller::compute_full_pose_task_error()
         abag_error_vector_(i) = CTRL_DIM_[i]? abag_error_vector_(i) : 0.0;
 
     // Orientation error computation
-    if (!CTRL_DIM_[3] || !CTRL_DIM_[4] || !CTRL_DIM_[5])
-    {
-        for (int i = 3; i < NUM_OF_CONSTRAINTS_; i++)
-            abag_error_vector_(i) = 0.0;
-    }
+    if (!CTRL_DIM_[3] || !CTRL_DIM_[4] || !CTRL_DIM_[5]) abag_error_vector_.tail<3>().setZero();
 
     // Additional Cartesian force to keep residual part of the robot in a good configuration
     if (compute_null_space_command_) compute_moveToGuarded_null_space_task_error();
@@ -2111,9 +2093,9 @@ int dynamics_controller::initialize(const int desired_control_mode,
 
     // Save current selection of desire control mode
     desired_control_mode_.interface = desired_control_mode;
-    desired_dynamics_interface_ = desired_dynamics_interface;
-    store_control_data_ = store_control_data;
-    use_estimated_external_wrench_ = use_estimated_external_wrench;
+    desired_dynamics_interface_     = desired_dynamics_interface;
+    store_control_data_             = store_control_data;
+    use_estimated_external_wrench_  = use_estimated_external_wrench;
 
     switch (desired_task_model_)
     {
@@ -2212,11 +2194,11 @@ int dynamics_controller::initialize(const int desired_control_mode,
     KDL::SetToZero(robot_state_.feedforward_torque);
     KDL::SetToZero(desired_state_.qd);
 
-    /* 
-        Get sensor data from the robot driver or if simulation is on, 
-        replace current state with the integrated joint velocities and positions.
-    */
-    int state_update_result = update_current_state();
+    // Get sensor data from the robot driver or, if simulation is on, replace current state with the integrated joint velocities and positions.
+    robot_driver_->get_joint_state(robot_state_.q, robot_state_.qd, robot_state_.measured_torque);
+
+    // Get Cart poses and velocities
+    int state_update_result = fk_vereshchagin_.JntToCart(robot_state_.q, robot_state_.qd, robot_state_.frame_pose, robot_state_.frame_velocity);
     if (state_update_result != 0)
     {
         // Make sure that the robot is locked (freezed)
@@ -2460,7 +2442,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
     stop_loop_iteration_count_ = stop_loop_iteration;
     stopping_sequence_on_ = stopping_behaviour_on;
 
-    if (!stopping_behaviour_on) // Control main task in Cartesian State
+    if (!stopping_sequence_on_) // Control main task in Cartesian State
     {
         // Get Cartesian poses and velocities
         int status = fk_vereshchagin_.JntToCart(robot_state_.q,
@@ -2516,7 +2498,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
     tau_output = robot_state_.control_torque;
 
     // Log control data for visualization and debuging
-    if (store_control_data_ && !stopping_behaviour_on) write_to_file();
+    if (store_control_data_ && !stopping_sequence_on_) write_to_file();
     return 0;
 }
 
