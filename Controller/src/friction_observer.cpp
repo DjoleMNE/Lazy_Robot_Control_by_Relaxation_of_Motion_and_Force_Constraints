@@ -33,8 +33,8 @@ FrictionObserver::FrictionObserver(const int num_joints, const double dt_sec, co
     NUM_JOINTS(num_joints), STATE_INTEGRATION_RESET_COUNT(state_integration_resent_count),
     ROTOR_INERTIA(rotor_inertia), GAIN_L(gain_l), GAIN_LP(gain_lp), GAIN_LI(gain_li), COMMON_GAIN(-ROTOR_INERTIA.cwiseProduct(GAIN_L)),
     integration_count(0), theta_nominal(NUM_JOINTS), theta_dot_nominal(NUM_JOINTS), theta_dot_dot_nominal(NUM_JOINTS),
-    error_nominal(NUM_JOINTS), error_dot_nominal(NUM_JOINTS),
-    error_integral(NUM_JOINTS), filtered_friction(NUM_JOINTS), estimated_friction(NUM_JOINTS)
+    error_nominal(NUM_JOINTS), error_dot_nominal(NUM_JOINTS), error_integral(NUM_JOINTS),
+    filtered_friction(NUM_JOINTS), estimated_friction(NUM_JOINTS)
 {
     assert(ROTOR_INERTIA.rows() == NUM_JOINTS);
     assert(GAIN_L.rows()        == NUM_JOINTS);
@@ -96,7 +96,7 @@ int FrictionObserver::estimateFrictionTorque(const KDL::JntArray &motor_position
     }
 
     // Nominal acceleration: (difference between commanded and measured torque) times rotor inertia
-    theta_dot_dot_nominal = (joint_torque_cmd.data - joint_torque_measured.data).cwiseProduct(ROTOR_INERTIA);
+    theta_dot_dot_nominal = (joint_torque_cmd.data - joint_torque_measured.data).cwiseProduct(ROTOR_INERTIA.cwiseInverse());
 
     // Solve (integrate) the second-order ODE (motor acceleration) to calculate nominal motor velocity and position
     if (INTEGRATION_METHOD == integration_method::SYMPLECTIC_EULER)
@@ -110,6 +110,12 @@ int FrictionObserver::estimateFrictionTorque(const KDL::JntArray &motor_position
         theta_dot_nominal += theta_dot_dot_nominal * DT_SEC;
     }
     else return -1;
+
+    // Saturate for full-circle crossing
+    for (unsigned int i = 0; i < NUM_JOINTS; i++)
+    {
+        if (theta_nominal(i) > DEG_TO_RAD(360.0)) theta_nominal(i) -= DEG_TO_RAD(360.0);
+    }
 
     // Calculate state error
     error_nominal     = theta_nominal     - motor_position.data; // position error
