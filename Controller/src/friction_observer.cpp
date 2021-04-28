@@ -114,19 +114,22 @@ int FrictionObserver::estimateFrictionTorque(const KDL::JntArray &motor_position
     // Saturate for full-circle crossing
     for (unsigned int i = 0; i < NUM_JOINTS; i++)
     {
-        if (theta_nominal(i) > DEG_TO_RAD(360.0)) theta_nominal(i) -= DEG_TO_RAD(360.0);
+        if      (theta_nominal(i) > 6.28318) theta_nominal(i) -= DEG_TO_RAD(360.0);
+        else if (theta_nominal(i) < 0.00000) theta_nominal(i) += DEG_TO_RAD(360.0);
     }
 
     // Calculate state error
     error_nominal     = theta_nominal     - motor_position.data; // position error
     error_dot_nominal = theta_dot_nominal - motor_velocity.data; // velocity error
 
-    // Calculate friction estimate: PD or PID type
-    if      (OBSERVER_TYPE == friction_observer_type::PD) estimated_friction = COMMON_GAIN.cwiseProduct(error_dot_nominal + GAIN_LP.cwiseProduct(error_nominal));
-    else if (OBSERVER_TYPE == friction_observer_type::PID)
+    // Calculate friction estimate: PD type
+    estimated_friction = COMMON_GAIN.cwiseProduct(error_dot_nominal + GAIN_LP.cwiseProduct(error_nominal));
+
+    // Add integral term to complete the PID type
+    if (OBSERVER_TYPE == friction_observer_type::PID)
     {
         error_integral += error_nominal * DT_SEC;
-        estimated_friction = COMMON_GAIN.cwiseProduct(error_dot_nominal + GAIN_LP.cwiseProduct(error_nominal) + GAIN_LI.cwiseProduct(error_integral));
+        estimated_friction += COMMON_GAIN.cwiseProduct(GAIN_LI.cwiseProduct(error_integral));
     }
 
     // First order low-pass filter: filter out the noise from the estimated signal. This filter can be turned off by setting FILTER_CONST value to 0
@@ -134,6 +137,9 @@ int FrictionObserver::estimateFrictionTorque(const KDL::JntArray &motor_position
 
     // Write function output
     observed_joint_friction.data = filtered_friction;
+
+    // Increase observer's loop count
+    integration_count++;
 
     return 0;
 }
