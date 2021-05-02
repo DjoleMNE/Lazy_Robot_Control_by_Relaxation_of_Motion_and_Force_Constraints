@@ -25,6 +25,7 @@ SOFTWARE.
 */
 #include <kinova_mediator.hpp>
 #include <state_specification.hpp>
+#include <external_wrench_estimator.hpp>
 #include <dynamics_controller.hpp>
 #include <solver_recursive_newton_euler.hpp>
 #include <fk_vereshchagin.hpp>
@@ -906,6 +907,7 @@ int run_main_control(kinova_mediator &robot_driver)
     KDL::Chain robot_chain_full = robot_driver.get_full_robot_model();
 
     dynamics_controller controller(&robot_driver, RATE_HZ, compensate_gravity);
+    KDL::ChainExternalWrenchEstimator ext_wrench_estimator(robot_chain_full, -1 * robot_driver.get_root_acceleration().vel, robot_driver.get_joint_inertia(), RATE_HZ, 30.0, 0.5);
 
     int return_flag = define_task(&controller);
     if (return_flag != 0)
@@ -1018,8 +1020,9 @@ int run_main_control(kinova_mediator &robot_driver)
     KDL::Wrenches wrenches_full_model(robot_chain_full.getNrOfSegments(), KDL::Wrench::Zero());
     KDL::Wrenches wrenches_full_model_sim(robot_chain_full.getNrOfSegments(), KDL::Wrench::Zero());
 
-    wrenches_full_model_sim[robot_chain_full.getNrOfSegments() - 1] = KDL::Wrench(KDL::Vector(0.0, -2.2, 0.0),
-                                                                                  KDL::Vector(0.0, 0.0, 0.0));
+    // FD solver expects wrenches to be expressed in respective link's frame... not the base frame
+    wrenches_full_model_sim[robot_chain_full.getNrOfSegments() - 1] = KDL::Wrench(KDL::Vector(1.0, -2.2, 0.0),
+                                                                                  KDL::Vector(0.0,  3.0, 0.0));
 
     double total_time_sec = 0.0;
     int loop_iteration_count = 0;
@@ -1028,6 +1031,9 @@ int run_main_control(kinova_mediator &robot_driver)
     bool stopping_sequence_on = false;
     bool trigger_stopping_sequence = false;
     return_flag = 0;
+
+    robot_driver.get_joint_state(joint_pos, joint_vel, joint_torque);
+    if (use_estimated_external_wrench) ext_wrench_estimator.setInitialMomentum(joint_pos, joint_vel);
 
     // Real-time loop
     while (1)
@@ -1040,7 +1046,8 @@ int run_main_control(kinova_mediator &robot_driver)
         if (use_estimated_external_wrench && !stopping_sequence_on)
         {
             robot_driver.get_joint_state(joint_pos, joint_vel, joint_torque);
-            return_flag = controller.estimate_external_wrench(joint_pos, joint_vel, joint_torque, wrenches_full_model[robot_chain_full.getNrOfSegments()- 1]);
+            ext_wrench_estimator.JntToExtWrench(joint_pos, joint_vel, torque_command, wrenches_full_model[robot_chain_full.getNrOfSegments()- 1]);
+            // return_flag = controller.estimate_external_wrench(joint_pos, joint_vel, joint_torque, wrenches_full_model[robot_chain_full.getNrOfSegments()- 1]);
             if (return_flag != 0)
             {
                 printf("Error in external wrench estimation\n");

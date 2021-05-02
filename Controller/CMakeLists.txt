@@ -113,6 +113,7 @@ elseif("${ROBOT}" STREQUAL "kinova")
     src/geometry_utils.cpp
     src/model_prediction.cpp
     src/finite_state_machine.cpp
+    src/external_wrench_estimator.cpp
     src/motion_profile.cpp
     src/solver_vereshchagin.cpp
     src/solver_recursive_newton_euler.cpp
