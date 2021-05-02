@@ -53,6 +53,7 @@ class state_specification
 		KDL::JntArray feedforward_torque;
 		KDL::JntArray measured_torque;
 		KDL::JntArray control_torque;
+		KDL::JntArray friction_torque;
 		KDL::JntArray total_torque;
 		KDL::Jacobian ee_unit_constraint_force;
 		KDL::JntArray ee_acceleration_energy;
@@ -75,6 +76,7 @@ class state_specification
 			feedforward_torque(NUMBER_OF_JOINTS_),
 			measured_torque(NUMBER_OF_JOINTS_),
 			control_torque(NUMBER_OF_JOINTS_),
+			friction_torque(NUMBER_OF_JOINTS_),
 			total_torque(NUMBER_OF_JOINTS_),
 			ee_unit_constraint_force(NUMBER_OF_CONSTRAINTS_), //alpha
 			ee_acceleration_energy(NUMBER_OF_CONSTRAINTS_), //beta
@@ -96,6 +98,7 @@ class state_specification
 				this->feedforward_torque = rhs.feedforward_torque;
 				this->measured_torque = rhs.measured_torque;
 				this->control_torque = rhs.control_torque;
+				this->friction_torque = rhs.friction_torque;
 				this->total_torque = rhs.total_torque;
 				this->ee_unit_constraint_force = rhs.ee_unit_constraint_force;
 				this->ee_acceleration_energy = rhs.ee_acceleration_energy;
@@ -117,6 +120,7 @@ class state_specification
 			KDL::SetToZero(total_torque);
 			KDL::SetToZero(feedforward_torque);
 			KDL::SetToZero(measured_torque);
+			KDL::SetToZero(friction_torque);
 
 			//External forces on, plus velocities and poses of segments
 			for (int i = 0; i < NUMBER_OF_SEGMENTS_; i++){
