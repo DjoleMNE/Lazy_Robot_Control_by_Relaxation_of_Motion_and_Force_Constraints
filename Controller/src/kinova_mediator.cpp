@@ -96,15 +96,12 @@ void kinova_mediator::get_joint_positions(KDL::JntArray &joint_positions)
     for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
         joint_positions(i) = DEG_TO_RAD(base_feedback_.actuators(i).position());
 
-    if (kinova_environment_ != kinova_environment::SIMULATION)
-    {
-        // Kinova API provides only positive angle values
-        // This operation is required to align the logic with our safety monitor
-        // We need to convert some angles to negative values
-        if (joint_positions(1) > DEG_TO_RAD(180.0)) joint_positions(1) -= DEG_TO_RAD(360.0);
-        if (joint_positions(3) > DEG_TO_RAD(180.0)) joint_positions(3) -= DEG_TO_RAD(360.0);
-        if (joint_positions(5) > DEG_TO_RAD(180.0)) joint_positions(5) -= DEG_TO_RAD(360.0);
-    }
+    // Kinova API provides only positive angle values
+    // This operation is required to align the logic with our safety monitor
+    // We need to convert some angles to negative values
+    if (joint_positions(1) > DEG_TO_RAD(180.0)) joint_positions(1) -= DEG_TO_RAD(360.0);
+    if (joint_positions(3) > DEG_TO_RAD(180.0)) joint_positions(3) -= DEG_TO_RAD(360.0);
+    if (joint_positions(5) > DEG_TO_RAD(180.0)) joint_positions(5) -= DEG_TO_RAD(360.0);
 }
 
 //Set Joint Positions
@@ -269,9 +266,12 @@ int kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
         }
 
         // Integrate jnt acc. to simulate the next robot state
-        predictor_->integrate_joint_space(robot_state_, predicted_states_, DT_SEC_, 1,
-                                          integration_method::SYMPLECTIC_EULER, false, false);
-        
+        predictor_->integrate_joint_space(robot_state_, predicted_states_, DT_SEC_, 1, integration_method::SYMPLECTIC_EULER, false, false);
+
+        // Saturate for full-circle crossing
+        for (unsigned int j = 0; j < ACTUATOR_COUNT; j++)
+            predicted_states_[0].q(j) = std::fmod(predicted_states_[0].q(j), DEG_TO_RAD(360.0));
+
         for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
         {
             base_feedback_.mutable_actuators(i)->set_position(RAD_TO_DEG(predicted_states_[0].q(i)));
