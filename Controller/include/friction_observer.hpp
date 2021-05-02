@@ -108,7 +108,7 @@ private:
 
     unsigned int integration_count;
 
-    Eigen::VectorXd theta_nominal, theta_dot_nominal, theta_dot_dot_nominal, error_nominal, error_dot_nominal, error_integral, filtered_friction, estimated_friction;
+    Eigen::VectorXd motor_flat_position, previous_motor_position, theta_nominal, theta_dot_nominal, theta_dot_dot_nominal, error_nominal, error_dot_nominal, error_integral, filtered_friction, estimated_friction;
 };
 
 #endif /* FRICTION_OBSERVER_HPP */

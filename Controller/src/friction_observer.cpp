@@ -32,7 +32,8 @@ FrictionObserver::FrictionObserver(const int num_joints, const double dt_sec, co
     INTEGRATION_METHOD(integration_method), OBSERVER_TYPE(observer_type),
     NUM_JOINTS(num_joints), STATE_INTEGRATION_RESET_COUNT(state_integration_resent_count),
     ROTOR_INERTIA(rotor_inertia), GAIN_L(gain_l), GAIN_LP(gain_lp), GAIN_LI(gain_li), COMMON_GAIN(-ROTOR_INERTIA.cwiseProduct(GAIN_L)),
-    integration_count(0), theta_nominal(NUM_JOINTS), theta_dot_nominal(NUM_JOINTS), theta_dot_dot_nominal(NUM_JOINTS),
+    integration_count(0), motor_flat_position(NUM_JOINTS), previous_motor_position(NUM_JOINTS),
+    theta_nominal(NUM_JOINTS), theta_dot_nominal(NUM_JOINTS), theta_dot_dot_nominal(NUM_JOINTS),
     error_nominal(NUM_JOINTS), error_dot_nominal(NUM_JOINTS), error_integral(NUM_JOINTS),
     filtered_friction(NUM_JOINTS), estimated_friction(NUM_JOINTS)
 {
@@ -63,8 +64,10 @@ int FrictionObserver::setInitialState(const KDL::JntArray &motor_position, const
 {
     if (motor_position.rows() != NUM_JOINTS || motor_velocity.rows() != NUM_JOINTS) return -1;
 
-    theta_nominal     = motor_position.data;
-    theta_dot_nominal = motor_velocity.data;
+    theta_nominal           = motor_position.data;
+    motor_flat_position     = motor_position.data;
+    previous_motor_position = motor_position.data;
+    theta_dot_nominal       = motor_velocity.data;
 
     error_integral.setZero();
     filtered_friction.setZero();
@@ -73,8 +76,7 @@ int FrictionObserver::setInitialState(const KDL::JntArray &motor_position, const
 }
 
 // Estimates the friction torque in robot's joints
-int FrictionObserver::estimateFrictionTorque(const KDL::JntArray &motor_position, const KDL::JntArray &motor_velocity, const KDL::JntArray &joint_torque_cmd,
-                                             const KDL::JntArray &joint_torque_measured, KDL::JntArray &observed_joint_friction)
+int FrictionObserver::estimateFrictionTorque(const KDL::JntArray &motor_position, const KDL::JntArray &motor_velocity, const KDL::JntArray &joint_torque_cmd, const KDL::JntArray &joint_torque_measured, KDL::JntArray &observed_joint_friction)
 {
     /**
      * ====================================================================================
@@ -111,15 +113,21 @@ int FrictionObserver::estimateFrictionTorque(const KDL::JntArray &motor_position
     }
     else return -1;
 
-    // Saturate for full-circle crossing
+    // Compute motor's flattened position (without 0 <-> 360 constraint)
     for (unsigned int i = 0; i < NUM_JOINTS; i++)
     {
-        if      (theta_nominal(i) > 6.28318) theta_nominal(i) -= DEG_TO_RAD(360.0);
-        else if (theta_nominal(i) < 0.00000) theta_nominal(i) += DEG_TO_RAD(360.0);
-    }
+        // motor went from ~360 deg to ~0 deg - positive rotation direction: 2.7 rad/s stands for the maximum speed that a joint can reach (derived based on Kinova's tech specs)
+        if      (motor_position(i) - previous_motor_position(i) <= 2.7 - DEG_TO_RAD(360.0)) previous_motor_position(i) -= DEG_TO_RAD(360.0);
 
+        // motor went from ~0 deg to ~360 deg - negative rotation direction
+        else if (motor_position(i) - previous_motor_position(i) >= DEG_TO_RAD(360.0) - 2.7) previous_motor_position(i) += DEG_TO_RAD(360.0);
+    }
+    
+    motor_flat_position += motor_position.data - previous_motor_position;
+    previous_motor_position = motor_position.data;
+    
     // Calculate state error
-    error_nominal     = theta_nominal     - motor_position.data; // position error
+    error_nominal     = theta_nominal     - motor_flat_position; // position error
     error_dot_nominal = theta_dot_nominal - motor_velocity.data; // velocity error
 
     // Calculate friction estimate: PD type
@@ -150,6 +158,11 @@ void FrictionObserver::getNominalState(KDL::JntArray &nominal_motor_position, KD
     assert(nominal_motor_position.rows() == NUM_JOINTS);
     assert(nominal_motor_velocity.rows() == NUM_JOINTS);
 
-    nominal_motor_position.data = theta_nominal;
+    for (unsigned int i = 0; i < NUM_JOINTS; i++)
+    {
+        nominal_motor_position(i) = std::fmod(theta_nominal(i), DEG_TO_RAD(360.0));
+        if (nominal_motor_position(i) < 0.0) nominal_motor_position(i) += DEG_TO_RAD(360.0); 
+    }
+
     nominal_motor_velocity.data = theta_dot_nominal;
 }
