@@ -270,7 +270,10 @@ int kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
 
         // Saturate for full-circle crossing
         for (unsigned int j = 0; j < ACTUATOR_COUNT; j++)
+        {
             predicted_states_[0].q(j) = std::fmod(predicted_states_[0].q(j), DEG_TO_RAD(360.0));
+            if (predicted_states_[0].q(j) < 0.0) predicted_states_[0].q(j) += DEG_TO_RAD(360.0); 
+        }
 
         for (int i = 0; i < kinova_constants::NUMBER_OF_JOINTS; i++)
         {
