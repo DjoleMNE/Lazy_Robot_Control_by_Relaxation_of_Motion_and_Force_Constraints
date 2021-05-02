@@ -39,6 +39,7 @@ kinova_mediator::kinova_mediator():
     control_mode_(control_mode::STOP_MOTION),
     add_offsets_(false), connection_established_(false), DT_SEC_(0.0),
     ext_wrenches_sim_(SEGMENT_COUNT_FULL, KDL::Wrench::Zero()),
+    joint_inertia_sim_(ACTUATOR_COUNT),
     robot_state_(ACTUATOR_COUNT, SEGMENT_COUNT_FULL, SEGMENT_COUNT_FULL + 1, NUM_OF_CONSTRAINTS),
     predicted_states_(1, robot_state_),
     transport_(nullptr), transport_real_time_(nullptr), router_(nullptr),
@@ -46,7 +47,8 @@ kinova_mediator::kinova_mediator():
     session_manager_real_time_(nullptr), base_(nullptr),
     base_cyclic_(nullptr), actuator_config_(nullptr)
 {
-
+    for (int i = 0; i < ACTUATOR_COUNT; i++)
+        joint_inertia_sim_(i) = kinova_constants::joint_sim_inertia[i];
 }
 
 kinova_mediator::~kinova_mediator()

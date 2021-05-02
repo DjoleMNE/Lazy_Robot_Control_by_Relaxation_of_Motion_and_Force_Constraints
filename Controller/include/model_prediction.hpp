@@ -73,8 +73,8 @@ class model_prediction
 								   const int method,
 								   const double dt_sec);
     private:
-		const int NUM_OF_JOINTS_;
-		const int NUM_OF_SEGMENTS_;
+		const unsigned int NUM_OF_JOINTS_;
+		const unsigned int NUM_OF_SEGMENTS_;
 	    const int NUM_OF_FRAMES_;
 	    const int NUM_OF_CONSTRAINTS_;
 		const int END_EFF_;

@@ -101,11 +101,13 @@ namespace kinova_constants
     extern const std::vector<double> joint_velocity_limits;
     extern const std::vector<double> joint_acceleration_limits;
     extern const std::vector<double> joint_torque_limits;
+    extern const std::vector<double> joint_current_limits;
     extern const std::vector<double> joint_stopping_torque_limits;
 
     extern const std::vector<double> joint_inertia;
     extern const std::vector<double> joint_sim_inertia;
 
+    extern const std::vector<double> motor_torque_constant;
     extern const std::string config_path;    
     extern const std::string urdf_path;
     extern const std::string urdf_sim_path;

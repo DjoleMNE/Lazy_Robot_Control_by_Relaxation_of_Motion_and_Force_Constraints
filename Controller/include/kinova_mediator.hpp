@@ -154,6 +154,7 @@ class kinova_mediator: public robot_mediator
     	urdf::Model kinova_urdf_model_;
 
         KDL::Wrenches ext_wrenches_sim_;
+		KDL::JntArray joint_inertia_sim_;
 		state_specification robot_state_;
     	std::vector<state_specification> predicted_states_; 
 		std::shared_ptr<model_prediction> predictor_;

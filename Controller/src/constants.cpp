@@ -92,13 +92,17 @@ namespace kinova_constants
    const std::vector<double> joint_position_limits_max {DEG_TO_RAD(9999.0), DEG_TO_RAD(127.0), DEG_TO_RAD(9999.0), DEG_TO_RAD(147.8), DEG_TO_RAD(9999.0), DEG_TO_RAD(120.3), DEG_TO_RAD(9999.0)};
    const std::vector<double> joint_position_limits_min {DEG_TO_RAD(-9999.0), DEG_TO_RAD(-127.0), DEG_TO_RAD(-9999.0), DEG_TO_RAD(-147.8), DEG_TO_RAD(-9999.0), DEG_TO_RAD(-120.3), DEG_TO_RAD(-9999.0)};
 
-   const std::vector<double> joint_velocity_limits {DEG_TO_RAD(99.0), DEG_TO_RAD(99.0), DEG_TO_RAD(99.0), DEG_TO_RAD(99.0), DEG_TO_RAD(149.0), DEG_TO_RAD(149.0), DEG_TO_RAD(149.0)};
+   // Low level velocity limits (official Kinova): 2.618 rad/s (149 deg/s) for small and 1.745 rad/s (99 deg/s) for large joints
+   const std::vector<double> joint_velocity_limits {1.74, 1.74, 1.74, 1.74, 2.6, 2.6, 2.6};
    const std::vector<double> joint_acceleration_limits {5.19, 5.19, 5.19, 5.19, 9.99, 9.99, 9.99};
 
    // High-level mode torque limits
 //    const std::vector<double> joint_torque_limits {39.0, 39.0, 39.0, 39.0, 9.0, 9.0, 9.0};
    // Low-level mode torque limits: derived based on safety thresholds outlined in the KINOVA manual
    const std::vector<double> joint_torque_limits {55.0, 55.0, 55.0, 55.0, 28.0, 28.0, 28.0};
+
+   // Low-level mode current limits: derived based on safety thresholds outlined in the KINOVA manual
+   const std::vector<double> joint_current_limits {9.5, 9.5, 9.5, 9.5, 5.5, 5.5, 5.5}; // Amp
 
 //    const std::vector<double> joint_stopping_torque_limits {0.6, 0.6, 0.6, 0.6, 0.3, 0.3, 0.3};
    const std::vector<double> joint_stopping_torque_limits {39.0, 39.0, 39.0, 39.0, 13.0, 13.0, 13.0};
@@ -109,10 +113,17 @@ namespace kinova_constants
    const std::vector<double> joint_offsets {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     // Rotor inertia - "d" in the algorithm:
-    // const std::vector<double> joint_inertia {0.5580, 0.5580, 0.5580, 0.5580, 0.1389, 0.1389, 0.1389};
-    const std::vector<double> joint_inertia {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    const std::vector<double> joint_inertia {0.5580, 0.5580, 0.5580, 0.5580, 0.1389, 0.1389, 0.1389};
+   //  const std::vector<double> joint_inertia {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     const std::vector<double> joint_sim_inertia {0.5580, 0.5580, 0.5580, 0.5580, 0.1389, 0.1389, 0.1389};
-    // const std::vector<double> joint_sim_inertia {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+   //  const std::vector<double> joint_sim_inertia {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+   // Motor torque constant K_t (gear ration included - 100:1): official Kinova values
+   const std::vector<double> motor_torque_constant {11.0, 11.0, 11.0, 11.0, 7.6, 7.6, 7.6}; // These ones show best result in gravity comp. cases
+   // Motor torque constant K_t (gear ration included - 100:1): Kinova's manual (table with "Default threshold - warning") values
+   // const std::vector<double> motor_torque_constant {5.67, 5.67, 5.67, 5.67, 4.9, 4.9, 4.9};
+   // Motor torque constant K_t (gear ration included - 100:1): Kinova's manual (table with "Hard limit - upper") values
+   // const std::vector<double> motor_torque_constant {8.75, 8.75, 8.75, 8.75, 6.5, 6.5, 6.5};
 
    // const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/kinova-gen3_urdf_V12_with_polishing_tool.urdf";
    const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/kinova-gen3_urdf_V12.urdf";
