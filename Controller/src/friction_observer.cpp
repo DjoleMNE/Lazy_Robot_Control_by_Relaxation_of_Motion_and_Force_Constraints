@@ -25,13 +25,14 @@ SOFTWARE.
 
 #include <friction_observer.hpp>
 
-FrictionObserver::FrictionObserver(const int num_joints, const double dt_sec, const Eigen::VectorXd &rotor_inertia, const Eigen::VectorXd &gain_l,
-                                   const Eigen::VectorXd &gain_lp, const Eigen::VectorXd &gain_li, const int observer_type,
+FrictionObserver::FrictionObserver(const int num_joints, const double dt_sec, const Eigen::VectorXd &rotor_inertia, const std::vector<double> &joint_velocity_limits,
+                                   const Eigen::VectorXd &gain_l, const Eigen::VectorXd &gain_lp, const Eigen::VectorXd &gain_li, const int observer_type,
                                    const int integration_method, const int state_integration_resent_count, const double filter_constant):
     DT_SEC(dt_sec), FILTER_CONST(filter_constant),
     INTEGRATION_METHOD(integration_method), OBSERVER_TYPE(observer_type),
     NUM_JOINTS(num_joints), STATE_INTEGRATION_RESET_COUNT(state_integration_resent_count),
-    ROTOR_INERTIA(rotor_inertia), GAIN_L(gain_l), GAIN_LP(gain_lp), GAIN_LI(gain_li), COMMON_GAIN(-ROTOR_INERTIA.cwiseProduct(GAIN_L)),
+    ROTOR_INERTIA(rotor_inertia), JOINT_VEL_LIMIT (joint_velocity_limits),
+    GAIN_L(gain_l), GAIN_LP(gain_lp), GAIN_LI(gain_li), COMMON_GAIN(-ROTOR_INERTIA.cwiseProduct(GAIN_L)),
     integration_count(0), motor_flat_position(NUM_JOINTS), previous_motor_position(NUM_JOINTS),
     theta_nominal(NUM_JOINTS), theta_dot_nominal(NUM_JOINTS), theta_dot_dot_nominal(NUM_JOINTS),
     error_nominal(NUM_JOINTS), error_dot_nominal(NUM_JOINTS), error_integral(NUM_JOINTS),
@@ -104,16 +105,31 @@ int FrictionObserver::estimateFrictionTorque(const KDL::JntArray &motor_position
     if (INTEGRATION_METHOD == integration_method::SYMPLECTIC_EULER)
     {
         theta_dot_nominal += theta_dot_dot_nominal * DT_SEC;
+
+        // Saturate velocity
+        // for (int i = 0; i < NUM_JOINTS; i++)
+        // {
+        //     if      (theta_dot_nominal(i) >  JOINT_VEL_LIMIT[i]) theta_dot_nominal(i) =  JOINT_VEL_LIMIT[i];
+        //     else if (theta_dot_nominal(i) < -JOINT_VEL_LIMIT[i]) theta_dot_nominal(i) = -JOINT_VEL_LIMIT[i];
+        // }
+
         theta_nominal     += theta_dot_nominal * DT_SEC; // Symplectic Euler method
     }
     else if (INTEGRATION_METHOD == integration_method::PREDICTOR_CORRECTOR)
     {
         theta_nominal     += (theta_dot_nominal - theta_dot_dot_nominal * DT_SEC / 2.0) * DT_SEC; // Trapezoidal method
         theta_dot_nominal += theta_dot_dot_nominal * DT_SEC;
-    }
-    else return -1;
 
-    // Compute motor's flattened position (without 0 <-> 360 constraint)
+        // Saturate velocity
+        // for (int i = 0; i < NUM_JOINTS; i++)
+        // {
+        //     if      (theta_dot_nominal(i) >  JOINT_VEL_LIMIT[i]) theta_dot_nominal(i) =  JOINT_VEL_LIMIT[i];
+        //     else if (theta_dot_nominal(i) < -JOINT_VEL_LIMIT[i]) theta_dot_nominal(i) = -JOINT_VEL_LIMIT[i];
+        // }
+    }
+    else assert(false);
+
+    // Compute motor's flattened position (removing 0 <-> 360 constraint)
     for (unsigned int i = 0; i < NUM_JOINTS; i++)
     {
         // motor went from ~360 deg to ~0 deg - positive rotation direction: 2.7 rad/s stands for the maximum speed that a joint can reach (derived based on Kinova's tech specs)

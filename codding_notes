@@ -1,0 +1,27 @@
+- check existing task_status printing and maybe add flag for it
+- check error propagation from the safety_monitor (add limit_status enum) to the error_logger
+- in kinova_mediator (and maybe in youBot_mediator), save error strings and instead of printing them in set/get function... print them once the mediator is deinitialized or have a special function for that?
+- move all enums to a single hpp file
+- add the code (ask kinova guys about it?) in kinova mediator to detect gripper and based on that to init. different model
+- check wr.t. which frame is kinova's estimated e-eff wrench expressed
+- make prediction reference frame consistent between moveConstrained and moveTo tasks error calculations
+- make ext wrench estimation run on a separate thread... discuss this with Sven
+- talk with kinova guys about jitter data method and about refreshCommand method problems in API 
+- ask them about brakes in the joints... are they slowing down robot when it is off even at low speed or is it just a friction
+- ask them about turning on brakes in run time via API
+- ask them if there is a way to disable wi-fi via API
+
+- extend interface in robot mediators to take also motor_current commands
+
+useful link: https://github.com/Kinovarobotics/kortex/blob/master/linked_md/cpp_device_routing.md
+- e.g. who to get configs
+- e.g. how to convert google::protobuf to str
+
+
+- ABAG controller that stops the robot should monitor robot velocities 
+  * and prepare its inner signals before stop-motion trigger occurs.
+  * Avoids control delays: ABAG needs time to adapt its inner signals the necessary values.
+
+pthread_attr_setschedpolicy, pthread_setaffinity_np
+mnlock
+mlock/munlock

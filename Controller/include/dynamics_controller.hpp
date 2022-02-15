@@ -125,7 +125,10 @@ class dynamics_controller
     void deinitialize();
 
     void engage_lock();
-    int apply_joint_control_commands(const bool bypass_safeties);
+    int apply_joint_control_commands(const KDL::JntArray ctrl_torque,
+                                     const KDL::JntArray &torque_friction,
+                                     const bool compensate_friction,
+                                     const bool bypass_safeties);
     int monitor_joint_safety();
     int estimate_external_wrench(const KDL::JntArray &joint_position_measured,
                                  const KDL::JntArray &joint_velocity_measured,

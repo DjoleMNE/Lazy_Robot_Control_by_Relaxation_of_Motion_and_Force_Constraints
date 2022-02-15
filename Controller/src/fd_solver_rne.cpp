@@ -93,7 +93,9 @@ namespace KDL{
             H_eig(i, i) += joint_inertia_[i];
         }
 
-        total_torque.data = Tzeroacc_eig;
+        total_torque.data = Tzeroacc.data; // Note: only link-side (reaction?) torque... not motor, friction and rotor inertia 
+
+        // Note: rotor inertia is only added in computation here via H_eig matrix (until now, the total/link torque does not contain rotor inertia)
         ldl_solver_eigen(H_eig, Tzeroacc_eig, L_eig, D_eig, r_eig, acc_eig);
 
         for(unsigned int i=0; i < nj; i++)

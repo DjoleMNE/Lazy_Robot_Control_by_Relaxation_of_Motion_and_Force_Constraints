@@ -1,5 +1,5 @@
 # Author(s): Djordje Vukcevic
-# Year: 2019
+# Year: 2021
 import sys, os
 import numpy as np
 import sympy as sp
@@ -50,24 +50,24 @@ rows = rows - (rows % variable_num)
 num_samples = np.int(rows / variable_num) 
 print("Data size: ", num_samples, ",", cols)
 
-measured  = []
-desired   = []
-predicted = []
-raw_error = []
+measured    = []
+desired     = []
+predicted   = []
+raw_error   = []
 raw_error_2 = []
 raw_error_3 = []
-error     = []
-bias      = []
-bias_2    = []
-bias_3    = []
-gain      = []
-gain_2    = []
-gain_3    = []
-command   = []
-command_2 = []
-command_3 = []
+error       = []
+bias        = []
+bias_2      = []
+bias_3      = []
+gain        = []
+gain_2      = []
+gain_3      = []
+command     = []
+command_2   = []
+command_3   = []
+time_ticks  = []
 contact_time_tick = []
-time_ticks = []
 
 for sample_ in range (2, rows + 2, variable_num):
     tick = np.float32( input_data[sample_][11] )
@@ -187,7 +187,7 @@ if (desired_dim is 0):
         tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim] )))
     plt.plot(desired + tube_tolerance, c = 'red', label='upper tolerance', linewidth = 1.3, linestyle = '--', zorder = 2)
     plt.plot(desired - tube_tolerance, c = 'blue', label='lower tolerance', linewidth = 1.3, linestyle = '--', zorder = 2)
-    plt.legend( fontsize=12, ncol=2)
+    plt.legend( fontsize=16, ncol=2)
     for tick in contact_time_tick:
         plt.axvline(x = contact_time_tick[0], linewidth = 1.3,  color='blue', zorder = 1)
     plt.yticks(fontsize=20)
@@ -199,9 +199,34 @@ if (desired_dim is 0):
     time_ticks = np.arange(0, num_samples / control_freq, 1)
     plt.xlim(0, time_ticks[-1])
     plt.xticks(np.arange(0, num_samples, control_freq), time_ticks,  fontsize=20)
-    plt.grid(True)
+    plt.grid(True, linestyle='--')
     plt.ylabel('[m]',  fontsize=20)
     plt.xlabel('time [s]',  fontsize=20)
+
+elif (desired_dim == 1):
+    plt.figure(figsize = (8,8))
+    plt.subplots_adjust(left=0.21)
+    plt.plot(measured, c = 'green', label=r'$X_{m, y}$', linewidth = 1.5, zorder = 3)
+    # plt.plot(predicted, c = 'silver', label=r'$X_{pred, y}$', linewidth = 1.5, zorder = 1)
+    # plt.plot(desired, label=r'$X_{d, y}$', linewidth = 2, color = 'black', zorder = 2)
+
+    if (show_tube):
+        tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim] )))
+        plt.plot(desired + tube_tolerance, '-', c = 'red', label=r'$\sigma$', linewidth = 1.5,  zorder = 2)
+        plt.plot(desired - tube_tolerance, '-', c = 'blue', label=r'-$\sigma$',linewidth = 1.5,zorder = 2)
+
+        for tick in contact_time_tick:
+            plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
+
+    time_ticks = np.arange(0, num_samples / control_freq, 1)
+    plt.legend(fontsize = 16, ncol=5)
+    plt.yticks(fontsize=20)
+    plt.ylabel('[m]',  fontsize=20)
+    plt.xlim(0, time_ticks[-1])
+    plt.xticks(np.arange(0, num_samples, control_freq), time_ticks,  fontsize=20)
+    plt.xlabel('time [s]',  fontsize=20)
+    plt.grid(True, linestyle='--')
+    # plt.gca().yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
 
 else:
     if (desired_dim > 7): plt.figure(figsize = (30, 25))
@@ -211,69 +236,64 @@ else:
     plt.subplots_adjust(left=0.15, right=0.96, top=0.98, bottom=0.08)
     plt.margins(0,0)
 
+    #################################################################################################################
     plt.subplot(subplot_num, 1, 1)
-    if(desired_dim == 1):
-        plt.plot(measured, c = 'limegreen', label='measured position', linewidth = 2, zorder = 2)
-        # plt.plot(predicted, c = 'orange', label='predicted position', linewidth = 2, zorder = 2)
-        show_tube = False
-        plt.xlabel('time [s]',  fontsize=20)
-
-    if(desired_dim == 2):
-        plt.plot(measured, c = 'limegreen', label='measured position', linewidth = 2, zorder = 2)
-        plt.plot(predicted, c = 'orange', label='predicted position', linewidth = 2, zorder = 2)
-        plt.plot(desired, label='desired  position', linewidth = 2, color = 'black', zorder = 3)
+    if (desired_dim == 2):
+        plt.plot(measured, c = 'green', label=r'$X_{m, z}$', linewidth = 1.5, zorder = 3)
+        plt.plot(predicted, c = 'silver', label=r'$X_{pred, z}$', linewidth = 1.5, zorder = 1)
+        plt.plot(desired, label=r'$X_{d, z}$', linewidth = 2, color = 'black', zorder = 2)
 
     elif(desired_dim == 3):
-        plt.plot(measured, c = 'limegreen', label='measured angle', linewidth = 2, zorder = 2)
-        plt.plot(predicted, c = 'orange', label='predicted angle', linewidth = 2, zorder = 2)
-        plt.plot(desired, label='desired angle', linewidth = 2, color = 'black', zorder = 3)
+        plt.plot(measured, c = 'green', label='$\\theta_{m}$', linewidth = 1.5, zorder = 3)
+        plt.plot(predicted, c = 'silver', label='$\\theta_{pred}$', linewidth = 1.5, zorder = 1)
+        plt.plot(desired, label='$\\theta_{d}$', linewidth = 2, color = 'black', zorder = 2)
 
     elif(desired_dim == 6):
-        plt.plot(measured, c = 'limegreen', label='measured velocity', linewidth = 2, zorder = 2)
-        plt.plot(desired, label='desired velocity', linewidth = 2, color = 'black', zorder = 3)
+        plt.plot(measured, c = 'green', label=r'$\dot{X}_{m, x}$', linewidth = 1.5, zorder = 3)
+        plt.plot(desired, label=r'$\dot{X}_{d, x}$', linewidth = 2, color = 'black', zorder = 2)
 
     elif(desired_dim == 7):
-        plt.plot(measured, c = 'limegreen', label='measured angular vel', linewidth = 2, zorder = 2)
-        plt.plot(desired, label='desired angle', linewidth = 2, color = 'black', zorder = 3)        
+        plt.plot(measured, c = 'green', label='measured angular vel', linewidth = 1.5, zorder = 3)
+        plt.plot(desired, label='desired angle', linewidth = 2, color = 'black', zorder = 2)        
 
     elif(desired_dim == 8):
-        plt.plot(measured, c = 'limegreen', label='measured force', linewidth = 2, zorder = 2)
-        plt.plot(desired, label='desired force', linewidth = 2, color = 'black', zorder = 3)
+        plt.plot(measured, c = 'green', label='measured force', linewidth = 1.5, zorder = 3)
+        plt.plot(desired, label='desired force', linewidth = 2, color = 'black', zorder = 2)
 
     elif(desired_dim > 8):
-        plt.plot(measured, c = 'limegreen', label='measured moment', linewidth = 2, zorder = 2)
-        plt.plot(desired, label='desired moment', linewidth = 2, color = 'black', zorder = 3) 
+        plt.plot(measured, c = 'green', label='measured moment', linewidth = 1.5, zorder = 3)
+        plt.plot(desired, label='desired moment', linewidth = 2, color = 'black', zorder = 2) 
 
     if (show_tube):
         if (desired_dim > 7):
-            tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim-6] )))
+            tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim - 6] )))
         else:
             tube_tolerance = np.array(np.full((num_samples, ), np.float32( input_data[0][desired_dim] )))
 
-        if (desired_dim==6):
-            plt.plot(desired + tube_tolerance, c = 'red', label='upper tolerance', linewidth = 1.0, linestyle = '--', zorder = 2)
-            plt.plot(desired - tube_tolerance, c = 'blue', label='lower tolerance', linewidth = 1.0, linestyle = '--', zorder = 2)
+        if (desired_dim == 6):
+            plt.plot(desired + tube_tolerance, '--o', markersize=2.0, c = 'red', label=r'$\sigma$', linewidth = 0.6,  zorder = 2)
+            plt.plot(desired - tube_tolerance, '--o', markersize=2.0, c = 'blue', label=r'-$\sigma$',linewidth = 0.6,zorder = 2)
+
         else:
-            plt.plot(desired + tube_tolerance, c = 'red', label='upper tolerance', linewidth = 2.5, linestyle = '--', zorder = 2)
-            plt.plot(desired - tube_tolerance, c = 'blue', label='lower tolerance', linewidth = 2.5, linestyle = '--', zorder = 2)
+            plt.plot(desired + tube_tolerance, '-', c = 'red', label=r'$\sigma$', linewidth = 1.5,  zorder = 2)
+            plt.plot(desired - tube_tolerance, '-', c = 'blue', label=r'-$\sigma$',linewidth = 1.5,zorder = 2)
 
         for tick in contact_time_tick:
             plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
 
-    if (desired_dim < 4):
-        plt.ylim(-tube_tolerance[0]*2, tube_tolerance[0]*2)
+    # if (desired_dim < 4):
+    #     plt.ylim(-tube_tolerance[0] * 2, tube_tolerance[0] * 2)
 
     # if (desired_dim == 8):
         # plt.ylim(desired[0] - tube_tolerance[0] - 0.1, desired[0] - tube_tolerance[0] + 0.1)
     
-    plt.legend(fontsize = 12, loc=0, ncol=1)
+    plt.legend(fontsize = 16, ncol=5)
     plt.yticks(fontsize=20)
     time_ticks = np.arange(0, num_samples / control_freq, 1)
     plt.xlim(0, time_ticks[-1])
     plt.xticks(np.arange(0, num_samples, control_freq))
-    plt.grid(True)
+    plt.grid(True, linestyle='--')
     # if (desired_dim == 1): plt.gca().yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
-
 
     if (desired_dim == 6):
         plt.ylabel(r'$[\frac{m}{s}]$', fontsize=20)
@@ -286,28 +306,38 @@ else:
     else:
         plt.ylabel('[m]',  fontsize=20)
 
-    if(desired_dim != 1): plt.setp( plt.gca().get_xticklabels(), visible=False)
+    if (desired_dim != 1): plt.setp( plt.gca().get_xticklabels(), visible=False)
     else:
         plt.xlim(0, time_ticks[-1])
         plt.xticks(np.arange(0, num_samples, control_freq), time_ticks,  fontsize=20)
 
+    ### Error ##############################################################
     if (desired_dim != 1):
         plt.subplot(subplot_num, 1, 2)
         if (desired_dim == 3):
-            plt.plot(raw_error,   c = 'black',  label=r'input error X angular', linewidth=2, zorder=2)
-            plt.plot(raw_error_2, c = 'purple', label=r'input error Y angular', linewidth=2, zorder=2)
-            plt.plot(raw_error_3, c = 'orange', label=r'input error Z angular', linewidth=2, zorder=2)
+            plt.plot(raw_error,  label=r'$e_{o, ax}$', linewidth=1.5, zorder=2)
+            plt.plot(raw_error_2,label=r'$e_{o, ay}$', linewidth=1.5, zorder=2)
+            plt.plot(raw_error_3, label=r'$e_{o, az}$', linewidth=1.5, zorder=2)
         else:
-            plt.plot(raw_error, c = 'purple', label=r'input error', linewidth=2, zorder=2)
+            if (desired_dim == 6):
+                plt.plot(raw_error, label=r'$e_v$', linewidth=1.5, zorder=2)
+            elif(desired_dim == 2):
+                plt.plot(raw_error, label=r'$e_{p, z}$', linewidth=1.5, zorder=2)
+            elif(desired_dim == 8):
+                plt.plot(raw_error, label=r'$e_{f, z}$', linewidth=1.5, zorder=2)
+            elif(desired_dim == 9):
+                plt.plot(raw_error, label=r'$e_{f, ax}$', linewidth=1.5, zorder=2)
+            elif(desired_dim == 10):
+                plt.plot(raw_error, label=r'$e_{f, ay}$', linewidth=1.5, zorder=2)
 
         for tick in contact_time_tick:
             plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
 
-        plt.legend(fontsize = 12, loc=0,ncol=1)
+        plt.legend(fontsize = 16, loc=0,ncol=5)
         plt.yticks(fontsize=20)
         plt.xlim(0, time_ticks[-1])
         plt.xticks(np.arange(0, num_samples, control_freq))
-        plt.grid(True)
+        plt.grid(True, linestyle='--')
 
         if (desired_dim == 6):
             plt.ylabel(r'$[\frac{m}{s}]$',  fontsize=20)
@@ -325,63 +355,71 @@ else:
         # plt.plot(error, c = 'darkorange', label=r'ABAG: low-pass filtered error sign', linewidth=1, zorder=2)
         # for tick in contact_time_tick:
         #     plt.axvline(x = tick, linewidth = 1.3,  color='blue', zorder = 1)
-        # plt.legend( fontsize=12)
+        # plt.legend(fontsize = 16)
         # plt.ylim(-1.2, 1.2)
         # plt.yticks(fontsize=20)
         # plt.xlim(0, time_ticks[-1])
         # plt.xticks(np.arange(0, num_samples, control_freq))
         # plt.setp( plt.gca().get_xticklabels(), visible=False)
-        # plt.grid(True)
+        # plt.grid(True, linestyle='--')
         # plt.ylabel('[%]',  fontsize=20)
 
         if (desired_dim == 3):
             plt.subplot(subplot_num, 1, 3)
-            plt.plot(command, c = 'blue', label='ABAG: command u - X axis', linewidth = 2.0, zorder = 3)
-            plt.plot(bias, c = 'green', label='ABAG: bias - X axis', linewidth = 2, zorder = 4)
-            plt.plot(gain, c = 'red', label=r'ABAG: gain * sign(e) - X axis', linewidth = 2, zorder = 2)
-            plt.legend(fontsize = 12, loc=0, ncol=1)
+            plt.plot(command, c = 'blue', label=r'ABAG($e_{o, ax}$): output command', linewidth = 1.5, zorder = 3)
+            plt.plot(bias, c = 'green', label=r'ABAG($e_{o, ax}$): bias', linewidth = 1.5, zorder = 4)
+            plt.plot(gain, c = 'red', label=r'ABAG($e_{o, ax}$): gain * sign($e_{o, ax}$)', linewidth = 1.5, zorder = 2)
+            plt.legend(fontsize = 16, loc=0, ncol=1)
             plt.yticks(fontsize=20)
             plt.xlim(0, time_ticks[-1])
             plt.xticks(np.arange(0, num_samples, control_freq))
-            plt.grid(True)
+            plt.grid(True, linestyle='--')
             plt.ylabel('[%]',  fontsize=20)
             plt.setp( plt.gca().get_xticklabels(), visible=False)
-            plt.ylim(-1.2, 1.2)
+            # plt.ylim(-1.2, 1.2)
 
             plt.subplot(subplot_num, 1, 4)
-            plt.plot(command_2, c = 'blue', label='ABAG: command u - Y axis', linewidth = 2.0, zorder = 3)
-            plt.plot(bias_2, c = 'green', label='ABAG: bias - Y axis', linewidth = 2, zorder = 4)
-            plt.plot(gain_2, c = 'red', label=r'ABAG: gain * sign(e) - Y axis', linewidth = 2, zorder = 2)
-            plt.legend(fontsize = 12, loc=0, ncol=1)
+            plt.plot(command_2, c = 'blue', label=r'ABAG($e_{o, ay}$): output command', linewidth = 1.5, zorder = 3)
+            plt.plot(bias_2, c = 'green', label=r'ABAG($e_{o, ay}$): bias', linewidth = 1.5, zorder = 4)
+            plt.plot(gain_2, c = 'red', label=r'ABAG($e_{o, ay}$): gain * sign($e_{o, ay}$)', linewidth = 1.5, zorder = 2)
+            plt.legend(fontsize = 16, loc=0, ncol=1)
             plt.yticks(fontsize=20)
             plt.xlim(0, time_ticks[-1])
             plt.xticks(np.arange(0, num_samples, control_freq))
-            plt.grid(True)
+            plt.grid(True, linestyle='--')
             plt.ylabel('[%]',  fontsize=20)
             plt.setp( plt.gca().get_xticklabels(), visible=False)
-            plt.ylim(-1.2, 1.2)
+            # plt.ylim(-1.2, 1.2)
 
             plt.subplot(subplot_num, 1, 5)
-            plt.plot(command_3, c = 'blue', label='ABAG: command u - Z axis', linewidth = 2.0, zorder = 3)
-            plt.plot(bias_3, c = 'green', label='ABAG: bias - Z axis', linewidth = 2, zorder = 4)
-            plt.plot(gain_3, c = 'red', label=r'ABAG: gain * sign(e) - Z axis', linewidth = 2, zorder = 2)
-            plt.ylim(-1.2, 1.2)
+            plt.plot(command_3, c = 'blue', label=r'ABAG($e_{o, az}$): output command', linewidth = 1.5, zorder = 3)
+            plt.plot(bias_3, c = 'green', label=r'ABAG($e_{o, az}$): bias', linewidth = 1.5, zorder = 4)
+            plt.plot(gain_3, c = 'red', label=r'ABAG($e_{o, az}$): gain * sign($e_{o, az}$)', linewidth = 1.5, zorder = 2)
+            # plt.ylim(-1.2, 1.2)
 
-        else: 
-            plt.subplot(subplot_num, 1, 3)
-            plt.plot(command, c = 'blue', label='ABAG: command u', linewidth = 2.0, zorder = 3)
-            plt.plot(bias, c = 'green', label='ABAG: bias', linewidth = 2, zorder = 4)
-            plt.plot(gain, c = 'red', label=r'ABAG: gain * sign(e)', linewidth = 2, zorder = 2)
+        else:
+            if (desired_dim == 6):
+                plt.subplot(subplot_num, 1, 3)
+                plt.plot(command, c = 'blue', label=r'ABAG($e_{v}$): output command', linewidth = 1.5, zorder = 3)
+                plt.plot(bias, c = 'green', label=r'ABAG($e_{v}$): bias', linewidth = 1.5, zorder = 4)
+                plt.plot(gain, c = 'red', label=r'ABAG($e_{v}$): gain * sign($e_{v}$)', linewidth = 1.5, zorder = 2)
+                # plt.ylim(-1.2, 1.2)
 
+            elif (desired_dim == 2):
+                plt.subplot(subplot_num, 1, 3)
+                plt.plot(command, c = 'blue', label=r'ABAG($e_{p, z}$): output command', linewidth = 1.5, zorder = 3)
+                plt.plot(bias, c = 'green', label=r'ABAG($e_{p, z}$): bias', linewidth = 1.5, zorder = 4)
+                plt.plot(gain, c = 'red', label=r'ABAG($e_{p, z}$): gain * sign($e_{p, z}$)', linewidth = 1.5, zorder = 2)
+                # plt.ylim(-1.2, 1.2)
 
         # if(desired_dim is not 8):
         #     plt.ylim(-0.70, 0.70)
         #     plt.yticks(np.arange(-0.70, 0.70, 0.25),  fontsize=22)
         plt.yticks(fontsize=20)
-        plt.legend(fontsize = 12, loc=0, ncol=1)
+        plt.legend(fontsize = 16, loc=0, ncol=1)
         plt.xlim(0, time_ticks[-1])
         plt.xticks(np.arange(0, num_samples, control_freq), time_ticks,  fontsize=20)
-        plt.grid(True)
+        plt.grid(True, linestyle='--')
         plt.ylabel('[%]',  fontsize=20)
         plt.xlabel('time [s]',  fontsize=20)
 

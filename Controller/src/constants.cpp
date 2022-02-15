@@ -125,6 +125,10 @@ namespace kinova_constants
    // Motor torque constant K_t (gear ration included - 100:1): Kinova's manual (table with "Hard limit - upper") values
    // const std::vector<double> motor_torque_constant {8.75, 8.75, 8.75, 8.75, 6.5, 6.5, 6.5};
 
+   // Friction values used for simulating friction joint torques. Max friction in real large joint ~11.4Nm, in real small ~3.5Nm
+   const std::vector<double> breakaway_friction_torque {2.1, 2.1, 2.1, 2.1, 1.3, 1.3, 1.3};
+   const std::vector<double> viscous_fiction_coefficient {0.7, 0.7, 0.7, 0.7, 0.3, 0.3, 0.3};
+
    // const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/kinova-gen3_urdf_V12_with_polishing_tool.urdf";
    const std::string urdf_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/kinova-gen3_urdf_V12.urdf";
    const std::string urdf_sim_path = "/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/kinova-gen3_urdf_V12_sim.urdf";

@@ -38,12 +38,10 @@ dynamics_controller::dynamics_controller(robot_mediator *robot_driver,
     desired_task_model_(task_model::full_pose), loop_start_time_(std::chrono::steady_clock::now()),
     total_time_sec_(0.0), loop_iteration_count_(0), stop_loop_iteration_count_(0),
     steady_stop_iteration_count_(0), feedforward_loop_count_(0), control_loop_delay_count_(0),
-    robot_driver_(robot_driver), robot_chain_(robot_driver_->get_robot_model()),
-    robot_chain_full_(robot_driver->get_full_robot_model()),
-    NUM_OF_JOINTS_(robot_chain_.getNrOfJoints()),
-    NUM_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
-    NUM_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1),
-    NUM_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
+    robot_driver_(robot_driver),
+    robot_chain_(robot_driver_->get_robot_model()), robot_chain_full_(robot_driver->get_full_robot_model()),
+    NUM_OF_JOINTS_(robot_chain_.getNrOfJoints()), NUM_OF_SEGMENTS_(robot_chain_.getNrOfSegments()),
+    NUM_OF_FRAMES_(robot_chain_.getNrOfSegments() + 1), NUM_OF_CONSTRAINTS_(dynamics_parameter::NUMBER_OF_CONSTRAINTS),
     END_EFF_(NUM_OF_SEGMENTS_ - 1), ROBOT_ID_(robot_driver_->get_robot_ID()),
     INITIAL_END_EFF_MASS_(robot_chain_.getSegment(END_EFF_).getInertia().getMass()),
     COMPENSATE_GRAVITY_(compensate_gravity),
@@ -394,9 +392,9 @@ void dynamics_controller::write_to_file()
         else log_file_null_space_ << 0.0;
         log_file_null_space_ << std::endl;
 
-        for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
-            log_file_ext_wrench_ << ext_wrench_(i) << " ";
-        log_file_ext_wrench_ << std::endl;
+        // for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+        //     log_file_ext_wrench_ << ext_wrench_(i) << " ";
+        // log_file_ext_wrench_ << std::endl;
     }
     else
     {
@@ -421,6 +419,10 @@ void dynamics_controller::write_to_file()
         log_file_stop_motion_ << abag_stop_motion_.get_gain().transpose().format(WRITE_FORMAT_STOP_MOTION);
         log_file_stop_motion_ << abag_stop_motion_.get_command().transpose().format(WRITE_FORMAT_STOP_MOTION);
     }
+
+    for (int i = 0; i < NUM_OF_CONSTRAINTS_; i++)
+        log_file_ext_wrench_ << ext_wrench_(i) << " ";
+    log_file_ext_wrench_ << std::endl;
 
     // Write joint space state
     log_file_joint_ << robot_state_.control_torque.data.transpose().format(dynamics_parameter::WRITE_FORMAT);
@@ -519,6 +521,11 @@ void dynamics_controller::define_moveConstrained_follow_path_task(
         }
 
         task_frame_poses[i]                             = task_frame_pose;
+        // std::cout << " HERE Pos: " << tf_position << std::endl;
+        // std::cout << tf_orientation << std::endl;
+        // std::cout << " " << std::endl;
+        // std::cout << " " << std::endl;
+
         moveConstrained_follow_path_task_.tf_poses[i]   = KDL::Frame(tf_orientation, tf_position);
         moveConstrained_follow_path_task_.goal_poses[i] = KDL::Frame::Identity();
     }
@@ -709,6 +716,7 @@ void dynamics_controller::define_moveTo_task(
     }
 
     moveTo_task_.tf_pose                   = KDL::Frame(tf_orientation, tf_position);
+    // std::cout << tf_orientation << std::endl;
     moveTo_task_.goal_pose                 = KDL::Frame::Identity();
     moveTo_task_.tube_start_position       = tube_start_position;
     moveTo_task_.tube_tolerances           = tube_tolerances;
@@ -721,8 +729,11 @@ void dynamics_controller::define_moveTo_task(
     moveTo_task_.null_space_force_direction = KDL::Vector::Zero();
     moveTo_task_.null_space_tolerance       = tube_tolerances[7];
 
-    desired_state_.frame_pose[END_EFF_]    = moveTo_task_.goal_pose;
-    desired_task_model_                    = task_model::moveTo;
+    desired_state_.frame_pose[END_EFF_].p = moveTo_task_.goal_pose.p;
+    // Necessary for the orientation control. These const values are for Kinova Gen3 robot. But, this should be automated.
+    desired_state_.frame_pose[END_EFF_].M = KDL::Rotation::EulerZYX(M_PI/2, 0.0, -M_PI/2) * moveTo_task_.goal_pose.M;
+    // desired_state_.frame_pose[END_EFF_].M = KDL::Rotation::Identity();
+    desired_task_model_                   = task_model::moveTo;
     transform_drivers_          = true;
     transform_force_drivers_    = false;
     compute_null_space_command_ = control_null_space;
@@ -1066,8 +1077,17 @@ int dynamics_controller::monitor_joint_safety()
     Apply joint commands using the desired and/or safe control interface.
     If the computed commands are not safe, stop the robot.
 */
-int dynamics_controller::apply_joint_control_commands(const bool bypass_safeties)
+int dynamics_controller::apply_joint_control_commands(const KDL::JntArray ctrl_torque, const KDL::JntArray &torque_friction,
+                                                      const bool compensate_friction, const bool bypass_safeties)
 {
+    assert(ctrl_torque.rows() == NUM_OF_JOINTS_);
+    assert(torque_friction.rows() == NUM_OF_JOINTS_);
+
+    robot_state_.control_torque.data = ctrl_torque.data;
+    if (compensate_friction) robot_state_.control_torque.data -= torque_friction.data;
+
+    robot_state_.friction_torque.data = torque_friction.data;
+
     if (bypass_safeties)
     {
         /*
@@ -1520,7 +1540,7 @@ void dynamics_controller::compute_moveTo_task_error()
     else abag_error_vector_(0) = 0.0;
 
     // Linear Tube Velocity processing
-    if ((fsm_result_ == task_status::CRUISE_THROUGH_TUBE) && (std::fabs(abag_error_vector_(0)) <= moveTo_task_.tube_tolerances[6])) abag_error_vector_(0) = 0.0;
+    if (std::fabs(abag_error_vector_(0)) <= moveTo_task_.tube_tolerances[6]) abag_error_vector_(0) = 0.0;
 
     // Position error processing
     for (int i = 1; i < 3; i++)
@@ -2506,7 +2526,7 @@ int dynamics_controller::step(const KDL::JntArray &q_input,
 int dynamics_controller::control()
 {
     // double loop_time = 0.0;
-    KDL::JntArray state_q(NUM_OF_JOINTS_), state_qd(NUM_OF_JOINTS_), state_tau(NUM_OF_JOINTS_), ctrl_torque(NUM_OF_JOINTS_);
+    KDL::JntArray state_q(NUM_OF_JOINTS_), state_qd(NUM_OF_JOINTS_), state_tau(NUM_OF_JOINTS_), ctrl_torque(NUM_OF_JOINTS_), torque_friction(NUM_OF_JOINTS_);
     KDL::Wrench ext_force_torque;
     total_time_sec_ = 0.0;
     int return_flag = 0;
@@ -2555,7 +2575,7 @@ int dynamics_controller::control()
             }
 
             // Apply joint commands using torque control interface (bypass all safety checks)
-            if (apply_joint_control_commands(true) == -1)
+            if (apply_joint_control_commands(robot_state_.control_torque, torque_friction, false, true) == -1)
             {
                 // Make sure that the robot is locked (freezed)
                 engage_lock();
@@ -2581,7 +2601,7 @@ int dynamics_controller::control()
             if (!trigger_stopping_sequence_)
             {
                 // Apply joint commands using safe control interface
-                if (apply_joint_control_commands(false) == -1) trigger_stopping_sequence_ = true;
+                if (apply_joint_control_commands(robot_state_.control_torque, torque_friction, false, false) == -1) trigger_stopping_sequence_ = true;
             }
 
             if (trigger_stopping_sequence_)

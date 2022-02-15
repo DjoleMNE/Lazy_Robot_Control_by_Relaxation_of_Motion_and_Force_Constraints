@@ -68,7 +68,7 @@ public:
      *                        The filter can be turned off by setting this value to 0.
      * \param dt_sec Time-period at which user updates this estimation loop (in seconds).
      */
-    FrictionObserver(const int num_joints, const double dt_sec, const Eigen::VectorXd &rotor_inertia,
+    FrictionObserver(const int num_joints, const double dt_sec, const Eigen::VectorXd &rotor_inertia, const std::vector<double> &joint_velocity_limits,
                      const Eigen::VectorXd &gain_l, const Eigen::VectorXd &gain_lp, const Eigen::VectorXd &gain_li,
                      const int observer_type = friction_observer_type::PD, const int integration_method = integration_method::SYMPLECTIC_EULER,
                      const int state_integration_resent_count = 0, const double filter_constant = 0.0);
@@ -89,7 +89,7 @@ public:
      * \param observed_joint_friction The estimated joint friction torque that should be compensated by the outer controller, in the current control cycle.
      *
      * @return error/success code
-     */
+     */ 
     int estimateFrictionTorque(const KDL::JntArray &motor_position, const KDL::JntArray &motor_velocity, const KDL::JntArray &joint_torque_cmd, const KDL::JntArray &joint_torque_measured, KDL::JntArray &observed_joint_friction);
 
     /** 
@@ -105,6 +105,7 @@ private:
     const int INTEGRATION_METHOD, OBSERVER_TYPE;
     const unsigned int NUM_JOINTS, STATE_INTEGRATION_RESET_COUNT;
     const Eigen::VectorXd ROTOR_INERTIA, GAIN_L, GAIN_LP, GAIN_LI, COMMON_GAIN;
+    const std::vector<double> JOINT_VEL_LIMIT;
 
     unsigned int integration_count;
 

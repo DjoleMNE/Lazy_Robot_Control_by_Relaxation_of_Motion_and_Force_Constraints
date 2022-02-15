@@ -45,14 +45,15 @@ void model_prediction::integrate_joint_space(const state_specification &current_
                                              const bool recompute_acceleration)
 {
     assert(("Number of steps higher than the size of provided vector of states", num_of_steps <= predicted_states.size()));  
-    assert(NUM_OF_JOINTS_ == predicted_states[0].qd.rows()); 
+    assert(NUM_OF_JOINTS_ == predicted_states[0].q.rows());
+    assert(NUM_OF_JOINTS_ == predicted_states[0].qd.rows());
     assert(NUM_OF_JOINTS_ == current_state.qd.rows());
 
     temp_state_ = current_state;
 
     // For each step in the future horizon
-    for (int i = 0; i < num_of_steps; i++){   
-
+    for (int i = 0; i < num_of_steps; i++)
+    {
         // Integrate accelerations to velocities - Classical Euler method
         predicted_states[i].qd.data = temp_state_.qd.data + temp_state_.qdd.data * dt_sec;
 
@@ -69,7 +70,7 @@ void model_prediction::integrate_joint_space(const state_specification &current_
         // }
 
         temp_state_.qd = predicted_states[i].qd;
-        temp_state_.q = predicted_states[i].q;
+        temp_state_.q  = predicted_states[i].q;
     }
 
     // #ifndef NDEBUG // Print joint state in Debug mode only

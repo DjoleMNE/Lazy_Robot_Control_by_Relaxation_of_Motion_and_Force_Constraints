@@ -99,9 +99,9 @@ void kinova_mediator::get_joint_positions(KDL::JntArray &joint_positions)
     // Kinova API provides only positive angle values
     // This operation is required to align the logic with our safety monitor
     // We need to convert some angles to negative values
-    if (joint_positions(1) > DEG_TO_RAD(180.0)) joint_positions(1) -= DEG_TO_RAD(360.0);
-    if (joint_positions(3) > DEG_TO_RAD(180.0)) joint_positions(3) -= DEG_TO_RAD(360.0);
-    if (joint_positions(5) > DEG_TO_RAD(180.0)) joint_positions(5) -= DEG_TO_RAD(360.0);
+    // if (joint_positions(1) > DEG_TO_RAD(180.0)) joint_positions(1) -= DEG_TO_RAD(360.0);
+    // if (joint_positions(3) > DEG_TO_RAD(180.0)) joint_positions(3) -= DEG_TO_RAD(360.0);
+    // if (joint_positions(5) > DEG_TO_RAD(180.0)) joint_positions(5) -= DEG_TO_RAD(360.0);
 }
 
 //Set Joint Positions
@@ -256,14 +256,45 @@ int kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
         get_joint_positions(robot_state_.q);
         get_joint_velocities(robot_state_.qd);
 
+        // Simulate joint friction torque
+        for (int i = 0; i < ACTUATOR_COUNT; i++)
+        {
+            // robot_state_.total_torque.data = robot_state_.measured_torque.data;
+
+            // Static friction: min between total joint torque and breakaway friction torque. Resulting friction torque has opposite sign of the total joint torque
+            // if (robot_state_.qd(i) < 1e-5) robot_state_.friction_torque(i) = std::copysign(std::fmin(std::fabs(robot_state_.total_torque(i) + joint_torques(i)), kinova_constants::breakaway_friction_torque[i]), -(robot_state_.total_torque(i) + joint_torques(i)));
+            
+            // Static friction: just breakaway friction value with the sign opposite of the total joint torque
+            // if (robot_state_.qd(i) < 1e-5) robot_state_.friction_torque(i) = std::copysign(kinova_constants::breakaway_friction_torque[i], -robot_state_.total_torque(i));
+
+            // Kinetic friction. Simple model: Coulomb + Viscous friction models. Resulting friction torque has the opposite sign of the joint's velocity
+            // else robot_state_.friction_torque(i) = std::copysign(kinova_constants::breakaway_friction_torque[i], -robot_state_.qd(i)) - robot_state_.qd(i) * kinova_constants::viscous_fiction_coefficient[i];
+
+            /* 
+            * Static and Kinetic friction. Complex model: Static + Coulomb + Viscous + Stribeck effect friction models
+            * eq. 10 in Andersson et. al "Friction models for sliding dry, boundary and mixed lubricated contacts." Tribology international 40, no. 4 (2007): 580-587.
+            * Resulting friction torque has the opposite sign of the joint's velocity
+            */
+            robot_state_.friction_torque(i) = std::copysign(1 + (kinova_constants::breakaway_friction_torque[i] - 1) * std::exp(-std::pow(std::fabs(robot_state_.qd(i)) / 1.3, 0.5)), -robot_state_.qd(i)) - robot_state_.qd(i) * kinova_constants::viscous_fiction_coefficient[i];
+        }
+
+        KDL::JntArray ff_torque(ACTUATOR_COUNT);
+        ff_torque.data  = joint_torques.data;
+        ff_torque.data += robot_state_.friction_torque.data;
+
         // Call FD solver (inverse-inertia version) to compute jnt acc. given the control torque commands.
-        int solver_return = this->fd_solver_rne_->CartToJnt(robot_state_.q, robot_state_.qd, joint_torques, 
-                                                            ext_wrenches_sim_, robot_state_.qdd, robot_state_.total_torque);
+        int solver_return = this->fd_solver_rne_->CartToJnt(robot_state_.q, robot_state_.qd, ff_torque, ext_wrenches_sim_, robot_state_.qdd, robot_state_.total_torque);
         if (solver_return != 0)
         {
             printf("FD solver in mediator returned error: %d", solver_return);
             return -1;
         }
+
+        // Simulate measured torque from a virtual sensor mounted on the output shaft
+        // Try two versions from DLR's RNE modeling of this measurements: 1. only torque comming from actuator side and 2. only torque from link side
+        // Version 1 might be more suitable for ext wrench estimation use case, while version two might be more suitable for friction estimation
+        // Another way to maybe get this properly simulated is to replace the above RNE-based FD solver with ACHD solver and use its difference torque (still to be implemented, but it will be link_side_torque - actuator_side_torque)!
+        robot_state_.measured_torque.data = robot_state_.total_torque.data;
 
         // Integrate jnt acc. to simulate the next robot state
         predictor_->integrate_joint_space(robot_state_, predicted_states_, DT_SEC_, 1, integration_method::SYMPLECTIC_EULER, false, false);
@@ -279,10 +310,15 @@ int kinova_mediator::set_joint_torques(const KDL::JntArray &joint_torques)
         {
             base_feedback_.mutable_actuators(i)->set_position(RAD_TO_DEG(predicted_states_[0].q(i)));
             base_feedback_.mutable_actuators(i)->set_velocity(RAD_TO_DEG(predicted_states_[0].qd(i)));
-            base_feedback_.mutable_actuators(i)->set_torque(-joint_torques(i));
+            base_feedback_.mutable_actuators(i)->set_torque(robot_state_.measured_torque(i));
         }
     }
     return 0;
+}
+
+void kinova_mediator::get_simulated_joint_friction(KDL::JntArray &joint_friction)
+{
+    joint_friction.data = robot_state_.friction_torque.data;
 }
 
 // Get measured / estimated external forces acting on the end-effector... Not yet working in low-level Kinova control mode

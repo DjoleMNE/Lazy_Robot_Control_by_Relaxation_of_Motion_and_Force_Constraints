@@ -139,6 +139,8 @@ class kinova_mediator: public robot_mediator
 		virtual KDL::Chain get_robot_model();
 		virtual KDL::Chain get_full_robot_model();
 
+		void get_simulated_joint_friction(KDL::JntArray &joint_friction);
+
 	private:
 		bool is_initialized_;
 		int kinova_id;

@@ -8,6 +8,17 @@
 #include <unistd.h>
 #include <KDetailedException.h>
 
+#include <kdl/kdl.hpp>
+#include <kdl/frames.hpp>
+#include <kdl/frames_io.hpp>
+#include <kdl_parser/kdl_parser.hpp>
+#include <urdf/model.h>
+#include <kdl/chainjnttojacsolver.hpp>
+#include <kdl/chainidsolver_recursive_newton_euler.hpp>
+#include <kdl/chainfksolverpos_recursive.hpp>
+#include <kdl/chainfksolvervel_recursive.hpp>
+#include <constants.hpp>
+#include <abag.hpp>
 #include <friction_observer.hpp>
 
 #include <BaseClientRpc.h>
@@ -39,7 +50,17 @@ float TIME_DURATION = 30.0f; // Duration of the example (seconds)
 constexpr auto TIMEOUT_PROMISE_DURATION = std::chrono::seconds{20};
 std::chrono::steady_clock::time_point loop_start_time;
 std::chrono::duration <double, std::micro> loop_interval{};
-std::chrono::duration <double, std::micro> total_time_sec{};
+
+/*****************************
+ * Example related function *
+ *****************************/
+int64_t GetTickUs()
+{
+    struct timespec start;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
+    return (start.tv_sec * 1000000LLU) + (start.tv_nsec / 1000);
+}
 
 //Make sure that the control loop runs exactly with the specified frequency
 int enforce_loop_frequency(const int dt)
@@ -142,45 +163,101 @@ bool example_cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyc
     const int DT_MICRO = SECOND / RATE_HZ;
     const double DT_SEC = 1.0 / static_cast<double>(RATE_HZ);
 
+    double total_time_sec = 0.0;
     int iteration_count = 0;
     int control_loop_delay_count = 0;
+    int return_flag = 0;
     bool return_status = true;
     bool compensate_joint_friction = true;
+
+    urdf::Model kinova_urdf_model_;
+    KDL::Tree kinova_tree_;
+    std::ofstream log_file_joint;
+    log_file_joint.open("/home/djole/Master/Thesis/GIT/MT_testing/Controller/visualization/archive/single_joint_control.txt");
+    assert(log_file_joint.is_open());
+
+    if (!kinova_urdf_model_.initFile("/home/djole/Master/Thesis/GIT/MT_testing/Controller/urdf/kinova-gen3_urdf_V12.urdf"))
+    {
+        printf("ERROR: Failed to parse urdf robot model \n");
+        return -1;
+    }
+
+    //Extract KDL tree from the URDF file
+    if (!kdl_parser::treeFromUrdfModel(kinova_urdf_model_, kinova_tree_))
+    {
+        printf("ERROR: Failed to construct kdl tree \n");
+        return -1;
+    }
+
+    // Extract KDL chain from KDL tree
+    KDL::Chain robot_chain;
+    kinova_tree_.getChain("base_link", "EndEffector_Link", robot_chain);
 
     // Low level velocity limits (official Kinova): 2.618 rad/s (149 deg/s) for small and 1.745 rad/s (99 deg/s) for large joints
     const std::vector<double> joint_velocity_limits {1.74, 1.74, 1.74, 1.74, 2.6, 2.6, 2.6};
 
+   // Low-level mode torque limits: derived based on safety thresholds outlined in the KINOVA manual
+    const std::vector<double> joint_torque_limits {55.0, 55.0, 55.0, 55.0, 28.0, 28.0, 28.0}; // Nm
+    const std::vector<double> max_friction_torque {11.9, 11.9, 11.9, 11.9, 3.8, 3.8, 3.8}; // Nm
+
     // Motor torque constant K_t (gear ration included - 100:1): official Kinova values
     const std::vector<double> motor_torque_constant {11.0, 11.0, 11.0, 11.0, 7.6, 7.6, 7.6}; // These ones show best result in gravity comp. cases
-
     // Low-level mode current limits: derived based on safety thresholds outlined in the KINOVA manual
     const std::vector<double> joint_current_limits {9.5, 9.5, 9.5, 9.5, 5.5, 5.5, 5.5}; // Amp
+    const std::vector<double> cart_force_limit {5.0, 5.0, 5.0, 5.0, 5.0, 5.0}; // N
 
     const std::vector<double> home_configuration {0.0, 15.0, 180.0, 230.0, 0.0, 55.0, 90.0};
     const std::vector<double> zero_configuration {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+    // Initialize solvers
+    KDL::ChainJntToJacSolver jacob_solver(robot_chain);
+    KDL::ChainFkSolverPos_recursive fk_solver_pos(robot_chain);
+    KDL::ChainFkSolverVel_recursive fk_solver_vel(robot_chain);
+    std::shared_ptr<KDL::ChainIdSolver_RNE> id_solver = std::make_shared<KDL::ChainIdSolver_RNE>(robot_chain, KDL::Vector(0.0, 0.0, -9.81289));
 
     const std::vector<double> joint_inertia {0.5580, 0.5580, 0.5580, 0.5580, 0.1389, 0.1389, 0.1389};
     Eigen::VectorXd rotor_inertia_eigen(ACTUATOR_COUNT);
     for (unsigned int i = 0; i < ACTUATOR_COUNT; i++) 
         rotor_inertia_eigen(i) = joint_inertia[i];
 
-    // Setup the gains
+    // Low gains
     Eigen::VectorXd friction_estimation_d_gain = (Eigen::VectorXd(7) << 30.0, 30.0, 30.0, 30.0, 20.0, 20.0, 20.0).finished();
+    // Eigen::VectorXd friction_estimation_d_gain = (Eigen::VectorXd(7) << 3.0, 3.0, 3.0, 3.0, 2.0, 2.0, 2.0).finished();
     Eigen::VectorXd friction_estimation_p_gain = (Eigen::VectorXd(7) << 70.0, 70.0, 70.0, 70.0, 50.0, 50.0, 50.0).finished();
+    // Eigen::VectorXd friction_estimation_p_gain = (Eigen::VectorXd(7) << 7.0, 7.0, 7.0, 7.0, 5.0, 5.0, 5.0).finished();
     Eigen::VectorXd friction_estimation_i_gain = (Eigen::VectorXd(7) << 30.0, 30.0, 30.0, 30.0, 20.0, 20.0, 20.0).finished();
     FrictionObserver friction_observer(ACTUATOR_COUNT, DT_SEC, rotor_inertia_eigen, joint_velocity_limits, friction_estimation_d_gain, friction_estimation_p_gain,
                                        friction_estimation_i_gain, friction_observer_type::PD, integration_method::SYMPLECTIC_EULER, 0, 0.0);
 
+    const int abag_dimensions = 1;
+    ABAG abag(abag_dimensions); // dimenstions are decoupled in ABAG
+
+    // Setting parameters of the ABAG Controller
+    abag.set_error_alpha((   Eigen::VectorXd(abag_dimensions) << 0.900000).finished());
+    abag.set_bias_threshold((Eigen::VectorXd(abag_dimensions) << 0.000457).finished());
+    abag.set_bias_step((     Eigen::VectorXd(abag_dimensions) << 0.000500).finished());
+    abag.set_gain_threshold((Eigen::VectorXd(abag_dimensions) << 0.502492).finished());
+    abag.set_gain_step((     Eigen::VectorXd(abag_dimensions) << 0.002552).finished());
+    abag.set_min_bias_sat_limit(Eigen::VectorXd::Constant(1, -1.0));
+    abag.set_min_command_sat_limit(Eigen::VectorXd::Constant(1, -1.0));
+
     // Prepare state and control variables
     KDL::JntArray jnt_ctrl_torque(ACTUATOR_COUNT), jnt_position(ACTUATOR_COUNT), jnt_velocity(ACTUATOR_COUNT), jnt_torque(ACTUATOR_COUNT), jnt_command_current(ACTUATOR_COUNT), jnt_current(ACTUATOR_COUNT),
-                  friction_torque(ACTUATOR_COUNT), nominal_pos(ACTUATOR_COUNT), nominal_vel(ACTUATOR_COUNT), initial_position(ACTUATOR_COUNT), initial_velocity(ACTUATOR_COUNT);
+                  RNE_torque(ACTUATOR_COUNT), friction_torque(ACTUATOR_COUNT), nominal_pos(ACTUATOR_COUNT), nominal_vel(ACTUATOR_COUNT), initial_position(ACTUATOR_COUNT), initial_velocity(ACTUATOR_COUNT);
+    Eigen::VectorXd abag_error_vector(abag_dimensions), abag_command(abag_dimensions);
+    abag_error_vector.setZero();
+    abag_command.setZero();
+
+    const KDL::JntArray ZERO_JOINT_ARRAY(ACTUATOR_COUNT);
+    const KDL::Wrenches ZERO_WRENCHES(robot_chain.getNrOfSegments(), KDL::Wrench::Zero());
+
 
     k_api::BaseCyclic::Feedback base_feedback;
     k_api::BaseCyclic::Command  base_command;
     auto servoing_mode = k_api::Base::ServoingModeInformation();
 
     /////////////////////////////////////
-    const int test_joint_index = 6;
+    int test_joint_index = 6;
     //////////////////////////
 
     // Clearing faults
@@ -212,56 +289,68 @@ bool example_cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyc
         auto control_mode_message = k_api::ActuatorConfig::ControlModeInformation();
  
         control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::POSITION);
+        // control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::TORQUE);
+        // control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::CURRENT);
         actuator_config->SetControlMode(control_mode_message, 1);
 
         control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::POSITION);
+        // control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::TORQUE);
+        // control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::CURRENT);
         actuator_config->SetControlMode(control_mode_message, 2);
 
         control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::POSITION);
+        // control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::TORQUE);
+        // control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::CURRENT);
         actuator_config->SetControlMode(control_mode_message, 3);
 
         control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::POSITION);
+        // control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::TORQUE);
+        // control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::CURRENT);
         actuator_config->SetControlMode(control_mode_message, 4);
 
         control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::POSITION);
+        // control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::TORQUE);
+        // control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::CURRENT);
         actuator_config->SetControlMode(control_mode_message, 5);
 
         control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::POSITION);
+        // control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::TORQUE);
+        // control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::CURRENT);
         actuator_config->SetControlMode(control_mode_message, 6);
 
+        // control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::POSITION);
+        // control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::TORQUE);
         control_mode_message.set_control_mode(k_api::ActuatorConfig::ControlMode::CURRENT);
         actuator_config->SetControlMode(control_mode_message, 7);
 
         compensate_joint_friction = true;
-        double task_time_limit_sec = 6.5;
-        double error = 0.0, previous_error = 0.0;
-        const std::chrono::steady_clock::time_point control_start_time_sec = std::chrono::steady_clock::now();
-
-        // Initialize friction estimator (feedforward component)
-        for (int i = 0; i < ACTUATOR_COUNT; i++)
-        {
-            jnt_position(i) = DEG_TO_RAD(base_feedback.actuators(i).position());
-            jnt_velocity(i) = DEG_TO_RAD(base_feedback.actuators(i).velocity());
-        }
-        friction_observer.setInitialState(jnt_position, jnt_velocity);
-
-        initial_position = jnt_position;
-        initial_velocity = jnt_velocity;
-
-        // Velocity control
-        double theta_dot_desired = 0.1;
-        if      (theta_dot_desired >  joint_velocity_limits[test_joint_index]) theta_dot_desired =  joint_velocity_limits[test_joint_index];
-        else if (theta_dot_desired < -joint_velocity_limits[test_joint_index]) theta_dot_desired = -joint_velocity_limits[test_joint_index];
+        bool friction_estimator_triggered = false;
 
         // ##########################################################################
         // Real-time loop
         // ##########################################################################
-        while (total_time_sec.count() < task_time_limit_sec)
+        double task_time_limit_sec = 4.5;
+        double error = 0.0, previous_error = 0.0;
+
+        const std::chrono::steady_clock::time_point control_start_time_sec = std::chrono::steady_clock::now();
+
+        while (total_time_sec < task_time_limit_sec)
         {
-            iteration_count++;
             loop_start_time = std::chrono::steady_clock::now();
             total_time_sec = std::chrono::duration<double, std::micro>(loop_start_time - control_start_time_sec);
+            iteration_count++;
             // total_time_sec = iteration_count * DT_SEC;
+
+            // if (total_time_sec > task_time_limit_sec / 2 && !friction_estimator_triggered)
+            // if (total_time_sec > 0.0 && !friction_estimator_triggered)
+            // {
+                // printf("Now\n");
+                // friction_observer.setInitialState(jnt_position, jnt_velocity);
+                // compensate_joint_friction = true;
+                // friction_estimator_triggered = true;
+            // }
+
+            if (iteration_count == 1) friction_observer.setInitialState(jnt_position, jnt_velocity);
 
             try
             {
@@ -300,6 +389,13 @@ bool example_cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyc
                 jnt_current (i) = base_feedback.actuators(i).current_motor();
             }
 
+            // Set initial state
+            if (iteration_count == 1)
+            {
+                initial_position = jnt_position;
+                initial_velocity = jnt_velocity;
+            }
+
             // Get the friction-free state
             if (compensate_joint_friction) friction_observer.getNominalState(nominal_pos, nominal_vel);
             else
@@ -308,31 +404,90 @@ bool example_cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyc
                 nominal_vel = jnt_velocity;
             }
 
+            return_flag = id_solver->CartToJnt(jnt_position, ZERO_JOINT_ARRAY, ZERO_JOINT_ARRAY, ZERO_WRENCHES, RNE_torque);
+            if (return_flag != 0) break;
+
+            jnt_ctrl_torque = RNE_torque;
+
             for (int i = 0; i < ACTUATOR_COUNT; i++)
             {
+                // if      (jnt_ctrl_torque(i) >  joint_torque_limits[i]) jnt_ctrl_torque(i) =  joint_torque_limits[i];
+                // else if (jnt_ctrl_torque(i) < -joint_torque_limits[i]) jnt_ctrl_torque(i) = -joint_torque_limits[i];
+                // base_command.mutable_actuators(i)->set_position(base_feedback.actuators(i).position());
+    
+                // if (i != test_joint_index) base_command.mutable_actuators(i)->set_torque_joint(jnt_ctrl_torque(i));
+                // if (i != test_joint_index) base_command.mutable_actuators(i)->set_current_motor(jnt_ctrl_torque(i) / motor_torque_constant[i]);
+                // base_command.mutable_actuators(i)->set_current_motor(jnt_ctrl_torque(i) / motor_torque_constant[i]);
+
                 if (i != test_joint_index) base_command.mutable_actuators(i)->set_position(home_configuration[i]);
             }
-            base_command.mutable_actuators(test_joint_index)->set_position(base_feedback.actuators(test_joint_index).position());
+
+            // // Position control
+            double theta_desired = 0.0;
+            // double k_p = 3.0, k_d = 1.5; 
+            // if (total_time_sec <= 7.5)                                theta_desired = initial_position(test_joint_index) - 0.5;
+            // else if (total_time_sec > 7.50 && total_time_sec <= 15.0) theta_desired = initial_position(test_joint_index) - 1.0;
+            // else if (total_time_sec > 15.0 && total_time_sec <= 25.0) theta_desired = initial_position(test_joint_index) - 2.0;
+            // else break;
+
+            // jnt_ctrl_torque(test_joint_index) = -k_p * (nominal_pos(test_joint_index) - theta_desired) - k_d * nominal_vel(test_joint_index);
+    
+            // Velocity control
+            static double theta_dot_desired = 0.1;
+            // static double reversed = false;
+            // if (reversed) theta_dot_desired += 0.001;
+            // if (nominal_vel(test_joint_index) > 1.6) reversed = true;
+            // if (iteration_count > 8000) theta_dot_desired = 0.7;
+            if      (theta_dot_desired >  joint_velocity_limits[test_joint_index]) theta_dot_desired =  joint_velocity_limits[test_joint_index];
+            else if (theta_dot_desired < -joint_velocity_limits[test_joint_index]) theta_dot_desired = -joint_velocity_limits[test_joint_index];
 
             // Error calc
-            error = theta_dot_desired - nominal_vel(test_joint_index);
+            error = nominal_vel(test_joint_index) - theta_dot_desired;
+            theta_desired = theta_dot_desired;
+
+            // ABAG control
+            abag_error_vector(0) = -error;
+            abag_command = abag.update_state(abag_error_vector);
+            jnt_ctrl_torque(test_joint_index) = abag_command(0) * joint_torque_limits[test_joint_index];
+            // jnt_ctrl_torque(test_joint_index) = 0.0;
 
             // PD control
-            jnt_ctrl_torque(test_joint_index)  = 11.5 * error; // P controller
-            jnt_ctrl_torque(test_joint_index) += 0.0009 * (error - previous_error) / DT_SEC; // D term
-            previous_error = error;
+            // jnt_ctrl_torque(test_joint_index)  = -11.5 * error; // P controller
+            // jnt_ctrl_torque(test_joint_index) += -0.0009 * (error - previous_error) / DT_SEC; // D term
+            // previous_error = error;
+
+            // if (jnt_position(test_joint_index) < 0.1 && !reversed)
+            // {
+            //     theta_dot_desired = 0.5;
+            //     reversed = true;
+            // }
+            // if (reversed) theta_dot_desired+=0.0001;
 
             // Estimate friction in joints
+            double tau_motor = 0.0;
+            tau_motor  = jnt_ctrl_torque(test_joint_index);
             if (compensate_joint_friction)
             {
                 friction_observer.estimateFrictionTorque(jnt_position, jnt_velocity, jnt_ctrl_torque, jnt_torque, friction_torque);
-                jnt_ctrl_torque(test_joint_index) -= friction_torque(test_joint_index);
+                // if      (friction_torque(test_joint_index) >  max_friction_torque[test_joint_index]) friction_torque(test_joint_index) =  max_friction_torque[test_joint_index];
+                // else if (friction_torque(test_joint_index) < -max_friction_torque[test_joint_index]) friction_torque(test_joint_index) = -max_friction_torque[test_joint_index];
+                tau_motor -= friction_torque(test_joint_index);
+                // tau_motor -= jnt_torque(test_joint_index);
             }
+            // if      (tau_motor >  joint_torque_limits[test_joint_index]) tau_motor =  joint_torque_limits[test_joint_index];
+            // else if (tau_motor < -joint_torque_limits[test_joint_index]) tau_motor = -joint_torque_limits[test_joint_index];
+
+            // double current_cmd = -0.33;
+            // jnt_ctrl_torque(test_joint_index) = current_cmd * motor_torque_constant[test_joint_index];
+            // jnt_command_current(test_joint_index) = current_cmd;
  
-            jnt_command_current(test_joint_index) = jnt_ctrl_torque(test_joint_index) / motor_torque_constant[test_joint_index];
+            base_command.mutable_actuators(test_joint_index)->set_position(base_feedback.actuators(test_joint_index).position());
+
+            jnt_command_current(test_joint_index) = tau_motor / motor_torque_constant[test_joint_index];
             if      (jnt_command_current(test_joint_index) >  joint_current_limits[test_joint_index]) jnt_command_current(test_joint_index) =  joint_current_limits[test_joint_index];
             else if (jnt_command_current(test_joint_index) < -joint_current_limits[test_joint_index]) jnt_command_current(test_joint_index) = -joint_current_limits[test_joint_index];
             base_command.mutable_actuators(test_joint_index)->set_current_motor(jnt_command_current(test_joint_index));
+            // base_command.mutable_actuators(test_joint_index)->set_torque_joint(tau_motor);
 
             // Incrementing identifier ensures actuators can reject out of time frames
             base_command.set_frame_id(base_command.frame_id() + 1);
@@ -343,6 +498,7 @@ bool example_cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyc
             try
             {
                 base_feedback = base_cyclic->Refresh(base_command, 0);
+                // RefreshCommand() method is not functioning properly!
             }
             catch (k_api::KDetailedException& ex)
             {
@@ -370,6 +526,12 @@ bool example_cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyc
                 break;
             }
 
+            log_file_joint << theta_desired                     << " " << jnt_position(test_joint_index)    << " " << nominal_pos(test_joint_index)         << " "
+                           << jnt_velocity(test_joint_index)    << " " << nominal_vel(test_joint_index)     << " " << jnt_torque(test_joint_index)          << " "
+                           << jnt_ctrl_torque(test_joint_index) << " " << friction_torque(test_joint_index) << " " << jnt_command_current(test_joint_index) << " "
+                           << abag.get_error()(0)               << " " << abag.get_bias()(0)                << " " << abag.get_gain()(0)                    << " "
+                           << abag.get_command()(0)             << std::endl;
+
             // Enforce the constant loop time and count how many times the loop was late
             if (enforce_loop_frequency(DT_MICRO) != 0) control_loop_delay_count++;
         }
@@ -394,11 +556,13 @@ bool example_cyclic_torque_control(k_api::Base::BaseClient* base, k_api::BaseCyc
     servoing_mode.set_servoing_mode(k_api::Base::ServoingMode::SINGLE_LEVEL_SERVOING);
     base->SetServoingMode(servoing_mode);
 
+    log_file_joint.close();
+
     // Wait for a bit
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
-    // std::cout << "last current command: " << jnt_command_current(test_joint_index) << std::endl;
-    std::cout << "Torque control example clean exit. \nTotal run time: " << total_time_sec.count()
+    std::cout << "last current command: " << jnt_command_current(test_joint_index) << std::endl;
+    std::cout << "Torque control example clean exit. \nTotal run time: " << total_time_sec 
               << "   Loop iteration count: "                           << iteration_count
               << "   Control Loop delay count: "                       << control_loop_delay_count << std::endl;
 

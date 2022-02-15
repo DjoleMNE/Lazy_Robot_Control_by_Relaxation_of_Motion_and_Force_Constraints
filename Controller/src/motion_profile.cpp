@@ -230,11 +230,10 @@ namespace motion_profile
         for(int i = 0; (unsigned)i < path_points.size(); i++)
         {
             // the angle is plotted on the x-y-plane
-            x = x_scale * amplitude * (-length / 2.0) * std::cos(2.0 * M_PI * i / path_points.size()) + length / 2.0;
-
-            // the sine function is plotted along the y-axis
             y = amplitude * (height / 2) * std::sin(4 * M_PI * i / path_points.size());
 
+            // the sine function is plotted along the y-axis
+            x = -1 * (x_scale * amplitude * (-length / 2.0) * std::cos(2.0 * M_PI * i / path_points.size()) + length / 2.0);
             path_points[i][0] = x    + offset_x;
             path_points[i][1] = y    + offset_y;
             path_points[i][2] = 0.0  + offset_z;
@@ -263,5 +262,13 @@ namespace motion_profile
             path_points[i][1] = y   + offset_y;
             path_points[i][2] = 0.0 + offset_z;
         }
+
+        path_points[0][0] = 0.0   + offset_x;
+        path_points[0][1] = 0.0   + offset_y;
+        path_points[0][2] = 0.0 + offset_z;
+    // std::cout << "     " << path_points[0][0] <<"  " << path_points[0][1] << "  " << path_points[0][2]<<std::endl;
+        path_points[1][0] = 0.25  + offset_x;
+        path_points[1][1] = 0.0  + offset_y;
+        path_points[1][2] = 0.0 + offset_z;
     }
 }

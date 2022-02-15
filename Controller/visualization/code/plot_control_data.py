@@ -13,7 +13,7 @@ show_tube = np.int(sys.argv[2])
 print("Selected dimension: ", desired_dim)
 variable_num = 7
 
-control_freq = 700
+control_freq = 999
 
 filename = "../archive/control_error.txt"
 prediction_filename = "../archive/prediction_effects.txt"

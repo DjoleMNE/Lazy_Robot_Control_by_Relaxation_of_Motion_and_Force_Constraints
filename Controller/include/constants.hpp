@@ -108,6 +108,10 @@ namespace kinova_constants
     extern const std::vector<double> joint_sim_inertia;
 
     extern const std::vector<double> motor_torque_constant;
+
+    extern const std::vector<double> breakaway_friction_torque;
+    extern const std::vector<double> viscous_fiction_coefficient;
+
     extern const std::string config_path;    
     extern const std::string urdf_path;
     extern const std::string urdf_sim_path;
