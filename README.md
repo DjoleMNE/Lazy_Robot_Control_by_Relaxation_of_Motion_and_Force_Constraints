@@ -12,4 +12,5 @@ https://github.com/DjoleMNE/Lazy_Robot_Control_by_Relaxation_of_Motion_and_Force
 
 
 
-- [Dual Kinova Gen3 Robot Polishing Surface](https://drive.google.com/file/d/1N6R1Lfys1FX4tGAjYv5I1Jc6Qx5zbH4W/view?usp=sharing)
+https://github.com/DjoleMNE/Lazy_Robot_Control_by_Relaxation_of_Motion_and_Force_Constraints/assets/18451001/5c27ac51-3496-40fe-8231-25337859a3a7
+
