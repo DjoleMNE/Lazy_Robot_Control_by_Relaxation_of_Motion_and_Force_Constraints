@@ -5,9 +5,11 @@ Proof of concept implementation and graphs used in Master's Thesis:
 - [Defence Presentation](https://github.com/DjoleMNE/MT_testing/blob/master/Thesis_Presentation_Djordje_Vukcevic.pdf)
 
 Controller Demos on a Real 7DoF Manipulator (without Force/Torque sensor - Ext. wrench estimated using a momentum observer):
-- [Single Kinova Gen3 Robot Polishing Surface](https://drive.google.com/file/d/1eWDuy10rVoj3iyTo6ZwLiA7UzsPEtQLn/view?usp=sharing)
 
-https://github.com/DjoleMNE/Lazy_Robot_Control_by_Relaxation_of_Motion_and_Force_Constraints/assets/18451001/6cdb6923-d00b-494d-9feb-a8544b025ee5
+
+https://github.com/DjoleMNE/Lazy_Robot_Control_by_Relaxation_of_Motion_and_Force_Constraints/assets/18451001/f6f4acbd-4cc5-4624-b694-99292ef11384
+
+
 
 
 - [Dual Kinova Gen3 Robot Polishing Surface](https://drive.google.com/file/d/1N6R1Lfys1FX4tGAjYv5I1Jc6Qx5zbH4W/view?usp=sharing)
